@@ -11,6 +11,24 @@
 #include "SeqFile.h"
 #include "ROM.h"
 
+Identifier SeqFile::idName("name");
+Identifier SeqFile::idLength("length");
+Identifier SeqFile::idAction("action");
+Identifier SeqFile::idCmd("cmd");
+Identifier SeqFile::idCmdEnd("cmdend");
+Identifier SeqFile::idMeaning("meaning");
+Identifier SeqFile::idValue("value");
+Identifier SeqFile::idAdd("add");
+Identifier SeqFile::idMultiply("multiply");
+Identifier SeqFile::idDataSrc("datasrc");
+Identifier SeqFile::idDataLen("datalen");
+Identifier SeqFile::idDataAddr("dataaddr");
+Identifier SeqFile::idDataActualLen("dataactuallen");
+Identifier SeqFile::idValidInSeq("validinseq");
+Identifier SeqFile::idValidInChn("validinchn");
+Identifier SeqFile::idValidInTrk("validintrk");
+
+
 SeqFile::SeqFile(ROM& rom, ValueTree cmdlistnode, uint32 seq_addr, uint32 orig_len){
     cmdlist = cmdlistnode;
     seqaddr = seq_addr;
@@ -39,7 +57,10 @@ SeqFile::~SeqFile(){
     data = nullptr;
 }
 uint8 SeqFile::readByte(uint32 address){
-    return (uint8)data->readByte(address);
+    return (uint8)(data->readByte(address));
+}
+void SeqFile::writeByte(uint32 address, uint8 d){
+    data->writeByte(address, d);
 }
 
 
@@ -54,11 +75,6 @@ uint32 SeqFile::getLength(){
 //Stype: 0 seq hdr, 1 chn hdr, 2 track data
 ValueTree SeqFile::getDescription(uint8 firstbyte, int stype){
     ValueTree test;
-    Identifier idValidInSeq("validinseq");
-    Identifier idValidInChn("validinchn");
-    Identifier idValidInTrk("validintrk");
-    Identifier idCmd("cmd");
-    Identifier idCmdEnd("cmdend");
     for(int i=0; i<cmdlist.getNumChildren(); i++){
         test = cmdlist.getChild(i);
         if(       (stype == 0 && (bool)test.getProperty(idValidInSeq, false))
@@ -81,21 +97,8 @@ ValueTree SeqFile::getDescription(uint8 firstbyte, int stype){
 }
 
 ValueTree SeqFile::getCommand(uint32 address, int stype){
-    //
-    Identifier idLength("length");
-    Identifier idAction("action");
-    Identifier idCmd("cmd");
-    Identifier idCmdEnd("cmdend");
-    Identifier idParamList("paramlist");
-    Identifier idMeaning("meaning");
-    Identifier idValue("value");
-    Identifier idDataSrc("datasrc");
-    Identifier idDataLen("datalen");
-    Identifier idDataAddr("dataaddr");
-    Identifier idDataActualLen("dataactuallen");
-    //
     ValueTree ret("command");
-    ValueTree paramlist, param, desc;
+    ValueTree param, desc;
     String action, meaning, datasrc;
     int i, len, paramlen, paramindex, cmdoffset, paramvalue, datalen;
     uint8 c, d;
@@ -110,9 +113,8 @@ ValueTree SeqFile::getCommand(uint32 address, int stype){
         cmdoffset = c - (int)ret.getProperty(idCmd, 0);
         action = desc.getProperty(idAction, "No Action");
         //DBG(ROM::hex((uint32)address, 6) + ": " + ROM::hex(c) + " " + action);
-        paramlist = ret.getChildWithName(idParamList);
-        for(paramindex=0; paramindex<paramlist.getNumChildren(); paramindex++){
-            param = paramlist.getChild(paramindex);
+        for(paramindex=0; paramindex<ret.getNumChildren(); paramindex++){
+            param = ret.getChild(paramindex);
             meaning = param.getProperty(idMeaning, "None");
             //Get the value of this parameter
             paramvalue = 0;
@@ -199,9 +201,6 @@ ValueTree SeqFile::getCommand(uint32 address, int stype){
 }
 
 int SeqFile::getAdjustedValue(const ValueTree& param){
-    Identifier idValue("value");
-    Identifier idAdd("add");
-    Identifier idMultiply("multiply");
     if(!param.hasProperty(idValue)) return 0;
     int origvalue = (int)param.getProperty(idValue);
     //Add first
@@ -241,13 +240,30 @@ String SeqFile::getSectionDescription(int s){
     SeqData* sec = sections[s];
     String ret = "@" + ROM::hex(sec->address, 4) + ": ";
     if(sec->stype == 0){
-        ret += "Seq Hdr";
+        ret += "Seq -- --";
     }else if(sec->stype == 1){
-        ret += "Chn " + String(sec->channel);
+        ret += "Chn " + String(sec->channel).paddedLeft(' ', 2) + " --";
     }else{
-        ret += "Tk c " + String(sec->channel) + " ly " + String(sec->layer);
+        ret += "Trk " + String(sec->channel).paddedLeft(' ', 2) + " " + String(sec->layer).paddedLeft(' ', 2);
     }
-    ret += ", " + String(sec->cmdoffsets.size()) + " events";
+    ret += " " + String(sec->cmdoffsets.size());
+    return ret;
+}
+
+String SeqFile::getCommandDescription(int s, int c){
+    if(s < 0 || s >= sections.size()) return "";
+    String ret = "";
+    SeqData* section = sections[s];
+    if(c < 0 || c >= section->cmdoffsets.size()) return "";
+    uint32 a = section->cmdoffsets[c];
+    ValueTree cmd = getCommand(a, section->stype);
+    int len = cmd.getProperty(idLength, 1);
+    for(int i=0; i<len; i++){
+        ret += ROM::hex(data->readByte(a+i)) + " ";
+    }
+    ret = ret.paddedRight(' ', 15);
+    ret = "@" + ROM::hex(a, 4) + ": " + ret;
+    ret += cmd.getProperty(idName, "[Unknown Cmd]").toString();
     return ret;
 }
 
@@ -255,21 +271,18 @@ void SeqFile::insertSpaceAt(uint32 address, int size){
     //Fix pointers
     SeqData* sec;
     ValueTree command, param;
+    String action;
     int c;
-    uint32 a, oldaddr;
+    uint32 a, datalen;
+    int relvalue;
     for(int s=0; s<sections.size(); s++){
         sec = sections[s];
-        if(sec->address >= address) sec->address += size;
+        if(sec->address >= address){
+            sec->address += size;
+        }
         for(c=0; c<sec->cmdoffsets.size(); c++){
             a = sec->cmdoffsets[c];
-            command = getCommand(a, sec->stype);
-            param = command.getChildWithProperty("meaning", "address");
-            if(param.isValid()){
-                oldaddr = (int)param.getProperty("value", 0);
-                if(oldaddr >= address){
-                    editCmdParam(a, sec->stype, "address", oldaddr + size);
-                }
-            }
+            editCmdPointer(a, sec->stype, address, size);
             if(a >= address){
                 sec->cmdoffsets.set(c, a + size);
             }
@@ -294,16 +307,7 @@ void SeqFile::removeData(uint32 address, int size){
         }
         for(c=0; c<sec->cmdoffsets.size(); c++){
             a = sec->cmdoffsets[c];
-            command = getCommand(a, sec->stype);
-            param = command.getChildWithProperty("meaning", "address");
-            if(param.isValid()){
-                oldaddr = (int)param.getProperty("value", 0);
-                if(oldaddr >= address){
-                    oldaddr -= size;
-                    if(oldaddr < address) oldaddr = address;
-                    editCmdParam(a, sec->stype, "address", oldaddr);
-                }
-            }
+            editCmdPointer(a, sec->stype, address, 0-size);
             if(a >= address){
                 a -= size;
                 if(a < address) a = address;
@@ -315,20 +319,87 @@ void SeqFile::removeData(uint32 address, int size){
     data->removeSection(address, size);
 }
 
-void SeqFile::editCmdParam(uint32 address, int stype, String meaning, int newvalue){
+void SeqFile::editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize){
+    ValueTree command = getCommand(cmdaddr, stype);
+    String action = command.getProperty(idAction);
+    //Fix absolute pointers
+    ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
+    if(param.isValid()){
+        if(param.getProperty(idDataSrc, "fixed").toString() != "fixed"){
+            DBG("Address command parameters must be fixed-length! (in " + action + ")");
+            return;
+        }
+        int oldvalue = (int)param.getProperty(idValue, 0);
+        //DBG("Absolute Address value found, " + ROM::hex((uint32)oldvalue,4));
+        if(oldvalue >= daddr){
+            int newvalue = oldvalue + dsize;
+            int datalen = (int)param.getProperty(idDataLen, 1);
+            //Check out-of-range
+            if(newvalue < 0 || newvalue >= (1 << (datalen << 3))){ //8-bit for one, 16-bit for two...
+                DBG("Absolute address pointer going out-of-range @" + ROM::hex(cmdaddr,4) 
+                        + " in " + action + ", now " + String(newvalue) + "!");
+                return;
+            }
+            int a = cmdaddr + (int)param.getProperty(idDataAddr, 1);
+            for(int i=a+datalen-1; i>=a; i--){
+                data->writeByte(i, (newvalue & 0xFF));
+                newvalue >>= 8;
+            }
+        }
+    }
+    //Fix relative pointers
+    param = command.getChildWithProperty(idMeaning, "Relative Address");
+    if(param.isValid()){
+        if(param.getProperty(idDataSrc, "fixed").toString() != "fixed"){
+            DBG("Address command parameters must be fixed-length! (in " + action + ")");
+            return;
+        }
+        int oldvalue = (int)param.getProperty(idValue, 0);
+        //DBG("Relative address value @" + ROM::hex(cmdaddr,4) + " parsed to " + String(oldvalue));
+        int newvalue = 0;
+        int datalen = (int)param.getProperty(idDataLen, 1);
+        if(cmdaddr >= daddr && (int)cmdaddr + oldvalue < daddr){
+            newvalue = oldvalue - dsize;
+        }else if(cmdaddr < daddr && (int)cmdaddr + oldvalue >= daddr){
+            newvalue = oldvalue + dsize;
+        }else{
+            return;
+        }
+        //Check out-of-range
+        int max_value = (1 << ((datalen << 3) - 1)) - 1; //7-bit for one, 15-bit for two...
+        if(newvalue < 0 - max_value || newvalue > max_value){
+            DBG("Relative address pointer going out-of-range @" + ROM::hex(cmdaddr,4) 
+                    + " in " + action + ", now " + String(newvalue) + "!");
+            return;
+        }
+        int a = cmdaddr + (int)param.getProperty(idDataAddr, 1);
+        for(int i=a+datalen-1; i>=a; i--){
+            data->writeByte(i, (newvalue & 0xFF));
+            newvalue >>= 8;
+        }
+    }
+}
+
+int SeqFile::editCmdParam(uint32 address, int stype, String meaning, int newvalue){
+    DBG("Editing command parameter @" + ROM::hex(address,4) + " stype " + String(stype) + " " + meaning + " to " + ROM::hex((uint32)newvalue));
+    int ret = 0;
     ValueTree command = getCommand(address, stype);
-    ValueTree param = command.getChildWithProperty("meaning", meaning);
+    ValueTree param = command.getChildWithProperty(idMeaning, meaning);
+    int value = param.getProperty(idValue, 0);
+    if(newvalue == value) return 0;
     if(!param.isValid()){
         DBG("Error: asked to edit command parameter with meaning " + meaning + ", does not exist!");
-        return;
+        return -1;
     }
-    uint32 a = address + (int)param.getProperty("dataaddr", 1);
-    String datasrc = param.getProperty("datasrc", "fixed");
-    int datalen = param.getProperty("datalen", 1);
-    int dataactuallen = param.getProperty("dataactuallen", 1);
-    int value = param.getProperty("value", 0);
+    uint32 a = address + (int)param.getProperty(idDataAddr, 1);
+    String datasrc = param.getProperty(idDataSrc, "fixed");
+    int datalen = param.getProperty(idDataLen, 1);
+    int dataactuallen = param.getProperty(idDataActualLen, 1);
     if(datasrc == "offset"){
-        data->writeByte(a, data->readByte(a) - value + newvalue);
+        int cmdbegin = command.getProperty(idCmd, 0);
+        int cmdend = command.getProperty(idCmdEnd, 0);
+        if(newvalue > (cmdend - cmdbegin) || newvalue < 0) return -1;
+        data->writeByte(a, cmdbegin + newvalue);
     }else if(datasrc == "fixed"){
         for(int i=a+datalen-1; i>=a; i--){
             data->writeByte(i, (newvalue & 0xFF));
@@ -339,13 +410,14 @@ void SeqFile::editCmdParam(uint32 address, int stype, String meaning, int newval
         if(datalen == 1){
             if(newvalue > 0x7F) newvalue = 0x7F;
             if(value == 0){
-                if(newvalue == 0) return;
                 //Make room for value
                 insertSpaceAt(a, 1);
+                ret = 1;
                 data->writeByte(a, newvalue);
             }else{
                 if(newvalue == 0){
                     removeData(a, 1);
+                    ret = 1;
                 }else{
                     data->writeByte(a, newvalue);
                 }
@@ -354,8 +426,10 @@ void SeqFile::editCmdParam(uint32 address, int stype, String meaning, int newval
             if(newvalue >= 0x8000) newvalue = 0x8000;
             if(value <= 0x7F && newvalue >= 0x80){
                 insertSpaceAt(a+1, 1);
+                ret = 1;
             }else if(value >= 0x80 && newvalue <= 0x7F){
                 removeData(a+1, 1);
+                ret = 1;
             }
             if(newvalue <= 0x7F){
                 data->writeByte(a, newvalue);
@@ -365,24 +439,19 @@ void SeqFile::editCmdParam(uint32 address, int stype, String meaning, int newval
             }
         }else{
             DBG("Due to SeqFile variable length format, length > 2 not defined!");
+            return -1;
         }
     }else{
          DBG("Invalid command description! datasrc == " + datasrc);
+         return -1;
     }
+    return ret;
 }
 
 void SeqFile::parse(){
     sections.clear();
     DBG("Sequence starts with " + ROM::hex(data->readWord(0)) + ROM::hex(data->readWord(4)));
-    //
-    Identifier idLength("length");
-    Identifier idCmd("cmd");
-    Identifier idAction("action");
-    Identifier idParamList("paramlist");
-    Identifier idMeaning("meaning");
-    Identifier idValue("value");
-    //
-    ValueTree command, paramlist, param;
+    ValueTree command, param;
     String action, meaning;
     int cmdlen, channel, notelayer, value;
     uint32 a = 0;
@@ -406,7 +475,6 @@ void SeqFile::parse(){
         cmdlen = (int)command.getProperty(idLength, 1);
         a += cmdlen;
         action = command.getProperty(idAction, "Unknown");
-        paramlist = command.getChildWithName(idParamList);
         //Normal actions
         if(action == "Unknown"){
             //do nothing
@@ -426,17 +494,27 @@ void SeqFile::parse(){
         }else if(action == "Timestamp"){
             //do nothing
         }else if(action == "Ptr Channel Header"){
-            param = paramlist.getChildWithProperty(idMeaning, "Address");
-            if(!param.isValid()){
-                DBG("Ptr Channel Header with no address value!");
+            param = command.getChildWithProperty(idMeaning, "Absolute Address");
+            if(param.isValid()){
+                address = getAdjustedValue(param);
+            }else{
+                param = command.getChildWithProperty(idMeaning, "Relative Address");
+                if(param.isValid()){
+                    address = (int)getAdjustedValue(param) + (int)a;
+                }else{
+                    DBG("Ptr Channel Header with no address value!");
+                    continue;
+                }
+            }
+            if(address >= data->getSize()){
+                DBG("@" + ROM::hex(a,4) + ": Pointer off end of sequence to " + ROM::hex(address,4) + ", skipping!");
                 continue;
             }
-            address = getAdjustedValue(param);
             if(isSectionAt(address)){
                 //Already have gone there, skip
                 continue;
             }
-            param = paramlist.getChildWithProperty(idMeaning, "Channel");
+            param = command.getChildWithProperty(idMeaning, "Channel");
             if(param.isValid()){
                 channel = getAdjustedValue(param);
             }
@@ -449,7 +527,7 @@ void SeqFile::parse(){
             sectionstack[stackptr] = sec;
             stackptr++;
             if(stackptr >= stack_size){
-                DBG("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
+                DBG("FATAL: Stack Overflow SeqFile::parse()!");
                 break;
             }
             a = address;
@@ -460,17 +538,27 @@ void SeqFile::parse(){
         }else if(action == "Ptr Loop Start"){
             //do nothing
         }else if(action == "Ptr Track Data"){
-            param = paramlist.getChildWithProperty(idMeaning, "Address");
-            if(!param.isValid()){
-                DBG("Ptr Track Data with no address value!");
+            param = command.getChildWithProperty(idMeaning, "Absolute Address");
+            if(param.isValid()){
+                address = getAdjustedValue(param);
+            }else{
+                param = command.getChildWithProperty(idMeaning, "Relative Address");
+                if(param.isValid()){
+                    address = (int)getAdjustedValue(param) + (int)a;
+                }else{
+                    DBG("Ptr Track Data with no address value!");
+                    continue;
+                }
+            }
+            if(address >= data->getSize()){
+                DBG("@" + ROM::hex(a,4) + ": Pointer off end of sequence to " + ROM::hex(address,4) + ", skipping!");
                 continue;
             }
-            address = getAdjustedValue(param);
             if(isSectionAt(address)){
                 //Already have gone there, skip
                 continue;
             }
-            param = paramlist.getChildWithProperty(idMeaning, "Note Layer");
+            param = command.getChildWithProperty(idMeaning, "Note Layer");
             if(!param.isValid()){
                 DBG("Ptr Track Data with no note layer value!");
                 continue;
@@ -481,7 +569,7 @@ void SeqFile::parse(){
             sectionstack[stackptr] = sec;
             stackptr++;
             if(stackptr >= stack_size){
-                DBG("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
+                DBG("FATAL: Stack Overflow SeqFile::parse()!");
                 break;
             }
             a = address;
@@ -491,12 +579,22 @@ void SeqFile::parse(){
             sec->channel = channel;
             sec->layer = notelayer;
         }else if(action == "Ptr More Track Data"){
-            param = paramlist.getChildWithProperty(idMeaning, "Address");
-            if(!param.isValid()){
-                DBG("Ptr More Track Data with no address value!");
+            param = command.getChildWithProperty(idMeaning, "Absolute Address");
+            if(param.isValid()){
+                address = getAdjustedValue(param);
+            }else{
+                param = command.getChildWithProperty(idMeaning, "Relative Address");
+                if(param.isValid()){
+                    address = (int)getAdjustedValue(param) + (int)a;
+                }else{
+                    DBG("Ptr More Track Data with no address value!");
+                    continue;
+                }
+            }
+            if(address >= data->getSize()){
+                DBG("@" + ROM::hex(a,4) + ": Pointer off end of sequence to " + ROM::hex(address,4) + ", skipping!");
                 continue;
             }
-            address = getAdjustedValue(param);
             if(isSectionAt(address)){
                 //Already have gone there, skip
                 continue;
@@ -506,7 +604,7 @@ void SeqFile::parse(){
             sectionstack[stackptr] = sec;
             stackptr++;
             if(stackptr >= stack_size){
-                DBG("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
+                DBG("FATAL: Stack Overflow SeqFile::parse()!");
                 break;
             }
             a = address;
@@ -547,168 +645,9 @@ void SeqFile::parse(){
     }
 }
 
-/*
-void SeqFile::parse(){
-    sections.clear();
-    //
-    Identifier idLength("length");
-    Identifier idAction("action");
-    Identifier idParamList("paramlist");
-    Identifier idMeaning("meaning");
-    ValueTree desc, command, param, paramlist;
-    uint32 address;
-    String action, meaning, datasrc;
-    uint8 c;
-    SeqData* seqdata;
-    SeqData* reading;
-    int channel = 0, notelayer = 0;
-    //Sequence Header
-    DBG("Parsing header");
-    int p = 0;
-    while(p < data->getSize()){
-        hdrcmdoffsets.add(p);
-        command = getCommand(p, 0);
-        p += (int)command.getProperty(idLength, 1);
-        action = command.getProperty(idAction, "No Action");
-        paramlist = command.getChildWithName(idParamList);
-        //Consider parameter action
-        if(action == "End of Data"){
-            DBG("End of Sequence Header");
-            p = 10000000; //Exit loop
-        }else if(action == "Ptr Channel Header"){
-            param = paramlist.getChildWithProperty(idMeaning, "Address");
-            if(!param.isValid()){
-                DBG("Ptr Channel Header with no address value!");
-                continue;
-            }
-            address = getAdjustedValue(param);
-            if(isChanHdrAt(address)){
-                DBG("----Ptr Channel Header: already listed @" + ROM::hex((uint32)seqdata->address));
-                continue;
-            }
-            param = paramlist.getChildWithProperty(idMeaning, "Channel");
-            if(param.isValid()){
-                channel = getAdjustedValue(param);
-            }
-            if(channel >= 16){
-                DBG("Ptr Channel Header with channel >= 16!");
-                continue;
-            }
-            seqdata = new SeqData();
-            seqdata->address = address;
-            seqdata->channel = channel;
-            seqdata->layer = -1;
-            seqdata->calldepth = 0;
-            chanhdrs.add(seqdata);
-            //DBG("----Channel " + String(channel) + " data @" + ROM::hex((uint32)seqdata->address));
-        }
-    }
-    //Sequence Channels
-    int ch;
-    for(ch=0; ch<chanhdrs.size(); ch++){
-        reading = chanhdrs[ch];
-        p = reading->address;
-        channel = reading->channel;
-        DBG("Parsing channel hdr @" + ROM::hex((uint32)p, 6) + " channel " + String(channel));
-        while(p < data->getSize()){
-            reading->cmdoffsets.add(p);
-            command = getCommand(p, 1);
-            p += (int)command.getProperty(idLength, 1);
-            action = command.getProperty(idAction, "No Action");
-            paramlist = command.getChildWithName(idParamList);
-            //Consider parameter action
-            if(action == "End of Data"){
-                DBG("End of Channel Header");
-                p = 10000000; //Exit loop
-            }else if(action == "Ptr Track Data"){
-                param = paramlist.getChildWithProperty(idMeaning, "Address");
-                if(!param.isValid()){
-                    DBG("Ptr Track Data with no address value!");
-                    continue;
-                }
-                address = getAdjustedValue(param);
-                if(isTrackAt(address)){
-                    DBG("----Ptr Track Data: already listed @" + ROM::hex((uint32)seqdata->address));
-                    continue;
-                }
-                param = paramlist.getChildWithProperty(idMeaning, "Note Layer");
-                if(!param.isValid()){
-                    DBG("Ptr Track Data with no note layer value!");
-                    continue;
-                }
-                notelayer = getAdjustedValue(param);
-                seqdata = new SeqData();
-                seqdata->address = address;
-                seqdata->channel = channel;
-                seqdata->layer = notelayer;
-                seqdata->calldepth = 0;
-                tracks.add(seqdata);
-                //DBG("----Track ch " + String(channel) + " layer " + String(seqdata->layer) 
-                //        + " data @" + ROM::hex((uint32)seqdata->address));
-            }
-        }
-    }
-    //Sequence Tracks
-    const int MAX_CALLDEPTH = 4;
-    int tk;
-    for(tk=0; tk<tracks.size(); tk++){
-        reading = tracks[tk];
-        p = reading->address;
-        channel = reading->channel;
-        notelayer = reading->layer;
-        DBG("Parsing track @" + ROM::hex((uint32)p, 6) + " channel " + String(channel) + " layer " + String(notelayer));
-        while(p < data->getSize()){
-            reading->cmdoffsets.add(p);
-            command = getCommand(p, 2);
-            p += (int)command.getProperty(idLength, 1);
-            action = command.getProperty(idAction, "No Action");
-            paramlist = command.getChildWithName(idParamList);
-            //Consider parameter action
-            if(action == "End of Data"){
-                DBG("End of Track");
-                p = 10000000; //Exit loop
-            }else if(action == "Ptr More Track Data"){
-                if(reading->calldepth >= MAX_CALLDEPTH){
-                    DBG("Track data call stack overflow @" + ROM::hex((uint32)p, 6) 
-                        + " channel " + String(channel) + " layer " + String(notelayer));
-                    continue;
-                }
-                param = paramlist.getChildWithProperty(idMeaning, "Address");
-                if(!param.isValid()){
-                    DBG("Ptr More Track Data with no address value!");
-                    continue;
-                }
-                address = getAdjustedValue(param);
-                if(isTrackAt(address)){
-                    DBG("----More Track Data: already listed @" + ROM::hex((uint32)seqdata->address));
-                    continue;
-                }
-                seqdata = new SeqData();
-                seqdata->address = address;
-                seqdata->channel = channel;
-                seqdata->layer = notelayer;
-                seqdata->calldepth = reading->calldepth + 1;
-                tracks.add(seqdata);
-                //DBG("----More Track Data ch " + String(channel) + " layer " + String(seqdata->layer) 
-                //        + " data @" + ROM::hex((uint32)seqdata->address));
-            }
-        }
-    }
-}
-*/
-
-
 
 MidiFile* SeqFile::toMIDIFile(){
-    //
-    Identifier idLength("length");
-    Identifier idCmd("cmd");
-    Identifier idAction("action");
-    Identifier idParamList("paramlist");
-    Identifier idMeaning("meaning");
-    Identifier idValue("value");
-    //
-    ValueTree command, paramlist, param;
+    ValueTree command, param;
     String action, meaning;
     int channel, notelayer, value, transpose, delay, note, velocity, gate;
     bool qDelay, qVelocity, qGate;
@@ -765,7 +704,6 @@ MidiFile* SeqFile::toMIDIFile(){
         command = getCommand(a, stype);
         a += (int)command.getProperty(idLength, 1);
         action = command.getProperty(idAction, "Unknown");
-        paramlist = command.getChildWithName(idParamList);
         //Sequence header command times
         if(stype == 0){
             for(; seqhdr_addr<a; seqhdr_addr++){
@@ -773,7 +711,7 @@ MidiFile* SeqFile::toMIDIFile(){
             }
         }
         //Pre-delay
-        param = paramlist.getChildWithProperty(idMeaning, "Pre-Delay");
+        param = command.getChildWithProperty(idMeaning, "Pre-Delay");
         if(param.isValid()){
             delay = getAdjustedValue(param);
             t += delay;
@@ -803,13 +741,23 @@ MidiFile* SeqFile::toMIDIFile(){
         }else if(action == "Timestamp"){
             //do nothing, taken care of by pre- and post-delays
         }else if(action == "Ptr Channel Header"){
-            param = paramlist.getChildWithProperty(idMeaning, "Address");
-            if(!param.isValid()){
-                DBG("Ptr Channel Header with no address value!");
+            param = command.getChildWithProperty(idMeaning, "Absolute Address");
+            if(param.isValid()){
+                address = getAdjustedValue(param);
+            }else{
+                param = command.getChildWithProperty(idMeaning, "Relative Address");
+                if(param.isValid()){
+                    address = (int)getAdjustedValue(param) + (int)a;
+                }else{
+                    DBG("Ptr Channel Header with no address value!");
+                    continue;
+                }
+            }
+            if(address >= data->getSize()){
+                DBG("@" + ROM::hex(a,4) + ": Pointer off end of sequence to " + ROM::hex(address,4) + ", skipping!");
                 continue;
             }
-            address = getAdjustedValue(param);
-            param = paramlist.getChildWithProperty(idMeaning, "Channel");
+            param = command.getChildWithProperty(idMeaning, "Channel");
             if(param.isValid()){
                 channel = getAdjustedValue(param);
             }
@@ -831,12 +779,22 @@ MidiFile* SeqFile::toMIDIFile(){
             gate = 0xFF;
             //DBG("----T" + ROM::hex(t, 6) + ": Entering Chan " + String(channel) + " Hdr");
         }else if(action == "Ptr Loop Start"){
-            param = paramlist.getChildWithProperty(idMeaning, "Address");
-            if(!param.isValid()){
-                DBG("Ptr Loop Start with no address value!");
+            param = command.getChildWithProperty(idMeaning, "Absolute Address");
+            if(param.isValid()){
+                address = getAdjustedValue(param);
+            }else{
+                param = command.getChildWithProperty(idMeaning, "Relative Address");
+                if(param.isValid()){
+                    address = (int)getAdjustedValue(param) + (int)a;
+                }else{
+                    DBG("Ptr Loop Start with no address value!");
+                    continue;
+                }
+            }
+            if(address >= data->getSize()){
+                DBG("@" + ROM::hex(a,4) + ": Pointer off end of sequence to " + ROM::hex(address,4) + ", skipping!");
                 continue;
             }
-            address = getAdjustedValue(param);
             if(address >= seqhdr_times.size()){
                 DBG("Ptr Loop Start points to @" + ROM::hex((uint32)address, 4) + ", unknown time!");
                 continue;
@@ -852,13 +810,23 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(value*ticks_multiplier);
             mastertrack.addEvent(msg);
         }else if(action == "Ptr Track Data"){
-            param = paramlist.getChildWithProperty(idMeaning, "Address");
-            if(!param.isValid()){
-                DBG("Ptr Track Data with no address value!");
+            param = command.getChildWithProperty(idMeaning, "Absolute Address");
+            if(param.isValid()){
+                address = getAdjustedValue(param);
+            }else{
+                param = command.getChildWithProperty(idMeaning, "Relative Address");
+                if(param.isValid()){
+                    address = (int)getAdjustedValue(param) + (int)a;
+                }else{
+                    DBG("Ptr Track Data with no address value!");
+                    continue;
+                }
+            }
+            if(address >= data->getSize()){
+                DBG("@" + ROM::hex(a,4) + ": Pointer off end of sequence to " + ROM::hex(address,4) + ", skipping!");
                 continue;
             }
-            address = getAdjustedValue(param);
-            param = paramlist.getChildWithProperty(idMeaning, "Note Layer");
+            param = command.getChildWithProperty(idMeaning, "Note Layer");
             if(!param.isValid()){
                 DBG("Ptr Track Data with no note layer value!");
                 continue;
@@ -877,12 +845,22 @@ MidiFile* SeqFile::toMIDIFile(){
             //DBG("----====T" + ROM::hex(t, 6) + ": Entering Track layer " + String(notelayer));
             //DBG("@" + ROM::hex(a, 6) + ": Track Data " + String(notelayer));
         }else if(action == "Ptr More Track Data"){
-            param = paramlist.getChildWithProperty(idMeaning, "Address");
-            if(!param.isValid()){
-                DBG("Ptr More Track Data with no address value!");
+            param = command.getChildWithProperty(idMeaning, "Absolute Address");
+            if(param.isValid()){
+                address = getAdjustedValue(param);
+            }else{
+                param = command.getChildWithProperty(idMeaning, "Relative Address");
+                if(param.isValid()){
+                    address = (int)getAdjustedValue(param) + (int)a;
+                }else{
+                    DBG("Ptr More Track Data with no address value!");
+                    continue;
+                }
+            }
+            if(address >= data->getSize()){
+                DBG("@" + ROM::hex(a,4) + ": Pointer off end of sequence to " + ROM::hex(address,4) + ", skipping!");
                 continue;
             }
-            address = getAdjustedValue(param);
             addrstack[stackptr] = a;
             timestack[stackptr] = 100000; //This value should never be popped!
             stypestack[stackptr] = stype;
@@ -893,7 +871,7 @@ MidiFile* SeqFile::toMIDIFile(){
             }
             a = address;
         }else if(action == "Master Volume"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Master Volume event with no value!");
                 continue;
@@ -939,7 +917,7 @@ MidiFile* SeqFile::toMIDIFile(){
                 mtracks[channel]->addEvent(msg);
             }
         }else if(action == "Tempo"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Tempo event with no value!");
                 continue;
@@ -950,7 +928,7 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mastertrack.addEvent(msg);
         }else if(action == "Chn Priority"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Chn Priority event with no value!");
                 continue;
@@ -971,7 +949,7 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Volume"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Chn Volume event with no value!");
                 continue;
@@ -990,7 +968,7 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Pan"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Chn Pan event with no value!");
                 continue;
@@ -1000,7 +978,7 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Effects"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Chn Effects event with no value!");
                 continue;
@@ -1010,7 +988,7 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Vibrato"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Chn Vibrato event with no value!");
                 continue;
@@ -1020,7 +998,7 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Pitch Bend"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Chn Pitch Bend event with no value!");
                 continue;
@@ -1035,7 +1013,7 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Transpose"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Chn Transpose event with no value!");
                 continue;
@@ -1046,7 +1024,7 @@ MidiFile* SeqFile::toMIDIFile(){
                 transposes.set((channel*max_layers)+i, value);
             }
         }else if(action == "Layer Transpose"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Layer Transpose event with no value!");
                 continue;
@@ -1055,7 +1033,7 @@ MidiFile* SeqFile::toMIDIFile(){
             if(value >= 0x80) value -= 0x100;
             transposes.set((channel*max_layers)+notelayer, value);
         }else if(action == "Chn Instrument"){
-            param = paramlist.getChildWithProperty(idMeaning, "Value");
+            param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 DBG("Chn Instrument event with no value!");
                 continue;
@@ -1069,7 +1047,7 @@ MidiFile* SeqFile::toMIDIFile(){
             qDelay = qVelocity = qGate = false;
             //Delay already taken care of
             //Note
-            param = paramlist.getChildWithProperty(idMeaning, "Note");
+            param = command.getChildWithProperty(idMeaning, "Note");
             if(!param.isValid()){
                 DBG("Track Note event with no note!");
                 continue;
@@ -1087,13 +1065,13 @@ MidiFile* SeqFile::toMIDIFile(){
                 continue;
             }
             //Velocity
-            param = paramlist.getChildWithProperty(idMeaning, "Velocity");
+            param = command.getChildWithProperty(idMeaning, "Velocity");
             if(param.isValid()){
                 velocity = getAdjustedValue(param);
                 qVelocity = true;
             }
             //Gate time
-            param = paramlist.getChildWithProperty(idMeaning, "Gate Time");
+            param = command.getChildWithProperty(idMeaning, "Gate Time");
             if(param.isValid()){
                 gate = getAdjustedValue(param);
                 qGate = true;
@@ -1101,7 +1079,7 @@ MidiFile* SeqFile::toMIDIFile(){
                 gate = 0;
             }
             //Fetch post-delay to get gate time proportion
-            param = paramlist.getChildWithProperty(idMeaning, "Post-Delay");
+            param = command.getChildWithProperty(idMeaning, "Post-Delay");
             if(param.isValid()){
                 delay = getAdjustedValue(param);
                 qDelay = true;
@@ -1111,7 +1089,7 @@ MidiFile* SeqFile::toMIDIFile(){
                 param = ValueTree("parameter");
                 param.setProperty(idMeaning, "Post-Delay", nullptr);
                 param.setProperty(idValue, delay, nullptr);
-                paramlist.addChild(param, paramlist.getNumChildren(), nullptr);
+                command.addChild(param, command.getNumChildren(), nullptr);
             }
             /*
             DBG("@" + ROM::hex(a, 4) + " c " + ROM::hex((uint8)channel, 1) + " l " + ROM::hex((uint8)notelayer, 1)
@@ -1132,7 +1110,7 @@ MidiFile* SeqFile::toMIDIFile(){
             DBG("Unknown command action " + action + "!");
         }
         //Post-delay
-        param = paramlist.getChildWithProperty(idMeaning, "Post-Delay");
+        param = command.getChildWithProperty(idMeaning, "Post-Delay");
         if(param.isValid()){
             delay = getAdjustedValue(param);
             t += delay;

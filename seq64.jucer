@@ -19,8 +19,6 @@
       <FILE id="wiy2KP" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
       <FILE id="Tp4gdP" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
-      <FILE id="szZgoM" name="MainView.cpp" compile="1" resource="0" file="Source/MainView.cpp"/>
-      <FILE id="KQ8a1t" name="MainView.h" compile="0" resource="0" file="Source/MainView.h"/>
       <FILE id="L9tM8e" name="ROM.cpp" compile="1" resource="0" file="Source/ROM.cpp"/>
       <FILE id="dFvgHy" name="ROM.h" compile="0" resource="0" file="Source/ROM.h"/>
       <FILE id="GI153n" name="SeqFile.cpp" compile="1" resource="0" file="Source/SeqFile.cpp"/>

@@ -34,10 +34,12 @@ class TextListModel : public ListBoxModel {
     void selectedRowsChanged(int lastRowSelected);
     
     void setListener(Listener* l);
+    void setFont(Font newfont);
     
     private:
     StringArray strings;
     Listener* listener;
+    Font font;
 };
 
 

@@ -35,6 +35,15 @@ AudioseqPane::AudioseqPane (AppProps& props)
     addAndMakeVisible (groupComponent = new GroupComponent ("new group",
                                                             TRANS("Loaded Sequence")));
 
+    addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
+                                                             TRANS("Section is")));
+
+    addAndMakeVisible (groupComponent4 = new GroupComponent ("new group",
+                                                             TRANS("MIDI File")));
+
+    addAndMakeVisible (groupComponent7 = new GroupComponent ("new group",
+                                                             TRANS("Export Settings")));
+
     addAndMakeVisible (groupComponent3 = new GroupComponent ("new group",
                                                              TRANS("Command Editor")));
 
@@ -305,52 +314,39 @@ AudioseqPane::AudioseqPane (AppProps& props)
     btnCmdDn->addListener (this);
 
     addAndMakeVisible (label3 = new Label ("new label",
-                                           TRANS("Sections:")));
-    label3->setFont (Font (15.00f, Font::plain));
+                                           TRANS("@Addr: Typ Ch Ly Events")));
+    label3->setFont (Font (Font::getDefaultMonospacedFontName(), 14.00f, Font::plain));
     label3->setJustificationType (Justification::centredLeft);
     label3->setEditable (false, false, false);
     label3->setColour (TextEditor::textColourId, Colours::black);
     label3->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (btnSecAdd = new TextButton ("new button"));
-    btnSecAdd->setButtonText (TRANS("Add"));
-    btnSecAdd->setConnectedEdges (Button::ConnectedOnRight);
-    btnSecAdd->addListener (this);
-
-    addAndMakeVisible (btnSecDelete = new TextButton ("new button"));
-    btnSecDelete->setButtonText (TRANS("Del"));
-    btnSecDelete->setConnectedEdges (Button::ConnectedOnLeft);
-    btnSecDelete->addListener (this);
-
     addAndMakeVisible (label4 = new Label ("new label",
-                                           TRANS("Commands:")));
-    label4->setFont (Font (15.00f, Font::plain));
+                                           TRANS("@Addr: Data           Command")));
+    label4->setFont (Font (Font::getDefaultMonospacedFontName(), 14.00f, Font::plain));
     label4->setJustificationType (Justification::centredLeft);
     label4->setEditable (false, false, false);
     label4->setColour (TextEditor::textColourId, Colours::black);
     label4->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
-                                                             TRANS("Interpret As")));
-
     addAndMakeVisible (optSecSeq = new ToggleButton ("new toggle button"));
-    optSecSeq->setButtonText (TRANS("Seq header"));
+    optSecSeq->setButtonText (TRANS("Seq Hdr"));
     optSecSeq->setRadioGroupId (2);
     optSecSeq->addListener (this);
 
     addAndMakeVisible (optSecChn = new ToggleButton ("new toggle button"));
-    optSecChn->setButtonText (TRANS("Chn header"));
+    optSecChn->setButtonText (TRANS("Chn Hdr"));
     optSecChn->setRadioGroupId (2);
     optSecChn->addListener (this);
 
     addAndMakeVisible (optSecTrk = new ToggleButton ("new toggle button"));
-    optSecTrk->setButtonText (TRANS("Track data"));
+    optSecTrk->setButtonText (TRANS("Trk Data"));
     optSecTrk->setRadioGroupId (2);
     optSecTrk->addListener (this);
 
     addAndMakeVisible (btnSeqCmdAdd = new TextButton ("new button"));
     btnSeqCmdAdd->setButtonText (TRANS("Add"));
-    btnSeqCmdAdd->setConnectedEdges (Button::ConnectedOnRight);
+    btnSeqCmdAdd->setConnectedEdges (Button::ConnectedOnLeft | Button::ConnectedOnRight);
     btnSeqCmdAdd->addListener (this);
 
     addAndMakeVisible (btnSeqCmdDelete = new TextButton ("new button"));
@@ -368,28 +364,12 @@ AudioseqPane::AudioseqPane (AppProps& props)
     btnSeqCmdDn->setConnectedEdges (Button::ConnectedOnLeft);
     btnSeqCmdDn->addListener (this);
 
-    addAndMakeVisible (label5 = new Label ("new label",
-                                           TRANS("Command:")));
-    label5->setFont (Font (15.00f, Font::plain));
-    label5->setJustificationType (Justification::centredLeft);
-    label5->setEditable (false, false, false);
-    label5->setColour (TextEditor::textColourId, Colours::black);
-    label5->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
     addAndMakeVisible (cbxSeqCmdType = new ComboBox ("new combo box"));
     cbxSeqCmdType->setEditableText (false);
     cbxSeqCmdType->setJustificationType (Justification::centredLeft);
-    cbxSeqCmdType->setTextWhenNothingSelected (String::empty);
+    cbxSeqCmdType->setTextWhenNothingSelected (TRANS("[Command to add]"));
     cbxSeqCmdType->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
     cbxSeqCmdType->addListener (this);
-
-    addAndMakeVisible (label6 = new Label ("new label",
-                                           TRANS("Parameters:")));
-    label6->setFont (Font (15.00f, Font::plain));
-    label6->setJustificationType (Justification::centredLeft);
-    label6->setEditable (false, false, false);
-    label6->setColour (TextEditor::textColourId, Colours::black);
-    label6->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
     addAndMakeVisible (label7 = new Label ("new label",
                                            TRANS("Value:")));
@@ -411,29 +391,18 @@ AudioseqPane::AudioseqPane (AppProps& props)
     addAndMakeVisible (lblSeqInfo = new Label ("new label",
                                                TRANS("Sequence information")));
     lblSeqInfo->setFont (Font (15.00f, Font::plain));
-    lblSeqInfo->setJustificationType (Justification::centredLeft);
+    lblSeqInfo->setJustificationType (Justification::topLeft);
     lblSeqInfo->setEditable (false, false, false);
     lblSeqInfo->setColour (TextEditor::textColourId, Colours::black);
     lblSeqInfo->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (groupComponent4 = new GroupComponent ("new group",
-                                                             TRANS("MIDI File")));
-
-    addAndMakeVisible (lblSeqCmdOutput = new Label ("new label",
-                                                    TRANS("[actual command]")));
-    lblSeqCmdOutput->setFont (Font (15.00f, Font::plain));
-    lblSeqCmdOutput->setJustificationType (Justification::centredLeft);
-    lblSeqCmdOutput->setEditable (false, false, false);
-    lblSeqCmdOutput->setColour (TextEditor::textColourId, Colours::black);
-    lblSeqCmdOutput->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (label19 = new Label ("new label",
-                                            TRANS("Type:")));
-    label19->setFont (Font (15.00f, Font::plain));
-    label19->setJustificationType (Justification::centredLeft);
-    label19->setEditable (false, false, false);
-    label19->setColour (TextEditor::textColourId, Colours::black);
-    label19->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+    addAndMakeVisible (lblSeqCmdAction = new Label ("new label",
+                                                    TRANS("Command Action:")));
+    lblSeqCmdAction->setFont (Font (15.00f, Font::plain));
+    lblSeqCmdAction->setJustificationType (Justification::centredLeft);
+    lblSeqCmdAction->setEditable (false, false, false);
+    lblSeqCmdAction->setColour (TextEditor::textColourId, Colours::black);
+    lblSeqCmdAction->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
     addAndMakeVisible (lblValueEquiv = new Label ("new label",
                                                   TRANS("[dec, note equiv.]")));
@@ -558,6 +527,21 @@ AudioseqPane::AudioseqPane (AppProps& props)
     cbxChnPriority->addItem (TRANS("CC79 (SC10)"), 3);
     cbxChnPriority->addListener (this);
 
+    addAndMakeVisible (groupComponent8 = new GroupComponent ("new group",
+                                                             TRANS("Import Settings")));
+
+    addAndMakeVisible (lblSeqCmdAction2 = new Label ("new label",
+                                                     TRANS("Sections:")));
+    lblSeqCmdAction2->setFont (Font (15.00f, Font::plain));
+    lblSeqCmdAction2->setJustificationType (Justification::centredLeft);
+    lblSeqCmdAction2->setEditable (false, false, false);
+    lblSeqCmdAction2->setColour (TextEditor::textColourId, Colours::black);
+    lblSeqCmdAction2->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (btnReParse = new TextButton ("new button"));
+    btnReParse->setButtonText (TRANS("Re-Parse"));
+    btnReParse->addListener (this);
+
 
     //[UserPreSize]
 
@@ -577,22 +561,24 @@ AudioseqPane::AudioseqPane (AppProps& props)
 
     lsmSeqSections = new TextListModel();
     lsmSeqSections->setListener(this);
+    lsmSeqSections->setFont (Font (Font::getDefaultMonospacedFontName(), 14.00f, Font::plain));
 
-    addAndMakeVisible(lstSeqSections = new ListBox("Sequence", lsmSeqSections));
+    addAndMakeVisible(lstSeqSections = new ListBox("SeqSections", lsmSeqSections));
     lstSeqSections->setMultipleSelectionEnabled(false);
     lstSeqSections->setRowHeight(16);
 
     lsmSeqCommands = new TextListModel();
     lsmSeqCommands->setListener(this);
+    lsmSeqCommands->setFont (Font (Font::getDefaultMonospacedFontName(), 14.00f, Font::plain));
 
-    addAndMakeVisible(lstSeqCommands = new ListBox("Sequence", lsmSeqCommands));
+    addAndMakeVisible(lstSeqCommands = new ListBox("SeqCommands", lsmSeqCommands));
     lstSeqCommands->setMultipleSelectionEnabled(false);
     lstSeqCommands->setRowHeight(16);
 
     lsmSeqCmdParams = new TextListModel();
     lsmSeqCmdParams->setListener(this);
 
-    addAndMakeVisible(lstSeqCmdParams = new ListBox("Sequence", lsmSeqCmdParams));
+    addAndMakeVisible(lstSeqCmdParams = new ListBox("SeqCmdParams", lsmSeqCmdParams));
     lstSeqCmdParams->setMultipleSelectionEnabled(false);
     lstSeqCmdParams->setRowHeight(16);
 
@@ -606,6 +592,7 @@ AudioseqPane::AudioseqPane (AppProps& props)
     txtParamMult->addListener(this);
     txtMIDIBend->addListener(this);
     txtMIDIPPQN->addListener(this);
+    txtSeqCmdValue->addListener(this);
 
 
     cbxMIDIChnVol->setSelectedItemIndex(0, dontSendNotification);
@@ -627,6 +614,9 @@ AudioseqPane::~AudioseqPane()
     //[/Destructor_pre]
 
     groupComponent = nullptr;
+    groupComponent2 = nullptr;
+    groupComponent4 = nullptr;
+    groupComponent7 = nullptr;
     groupComponent3 = nullptr;
     groupComponent6 = nullptr;
     groupComponent5 = nullptr;
@@ -666,10 +656,7 @@ AudioseqPane::~AudioseqPane()
     btnCmdUp = nullptr;
     btnCmdDn = nullptr;
     label3 = nullptr;
-    btnSecAdd = nullptr;
-    btnSecDelete = nullptr;
     label4 = nullptr;
-    groupComponent2 = nullptr;
     optSecSeq = nullptr;
     optSecChn = nullptr;
     optSecTrk = nullptr;
@@ -677,15 +664,11 @@ AudioseqPane::~AudioseqPane()
     btnSeqCmdDelete = nullptr;
     btnSeqCmdUp = nullptr;
     btnSeqCmdDn = nullptr;
-    label5 = nullptr;
     cbxSeqCmdType = nullptr;
-    label6 = nullptr;
     label7 = nullptr;
     txtSeqCmdValue = nullptr;
     lblSeqInfo = nullptr;
-    groupComponent4 = nullptr;
-    lblSeqCmdOutput = nullptr;
-    label19 = nullptr;
+    lblSeqCmdAction = nullptr;
     lblValueEquiv = nullptr;
     btnMIDIExport = nullptr;
     btnMIDIImport = nullptr;
@@ -701,6 +684,9 @@ AudioseqPane::~AudioseqPane()
     label25 = nullptr;
     label26 = nullptr;
     cbxChnPriority = nullptr;
+    groupComponent8 = nullptr;
+    lblSeqCmdAction2 = nullptr;
+    btnReParse = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -731,7 +717,10 @@ void AudioseqPane::paint (Graphics& g)
 
 void AudioseqPane::resized()
 {
-    groupComponent->setBounds (408, 0, 704, 624);
+    groupComponent->setBounds (408, 0, 648, 672);
+    groupComponent2->setBounds (416, 616, 272, 48);
+    groupComponent4->setBounds (0, 480, 400, 272);
+    groupComponent7->setBounds (8, 592, 384, 48);
     groupComponent3->setBounds (0, 0, 400, 480);
     groupComponent6->setBounds (152, 264, 240, 208);
     groupComponent5->setBounds (280, 160, 112, 96);
@@ -770,49 +759,45 @@ void AudioseqPane::resized()
     txtParamMult->setBounds (336, 432, 47, 24);
     btnCmdUp->setBounds (352, 104, 40, 24);
     btnCmdDn->setBounds (352, 128, 40, 24);
-    label3->setBounds (416, 40, 168, 24);
-    btnSecAdd->setBounds (584, 520, 40, 24);
-    btnSecDelete->setBounds (624, 520, 40, 24);
-    label4->setBounds (680, 40, 208, 24);
-    groupComponent2->setBounds (416, 520, 112, 96);
-    optSecSeq->setBounds (424, 536, 104, 24);
-    optSecChn->setBounds (424, 560, 104, 24);
-    optSecTrk->setBounds (424, 584, 104, 24);
-    btnSeqCmdAdd->setBounds (680, 592, 40, 24);
-    btnSeqCmdDelete->setBounds (720, 592, 40, 24);
-    btnSeqCmdUp->setBounds (808, 592, 40, 24);
-    btnSeqCmdDn->setBounds (848, 592, 40, 24);
-    label5->setBounds (928, 40, 176, 24);
-    cbxSeqCmdType->setBounds (928, 112, 176, 24);
-    label6->setBounds (928, 144, 176, 24);
-    label7->setBounds (928, 256, 64, 24);
-    txtSeqCmdValue->setBounds (1000, 256, 102, 24);
-    lblSeqInfo->setBounds (416, 16, 624, 24);
-    groupComponent4->setBounds (0, 480, 400, 144);
-    lblSeqCmdOutput->setBounds (928, 64, 176, 24);
-    label19->setBounds (928, 88, 176, 24);
-    lblValueEquiv->setBounds (928, 280, 176, 24);
+    label3->setBounds (416, 88, 296, 24);
+    label4->setBounds (696, 16, 352, 24);
+    optSecSeq->setBounds (424, 632, 80, 24);
+    optSecChn->setBounds (512, 632, 80, 24);
+    optSecTrk->setBounds (600, 632, 80, 24);
+    btnSeqCmdAdd->setBounds (880, 560, 40, 24);
+    btnSeqCmdDelete->setBounds (920, 560, 40, 24);
+    btnSeqCmdUp->setBounds (968, 560, 40, 24);
+    btnSeqCmdDn->setBounds (1008, 560, 40, 24);
+    cbxSeqCmdType->setBounds (696, 560, 184, 24);
+    label7->setBounds (888, 616, 64, 24);
+    txtSeqCmdValue->setBounds (952, 616, 88, 24);
+    lblSeqInfo->setBounds (416, 16, 272, 40);
+    lblSeqCmdAction->setBounds (696, 592, 352, 24);
+    lblValueEquiv->setBounds (888, 640, 152, 24);
     btnMIDIExport->setBounds (8, 496, 64, 24);
     btnMIDIImport->setBounds (72, 496, 64, 24);
-    label20->setBounds (8, 520, 88, 24);
-    txtMIDIBend->setBounds (96, 520, 32, 24);
-    label21->setBounds (136, 520, 120, 24);
-    txtMIDIPPQN->setBounds (248, 520, 32, 24);
-    label22->setBounds (280, 520, 32, 24);
-    label23->setBounds (8, 544, 136, 24);
-    cbxMIDIChnVol->setBounds (144, 544, 248, 24);
-    label24->setBounds (8, 568, 136, 24);
-    cbxMIDIMtrVol->setBounds (144, 568, 248, 24);
+    label20->setBounds (16, 608, 88, 24);
+    txtMIDIBend->setBounds (104, 608, 32, 24);
+    label21->setBounds (144, 608, 120, 24);
+    txtMIDIPPQN->setBounds (256, 608, 32, 24);
+    label22->setBounds (288, 608, 32, 24);
+    label23->setBounds (8, 520, 136, 24);
+    cbxMIDIChnVol->setBounds (144, 520, 248, 24);
+    label24->setBounds (8, 544, 136, 24);
+    cbxMIDIMtrVol->setBounds (144, 544, 248, 24);
     label25->setBounds (144, 496, 248, 24);
-    label26->setBounds (8, 592, 136, 24);
-    cbxChnPriority->setBounds (144, 592, 248, 24);
+    label26->setBounds (8, 568, 136, 24);
+    cbxChnPriority->setBounds (144, 568, 248, 24);
+    groupComponent8->setBounds (8, 640, 384, 104);
+    lblSeqCmdAction2->setBounds (416, 64, 120, 24);
+    btnReParse->setBounds (536, 64, 150, 24);
     //[UserResized] Add your own custom resize handling here..
 
     lstCommands->setBounds (8, 16, 336, 136);
     lstParameters->setBounds (8, 280, 88, 184);
-    lstSeqSections->setBounds (416, 64, 256, 448);
-    lstSeqCommands->setBounds (680, 64, 240, 520);
-    lstSeqCmdParams->setBounds (928, 168, 176, 80);
+    lstSeqSections->setBounds (416, 112, 272, 496);
+    lstSeqCommands->setBounds (696, 40, 352, 520);
+    lstSeqCmdParams->setBounds (696, 616, 184, 48);
 
     //[/UserResized]
 }
@@ -892,7 +877,6 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
     {
         //[UserButtonCode_btnParamAdd] -- add your button handler code here..
         if(!selcmd.isValid()) return;
-        ValueTree paramlistnode = selcmd.getOrCreateChildWithName("paramlist", nullptr);
         ValueTree param("parameter");
         param.setProperty("datasrc", "fixed", nullptr);
         param.setProperty("datalen", 0, nullptr);
@@ -900,7 +884,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         param.setProperty("meaning", "None", nullptr);
         param.setProperty("add", 0, nullptr);
         param.setProperty("multiply", 1.0f, nullptr);
-        paramlistnode.addChild(param, paramlistnode.getNumChildren(), nullptr);
+        selcmd.addChild(param, selcmd.getNumChildren(), nullptr);
         refreshParamList();
         lstParameters->selectRow(lsmParameters->getNumRows() - 1);
         //[/UserButtonCode_btnParamAdd]
@@ -910,7 +894,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnParamDel] -- add your button handler code here..
         int pos = lstParameters->getLastRowSelected();
         if(pos >= 0){
-            selcmd.getChildWithName("paramlist").removeChild(pos, nullptr);
+            selcmd.removeChild(pos, nullptr);
             refreshParamList();
             lstParameters->selectRow(-1);
         }
@@ -921,7 +905,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnParamUp] -- add your button handler code here..
         int pos = lstParameters->getLastRowSelected();
         if(pos > 0){
-            selcmd.getChildWithName("paramlist").moveChild(pos, pos-1, nullptr);
+            selcmd.moveChild(pos, pos-1, nullptr);
             refreshParamList();
             lstParameters->selectRow(pos-1);
         }
@@ -932,7 +916,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnParamDn] -- add your button handler code here..
         int pos = lstParameters->getLastRowSelected();
         if(pos >= 0 && pos < lsmParameters->getNumRows() - 1){
-            selcmd.getChildWithName("paramlist").moveChild(pos, pos+1, nullptr);
+            selcmd.moveChild(pos, pos+1, nullptr);
             refreshParamList();
             lstParameters->selectRow(pos+1);
         }
@@ -970,16 +954,6 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         }
         //[/UserButtonCode_btnCmdDn]
     }
-    else if (buttonThatWasClicked == btnSecAdd)
-    {
-        //[UserButtonCode_btnSecAdd] -- add your button handler code here..
-        //[/UserButtonCode_btnSecAdd]
-    }
-    else if (buttonThatWasClicked == btnSecDelete)
-    {
-        //[UserButtonCode_btnSecDelete] -- add your button handler code here..
-        //[/UserButtonCode_btnSecDelete]
-    }
     else if (buttonThatWasClicked == optSecSeq)
     {
         //[UserButtonCode_optSecSeq] -- add your button handler code here..
@@ -998,11 +972,55 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnSeqCmdAdd)
     {
         //[UserButtonCode_btnSeqCmdAdd] -- add your button handler code here..
+        if(&*p.seq == nullptr) return;
+        int selsec = lstSeqSections->getLastRowSelected();
+        if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
+        SeqData* section = p.seq->getSection(selsec);
+        int selcmd = lstSeqCommands->getLastRowSelected();
+        if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
+        uint32 cmdaddr = section->cmdoffsets[selcmd];
+        //Calculate the number of bytes to add
+        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
+        ValueTree cmd = cmdlistnode.getChildWithProperty("name", cbxSeqCmdType->getText());
+        if(!cmd.isValid()){
+            DBG("No command found with name " + cbxSeqCmdType->getText() + "!");
+            return;
+        }
+        int bytesToAdd = 1;
+        ValueTree param;
+        String datasrc;
+        int datalen;
+        for(int i=0; i<cmd.getNumChildren(); i++){
+            param = cmd.getChild(i);
+            datasrc = param.getProperty("datasrc", "fixed");
+            datalen = param.getProperty("datalen", 1);
+            if(datasrc == "fixed"){
+                bytesToAdd += datalen;
+            }else if(datasrc == "variable"){
+                bytesToAdd += datalen - 1;
+            }
+        }
+        DBG("Adding " + String(bytesToAdd) + " bytes @" + ROM::hex(cmdaddr,4));
+        p.seq->insertSpaceAt(cmdaddr, bytesToAdd);
+        p.seq->writeByte(cmdaddr, (int)cmd.getProperty("cmd", 0));
+        seqStructureChanged();
         //[/UserButtonCode_btnSeqCmdAdd]
     }
     else if (buttonThatWasClicked == btnSeqCmdDelete)
     {
         //[UserButtonCode_btnSeqCmdDelete] -- add your button handler code here..
+        if(&*p.seq == nullptr) return;
+        int selsec = lstSeqSections->getLastRowSelected();
+        if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
+        SeqData* section = p.seq->getSection(selsec);
+        int selcmd = lstSeqCommands->getLastRowSelected();
+        if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
+        uint32 cmdaddr = section->cmdoffsets[selcmd];
+        ValueTree command = p.seq->getCommand(cmdaddr, section->stype);
+        int len = command.getProperty("length", 1);
+        DBG("Removing " + String(len) + " bytes @" + ROM::hex(cmdaddr,4));
+        p.seq->removeData(cmdaddr, len);
+        seqStructureChanged();
         //[/UserButtonCode_btnSeqCmdDelete]
     }
     else if (buttonThatWasClicked == btnSeqCmdUp)
@@ -1045,6 +1063,12 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
     {
         //[UserButtonCode_btnMIDIImport] -- add your button handler code here..
         //[/UserButtonCode_btnMIDIImport]
+    }
+    else if (buttonThatWasClicked == btnReParse)
+    {
+        //[UserButtonCode_btnReParse] -- add your button handler code here..
+        seqStructureChanged();
+        //[/UserButtonCode_btnReParse]
     }
 
     //[UserbuttonClicked_Post]
@@ -1137,13 +1161,14 @@ void AudioseqPane::rowSelected(TextListModel* parent, int row){
         selcmd = cmdlistnode.getChild(row);
         refreshCmdControls();
     }else if(parent == &*lsmParameters){
-        ValueTree paramlistnode = selcmd.getOrCreateChildWithName("paramlist", nullptr);
-        selparam = paramlistnode.getChild(row);
+        selparam = selcmd.getChild(row);
         refreshParamControls();
     }else if(parent == &*lsmSeqSections){
         fillSeqCommands();
     }else if(parent == &*lsmSeqCommands){
         refreshSeqCmdControls();
+    }else if(parent == &*lsmSeqCmdParams){
+        refreshSeqCmdParamControls();
     }
 }
 
@@ -1208,6 +1233,26 @@ void AudioseqPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
         if(val <= 0) val = 1;
         cmdlistnode.setProperty("ppqnmultiplier", val, nullptr);
+    }else if(&editorThatWasChanged == &*txtSeqCmdValue){
+        if(&*p.seq == nullptr) return;
+        int selsec = lstSeqSections->getLastRowSelected();
+            if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
+            SeqData* section = p.seq->getSection(selsec);
+        int selcmd = lstSeqCommands->getLastRowSelected();
+            if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
+            uint32 cmdaddr = section->cmdoffsets[selcmd];
+            ValueTree cmd = p.seq->getCommand(cmdaddr, section->stype);
+        int selparam = lstSeqCmdParams->getLastRowSelected();
+            if(selparam < 0 || selparam >= cmd.getNumChildren()) return;
+            ValueTree param = cmd.getChild(selparam);
+        int ret = p.seq->editCmdParam(cmdaddr, section->stype, param.getProperty("meaning", "None"), val);
+        turnRed = (ret < 0);
+        if(ret > 0){
+            seqStructureChanged();
+        }else if(ret == 0){
+            lsmSeqCommands->set(selcmd, p.seq->getCommandDescription(selsec, selcmd));
+            lstSeqCommands->repaintRow(selcmd);
+        }
     }
     if(turnRed){
         editorThatWasChanged.setColour(TextEditor::backgroundColourId, Colours::red);
@@ -1285,6 +1330,7 @@ void AudioseqPane::refreshParamControls(){
 
 void AudioseqPane::refreshCmdList(){
     lsmCommands->clear();
+    lstCommands->updateContent();
     ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
     ValueTree cmd;
     String desc;
@@ -1300,10 +1346,9 @@ void AudioseqPane::refreshParamList(){
     lsmParameters->clear();
     lstParameters->updateContent();
     if(selcmd.isValid()){
-        ValueTree paramlistnode = selcmd.getOrCreateChildWithName("paramlist", nullptr);
         ValueTree param;
-        for(int i=0; i<paramlistnode.getNumChildren(); i++){
-            param = paramlistnode.getChild(i);
+        for(int i=0; i<selcmd.getNumChildren(); i++){
+            param = selcmd.getChild(i);
             if(param.getType() == Identifier("parameter")){
                 lsmParameters->add(String(i));
             }
@@ -1336,14 +1381,18 @@ void AudioseqPane::fillMeaningsBox(String action){
         //None--use Pre-Delay or Post-Delay
     }else if(action == "Ptr Channel Header"){
         cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
     }else if(action == "Ptr Loop Start"){
-        cbxMeaning->addItem("Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
     }else if(action == "Ptr Track Data"){
         cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
     }else if(action == "Ptr More Track Data"){
-        cbxMeaning->addItem("Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
     }else if(action == "Master Volume"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Tempo"){
@@ -1390,6 +1439,7 @@ void AudioseqPane::fillMeaningsBox(String action){
 void AudioseqPane::fillSeqSections(){
     if(&*p.seq == nullptr) return;
     lsmSeqSections->clear();
+    lstSeqSections->updateContent();
     for(int s=0; s<p.seq->getNumSections(); s++){
         lsmSeqSections->add(p.seq->getSectionDescription(s));
     }
@@ -1408,25 +1458,35 @@ void AudioseqPane::fillSeqSections(){
 }
 
 void AudioseqPane::fillSeqCommands(){
+    int selcmd = lstSeqCommands->getLastRowSelected();
     lsmSeqCommands->clear();
     lstSeqCommands->updateContent();
     if(&*p.seq == nullptr) return;
     int selsec = lstSeqSections->getLastRowSelected();
     if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
-    SeqData* section = p.seq->getSection(selsec);
-    int stype = section->stype;
-    uint32 a;
-    ValueTree cmd;
-    String str;
-    for(int c=0; c<section->cmdoffsets.size(); c++){
-        a = section->cmdoffsets[c];
-        cmd = p.seq->getCommand(a, stype);
-        str = "@" + ROM::hex(a, 4) + ": ";
-        str += ROM::hex(p.seq->readByte(a)) + " ";
-        str += cmd.getProperty("name", "[Unknown Cmd]").toString();
-        lsmSeqCommands->add(str);
+    int cmds = p.seq->getSection(selsec)->cmdoffsets.size();
+    for(int c=0; c<cmds; c++){
+        lsmSeqCommands->add(p.seq->getCommandDescription(selsec, c));
     }
     lstSeqCommands->updateContent();
+    lstSeqCommands->selectRow(selcmd);
+    //Fill New Command box
+    cbxSeqCmdType->clear(dontSendNotification);
+    int stype = p.seq->getSection(selsec)->stype;
+    ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
+    ValueTree cmd;
+    String desc;
+    for(int i=0; i<cmdlistnode.getNumChildren(); i++){
+        cmd = cmdlistnode.getChild(i);
+        if(cmd.getType() == Identifier("command")){
+            if((stype == 0 && (bool)cmd.getProperty("validinseq", false))
+                    || (stype == 1 && (bool)cmd.getProperty("validinchn", false))
+                    || (stype == 2 && (bool)cmd.getProperty("validintrk", false))){
+                cbxSeqCmdType->addItem(cmd.getProperty("name", "ERROR").toString(), cbxSeqCmdType->getNumItems()+1);
+            }
+        }
+    }
+    cbxMeaning->setSelectedItemIndex(0, dontSendNotification);
 }
 
 void AudioseqPane::refreshMIDIControls(){
@@ -1439,19 +1499,61 @@ void AudioseqPane::refreshMIDIControls(){
 }
 
 void AudioseqPane::refreshSeqCmdControls(){
+    if(&*p.seq == nullptr) return;
+    int selparam = lstSeqCmdParams->getLastRowSelected();
     int selsec = lstSeqSections->getLastRowSelected();
     if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
     SeqData* section = p.seq->getSection(selsec);
     int selcmd = lstSeqCommands->getLastRowSelected();
     if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
     uint32 cmdaddr = section->cmdoffsets[selcmd];
-    String cmddatatext;
     ValueTree cmd = p.seq->getCommand(cmdaddr, section->stype);
-    int cmdlen = cmd.getProperty("length", 1);
-    for(int i=0; i<cmdlen; i++){
-        cmddatatext += ROM::hex(p.seq->readByte(cmdaddr+i)) + " ";
+    lblSeqCmdAction->setText("Command Action: " + cmd.getProperty("action", "No Action").toString(), dontSendNotification);
+    ValueTree param;
+    lsmSeqCmdParams->clear();
+    lstSeqCmdParams->updateContent();
+    int params = cmd.getNumChildren();
+    for(int i=0; i<params; i++){
+        param = cmd.getChild(i);
+        lsmSeqCmdParams->add(param.getProperty("name", "Unnamed"));
     }
-    lblSeqCmdOutput->setText(cmddatatext, dontSendNotification);
+    lstSeqCmdParams->updateContent();
+    lstSeqCmdParams->selectRow(selparam);
+}
+
+void AudioseqPane::refreshSeqCmdParamControls(){
+    if(&*p.seq == nullptr) return;
+    int selsec = lstSeqSections->getLastRowSelected();
+        if(selsec < 0 || selsec >= p.seq->getNumSections()){
+            txtSeqCmdValue->setText("", dontSendNotification);
+            return;
+        }
+        SeqData* section = p.seq->getSection(selsec);
+    int selcmd = lstSeqCommands->getLastRowSelected();
+        if(selcmd < 0 || selcmd >= section->cmdoffsets.size()){
+            txtSeqCmdValue->setText("", dontSendNotification);
+            return;
+        }
+        uint32 cmdaddr = section->cmdoffsets[selcmd];
+        ValueTree cmd = p.seq->getCommand(cmdaddr, section->stype);
+    int selparam = lstSeqCmdParams->getLastRowSelected();
+        if(selparam < 0 || selparam >= cmd.getNumChildren()){
+            txtSeqCmdValue->setText("", dontSendNotification);
+            return;
+        }
+        ValueTree param = cmd.getChild(selparam);
+    int len = (int)param.getProperty("datalen", 1) * 2;
+    if(len <= 0) len = 1;
+    txtSeqCmdValue->setText(ROM::hex((uint32)(int)param.getProperty("value", 0),
+            len), dontSendNotification);
+}
+
+void AudioseqPane::seqStructureChanged(){
+    if(&*p.seq == nullptr) return;
+    int selsec = lstSeqSections->getLastRowSelected();
+    p.seq->parse();
+    fillSeqSections();
+    lstSeqSections->selectRow(selsec);
 }
 
 //[/MiscUserCode]
@@ -1478,7 +1580,13 @@ BEGIN_JUCER_METADATA
   </METHODS>
   <BACKGROUND backgroundColour="ffffffff"/>
   <GROUPCOMPONENT name="new group" id="b3355c52e381c7e5" memberName="groupComponent"
-                  virtualName="" explicitFocusOrder="0" pos="408 0 704 624" title="Loaded Sequence"/>
+                  virtualName="" explicitFocusOrder="0" pos="408 0 648 672" title="Loaded Sequence"/>
+  <GROUPCOMPONENT name="new group" id="6e58ac86762caa1" memberName="groupComponent2"
+                  virtualName="" explicitFocusOrder="0" pos="416 616 272 48" title="Section is"/>
+  <GROUPCOMPONENT name="new group" id="5a1a54c8f2b8a402" memberName="groupComponent4"
+                  virtualName="" explicitFocusOrder="0" pos="0 480 400 272" title="MIDI File"/>
+  <GROUPCOMPONENT name="new group" id="425cb4d36ac8f912" memberName="groupComponent7"
+                  virtualName="" explicitFocusOrder="0" pos="8 592 384 48" title="Export Settings"/>
   <GROUPCOMPONENT name="new group" id="f1d4a599b3267719" memberName="groupComponent3"
                   virtualName="" explicitFocusOrder="0" pos="0 0 400 480" title="Command Editor"/>
   <GROUPCOMPONENT name="new group" id="977c50d4ba0f1784" memberName="groupComponent6"
@@ -1623,85 +1731,60 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="352 128 40 24" buttonText="Dn"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="cfb894eaf50ddd48" memberName="label3" virtualName=""
-         explicitFocusOrder="0" pos="416 40 168 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Sections:" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
-  <TEXTBUTTON name="new button" id="c789dcd2d2b3c378" memberName="btnSecAdd"
-              virtualName="" explicitFocusOrder="0" pos="584 520 40 24" buttonText="Add"
-              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="96bc5049f672ad9d" memberName="btnSecDelete"
-              virtualName="" explicitFocusOrder="0" pos="624 520 40 24" buttonText="Del"
-              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
+         explicitFocusOrder="0" pos="416 88 296 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="@Addr: Typ Ch Ly Events" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default monospaced font"
+         fontsize="14" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="eafcae42c6686b48" memberName="label4" virtualName=""
-         explicitFocusOrder="0" pos="680 40 208 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Commands:" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
-  <GROUPCOMPONENT name="new group" id="547867053e33081" memberName="groupComponent2"
-                  virtualName="" explicitFocusOrder="0" pos="416 520 112 96" title="Interpret As"/>
+         explicitFocusOrder="0" pos="696 16 352 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="@Addr: Data           Command" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default monospaced font"
+         fontsize="14" bold="0" italic="0" justification="33"/>
   <TOGGLEBUTTON name="new toggle button" id="cf47b7f68371eb95" memberName="optSecSeq"
-                virtualName="" explicitFocusOrder="0" pos="424 536 104 24" buttonText="Seq header"
+                virtualName="" explicitFocusOrder="0" pos="424 632 80 24" buttonText="Seq Hdr"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="a6c764d49706b110" memberName="optSecChn"
-                virtualName="" explicitFocusOrder="0" pos="424 560 104 24" buttonText="Chn header"
+                virtualName="" explicitFocusOrder="0" pos="512 632 80 24" buttonText="Chn Hdr"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="653c215535bfa70a" memberName="optSecTrk"
-                virtualName="" explicitFocusOrder="0" pos="424 584 104 24" buttonText="Track data"
+                virtualName="" explicitFocusOrder="0" pos="600 632 80 24" buttonText="Trk Data"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
   <TEXTBUTTON name="new button" id="cf3f95690aa55b7c" memberName="btnSeqCmdAdd"
-              virtualName="" explicitFocusOrder="0" pos="680 592 40 24" buttonText="Add"
-              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="880 560 40 24" buttonText="Add"
+              connectedEdges="3" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="9661fb86a4ef0a7c" memberName="btnSeqCmdDelete"
-              virtualName="" explicitFocusOrder="0" pos="720 592 40 24" buttonText="Del"
+              virtualName="" explicitFocusOrder="0" pos="920 560 40 24" buttonText="Del"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="322ab17ff1c48b0f" memberName="btnSeqCmdUp"
-              virtualName="" explicitFocusOrder="0" pos="808 592 40 24" buttonText="Up"
+              virtualName="" explicitFocusOrder="0" pos="968 560 40 24" buttonText="Up"
               connectedEdges="2" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="24ae8e838a4add93" memberName="btnSeqCmdDn"
-              virtualName="" explicitFocusOrder="0" pos="848 592 40 24" buttonText="Dn"
+              virtualName="" explicitFocusOrder="0" pos="1008 560 40 24" buttonText="Dn"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
-  <LABEL name="new label" id="85fc50c21a943214" memberName="label5" virtualName=""
-         explicitFocusOrder="0" pos="928 40 176 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Command:" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="91d638859dfe0501" memberName="cbxSeqCmdType"
-            virtualName="" explicitFocusOrder="0" pos="928 112 176 24" editable="0"
-            layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
-  <LABEL name="new label" id="e4221a19f7c8c34b" memberName="label6" virtualName=""
-         explicitFocusOrder="0" pos="928 144 176 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Parameters:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
+            virtualName="" explicitFocusOrder="0" pos="696 560 184 24" editable="0"
+            layout="33" items="" textWhenNonSelected="[Command to add]" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="1ef07cd6fece0549" memberName="label7" virtualName=""
-         explicitFocusOrder="0" pos="928 256 64 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="888 616 64 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Value:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="28b2ef3b6fe44f9a" memberName="txtSeqCmdValue"
-              virtualName="" explicitFocusOrder="0" pos="1000 256 102 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="952 616 88 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="a69b237684dc0a0d" memberName="lblSeqInfo"
-         virtualName="" explicitFocusOrder="0" pos="416 16 624 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="416 16 272 40" edTextCol="ff000000"
          edBkgCol="0" labelText="Sequence information" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <GROUPCOMPONENT name="new group" id="5a1a54c8f2b8a402" memberName="groupComponent4"
-                  virtualName="" explicitFocusOrder="0" pos="0 480 400 144" title="MIDI File"/>
-  <LABEL name="new label" id="b4433a8f5fa23479" memberName="lblSeqCmdOutput"
-         virtualName="" explicitFocusOrder="0" pos="928 64 176 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="[actual command]" editableSingleClick="0"
+         fontsize="15" bold="0" italic="0" justification="9"/>
+  <LABEL name="new label" id="4b6f4c5b150b8e9" memberName="lblSeqCmdAction"
+         virtualName="" explicitFocusOrder="0" pos="696 592 352 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Command Action:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="4b6f4c5b150b8e9" memberName="label19" virtualName=""
-         explicitFocusOrder="0" pos="928 88 176 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Type:" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="44ea1cfa0e02c008" memberName="lblValueEquiv"
-         virtualName="" explicitFocusOrder="0" pos="928 280 176 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="888 640 152 24" edTextCol="ff000000"
          edBkgCol="0" labelText="[dec, note equiv.]" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
@@ -1712,44 +1795,44 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="72 496 64 24" buttonText="Import"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="7ee4df75e04ec993" memberName="label20" virtualName=""
-         explicitFocusOrder="0" pos="8 520 88 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="16 608 88 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Bend range:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="f6f8b6c6346a1954" memberName="txtMIDIBend"
-              virtualName="" explicitFocusOrder="0" pos="96 520 32 24" initialText="4"
+              virtualName="" explicitFocusOrder="0" pos="104 608 32 24" initialText="4"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="678cb1b34534af2f" memberName="label21" virtualName=""
-         explicitFocusOrder="0" pos="136 520 120 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="144 608 120 24" edTextCol="ff000000"
          edBkgCol="0" labelText="PPQN multiplier:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="99b9654ebd18dc1e" memberName="txtMIDIPPQN"
-              virtualName="" explicitFocusOrder="0" pos="248 520 32 24" initialText="2"
+              virtualName="" explicitFocusOrder="0" pos="256 608 32 24" initialText="2"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="a7e744044efc1585" memberName="label22" virtualName=""
-         explicitFocusOrder="0" pos="280 520 32 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="288 608 32 24" edTextCol="ff000000"
          edBkgCol="0" labelText="x48" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="695e3a0f276fa4e0" memberName="label23" virtualName=""
-         explicitFocusOrder="0" pos="8 544 136 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 520 136 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Chn volume to:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="d119e693727236bb" memberName="cbxMIDIChnVol"
-            virtualName="" explicitFocusOrder="0" pos="144 544 248 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="144 520 248 24" editable="0"
             layout="33" items="CC7 (Volume)&#10;CC11 (Expr)" textWhenNonSelected="ERROR"
             textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="1dea77f54e15ecb7" memberName="label24" virtualName=""
-         explicitFocusOrder="0" pos="8 568 136 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 544 136 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Master volume to:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="21e08ae5ec6adcb7" memberName="cbxMIDIMtrVol"
-            virtualName="" explicitFocusOrder="0" pos="144 568 248 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="144 544 248 24" editable="0"
             layout="33" items="CC7 (Volume)&#10;CC11 (Expr)&#10;CC16 (GPC1)&#10;CC24 (None)&#10;SysEx MstrVol"
             textWhenNonSelected="ERROR" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="ec20b0951fd4e63e" memberName="label25" virtualName=""
@@ -1758,14 +1841,24 @@ BEGIN_JUCER_METADATA
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="494496a2e6f332ab" memberName="label26" virtualName=""
-         explicitFocusOrder="0" pos="8 592 136 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 568 136 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Chn priority to:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="7007be4d513e8e1c" memberName="cbxChnPriority"
-            virtualName="" explicitFocusOrder="0" pos="144 592 248 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="144 568 248 24" editable="0"
             layout="33" items="CC17 (GPC2)&#10;CC25 (None)&#10;CC79 (SC10)"
             textWhenNonSelected="ERROR" textWhenNoItems="(no choices)"/>
+  <GROUPCOMPONENT name="new group" id="d6fd042ed5665f41" memberName="groupComponent8"
+                  virtualName="" explicitFocusOrder="0" pos="8 640 384 104" title="Import Settings"/>
+  <LABEL name="new label" id="e7b46dfed4aed5ba" memberName="lblSeqCmdAction2"
+         virtualName="" explicitFocusOrder="0" pos="416 64 120 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Sections:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
+  <TEXTBUTTON name="new button" id="45d2e07ee4fefabe" memberName="btnReParse"
+              virtualName="" explicitFocusOrder="0" pos="536 64 150 24" buttonText="Re-Parse"
+              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

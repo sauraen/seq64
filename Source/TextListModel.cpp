@@ -11,7 +11,7 @@
 #include "JuceHeader.h"
 #include "TextListModel.h"
 
-TextListModel::TextListModel(){
+TextListModel::TextListModel() : font(15){
     
 }
 TextListModel::~TextListModel(){
@@ -49,7 +49,7 @@ void TextListModel::paintListBoxItem(int rowNumber, Graphics &g, int width, int 
     }
     g.fillRect(0, 0, width, height);
     g.setColour(Colours::black);
-    g.setFont(16.0);
+    g.setFont(font);
     g.drawText(strings[rowNumber], 4, 0, width, height, Justification::left, true);
 }
 
@@ -61,5 +61,8 @@ void TextListModel::selectedRowsChanged(int lastRowSelected){
 
 void TextListModel::setListener(Listener* l){
     listener = l;
+}
+void TextListModel::setFont(Font newfont){
+    font = newfont;
 }
     

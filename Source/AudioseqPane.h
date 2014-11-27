@@ -63,6 +63,9 @@ public:
     void fillSeqCommands();
     void refreshMIDIControls();
     void refreshSeqCmdControls();
+    void refreshSeqCmdParamControls();
+
+    void seqStructureChanged();
 
     //[/UserMethods]
 
@@ -101,6 +104,9 @@ private:
 
     //==============================================================================
     ScopedPointer<GroupComponent> groupComponent;
+    ScopedPointer<GroupComponent> groupComponent2;
+    ScopedPointer<GroupComponent> groupComponent4;
+    ScopedPointer<GroupComponent> groupComponent7;
     ScopedPointer<GroupComponent> groupComponent3;
     ScopedPointer<GroupComponent> groupComponent6;
     ScopedPointer<GroupComponent> groupComponent5;
@@ -140,10 +146,7 @@ private:
     ScopedPointer<TextButton> btnCmdUp;
     ScopedPointer<TextButton> btnCmdDn;
     ScopedPointer<Label> label3;
-    ScopedPointer<TextButton> btnSecAdd;
-    ScopedPointer<TextButton> btnSecDelete;
     ScopedPointer<Label> label4;
-    ScopedPointer<GroupComponent> groupComponent2;
     ScopedPointer<ToggleButton> optSecSeq;
     ScopedPointer<ToggleButton> optSecChn;
     ScopedPointer<ToggleButton> optSecTrk;
@@ -151,15 +154,11 @@ private:
     ScopedPointer<TextButton> btnSeqCmdDelete;
     ScopedPointer<TextButton> btnSeqCmdUp;
     ScopedPointer<TextButton> btnSeqCmdDn;
-    ScopedPointer<Label> label5;
     ScopedPointer<ComboBox> cbxSeqCmdType;
-    ScopedPointer<Label> label6;
     ScopedPointer<Label> label7;
     ScopedPointer<TextEditor> txtSeqCmdValue;
     ScopedPointer<Label> lblSeqInfo;
-    ScopedPointer<GroupComponent> groupComponent4;
-    ScopedPointer<Label> lblSeqCmdOutput;
-    ScopedPointer<Label> label19;
+    ScopedPointer<Label> lblSeqCmdAction;
     ScopedPointer<Label> lblValueEquiv;
     ScopedPointer<TextButton> btnMIDIExport;
     ScopedPointer<TextButton> btnMIDIImport;
@@ -175,6 +174,9 @@ private:
     ScopedPointer<Label> label25;
     ScopedPointer<Label> label26;
     ScopedPointer<ComboBox> cbxChnPriority;
+    ScopedPointer<GroupComponent> groupComponent8;
+    ScopedPointer<Label> lblSeqCmdAction2;
+    ScopedPointer<TextButton> btnReParse;
 
 
     //==============================================================================

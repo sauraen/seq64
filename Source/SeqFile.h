@@ -33,15 +33,18 @@ class SeqFile{
     uint32 getStartAddr();
     uint32 getLength();
     uint8 readByte(uint32 address);
+    void writeByte(uint32 address, uint8 d);
     
     void parse();
     int getNumSections();
     SeqData* getSection(int s);
     String getSectionDescription(int s);
+    String getCommandDescription(int s, int c);
     
     void insertSpaceAt(uint32 address, int size);
     void removeData(uint32 address, int size);
-    void editCmdParam(uint32 address, int stype, String meaning, int newvalue);
+    void editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize);
+    int editCmdParam(uint32 address, int stype, String meaning, int newvalue); //0 okay, -1 failed, 1 structure changed
     
     MidiFile* toMIDIFile();
     
@@ -60,6 +63,23 @@ class SeqFile{
     uint32 length;
     
     OwnedArray<SeqData> sections;
+    
+    static Identifier idName;
+    static Identifier idLength;
+    static Identifier idAction;
+    static Identifier idCmd;
+    static Identifier idCmdEnd;
+    static Identifier idMeaning;
+    static Identifier idValue;
+    static Identifier idAdd;
+    static Identifier idMultiply;
+    static Identifier idDataSrc;
+    static Identifier idDataLen;
+    static Identifier idDataAddr;
+    static Identifier idDataActualLen;
+    static Identifier idValidInSeq;
+    static Identifier idValidInChn;
+    static Identifier idValidInTrk;
     
 };
 
