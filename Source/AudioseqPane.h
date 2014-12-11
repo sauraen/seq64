@@ -61,7 +61,6 @@ public:
     void fillMeaningsBox(String action);
     void fillSeqSections();
     void fillSeqCommands();
-    void refreshMIDIControls();
     void refreshSeqCmdControls();
     void refreshSeqCmdParamControls();
 
@@ -105,8 +104,6 @@ private:
     //==============================================================================
     ScopedPointer<GroupComponent> groupComponent;
     ScopedPointer<GroupComponent> groupComponent2;
-    ScopedPointer<GroupComponent> groupComponent4;
-    ScopedPointer<GroupComponent> groupComponent7;
     ScopedPointer<GroupComponent> groupComponent3;
     ScopedPointer<GroupComponent> groupComponent6;
     ScopedPointer<GroupComponent> groupComponent5;
@@ -160,21 +157,6 @@ private:
     ScopedPointer<Label> lblSeqInfo;
     ScopedPointer<Label> lblSeqCmdAction;
     ScopedPointer<Label> lblValueEquiv;
-    ScopedPointer<TextButton> btnMIDIExport;
-    ScopedPointer<TextButton> btnMIDIImport;
-    ScopedPointer<Label> label20;
-    ScopedPointer<TextEditor> txtMIDIBend;
-    ScopedPointer<Label> label21;
-    ScopedPointer<TextEditor> txtMIDIPPQN;
-    ScopedPointer<Label> label22;
-    ScopedPointer<Label> label23;
-    ScopedPointer<ComboBox> cbxMIDIChnVol;
-    ScopedPointer<Label> label24;
-    ScopedPointer<ComboBox> cbxMIDIMtrVol;
-    ScopedPointer<Label> label25;
-    ScopedPointer<Label> label26;
-    ScopedPointer<ComboBox> cbxChnPriority;
-    ScopedPointer<GroupComponent> groupComponent8;
     ScopedPointer<Label> lblSeqCmdAction2;
     ScopedPointer<TextButton> btnReParse;
 

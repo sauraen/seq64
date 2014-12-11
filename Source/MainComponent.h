@@ -11,13 +11,13 @@
 #ifndef MAINCOMPONENT_H_INCLUDED
 #define MAINCOMPONENT_H_INCLUDED
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include "JuceHeader.h"
 #include "AppProps.h"
-#include "FilesPane.h"
 
-class AudiobankPane;
-class AudioseqPane;
 class FilesPane;
+class AudioseqPane;
+class MidiPane;
+class AudiobankPane;
 
 //==============================================================================
 /*
@@ -61,6 +61,7 @@ private:
     
     ScopedPointer<FilesPane> filespane;
     ScopedPointer<AudioseqPane> audioseqpane;
+    ScopedPointer<MidiPane> midipane;
     ScopedPointer<AudiobankPane> audiobankpane;
 
     int menuBarHeight;

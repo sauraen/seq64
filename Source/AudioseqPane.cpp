@@ -18,7 +18,7 @@
 */
 
 //[Headers] You can add your own extra header files here...
-#include "../JuceLibraryCode/JuceHeader.h"
+#include "JuceHeader.h"
 #include "AppProps.h"
 //[/Headers]
 
@@ -37,12 +37,6 @@ AudioseqPane::AudioseqPane (AppProps& props)
 
     addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
                                                              TRANS("Section is")));
-
-    addAndMakeVisible (groupComponent4 = new GroupComponent ("new group",
-                                                             TRANS("MIDI File")));
-
-    addAndMakeVisible (groupComponent7 = new GroupComponent ("new group",
-                                                             TRANS("Export Settings")));
 
     addAndMakeVisible (groupComponent3 = new GroupComponent ("new group",
                                                              TRANS("Command Editor")));
@@ -132,22 +126,29 @@ AudioseqPane::AudioseqPane (AppProps& props)
     cbxAction->addItem (TRANS("No Action"), 1);
     cbxAction->addItem (TRANS("End of Data"), 2);
     cbxAction->addItem (TRANS("Timestamp"), 3);
-    cbxAction->addItem (TRANS("Ptr Channel Header"), 4);
-    cbxAction->addItem (TRANS("Ptr Loop Start"), 5);
-    cbxAction->addItem (TRANS("Ptr Track Data"), 6);
-    cbxAction->addItem (TRANS("Ptr More Track Data"), 7);
-    cbxAction->addItem (TRANS("Master Volume"), 8);
-    cbxAction->addItem (TRANS("Tempo"), 9);
-    cbxAction->addItem (TRANS("Chn Priority"), 10);
-    cbxAction->addItem (TRANS("Chn Volume"), 11);
-    cbxAction->addItem (TRANS("Chn Pan"), 12);
-    cbxAction->addItem (TRANS("Chn Effects"), 13);
-    cbxAction->addItem (TRANS("Chn Vibrato"), 14);
-    cbxAction->addItem (TRANS("Chn Pitch Bend"), 15);
-    cbxAction->addItem (TRANS("Chn Instrument"), 16);
-    cbxAction->addItem (TRANS("Chn Transpose"), 17);
-    cbxAction->addItem (TRANS("Layer Transpose"), 18);
-    cbxAction->addItem (TRANS("Track Note"), 19);
+    cbxAction->addItem (TRANS("Jump Same Level"), 4);
+    cbxAction->addItem (TRANS("Call Same Level"), 5);
+    cbxAction->addItem (TRANS("Loop Start"), 6);
+    cbxAction->addItem (TRANS("Loop End"), 7);
+    cbxAction->addItem (TRANS("Ptr Channel Header"), 8);
+    cbxAction->addItem (TRANS("Ptr Track Data"), 9);
+    cbxAction->addItem (TRANS("Sequence Format"), 10);
+    cbxAction->addItem (TRANS("Sequence Type"), 11);
+    cbxAction->addItem (TRANS("Channel Enable"), 12);
+    cbxAction->addItem (TRANS("Channel Disable"), 13);
+    cbxAction->addItem (TRANS("Master Volume"), 14);
+    cbxAction->addItem (TRANS("Tempo"), 15);
+    cbxAction->addItem (TRANS("Chn Reset"), 16);
+    cbxAction->addItem (TRANS("Chn Priority"), 17);
+    cbxAction->addItem (TRANS("Chn Volume"), 18);
+    cbxAction->addItem (TRANS("Chn Pan"), 19);
+    cbxAction->addItem (TRANS("Chn Effects"), 20);
+    cbxAction->addItem (TRANS("Chn Vibrato"), 21);
+    cbxAction->addItem (TRANS("Chn Pitch Bend"), 22);
+    cbxAction->addItem (TRANS("Chn Instrument"), 23);
+    cbxAction->addItem (TRANS("Chn Transpose"), 24);
+    cbxAction->addItem (TRANS("Layer Transpose"), 25);
+    cbxAction->addItem (TRANS("Track Note"), 26);
     cbxAction->addListener (this);
 
     addAndMakeVisible (label9 = new Label ("new label",
@@ -412,124 +413,6 @@ AudioseqPane::AudioseqPane (AppProps& props)
     lblValueEquiv->setColour (TextEditor::textColourId, Colours::black);
     lblValueEquiv->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (btnMIDIExport = new TextButton ("new button"));
-    btnMIDIExport->setButtonText (TRANS("Export"));
-    btnMIDIExport->setConnectedEdges (Button::ConnectedOnRight);
-    btnMIDIExport->addListener (this);
-
-    addAndMakeVisible (btnMIDIImport = new TextButton ("new button"));
-    btnMIDIImport->setButtonText (TRANS("Import"));
-    btnMIDIImport->setConnectedEdges (Button::ConnectedOnLeft);
-    btnMIDIImport->addListener (this);
-
-    addAndMakeVisible (label20 = new Label ("new label",
-                                            TRANS("Bend range:")));
-    label20->setFont (Font (15.00f, Font::plain));
-    label20->setJustificationType (Justification::centredLeft);
-    label20->setEditable (false, false, false);
-    label20->setColour (TextEditor::textColourId, Colours::black);
-    label20->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (txtMIDIBend = new TextEditor ("new text editor"));
-    txtMIDIBend->setMultiLine (false);
-    txtMIDIBend->setReturnKeyStartsNewLine (false);
-    txtMIDIBend->setReadOnly (false);
-    txtMIDIBend->setScrollbarsShown (true);
-    txtMIDIBend->setCaretVisible (true);
-    txtMIDIBend->setPopupMenuEnabled (true);
-    txtMIDIBend->setText (TRANS("4"));
-
-    addAndMakeVisible (label21 = new Label ("new label",
-                                            TRANS("PPQN multiplier:")));
-    label21->setFont (Font (15.00f, Font::plain));
-    label21->setJustificationType (Justification::centredLeft);
-    label21->setEditable (false, false, false);
-    label21->setColour (TextEditor::textColourId, Colours::black);
-    label21->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (txtMIDIPPQN = new TextEditor ("new text editor"));
-    txtMIDIPPQN->setMultiLine (false);
-    txtMIDIPPQN->setReturnKeyStartsNewLine (false);
-    txtMIDIPPQN->setReadOnly (false);
-    txtMIDIPPQN->setScrollbarsShown (true);
-    txtMIDIPPQN->setCaretVisible (true);
-    txtMIDIPPQN->setPopupMenuEnabled (true);
-    txtMIDIPPQN->setText (TRANS("2"));
-
-    addAndMakeVisible (label22 = new Label ("new label",
-                                            TRANS("x48")));
-    label22->setFont (Font (15.00f, Font::plain));
-    label22->setJustificationType (Justification::centredLeft);
-    label22->setEditable (false, false, false);
-    label22->setColour (TextEditor::textColourId, Colours::black);
-    label22->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (label23 = new Label ("new label",
-                                            TRANS("Chn volume to:")));
-    label23->setFont (Font (15.00f, Font::plain));
-    label23->setJustificationType (Justification::centredLeft);
-    label23->setEditable (false, false, false);
-    label23->setColour (TextEditor::textColourId, Colours::black);
-    label23->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (cbxMIDIChnVol = new ComboBox ("new combo box"));
-    cbxMIDIChnVol->setEditableText (false);
-    cbxMIDIChnVol->setJustificationType (Justification::centredLeft);
-    cbxMIDIChnVol->setTextWhenNothingSelected (TRANS("ERROR"));
-    cbxMIDIChnVol->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxMIDIChnVol->addItem (TRANS("CC7 (Volume)"), 1);
-    cbxMIDIChnVol->addItem (TRANS("CC11 (Expr)"), 2);
-    cbxMIDIChnVol->addListener (this);
-
-    addAndMakeVisible (label24 = new Label ("new label",
-                                            TRANS("Master volume to:")));
-    label24->setFont (Font (15.00f, Font::plain));
-    label24->setJustificationType (Justification::centredLeft);
-    label24->setEditable (false, false, false);
-    label24->setColour (TextEditor::textColourId, Colours::black);
-    label24->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (cbxMIDIMtrVol = new ComboBox ("new combo box"));
-    cbxMIDIMtrVol->setEditableText (false);
-    cbxMIDIMtrVol->setJustificationType (Justification::centredLeft);
-    cbxMIDIMtrVol->setTextWhenNothingSelected (TRANS("ERROR"));
-    cbxMIDIMtrVol->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxMIDIMtrVol->addItem (TRANS("CC7 (Volume)"), 1);
-    cbxMIDIMtrVol->addItem (TRANS("CC11 (Expr)"), 2);
-    cbxMIDIMtrVol->addItem (TRANS("CC16 (GPC1)"), 3);
-    cbxMIDIMtrVol->addItem (TRANS("CC24 (None)"), 4);
-    cbxMIDIMtrVol->addItem (TRANS("SysEx MstrVol"), 5);
-    cbxMIDIMtrVol->addListener (this);
-
-    addAndMakeVisible (label25 = new Label ("new label",
-                                            TRANS("Uses Audiobank information")));
-    label25->setFont (Font (15.00f, Font::plain));
-    label25->setJustificationType (Justification::centredLeft);
-    label25->setEditable (false, false, false);
-    label25->setColour (TextEditor::textColourId, Colours::black);
-    label25->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (label26 = new Label ("new label",
-                                            TRANS("Chn priority to:")));
-    label26->setFont (Font (15.00f, Font::plain));
-    label26->setJustificationType (Justification::centredLeft);
-    label26->setEditable (false, false, false);
-    label26->setColour (TextEditor::textColourId, Colours::black);
-    label26->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (cbxChnPriority = new ComboBox ("new combo box"));
-    cbxChnPriority->setEditableText (false);
-    cbxChnPriority->setJustificationType (Justification::centredLeft);
-    cbxChnPriority->setTextWhenNothingSelected (TRANS("ERROR"));
-    cbxChnPriority->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxChnPriority->addItem (TRANS("CC17 (GPC2)"), 1);
-    cbxChnPriority->addItem (TRANS("CC25 (None)"), 2);
-    cbxChnPriority->addItem (TRANS("CC79 (SC10)"), 3);
-    cbxChnPriority->addListener (this);
-
-    addAndMakeVisible (groupComponent8 = new GroupComponent ("new group",
-                                                             TRANS("Import Settings")));
-
     addAndMakeVisible (lblSeqCmdAction2 = new Label ("new label",
                                                      TRANS("Sections:")));
     lblSeqCmdAction2->setFont (Font (15.00f, Font::plain));
@@ -590,14 +473,8 @@ AudioseqPane::AudioseqPane (AppProps& props)
     txtCmdDataSize->addListener(this);
     txtParamAdd->addListener(this);
     txtParamMult->addListener(this);
-    txtMIDIBend->addListener(this);
-    txtMIDIPPQN->addListener(this);
     txtSeqCmdValue->addListener(this);
 
-
-    cbxMIDIChnVol->setSelectedItemIndex(0, dontSendNotification);
-    cbxMIDIMtrVol->setSelectedItemIndex(3, dontSendNotification);
-    cbxChnPriority->setSelectedItemIndex(1, dontSendNotification);
 
     //[/UserPreSize]
 
@@ -615,8 +492,6 @@ AudioseqPane::~AudioseqPane()
 
     groupComponent = nullptr;
     groupComponent2 = nullptr;
-    groupComponent4 = nullptr;
-    groupComponent7 = nullptr;
     groupComponent3 = nullptr;
     groupComponent6 = nullptr;
     groupComponent5 = nullptr;
@@ -670,21 +545,6 @@ AudioseqPane::~AudioseqPane()
     lblSeqInfo = nullptr;
     lblSeqCmdAction = nullptr;
     lblValueEquiv = nullptr;
-    btnMIDIExport = nullptr;
-    btnMIDIImport = nullptr;
-    label20 = nullptr;
-    txtMIDIBend = nullptr;
-    label21 = nullptr;
-    txtMIDIPPQN = nullptr;
-    label22 = nullptr;
-    label23 = nullptr;
-    cbxMIDIChnVol = nullptr;
-    label24 = nullptr;
-    cbxMIDIMtrVol = nullptr;
-    label25 = nullptr;
-    label26 = nullptr;
-    cbxChnPriority = nullptr;
-    groupComponent8 = nullptr;
     lblSeqCmdAction2 = nullptr;
     btnReParse = nullptr;
 
@@ -719,46 +579,44 @@ void AudioseqPane::resized()
 {
     groupComponent->setBounds (408, 0, 648, 672);
     groupComponent2->setBounds (416, 616, 272, 48);
-    groupComponent4->setBounds (0, 480, 400, 272);
-    groupComponent7->setBounds (8, 592, 384, 48);
-    groupComponent3->setBounds (0, 0, 400, 480);
-    groupComponent6->setBounds (152, 264, 240, 208);
-    groupComponent5->setBounds (280, 160, 112, 96);
-    label10->setBounds (8, 200, 80, 24);
-    txtCmd->setBounds (96, 200, 48, 24);
+    groupComponent3->setBounds (0, 0, 400, 672);
+    groupComponent6->setBounds (152, 456, 240, 208);
+    groupComponent5->setBounds (280, 352, 112, 96);
+    label10->setBounds (8, 392, 80, 24);
+    txtCmd->setBounds (96, 392, 48, 24);
     btnCmdAdd->setBounds (352, 16, 40, 24);
     btnCmdDel->setBounds (352, 40, 40, 24);
-    optCmdDataFixed->setBounds (160, 352, 71, 24);
-    optCmdDataVar->setBounds (160, 376, 72, 24);
-    lblCmdDataSize->setBounds (240, 360, 47, 24);
-    txtCmdDataSize->setBounds (288, 360, 32, 24);
-    label11->setBounds (320, 360, 48, 24);
-    label2->setBounds (8, 232, 56, 24);
-    cbxAction->setBounds (64, 232, 208, 24);
-    label9->setBounds (8, 168, 55, 24);
-    txtCmdName->setBounds (64, 168, 208, 24);
-    txtCmdEnd->setBounds (176, 200, 48, 24);
-    label12->setBounds (152, 200, 23, 24);
-    optCmdSeq->setBounds (288, 176, 103, 24);
-    optCmdChn->setBounds (288, 200, 104, 24);
-    optCmdTrk->setBounds (288, 224, 104, 24);
-    label13->setBounds (8, 256, 104, 24);
-    btnParamAdd->setBounds (104, 280, 40, 24);
-    btnParamDel->setBounds (104, 304, 40, 24);
-    btnParamUp->setBounds (104, 416, 40, 24);
-    btnParamDn->setBounds (104, 440, 40, 24);
-    optCmdOffset->setBounds (160, 328, 160, 24);
-    label14->setBounds (160, 304, 224, 24);
-    label15->setBounds (160, 400, 72, 24);
-    txtParamName->setBounds (216, 280, 166, 24);
-    label16->setBounds (160, 280, 55, 24);
-    cbxMeaning->setBounds (232, 400, 150, 24);
-    label17->setBounds (160, 432, 64, 24);
-    label18->setBounds (272, 432, 64, 24);
-    txtParamAdd->setBounds (224, 432, 47, 24);
-    txtParamMult->setBounds (336, 432, 47, 24);
-    btnCmdUp->setBounds (352, 104, 40, 24);
-    btnCmdDn->setBounds (352, 128, 40, 24);
+    optCmdDataFixed->setBounds (160, 544, 71, 24);
+    optCmdDataVar->setBounds (160, 568, 72, 24);
+    lblCmdDataSize->setBounds (240, 552, 47, 24);
+    txtCmdDataSize->setBounds (288, 552, 32, 24);
+    label11->setBounds (320, 552, 48, 24);
+    label2->setBounds (8, 424, 56, 24);
+    cbxAction->setBounds (64, 424, 208, 24);
+    label9->setBounds (8, 360, 55, 24);
+    txtCmdName->setBounds (64, 360, 208, 24);
+    txtCmdEnd->setBounds (176, 392, 48, 24);
+    label12->setBounds (152, 392, 23, 24);
+    optCmdSeq->setBounds (288, 368, 103, 24);
+    optCmdChn->setBounds (288, 392, 104, 24);
+    optCmdTrk->setBounds (288, 416, 104, 24);
+    label13->setBounds (8, 456, 104, 24);
+    btnParamAdd->setBounds (104, 480, 40, 24);
+    btnParamDel->setBounds (104, 504, 40, 24);
+    btnParamUp->setBounds (104, 616, 40, 24);
+    btnParamDn->setBounds (104, 640, 40, 24);
+    optCmdOffset->setBounds (160, 520, 160, 24);
+    label14->setBounds (160, 496, 224, 24);
+    label15->setBounds (160, 592, 72, 24);
+    txtParamName->setBounds (216, 472, 166, 24);
+    label16->setBounds (160, 472, 55, 24);
+    cbxMeaning->setBounds (232, 592, 150, 24);
+    label17->setBounds (160, 624, 64, 24);
+    label18->setBounds (272, 624, 64, 24);
+    txtParamAdd->setBounds (224, 624, 47, 24);
+    txtParamMult->setBounds (336, 624, 47, 24);
+    btnCmdUp->setBounds (352, 296, 40, 24);
+    btnCmdDn->setBounds (352, 320, 40, 24);
     label3->setBounds (416, 88, 296, 24);
     label4->setBounds (696, 16, 352, 24);
     optSecSeq->setBounds (424, 632, 80, 24);
@@ -774,27 +632,12 @@ void AudioseqPane::resized()
     lblSeqInfo->setBounds (416, 16, 272, 40);
     lblSeqCmdAction->setBounds (696, 592, 352, 24);
     lblValueEquiv->setBounds (888, 640, 152, 24);
-    btnMIDIExport->setBounds (8, 496, 64, 24);
-    btnMIDIImport->setBounds (72, 496, 64, 24);
-    label20->setBounds (16, 608, 88, 24);
-    txtMIDIBend->setBounds (104, 608, 32, 24);
-    label21->setBounds (144, 608, 120, 24);
-    txtMIDIPPQN->setBounds (256, 608, 32, 24);
-    label22->setBounds (288, 608, 32, 24);
-    label23->setBounds (8, 520, 136, 24);
-    cbxMIDIChnVol->setBounds (144, 520, 248, 24);
-    label24->setBounds (8, 544, 136, 24);
-    cbxMIDIMtrVol->setBounds (144, 544, 248, 24);
-    label25->setBounds (144, 496, 248, 24);
-    label26->setBounds (8, 568, 136, 24);
-    cbxChnPriority->setBounds (144, 568, 248, 24);
-    groupComponent8->setBounds (8, 640, 384, 104);
     lblSeqCmdAction2->setBounds (416, 64, 120, 24);
     btnReParse->setBounds (536, 64, 150, 24);
     //[UserResized] Add your own custom resize handling here..
 
-    lstCommands->setBounds (8, 16, 336, 136);
-    lstParameters->setBounds (8, 280, 88, 184);
+    lstCommands->setBounds (8, 16, 336, 328);
+    lstParameters->setBounds (8, 480, 88, 184);
     lstSeqSections->setBounds (416, 112, 272, 496);
     lstSeqCommands->setBounds (696, 40, 352, 520);
     lstSeqCmdParams->setBounds (696, 616, 184, 48);
@@ -1001,7 +844,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
             }
         }
         DBG("Adding " + String(bytesToAdd) + " bytes @" + ROM::hex(cmdaddr,4));
-        p.seq->insertSpaceAt(cmdaddr, bytesToAdd);
+        p.seq->insertSpaceAt(cmdaddr, bytesToAdd, (selcmd != 0));
         p.seq->writeByte(cmdaddr, (int)cmd.getProperty("cmd", 0));
         seqStructureChanged();
         //[/UserButtonCode_btnSeqCmdAdd]
@@ -1019,7 +862,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         ValueTree command = p.seq->getCommand(cmdaddr, section->stype);
         int len = command.getProperty("length", 1);
         DBG("Removing " + String(len) + " bytes @" + ROM::hex(cmdaddr,4));
-        p.seq->removeData(cmdaddr, len);
+        p.seq->removeData(cmdaddr, len, selsec);
         seqStructureChanged();
         //[/UserButtonCode_btnSeqCmdDelete]
     }
@@ -1032,37 +875,6 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
     {
         //[UserButtonCode_btnSeqCmdDn] -- add your button handler code here..
         //[/UserButtonCode_btnSeqCmdDn]
-    }
-    else if (buttonThatWasClicked == btnMIDIExport)
-    {
-        //[UserButtonCode_btnMIDIExport] -- add your button handler code here..
-        if(&*p.seq == nullptr) return;
-        ScopedPointer<MidiFile> midi;
-        midi = p.seq->toMIDIFile();
-		File dest = File::getSpecialLocation(File::userHomeDirectory);
-		dest = dest.getChildFile("haxxorz.mid");
-        FileChooser box("Save As", dest, "*.mid");
-        if(!box.browseForFileToSave(true)) return;
-        dest = box.getResult();
-        if(!dest.hasWriteAccess()){
-            DBG("Cannot write to " + dest.getFullPathName() + "!");
-            return;
-        }
-        if(dest.getFileExtension() == ""){
-            dest = dest.withFileExtension(".mid");
-        }
-        if(dest.exists()){
-            dest.deleteFile();
-        }
-        FileOutputStream fos(dest);
-        midi->writeTo(fos);
-        DBG("Written!!!!");
-        //[/UserButtonCode_btnMIDIExport]
-    }
-    else if (buttonThatWasClicked == btnMIDIImport)
-    {
-        //[UserButtonCode_btnMIDIImport] -- add your button handler code here..
-        //[/UserButtonCode_btnMIDIImport]
     }
     else if (buttonThatWasClicked == btnReParse)
     {
@@ -1105,27 +917,6 @@ void AudioseqPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     {
         //[UserComboBoxCode_cbxSeqCmdType] -- add your combo box handling code here..
         //[/UserComboBoxCode_cbxSeqCmdType]
-    }
-    else if (comboBoxThatHasChanged == cbxMIDIChnVol)
-    {
-        //[UserComboBoxCode_cbxMIDIChnVol] -- add your combo box handling code here..
-        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
-        cmdlistnode.setProperty("chnvol", cbxMIDIChnVol->getText(), nullptr);
-        //[/UserComboBoxCode_cbxMIDIChnVol]
-    }
-    else if (comboBoxThatHasChanged == cbxMIDIMtrVol)
-    {
-        //[UserComboBoxCode_cbxMIDIMtrVol] -- add your combo box handling code here..
-        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
-        cmdlistnode.setProperty("mtrvol", cbxMIDIMtrVol->getText(), nullptr);
-        //[/UserComboBoxCode_cbxMIDIMtrVol]
-    }
-    else if (comboBoxThatHasChanged == cbxChnPriority)
-    {
-        //[UserComboBoxCode_cbxChnPriority] -- add your combo box handling code here..
-        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
-        cmdlistnode.setProperty("chnpriority", cbxChnPriority->getText(), nullptr);
-        //[/UserComboBoxCode_cbxChnPriority]
     }
 
     //[UsercomboBoxChanged_Post]
@@ -1175,10 +966,8 @@ void AudioseqPane::rowSelected(TextListModel* parent, int row){
 void AudioseqPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     int val;
     String text = editorThatWasChanged.getText();
-    if(&editorThatWasChanged == &*txtParamAdd
-            || &editorThatWasChanged == &*txtCmdDataSize
-            || &editorThatWasChanged == &*txtMIDIBend
-            || &editorThatWasChanged == &*txtMIDIPPQN ){
+    if(        &editorThatWasChanged == &*txtParamAdd
+            || &editorThatWasChanged == &*txtCmdDataSize){
         val = text.getIntValue();
     }else{
         val = text.getHexValue32();
@@ -1226,13 +1015,6 @@ void AudioseqPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         if(val < 0) val = 0;
         selparam.setProperty("datalen", val, nullptr);
         turnRed = false;
-    }else if(&editorThatWasChanged == &*txtMIDIBend){
-        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
-        cmdlistnode.setProperty("bendrange", val, nullptr);
-    }else if(&editorThatWasChanged == &*txtMIDIPPQN){
-        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
-        if(val <= 0) val = 1;
-        cmdlistnode.setProperty("ppqnmultiplier", val, nullptr);
     }else if(&editorThatWasChanged == &*txtSeqCmdValue){
         if(&*p.seq == nullptr) return;
         int selsec = lstSeqSections->getLastRowSelected();
@@ -1245,7 +1027,7 @@ void AudioseqPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         int selparam = lstSeqCmdParams->getLastRowSelected();
             if(selparam < 0 || selparam >= cmd.getNumChildren()) return;
             ValueTree param = cmd.getChild(selparam);
-        int ret = p.seq->editCmdParam(cmdaddr, section->stype, param.getProperty("meaning", "None"), val);
+        int ret = p.seq->editCmdParam(selsec, cmdaddr, section->stype, param.getProperty("meaning", "None"), val);
         turnRed = (ret < 0);
         if(ret > 0){
             seqStructureChanged();
@@ -1371,58 +1153,62 @@ String AudioseqPane::getCommandDesc(ValueTree cmd){
 void AudioseqPane::fillMeaningsBox(String action){
     cbxMeaning->clear(dontSendNotification);
     cbxMeaning->addItem("None", cbxMeaning->getNumItems()+1);
-    cbxMeaning->addItem("Pre-Delay", cbxMeaning->getNumItems()+1);
-    cbxMeaning->addItem("Post-Delay", cbxMeaning->getNumItems()+1);
+    cbxMeaning->addItem("Delay", cbxMeaning->getNumItems()+1);
     if(action == "No Action"){
         //None
     }else if(action == "End of Data"){
         //None
     }else if(action == "Timestamp"){
-        //None--use Pre-Delay or Post-Delay
-    }else if(action == "Ptr Channel Header"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
+        //None--use Delay
+    }else if(action == "Jump Same Level"){
         cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
-    }else if(action == "Ptr Loop Start"){
+    }else if(action == "Call Same Level"){
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
+    }else if(action == "Loop Start"){
+        cbxMeaning->addItem("Loop Count", cbxMeaning->getNumItems()+1);
+    }else if(action == "Loop End"){
+        //None
+    }else if(action == "Ptr Channel Header"){
+        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
     }else if(action == "Ptr Track Data"){
         cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
-    }else if(action == "Ptr More Track Data"){
-        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
+    }else if(action == "Sequence Format"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Sequence Type"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Channel Enable"){
+        cbxMeaning->addItem("Bitfield", cbxMeaning->getNumItems()+1);
+    }else if(action == "Channel Disable"){
+        cbxMeaning->addItem("Bitfield", cbxMeaning->getNumItems()+1);
     }else if(action == "Master Volume"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Tempo"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Reset"){
+        //None
     }else if(action == "Chn Priority"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Chn Volume"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Chn Pan"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Chn Effects"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Chn Vibrato"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Chn Pitch Bend"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Chn Transpose"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Layer Transpose"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Chn Instrument"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Track Note"){
         cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
@@ -1489,14 +1275,6 @@ void AudioseqPane::fillSeqCommands(){
     cbxMeaning->setSelectedItemIndex(0, dontSendNotification);
 }
 
-void AudioseqPane::refreshMIDIControls(){
-    ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
-    txtMIDIBend->setText(cmdlistnode.getProperty("bendrange", 2).toString());
-    txtMIDIPPQN->setText(cmdlistnode.getProperty("ppqnmultiplier", 1).toString());
-    cbxMIDIChnVol->setText(cmdlistnode.getProperty("chnvol", "CC7 (Volume)").toString());
-    cbxMIDIMtrVol->setText(cmdlistnode.getProperty("mtrvol", "CC24 (None)").toString());
-    cbxChnPriority->setText(cmdlistnode.getProperty("chnpriority", "CC25 (None)").toString());
-}
 
 void AudioseqPane::refreshSeqCmdControls(){
     if(&*p.seq == nullptr) return;
@@ -1543,7 +1321,7 @@ void AudioseqPane::refreshSeqCmdParamControls(){
         }
         ValueTree param = cmd.getChild(selparam);
     int len = (int)param.getProperty("datalen", 1) * 2;
-    if(len <= 0) len = 1;
+    if(len <= 0) len = 2;
     txtSeqCmdValue->setText(ROM::hex((uint32)(int)param.getProperty("value", 0),
             len), dontSendNotification);
 }
@@ -1583,23 +1361,19 @@ BEGIN_JUCER_METADATA
                   virtualName="" explicitFocusOrder="0" pos="408 0 648 672" title="Loaded Sequence"/>
   <GROUPCOMPONENT name="new group" id="6e58ac86762caa1" memberName="groupComponent2"
                   virtualName="" explicitFocusOrder="0" pos="416 616 272 48" title="Section is"/>
-  <GROUPCOMPONENT name="new group" id="5a1a54c8f2b8a402" memberName="groupComponent4"
-                  virtualName="" explicitFocusOrder="0" pos="0 480 400 272" title="MIDI File"/>
-  <GROUPCOMPONENT name="new group" id="425cb4d36ac8f912" memberName="groupComponent7"
-                  virtualName="" explicitFocusOrder="0" pos="8 592 384 48" title="Export Settings"/>
   <GROUPCOMPONENT name="new group" id="f1d4a599b3267719" memberName="groupComponent3"
-                  virtualName="" explicitFocusOrder="0" pos="0 0 400 480" title="Command Editor"/>
+                  virtualName="" explicitFocusOrder="0" pos="0 0 400 672" title="Command Editor"/>
   <GROUPCOMPONENT name="new group" id="977c50d4ba0f1784" memberName="groupComponent6"
-                  virtualName="" explicitFocusOrder="0" pos="152 264 240 208" title="Edit Parameter"/>
+                  virtualName="" explicitFocusOrder="0" pos="152 456 240 208" title="Edit Parameter"/>
   <GROUPCOMPONENT name="new group" id="b9f9c4c5353e7b92" memberName="groupComponent5"
-                  virtualName="" explicitFocusOrder="0" pos="280 160 112 96" title="Valid in"/>
+                  virtualName="" explicitFocusOrder="0" pos="280 352 112 96" title="Valid in"/>
   <LABEL name="new label" id="120e7da910b9fa36" memberName="label10" virtualName=""
-         explicitFocusOrder="0" pos="8 200 80 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 392 80 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Command:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="c17bf80cbae3b9bf" memberName="txtCmd"
-              virtualName="" explicitFocusOrder="0" pos="96 200 48 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="96 392 48 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTBUTTON name="new button" id="33646eda08c514f8" memberName="btnCmdAdd"
@@ -1609,126 +1383,126 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="352 40 40 24" buttonText="Del"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <TOGGLEBUTTON name="new toggle button" id="de7cafa15549ae99" memberName="optCmdDataFixed"
-                virtualName="" explicitFocusOrder="0" pos="160 352 71 24" buttonText="Fixed"
+                virtualName="" explicitFocusOrder="0" pos="160 544 71 24" buttonText="Fixed"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="1"/>
   <TOGGLEBUTTON name="new toggle button" id="1ac143856715712c" memberName="optCmdDataVar"
-                virtualName="" explicitFocusOrder="0" pos="160 376 72 24" buttonText="Variable"
+                virtualName="" explicitFocusOrder="0" pos="160 568 72 24" buttonText="Variable"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <LABEL name="new label" id="5ef4448d8600da02" memberName="lblCmdDataSize"
-         virtualName="" explicitFocusOrder="0" pos="240 360 47 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="240 552 47 24" edTextCol="ff000000"
          edBkgCol="0" labelText="length" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="txtCmdDat" id="6db88ac89d3dcd1d" memberName="txtCmdDataSize"
-              virtualName="" explicitFocusOrder="0" pos="288 360 32 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="288 552 32 24" initialText="1"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="63098370e332d46f" memberName="label11" virtualName=""
-         explicitFocusOrder="0" pos="320 360 48 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="320 552 48 24" edTextCol="ff000000"
          edBkgCol="0" labelText="(dec)" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="1260a931f1b77e50" memberName="label2" virtualName=""
-         explicitFocusOrder="0" pos="8 232 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 424 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Action:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <COMBOBOX name="Action" id="4cabd0b9e2965ff5" memberName="cbxAction" virtualName=""
-            explicitFocusOrder="0" pos="64 232 208 24" editable="0" layout="33"
-            items="No Action&#10;End of Data&#10;Timestamp&#10;Ptr Channel Header&#10;Ptr Loop Start&#10;Ptr Track Data&#10;Ptr More Track Data&#10;Master Volume&#10;Tempo&#10;Chn Priority&#10;Chn Volume&#10;Chn Pan&#10;Chn Effects&#10;Chn Vibrato&#10;Chn Pitch Bend&#10;Chn Instrument&#10;Chn Transpose&#10;Layer Transpose&#10;Track Note"
+            explicitFocusOrder="0" pos="64 424 208 24" editable="0" layout="33"
+            items="No Action&#10;End of Data&#10;Timestamp&#10;Jump Same Level&#10;Call Same Level&#10;Loop Start&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Track Data&#10;Sequence Format&#10;Sequence Type&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Chn Reset&#10;Chn Priority&#10;Chn Volume&#10;Chn Pan&#10;Chn Effects&#10;Chn Vibrato&#10;Chn Pitch Bend&#10;Chn Instrument&#10;Chn Transpose&#10;Layer Transpose&#10;Track Note"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="6d034f22b803ef0c" memberName="label9" virtualName=""
-         explicitFocusOrder="0" pos="8 168 55 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 360 55 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="17aae1e70c35fd59" memberName="txtCmdName"
-              virtualName="" explicitFocusOrder="0" pos="64 168 208 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="64 360 208 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="391e87c7412baa15" memberName="txtCmdEnd"
-              virtualName="" explicitFocusOrder="0" pos="176 200 48 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="176 392 48 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="2dce25261c0a7641" memberName="label12" virtualName=""
-         explicitFocusOrder="0" pos="152 200 23 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="152 392 23 24" edTextCol="ff000000"
          edBkgCol="0" labelText="to" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TOGGLEBUTTON name="new toggle button" id="6760f7dd9298e144" memberName="optCmdSeq"
-                virtualName="" explicitFocusOrder="0" pos="288 176 103 24" buttonText="Seq header"
+                virtualName="" explicitFocusOrder="0" pos="288 368 103 24" buttonText="Seq header"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="e198702d72e71f55" memberName="optCmdChn"
-                virtualName="" explicitFocusOrder="0" pos="288 200 104 24" buttonText="Chn header"
+                virtualName="" explicitFocusOrder="0" pos="288 392 104 24" buttonText="Chn header"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="d079eea3af0c26a4" memberName="optCmdTrk"
-                virtualName="" explicitFocusOrder="0" pos="288 224 104 24" buttonText="Track data"
+                virtualName="" explicitFocusOrder="0" pos="288 416 104 24" buttonText="Track data"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <LABEL name="new label" id="5666e65f925f98ec" memberName="label13" virtualName=""
-         explicitFocusOrder="0" pos="8 256 104 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 456 104 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Parameters:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <TEXTBUTTON name="new button" id="972d79b803f377c4" memberName="btnParamAdd"
-              virtualName="" explicitFocusOrder="0" pos="104 280 40 24" buttonText="Add"
+              virtualName="" explicitFocusOrder="0" pos="104 480 40 24" buttonText="Add"
               connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="1ba257bf64ce7e89" memberName="btnParamDel"
-              virtualName="" explicitFocusOrder="0" pos="104 304 40 24" buttonText="Del"
+              virtualName="" explicitFocusOrder="0" pos="104 504 40 24" buttonText="Del"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="2f3dd0a3ebcb78d5" memberName="btnParamUp"
-              virtualName="" explicitFocusOrder="0" pos="104 416 40 24" buttonText="Up"
+              virtualName="" explicitFocusOrder="0" pos="104 616 40 24" buttonText="Up"
               connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="cee83a628d87bd1a" memberName="btnParamDn"
-              virtualName="" explicitFocusOrder="0" pos="104 440 40 24" buttonText="Dn"
+              virtualName="" explicitFocusOrder="0" pos="104 640 40 24" buttonText="Dn"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <TOGGLEBUTTON name="new toggle button" id="3134f7ae28bcfdd3" memberName="optCmdOffset"
-                virtualName="" explicitFocusOrder="0" pos="160 328 160 24" buttonText="Cmd Offset (no data)"
+                virtualName="" explicitFocusOrder="0" pos="160 520 160 24" buttonText="Cmd Offset (no data)"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <LABEL name="new label" id="9da40dae5b71c4cf" memberName="label14" virtualName=""
-         explicitFocusOrder="0" pos="160 304 224 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="160 496 224 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Data source:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="eed9a48d3bb5e03b" memberName="label15" virtualName=""
-         explicitFocusOrder="0" pos="160 400 72 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="160 592 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Meaning:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="b867bd3ceb8e1203" memberName="txtParamName"
-              virtualName="" explicitFocusOrder="0" pos="216 280 166 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="216 472 166 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="8306c58890811511" memberName="label16" virtualName=""
-         explicitFocusOrder="0" pos="160 280 55 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="160 472 55 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <COMBOBOX name="Meaning" id="5955524ab0ec02c1" memberName="cbxMeaning"
-            virtualName="" explicitFocusOrder="0" pos="232 400 150 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="232 592 150 24" editable="0"
             layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="8d5abd7e709bfe4f" memberName="label17" virtualName=""
-         explicitFocusOrder="0" pos="160 432 64 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="160 624 64 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Add (dec):" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="9a94c821168285dc" memberName="label18" virtualName=""
-         explicitFocusOrder="0" pos="272 432 64 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="272 624 64 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Multiply:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="d44ee99ec4017196" memberName="txtParamAdd"
-              virtualName="" explicitFocusOrder="0" pos="224 432 47 24" initialText="0"
+              virtualName="" explicitFocusOrder="0" pos="224 624 47 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="9adbc3822f7d0ac1" memberName="txtParamMult"
-              virtualName="" explicitFocusOrder="0" pos="336 432 47 24" initialText="1.0"
+              virtualName="" explicitFocusOrder="0" pos="336 624 47 24" initialText="1.0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTBUTTON name="new button" id="5c1f23230407fcb1" memberName="btnCmdUp"
-              virtualName="" explicitFocusOrder="0" pos="352 104 40 24" buttonText="Up"
+              virtualName="" explicitFocusOrder="0" pos="352 296 40 24" buttonText="Up"
               connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="98d71ec28a9ccb5f" memberName="btnCmdDn"
-              virtualName="" explicitFocusOrder="0" pos="352 128 40 24" buttonText="Dn"
+              virtualName="" explicitFocusOrder="0" pos="352 320 40 24" buttonText="Dn"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="cfb894eaf50ddd48" memberName="label3" virtualName=""
          explicitFocusOrder="0" pos="416 88 296 24" edTextCol="ff000000"
@@ -1788,69 +1562,6 @@ BEGIN_JUCER_METADATA
          edBkgCol="0" labelText="[dec, note equiv.]" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
-  <TEXTBUTTON name="new button" id="3fc9249f7191079e" memberName="btnMIDIExport"
-              virtualName="" explicitFocusOrder="0" pos="8 496 64 24" buttonText="Export"
-              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="deb9b771019f9555" memberName="btnMIDIImport"
-              virtualName="" explicitFocusOrder="0" pos="72 496 64 24" buttonText="Import"
-              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
-  <LABEL name="new label" id="7ee4df75e04ec993" memberName="label20" virtualName=""
-         explicitFocusOrder="0" pos="16 608 88 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Bend range:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="f6f8b6c6346a1954" memberName="txtMIDIBend"
-              virtualName="" explicitFocusOrder="0" pos="104 608 32 24" initialText="4"
-              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
-              caret="1" popupmenu="1"/>
-  <LABEL name="new label" id="678cb1b34534af2f" memberName="label21" virtualName=""
-         explicitFocusOrder="0" pos="144 608 120 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="PPQN multiplier:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="99b9654ebd18dc1e" memberName="txtMIDIPPQN"
-              virtualName="" explicitFocusOrder="0" pos="256 608 32 24" initialText="2"
-              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
-              caret="1" popupmenu="1"/>
-  <LABEL name="new label" id="a7e744044efc1585" memberName="label22" virtualName=""
-         explicitFocusOrder="0" pos="288 608 32 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="x48" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="695e3a0f276fa4e0" memberName="label23" virtualName=""
-         explicitFocusOrder="0" pos="8 520 136 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Chn volume to:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <COMBOBOX name="new combo box" id="d119e693727236bb" memberName="cbxMIDIChnVol"
-            virtualName="" explicitFocusOrder="0" pos="144 520 248 24" editable="0"
-            layout="33" items="CC7 (Volume)&#10;CC11 (Expr)" textWhenNonSelected="ERROR"
-            textWhenNoItems="(no choices)"/>
-  <LABEL name="new label" id="1dea77f54e15ecb7" memberName="label24" virtualName=""
-         explicitFocusOrder="0" pos="8 544 136 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Master volume to:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <COMBOBOX name="new combo box" id="21e08ae5ec6adcb7" memberName="cbxMIDIMtrVol"
-            virtualName="" explicitFocusOrder="0" pos="144 544 248 24" editable="0"
-            layout="33" items="CC7 (Volume)&#10;CC11 (Expr)&#10;CC16 (GPC1)&#10;CC24 (None)&#10;SysEx MstrVol"
-            textWhenNonSelected="ERROR" textWhenNoItems="(no choices)"/>
-  <LABEL name="new label" id="ec20b0951fd4e63e" memberName="label25" virtualName=""
-         explicitFocusOrder="0" pos="144 496 248 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Uses Audiobank information" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="494496a2e6f332ab" memberName="label26" virtualName=""
-         explicitFocusOrder="0" pos="8 568 136 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Chn priority to:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <COMBOBOX name="new combo box" id="7007be4d513e8e1c" memberName="cbxChnPriority"
-            virtualName="" explicitFocusOrder="0" pos="144 568 248 24" editable="0"
-            layout="33" items="CC17 (GPC2)&#10;CC25 (None)&#10;CC79 (SC10)"
-            textWhenNonSelected="ERROR" textWhenNoItems="(no choices)"/>
-  <GROUPCOMPONENT name="new group" id="d6fd042ed5665f41" memberName="groupComponent8"
-                  virtualName="" explicitFocusOrder="0" pos="8 640 384 104" title="Import Settings"/>
   <LABEL name="new label" id="e7b46dfed4aed5ba" memberName="lblSeqCmdAction2"
          virtualName="" explicitFocusOrder="0" pos="416 64 120 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Sections:" editableSingleClick="0" editableDoubleClick="0"

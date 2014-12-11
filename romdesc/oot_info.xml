@@ -3,116 +3,13 @@
 <!-- seq64 ROM Description File -->
 <RomDesc ftaddr="29744" abfindex="3" asfindex="4" atfindex="5" astaddr="12098256"
          abtaddr="12097184" sstaddr="12100032" indextype="2">
-  <cmdlist bendrange="6" ppqnmultiplier="10" chnvol="CC7 (Volume)" mtrvol="SysEx MstrVol"
-           chnpriority="CC25 (None)">
-    <command cmd="211" name="Sequence Format" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Format" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="213" name="Sequence Type" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Type" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="214" name="Channel Disable" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="2" name="Channels" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="215" name="Channel Enable" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="2" name="Channels" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="219" name="Master Volume" action="Master Volume" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Volume" meaning="Value" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="221" name="Tempo" action="Tempo" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Tempo" meaning="Value" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="144" name="Absolute Chn Ptr" action="Ptr Channel Header"
-             cmdend="159" validinseq="1">
-      <parameter datasrc="offset" datalen="0" name="Channel" meaning="Channel"
-                 add="0" multiply="1"/>
-      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="160" name="Relative Chn Ptr" action="Ptr Channel Header"
-             cmdend="175" validinseq="1">
-      <parameter datasrc="offset" datalen="0" name="Channel" meaning="Channel"
-                 add="0" multiply="1"/>
-      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Relative Address"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="134" name="ENDIF" action="No Action" validinseq="1"/>
-    <command cmd="135" name="IF(control)" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Control" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="199" name="Variable ???" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Unknown" meaning="None" add="0"
-                 multiply="1"/>
-      <parameter datasrc="fixed" datalen="1" name="Unknown" meaning="None" add="0"
-                 multiply="1"/>
-      <parameter datasrc="fixed" datalen="1" name="Unknown" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="200" name="Variable (Subtract?)" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Value" meaning="None" add="0"
-                 multiply="1"/>
-      <parameter datasrc="variable" datalen="1" name="Control" meaning="None"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="204" name="Variable Set" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Value" meaning="None" add="0"
-                 multiply="1"/>
-      <parameter datasrc="variable" datalen="1" name="Control" meaning="None"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="242" name="Branch Relative" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="None"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="243" name="Branch Relative" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="None"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="244" name="Branch Relative" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="None"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="245" name="Something Ptr" action="Ptr Channel Header" validinseq="1">
-      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="247" name="???" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Unnamed" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="248" name="Branch Relative" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="1" name="Unnamed" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="250" name="Jump Absolute" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="2" name="Unnamed" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="251" name="Jump Absolute" action="Ptr Loop Start" validinseq="1">
-      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="252" name="Jump Absolute" action="No Action" validinseq="1">
-      <parameter datasrc="fixed" datalen="2" name="Address" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="253" name="Seq Timestamp" action="Timestamp" validinseq="1"
-             validinchn="0" validintrk="0">
-      <parameter datasrc="variable" datalen="2" name="Delta Time" meaning="Pre-Delay"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="0" name="Byte Timestamp" action="Timestamp" cmdend="111"
+  <cmdlist>
+    <command cmd="255" name="End of Data" action="End of Data" validinseq="1"
+             validinchn="1" validintrk="1"/>
+    <command cmd="0" name="Chn Timestamp" action="Timestamp" cmdend="111"
              validinchn="1">
-      <parameter datasrc="offset" datalen="0" name="Time" meaning="Post-Delay"
-                 add="0" multiply="1"/>
+      <parameter datasrc="offset" datalen="0" name="Time" meaning="Delay" add="0"
+                 multiply="1"/>
     </command>
     <command cmd="120" name="Relative Trk Ptr" action="Ptr Track Data" cmdend="123"
              validinchn="1">
@@ -131,33 +28,25 @@
     <command cmd="193" name="Instrument" action="Chn Instrument" validinchn="1">
       <parameter datasrc="fixed" datalen="1" name="Instrument" meaning="Value"
                  add="0" multiply="1"/>
-      <parameter datasrc="variable" datalen="1" name="Post-Delay" meaning="Post-Delay"
-                 add="0" multiply="1"/>
     </command>
     <command cmd="194" name="Transposition" action="Chn Transpose" validinchn="1"
              validintrk="0">
       <parameter datasrc="fixed" datalen="1" name="Value" meaning="Value" add="0"
                  multiply="1"/>
     </command>
-    <command cmd="196" name="Channel Start" action="No Action" validinchn="1"/>
-    <command cmd="204" name="???" action="No Action" validinchn="1">
-      <parameter datasrc="fixed" datalen="1" name="Unknown" meaning="None" add="0"
-                 multiply="1"/>
-      <parameter datasrc="fixed" datalen="1" name="Unknown" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
+    <command cmd="196" name="Channel Start" action="Chn Reset" validinchn="1"/>
     <command cmd="211" name="Pitch Bend" action="Chn Pitch Bend" validinchn="1"
-             validintrk="1">
+             validintrk="0">
       <parameter datasrc="fixed" datalen="1" name="Bend" meaning="Value" add="0"
                  multiply="1"/>
     </command>
     <command cmd="212" name="Effect Level" action="Chn Effects" validinchn="1"
-             validintrk="1">
+             validintrk="0">
       <parameter datasrc="fixed" datalen="1" name="Value" meaning="Value" add="0"
                  multiply="1"/>
     </command>
     <command cmd="216" name="Vibrato (Chn)" action="Chn Vibrato" validinchn="1"
-             validintrk="1">
+             validintrk="0">
       <parameter datasrc="fixed" datalen="1" name="Vibrato" meaning="Value" add="0"
                  multiply="1"/>
     </command>
@@ -165,16 +54,16 @@
       <parameter datasrc="fixed" datalen="1" name="Unnamed" meaning="None" add="0"
                  multiply="1"/>
     </command>
-    <command cmd="220" name="Drumset?" action="No Action" validinchn="1" validintrk="1">
+    <command cmd="220" name="Drumset?" action="No Action" validinchn="1" validintrk="0">
       <parameter datasrc="fixed" datalen="1" name="Unknown" meaning="None" add="0"
                  multiply="1"/>
     </command>
-    <command cmd="221" name="Chan Pan" action="Chn Pan" validinchn="1" validintrk="1">
+    <command cmd="221" name="Chan Pan" action="Chn Pan" validinchn="1" validintrk="0">
       <parameter datasrc="fixed" datalen="1" name="Pan" meaning="Value" add="0"
                  multiply="1"/>
     </command>
     <command cmd="223" name="Chan Volume (Chn)" action="Chn Volume" validinchn="1"
-             validintrk="1">
+             validintrk="0">
       <parameter datasrc="fixed" datalen="1" name="Volume" meaning="Value" add="0"
                  multiply="1"/>
     </command>
@@ -183,23 +72,15 @@
                  multiply="1"/>
     </command>
     <command cmd="233" name="Channel Priority" action="No Action" validinchn="1"
-             validintrk="1">
+             validintrk="0">
       <parameter datasrc="fixed" datalen="1" name="Priority" meaning="None" add="0"
                  multiply="1"/>
-    </command>
-    <command cmd="251" name="Chn Loop" action="End of Data" validinchn="1">
-      <parameter datasrc="fixed" datalen="2" name="Loop Addr" meaning="None" add="0"
-                 multiply="1"/>
-    </command>
-    <command cmd="253" name="Chn Timestamp" action="Timestamp" validinchn="1">
-      <parameter datasrc="variable" datalen="2" name="Delta Time" meaning="Pre-Delay"
-                 add="0" multiply="1"/>
     </command>
     <command cmd="0" name="Note w/ T, V, G" action="Track Note" cmdend="63"
              validintrk="1">
       <parameter datasrc="offset" datalen="0" name="Note" meaning="Note" add="0"
                  multiply="1"/>
-      <parameter datasrc="variable" datalen="2" name="Timestamp" meaning="Post-Delay"
+      <parameter datasrc="variable" datalen="2" name="Timestamp" meaning="Delay"
                  add="0" multiply="1"/>
       <parameter datasrc="fixed" datalen="1" name="Velocity" meaning="Velocity"
                  add="0" multiply="1"/>
@@ -210,7 +91,7 @@
              cmdend="127">
       <parameter datasrc="offset" datalen="0" name="Note" meaning="Note" add="0"
                  multiply="1"/>
-      <parameter datasrc="variable" datalen="2" name="Timestamp" meaning="Post-Delay"
+      <parameter datasrc="variable" datalen="2" name="Timestamp" meaning="Delay"
                  add="0" multiply="1"/>
       <parameter datasrc="fixed" datalen="1" name="Velocity" meaning="Velocity"
                  add="0" multiply="1"/>
@@ -225,19 +106,198 @@
                  add="0" multiply="1"/>
     </command>
     <command cmd="192" name="Trk Timestamp" action="Timestamp" validintrk="1">
-      <parameter datasrc="variable" datalen="2" name="Timestamp" meaning="Pre-Delay"
+      <parameter datasrc="variable" datalen="2" name="Timestamp" meaning="Delay"
                  add="0" multiply="1"/>
     </command>
-    <command cmd="194" name="Unnamed" action="Layer Transpose" validintrk="1">
+    <command cmd="194" name="Ly Transpose" action="Layer Transpose" validintrk="1">
       <parameter datasrc="fixed" datalen="1" name="Value" meaning="Value" add="0"
                  multiply="1"/>
     </command>
-    <command cmd="252" name="Track Jump" action="Ptr More Track Data" validintrk="1"
+    <command cmd="0" name="Load Chn Bit to Q" action="No Action" cmdend="15"
+             validinseq="1">
+      <parameter datasrc="offset" datalen="0" name="Channel" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="16" name="Ignored Seq Cmd" action="No Action" cmdend="63"
+             validinseq="1"/>
+    <command cmd="64" name="Chn C Unknown (init?)" action="No Action" cmdend="79"
+             validinseq="1" validinchn="1">
+      <parameter datasrc="offset" datalen="0" name="Channel" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="80" name="Q -= var[C]" action="No Action" cmdend="95" validinseq="1"
              validinchn="1">
+      <parameter datasrc="offset" datalen="0" name="C" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="96" name="Load ??? DMA from var[C]" action="No Action" cmdend="111"
+             validinseq="1" validinchn="1">
+      <parameter datasrc="offset" datalen="0" name="C" meaning="None" add="0"
+                 multiply="1"/>
+      <parameter datasrc="fixed" datalen="1" name="Unknown 1" meaning="None" add="0"
+                 multiply="1"/>
+      <parameter datasrc="fixed" datalen="1" name="Unknown 2" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="112" name="var[C] = Q" action="No Action" cmdend="127" validinseq="1"
+             validinchn="1">
+      <parameter datasrc="offset" datalen="0" name="C" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="128" name="Q = var[C]; if(C&lt;2) var[C] = -1;" action="No Action"
+             cmdend="143" validinseq="1" validinchn="1">
+      <parameter datasrc="offset" datalen="0" name="Unnamed" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="144" name="Absolute Chn Ptr" action="Ptr Channel Header"
+             cmdend="159" validinseq="1">
+      <parameter datasrc="offset" datalen="0" name="Channel" meaning="Channel"
+                 add="0" multiply="1"/>
       <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
                  add="0" multiply="1"/>
     </command>
-    <command cmd="255" name="End of Data" action="End of Data" validinseq="1"
+    <command cmd="160" name="Relative Chn Ptr" action="Ptr Channel Header"
+             cmdend="175" validinseq="1">
+      <parameter datasrc="offset" datalen="0" name="Channel" meaning="Channel"
+                 add="0" multiply="1"/>
+      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Relative Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="176" name="Set Up New Seq from var[C]" action="No Action"
+             cmdend="191" validinseq="1" validinchn="1">
+      <parameter datasrc="offset" datalen="0" name="C" meaning="None" add="0"
+                 multiply="1"/>
+      <parameter datasrc="fixed" datalen="1" name="New seq index" meaning="None"
+                 add="0" multiply="1"/>
+      <parameter datasrc="fixed" datalen="2" name="Unknown" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="196" name="WIP possibly return from parsing?" action="No Action"
+             validinseq="1">
+      <parameter datasrc="fixed" datalen="1" name="Unknown 1" meaning="None" add="0"
+                 multiply="1"/>
+      <parameter datasrc="fixed" datalen="1" name="Unknown 2" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="197" name="WIP Store to SeqParams[E0]" action="No Action"
+             validinseq="1">
+      <parameter datasrc="fixed" datalen="2" name="Unknown" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="198" name="Return from Sequence" action="End of Data" validinseq="1"/>
+    <command cmd="199" name="WIP" action="No Action" validinseq="1" validinchn="1">
+      <parameter datasrc="fixed" datalen="1" name="Unnamed" meaning="None" add="0"
+                 multiply="1"/>
+      <parameter datasrc="fixed" datalen="2" name="Unnamed" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="200" name="Q -= val" action="No Action" validinseq="1" validinchn="1">
+      <parameter datasrc="fixed" datalen="1" name="Value" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="201" name="Q &amp;= val" action="No Action" validinseq="1"
+             validinchn="1">
+      <parameter datasrc="fixed" datalen="1" name="Value" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="202" name="Ignored" action="No Action" validinseq="1"/>
+    <command cmd="203" name="Ignored" action="No Action" validinseq="1"/>
+    <command cmd="204" name="Q = val" action="No Action" validinseq="1" validinchn="1">
+      <parameter datasrc="fixed" datalen="1" name="Value" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="211" name="Sequence Format" action="Sequence Format" validinseq="1">
+      <parameter datasrc="fixed" datalen="1" name="Format" meaning="Value" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="213" name="Sequence Type" action="Sequence Type" validinseq="1">
+      <parameter datasrc="fixed" datalen="1" name="Type" meaning="Value" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="214" name="Channel Disable" action="Channel Disable" validinseq="1">
+      <parameter datasrc="fixed" datalen="2" name="Channels" meaning="Bitfield"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="215" name="Channel Enable" action="Channel Enable" validinseq="1">
+      <parameter datasrc="fixed" datalen="2" name="Channels" meaning="Bitfield"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="219" name="Master Volume" action="Master Volume" validinseq="1">
+      <parameter datasrc="fixed" datalen="1" name="Volume" meaning="Value" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="221" name="Tempo" action="Tempo" validinseq="1">
+      <parameter datasrc="fixed" datalen="1" name="Tempo" meaning="Value" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="223" name="Unknown" action="No Action" validinseq="1" validinchn="0">
+      <parameter datasrc="fixed" datalen="1" name="Unnamed" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="239" name="Ignore 3 Bytes" action="No Action" validinseq="1">
+      <parameter datasrc="fixed" datalen="2" name="Ignored" meaning="None" add="0"
+                 multiply="1"/>
+      <parameter datasrc="fixed" datalen="1" name="Ignored" meaning="None" add="0"
+                 multiply="1"/>
+    </command>
+    <command cmd="242" name="Branch Rel if Q&lt;0" action="Jump Same Level"
+             validinseq="1" validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="Relative Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="243" name="Branch Rel if Q==0" action="Jump Same Level"
+             validinseq="1" validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="Relative Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="244" name="Branch Rel Always" action="Jump Same Level" validinseq="1"
+             validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="Relative Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="245" name="Branch Abs if Q&gt;=0" action="Jump Same Level"
+             validinseq="1" validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="246" name="Branch Abs to Seq Start" action="Jump Same Level"
+             validinseq="1" validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="0" name="No Data, is 0" meaning="Absolute Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="247" name="Loop End" action="Loop End" validinseq="1" validinchn="1"
+             validintrk="1"/>
+    <command cmd="248" name="Loop Start" action="Loop Start" validinseq="1"
+             validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="1" name="Loop Count" meaning="Loop Count"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="249" name="Branch Abs if Q&lt;0" action="Jump Same Level"
+             validinseq="1" validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="250" name="Branch Abs if Q==0" action="Jump Same Level"
+             validinseq="1" validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="251" name="Branch Abs Always" action="Jump Same Level" validinseq="1"
+             validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="252" name="Call Absolute" action="Call Same Level" validinseq="1"
+             validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="253" name="Timestamp" action="Timestamp" validinseq="1"
+             validinchn="1" validintrk="1">
+      <parameter datasrc="variable" datalen="2" name="Delta Time" meaning="Delay"
+                 add="0" multiply="1"/>
+    </command>
+    <command cmd="254" name="(Return 1?)" action="No Action" validinseq="1"
              validinchn="1" validintrk="1"/>
   </cmdlist>
   <filelist>
@@ -249,6 +309,7 @@
     <file index="5" name="Audiotable" type="Audiotable"/>
     <file index="6" name="" type="Unknown"/>
     <file index="12" name="" type="Unknown"/>
+    <file index="7" type="Unknown"/>
   </filelist>
   <knownfilelist>
     <knownfile type="Audiobank Index" from_ft="0" address="12097184" length="0"/>
@@ -277,6 +338,42 @@
     <indexentry index="24" name="Dodongo's Cavern"/>
     <indexentry index="92" name="Water Temple"/>
     <indexentry index="95" name="Gerudo Valley"/>
+    <indexentry index="2" name="Hyrule Field (Master)"/>
+    <indexentry index="49" name="Hyrule Field Morning"/>
+    <indexentry index="58" name="Temple of Time"/>
+    <indexentry index="63" name="Spirit Temple"/>
+    <indexentry index="64" name="Horse Race"/>
+    <indexentry index="65" name="Horse Race Goal"/>
+    <indexentry index="66" name="Ingo Loses"/>
+    <indexentry index="76" name="Windmill Hut"/>
+    <indexentry index="80" name="Zora's Domain"/>
+    <indexentry index="85" name="Shop Theme"/>
+    <indexentry index="26" name="Battle Theme"/>
+    <indexentry index="60" name="Kokiri Forest"/>
+    <indexentry index="102" name="Ending ~Ocarina of Time~"/>
+    <indexentry index="27" name="Boss Battle"/>
+    <indexentry index="28" name="Inside the Deku Tree/Grottos"/>
+    <indexentry index="29" name="Castletown Market"/>
+    <indexentry index="31" name="Inside a House"/>
+    <indexentry index="32" name="Game Over"/>
+    <indexentry index="33" name="Boss Clear"/>
+    <indexentry index="34" name="Item Get"/>
+    <indexentry index="35" name="Ganondorf Appears"/>
+    <indexentry index="36" name="Get Heart Container"/>
+    <indexentry index="37" name="Prelude of Light"/>
+    <indexentry index="38" name="Jabu-Jabu's Belly"/>
+    <indexentry index="40" name="Fairy Fountain"/>
+    <indexentry index="41" name="Zelda's Theme"/>
+    <indexentry index="42" name="Fire Temple"/>
+    <indexentry index="43" name="Open Treasure Chest"/>
   </audioseqidx>
   <samplesetidx/>
+  <midiopts ppqnmultiplier="10" mtrvol="SysEx MstrVol" chnvol="CC7 (Volume)"
+            chnpriority="CC25 (None)" bendrange="6" q_other_time="1" q_vol_time="3"
+            q_vol_amp="2" q_other_amp="1" stacksize="4" formatbytedefault="32"
+            typebytedefault="50" delta_vel="5" delta_gate="3" delta_cc="3"
+            writeseqformat="1" writeseqtype="1" writechanbits="1" writeloopall="1"
+            writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="1"
+            useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
+            q_pan_amp="2"/>
 </RomDesc>

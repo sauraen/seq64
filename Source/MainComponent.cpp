@@ -8,12 +8,15 @@
   ==============================================================================
 */
 
-#include "../JuceLibraryCode/JuceHeader.h"
+#include "JuceHeader.h"
 #include "MainComponent.h"
 #include "AppProps.h"
 #include "FilesPane.h"
 #include "AudioseqPane.h"
+#include "MidiPane.h"
 #include "AudiobankPane.h"
+#include "CICSetter.h"
+#include "n64checksum.h"
 
 //==============================================================================
 
@@ -50,11 +53,13 @@ MainComponent::MainComponent(DocumentWindow& window_) : window(window_)
     //Tabbed Panes
     filespane = new FilesPane(p);
     audioseqpane = new AudioseqPane(p);
+    midipane = new MidiPane(p);
     audiobankpane = new AudiobankPane(p);
     
     tabbox = new TabbedComponent(TabbedButtonBar::TabsAtTop);
     tabbox->addTab("Files", Colours::white, &*filespane, false);
     tabbox->addTab("Audioseq", Colours::white, &*audioseqpane, false);
+    tabbox->addTab("MIDI File", Colours::white, &*midipane, false);
     tabbox->addTab("Audiobank", Colours::white, &*audiobankpane, false);
     addAndMakeVisible(*tabbox);
     
@@ -79,6 +84,7 @@ PopupMenu MainComponent::getMenuForIndex(int topLevelMenuIndex, const String &me
 
 void MainComponent::actuallySaveROM(){
     if(!romfile.hasWriteAccess()) return;
+    UpdateCRC(p.rom);
     DBG("Saving 0x" + ROM::hex((uint32)p.rom.getSize())
             + " bytes to " + romfile.getFullPathName());
     if(!romfile.replaceWithData(p.rom.getData(), (int)p.rom.getSize())){
@@ -138,6 +144,18 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
                 DBG("Interpreting .z64 file as not byte-swapped (ABCD order)");
             }
             DBG("Successfully loaded 0x" + ROM::hex((uint32)p.rom.getSize()) + " bytes");
+            if(FindCIC(p.rom) < 0){
+                if(NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                        "CRC Check", String("ROM CRCs did not match according to any known CIC!\n")
+                        + "Set CIC manually? (If not, CIC will not be updated when ROM is saved.)", nullptr, nullptr)){
+                    DialogWindow::LaunchOptions cicbox;
+                    cicbox.dialogTitle = "Set CIC";
+                    cicbox.dialogBackgroundColour = Colours::lightgrey;
+                    cicbox.content.setOwned(new CICSetter(p));
+                    cicbox.resizable = false;
+                    cicbox.launchAsync();
+                }
+            }
             onROMLoaded();
         }
         return;
@@ -279,7 +297,7 @@ void MainComponent::onROMLoaded(){
 void MainComponent::onRomDescLoaded(){
     filespane->romDescLoaded();
     audioseqpane->refreshCmdList();
-    audioseqpane->refreshMIDIControls();
+    midipane->refreshMIDIControls();
 }
 void MainComponent::onSeqLoaded(){
     audioseqpane->fillSeqSections();

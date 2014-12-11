@@ -18,7 +18,7 @@
 */
 
 //[Headers] You can add your own extra header files here...
-#include "../JuceLibraryCode/JuceHeader.h"
+#include "JuceHeader.h"
 #include "AppProps.h"
 //[/Headers]
 
@@ -594,7 +594,7 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
             length = p.rom.readWord(indexaddr + (8*ientryidx) + 8);
         }
         DBG("Loading sequence file from " + ROM::hex(seqaddr) + " length " + ROM::hex(length));
-        p.seq = new SeqFile(p.rom, p.romdesc.getOrCreateChildWithName("cmdlist", nullptr), seqaddr, length);
+        p.seq = new SeqFile(p.rom, p.romdesc, seqaddr, length);
         p.seq->name = txtIEntryName->getText();
         p.seq->parse();
         p.maincomponent->onSeqLoaded();
@@ -603,6 +603,32 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnSaveEntry)
     {
         //[UserButtonCode_btnSaveEntry] -- add your button handler code here..
+        if(!idxlistnode.isValid()) return;
+        if(ientryidx < 0) return;
+        if(dataaddr < 0) return;
+        if(&*p.seq == nullptr){
+            return;
+        }
+        uint32 seqaddr, length;
+        if((int)p.romdesc.getProperty("indextype", 1) == 2){
+            seqaddr = dataaddr + p.rom.readWord(indexaddr + (16*ientryidx) + 16);
+            length = p.rom.readWord(indexaddr + (16*ientryidx) + 20);
+        }else{
+            seqaddr = dataaddr + p.rom.readWord(indexaddr + (8*ientryidx) + 4);
+            length = p.rom.readWord(indexaddr + (8*ientryidx) + 8);
+        }
+        uint32 loadedseqlength = p.seq->getLength();
+        if(loadedseqlength > length){
+            NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Save Entry",
+                    "Currently, saving larger sequence (" + ROM::hex(loadedseqlength, 4)
+                    + " bytes)\ninto smaller space (" + ROM::hex(length, 4) + " bytes) is not supported.");
+            return;
+        }
+        if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Overwrite?", "Replace the sequence @" + ROM::hex(seqaddr) + " (" + ROM::hex(length, 4)
+                    + " bytes)\nwith the currently loaded one (" + ROM::hex(loadedseqlength, 4) + " bytes)?"
+                    + "\n(This does not save the ROM to disk.)", nullptr, nullptr)) return;
+        p.seq->saveToROM(p.rom, seqaddr);
         //[/UserButtonCode_btnSaveEntry]
     }
     else if (buttonThatWasClicked == optIndexType1)

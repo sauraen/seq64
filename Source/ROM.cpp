@@ -20,8 +20,8 @@ ROM::ROM(const size_t initialSize, bool initialiseToZero)
 
 
 uint32 ROM::readWord(uint32 address){
-    if(address >= getSize()) return 0;
     address = (uint32)((uint32)address & (uint32)0xFFFFFFFC); //Clear lower two bits
+    if(address+3 >= getSize()) return 0;
     uint32 ret = 0;
     if(isByteSwapped){
         ret = (uint8)(*this)[address+1];
@@ -44,8 +44,8 @@ uint32 ROM::readWord(uint32 address){
 }
 
 uint16 ROM::readHalfWord(uint32 address){
-    if(address >= getSize()) return 0;
     address = (uint32)((uint32)address & (uint32)0xFFFFFFFE); //Clear lower bit
+    if(address+1 >= getSize()) return 0;
     uint16 ret = 0;
     if(isByteSwapped){
         ret = (uint8)(*this)[++address];
@@ -65,6 +65,29 @@ uint8 ROM::readByte(uint32 address){
         address = (uint32)((uint32)address ^ (uint32)0x00000001); //Flip lower bit
     }
     return (uint8)(*this)[address];
+}
+
+void ROM::writeWord(uint32 address, uint32 data){
+    address = (uint32)((uint32)address & (uint32)0xFFFFFFFC); //Clear lower two bits
+    if(address+3 >= getSize()) return;
+    if(isByteSwapped){
+        (*this)[address+2] = (data & 0x000000FF);
+        data >>= 8;
+        (*this)[address+3] = (data & 0x000000FF);
+        data >>= 8;
+        (*this)[address] = (data & 0x000000FF);
+        data >>= 8;
+        (*this)[address+1] = (data & 0x000000FF);
+    }else{
+        address += 4;
+        (*this)[--address] = (data & 0x000000FF);
+        data >>= 8;
+        (*this)[--address] = (data & 0x000000FF);
+        data >>= 8;
+        (*this)[--address] = (data & 0x000000FF);
+        data >>= 8;
+        (*this)[--address] = (data & 0x000000FF);
+    }
 }
 
 void ROM::writeByte(uint32 address, uint8 data){

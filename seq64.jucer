@@ -13,12 +13,18 @@
       <FILE id="fGg3Oy" name="AudioseqPane.cpp" compile="1" resource="0"
             file="Source/AudioseqPane.cpp"/>
       <FILE id="cmIxOz" name="AudioseqPane.h" compile="0" resource="0" file="Source/AudioseqPane.h"/>
+      <FILE id="EQoEGq" name="CICSetter.cpp" compile="1" resource="0" file="Source/CICSetter.cpp"/>
+      <FILE id="NLWvvN" name="CICSetter.h" compile="0" resource="0" file="Source/CICSetter.h"/>
       <FILE id="WjqAob" name="FilesPane.cpp" compile="1" resource="0" file="Source/FilesPane.cpp"/>
       <FILE id="ETKRIb" name="FilesPane.h" compile="0" resource="0" file="Source/FilesPane.h"/>
       <FILE id="lM7NBa" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="wiy2KP" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
       <FILE id="Tp4gdP" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
+      <FILE id="jtKlp3" name="MidiPane.cpp" compile="1" resource="0" file="Source/MidiPane.cpp"/>
+      <FILE id="lwGKkA" name="MidiPane.h" compile="0" resource="0" file="Source/MidiPane.h"/>
+      <FILE id="tBOdaz" name="n64checksum.cpp" compile="1" resource="0" file="Source/n64checksum.cpp"/>
+      <FILE id="Pxmy8v" name="n64checksum.h" compile="0" resource="0" file="Source/n64checksum.h"/>
       <FILE id="L9tM8e" name="ROM.cpp" compile="1" resource="0" file="Source/ROM.cpp"/>
       <FILE id="dFvgHy" name="ROM.h" compile="0" resource="0" file="Source/ROM.h"/>
       <FILE id="GI153n" name="SeqFile.cpp" compile="1" resource="0" file="Source/SeqFile.cpp"/>
@@ -29,7 +35,7 @@
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
-    <LINUX_MAKE targetFolder="Builds/Linux">
+    <LINUX_MAKE targetFolder="Builds/Linux" extraCompilerFlags="-Wmaybe-uninitialized -Wuninitialized -Wmissing-field-initializers">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" libraryPath="/usr/X11R6/lib/" isDebug="1" optimisation="1"
                        targetName="seq64" linuxArchitecture=""/>
