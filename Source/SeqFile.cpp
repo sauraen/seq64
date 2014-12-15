@@ -65,12 +65,10 @@ CCTracker::CCTracker(){
     lastvalue = 0;
 }
 
-SeqFile::SeqFile(ROM& rom, ValueTree romdesc, uint32 seq_addr, uint32 orig_len){
+SeqFile::SeqFile(ROM& rom, ValueTree romdesc, uint32 seqaddr, uint32 length){
     debug = false;
     cmdlist = romdesc.getOrCreateChildWithName("cmdlist", nullptr);
     midiopts = romdesc.getOrCreateChildWithName("midiopts", nullptr);
-    seqaddr = seq_addr;
-    length = orig_len;
     if(rom.isByteSwapped && ((seqaddr & 0x00000003) || (length & 0x00000003))){
         DBG("Byte-swapped ROM with non-word-aligned data... this will end poorly!");
     }
@@ -91,8 +89,6 @@ SeqFile::SeqFile(ValueTree romdesc){
     debug = false;
     cmdlist = romdesc.getOrCreateChildWithName("cmdlist", nullptr);
     midiopts = romdesc.getOrCreateChildWithName("midiopts", nullptr);
-    seqaddr = 0;
-    length = 0;
     data.clearQuick();
     data.ensureStorageAllocated(0x8000); //Should be enough
 }
@@ -108,35 +104,31 @@ void SeqFile::writeByte(uint32 address, uint8 d){
 }
 
 
-uint32 SeqFile::getStartAddr(){
-    return seqaddr;
-}
 uint32 SeqFile::getLength(){
-    return length;
+    return data.size();
 }
 
 void SeqFile::saveToROM(ROM& rom, uint32 start_addr){
-    DBG("Saving " + ROM::hex(length, 4) + " bytes to sequence @" + ROM::hex(start_addr));
-    for(int i=0; i<length; i++){
+    DBG("Saving " + ROM::hex((uint32)data.size(), 4) + " bytes to sequence @" + ROM::hex(start_addr));
+    for(int i=0; i<data.size(); i++){
         rom.writeByte(i+start_addr, data[i]);
     }
 }
 
 void SeqFile::trim(){
-    int lastbyte = length - 1;
+    int lastbyte = data.size() - 1;
     for(; lastbyte >= 0; lastbyte--){
         if(data[lastbyte] != 0){
             break;
         }
     }
     lastbyte = (lastbyte & 0xFFFFFFFC) + 4;
-    if(lastbyte >= length){
+    if(lastbyte >= data.size()){
         DBG("SeqFile::trim(): no trim required");
         return;
     }
-    DBG("Trimming SeqFile from " + ROM::hex(length) + " to " + ROM::hex((uint32)lastbyte) + " bytes");
-    data.removeRange(lastbyte, length - lastbyte);
-    length = lastbyte;
+    DBG("Trimming SeqFile from " + ROM::hex((uint32)data.size(), 4) + " to " + ROM::hex((uint32)lastbyte, 4) + " bytes");
+    data.removeRange(lastbyte, data.size() - lastbyte);
 }
 
 //Stype: 0 seq hdr, 1 chn hdr, 2 track data
@@ -1659,12 +1651,12 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                 break;
             }
         }
+        chanBitfield >>= 1;
         if(channelsused[channel] < 0){
             DBG("Channel " + String(channel) + " not used");
         }else{
             chanBitfield |= 0x8000;
         }
-        chanBitfield >>= 1;
     }
     //Figure out notelayers
     MidiMessageSequence* trk;
@@ -2213,7 +2205,6 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     parse();
     //Done
     DBG("Done!!!");
-    length = data.size();
 }
 
 bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2){
@@ -2659,7 +2650,7 @@ void SeqFile::render(){
     data.insertMultiple(0, 0, datasize);
     //Find lengths and addresses of everything
     uint32 address = 0;
-    int sec, cmd, length;
+    int sec, cmd, len;
     ValueTree section, command;
     String action;
     for(sec=0; sec<structure.getNumChildren(); sec++){
@@ -2668,9 +2659,9 @@ void SeqFile::render(){
         for(cmd=0; cmd<section.getNumChildren(); cmd++){
             command = section.getChild(cmd);
             command.setProperty(idAddress, (int)address, nullptr);
-            length = getNewCommandLength(command);
-            command.setProperty(idLength, length, nullptr);
-            address += length;
+            len = getNewCommandLength(command);
+            command.setProperty(idLength, len, nullptr);
+            address += len;
         }
     }
     //Write data
@@ -2683,7 +2674,7 @@ void SeqFile::render(){
         for(cmd=0; cmd<section.getNumChildren(); cmd++){
             command = section.getChild(cmd);
             action = command.getProperty(idAction, "No Action");
-            length = command.getProperty(idLength, 1);
+            len = command.getProperty(idLength, 1);
             //Get addresses of pointers
             if(command.hasProperty(idTargetSection)){
                 ptrsec = command.getProperty(idTargetSection);
@@ -2717,14 +2708,14 @@ void SeqFile::render(){
                 }else{
                     param = command.getChildWithProperty(idMeaning, "Relative Address");
                     if(param.isValid()){
-                        param.setProperty(idValue, (int)(ptraddr - (address + length)), nullptr);
+                        param.setProperty(idValue, (int)(ptraddr - (address + len)), nullptr);
                     }else{
                         DBG("Command had idTargetSection but no parameters with absolute or relative address!");
                     }
                 }
             }
             writeCommand(address, command);
-            address += length;
+            address += len;
             //Enlarge data if necessary
             if(address >= (datasize - 0x100)){
                 data.ensureStorageAllocated(datasize * 2);

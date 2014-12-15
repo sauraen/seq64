@@ -54,10 +54,9 @@ class SeqFile{
     public:
     String name;
     
-    SeqFile(ROM& rom, ValueTree romdesc, uint32 seq_addr, uint32 orig_len);
+    SeqFile(ROM& rom, ValueTree romdesc, uint32 seqaddr, uint32 length);
     SeqFile(ValueTree romdesc);
     ~SeqFile();
-    uint32 getStartAddr();
     uint32 getLength();
     uint8 readByte(uint32 address);
     void writeByte(uint32 address, uint8 d);
@@ -106,9 +105,6 @@ class SeqFile{
     
     ValueTree cmdlist;
     ValueTree midiopts;
-    
-    uint32 seqaddr;
-    uint32 length;
     
     OwnedArray<SeqData> sections;
     

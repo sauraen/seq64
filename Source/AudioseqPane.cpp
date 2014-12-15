@@ -1233,11 +1233,7 @@ void AudioseqPane::fillSeqSections(){
     if(p.seq->name != ""){
         seqinfo += "\"" + p.seq->name + "\"";
     }
-    seqinfo += ": ";
-    if(p.seq->getStartAddr() > 0){
-        seqinfo += "@" + ROM::hex(p.seq->getStartAddr()) + ", ";
-    }
-    seqinfo += "length " + ROM::hex(p.seq->getLength(), 4);
+    seqinfo += ": length " + ROM::hex(p.seq->getLength(), 4);
     seqinfo += " (" + String(p.seq->getNumSections()) + " sections)";
     lblSeqInfo->setText(seqinfo, dontSendNotification);
     lstSeqSections->updateContent();

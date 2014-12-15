@@ -307,6 +307,33 @@
   <audioseqidx>
     <indexentry index="28" name="Staff Credits"/>
     <indexentry index="18" name="Rainbow Road"/>
+    <indexentry index="29" name="Ending (Lose)"/>
+    <indexentry index="27" name="Ending (Win)"/>
+    <indexentry index="26" name="The Winner Is..."/>
+    <indexentry index="25" name="Battle Mode"/>
+    <indexentry index="24" name="Results (Lose)"/>
+    <indexentry index="23" name="Results (Okay)"/>
+    <indexentry index="22" name="Race Start 2"/>
+    <indexentry index="20" name="Fourth Place"/>
+    <indexentry index="19" name="Donkey Kong Track"/>
+    <indexentry index="21" name="Toad's Turnpike"/>
+    <indexentry index="17" name="Starman"/>
+    <indexentry index="16" name="Results (Win)"/>
+    <indexentry index="15" name="Lose"/>
+    <indexentry index="14" name="Place Okay"/>
+    <indexentry index="13" name="Win"/>
+    <indexentry index="12" name="Final Lap"/>
+    <indexentry index="11" name="Race Start"/>
+    <indexentry index="1" name="Title Theme"/>
+    <indexentry index="2" name="Menu"/>
+    <indexentry index="3" name="Luigi Raceway / Mario Circuit"/>
+    <indexentry index="4" name="Moo Moo Meadow / Yoshi Valley"/>
+    <indexentry index="5" name="Choco Mountain"/>
+    <indexentry index="6" name="Koopa Troopa Beach"/>
+    <indexentry index="7" name="Big Boo's Mansion"/>
+    <indexentry index="8" name="Ice Levels"/>
+    <indexentry index="9" name="Bowser's Castle"/>
+    <indexentry index="10" name="Katamari Desert"/>
   </audioseqidx>
   <midiopts ppqnmultiplier="10" mtrvol="SysEx MstrVol" chnvol="CC7 (Volume)"
             chnpriority="CC25 (None)" bendrange="6" q_other_time="1" q_vol_time="3"

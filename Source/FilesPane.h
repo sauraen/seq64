@@ -63,6 +63,7 @@ public:
     void fillIndex();
     String getIEntryDescription(int i);
     void fillIEntryParams();
+    void fillInstSetBoxes();
 
     void romDescLoaded();
     //[/UserMethods]
@@ -140,6 +141,11 @@ private:
     ScopedPointer<GroupComponent> groupComponent4;
     ScopedPointer<ToggleButton> optIndexType1;
     ScopedPointer<ToggleButton> optIndexType2;
+    ScopedPointer<Label> lblInstSet;
+    ScopedPointer<Label> label10;
+    ScopedPointer<Label> label12;
+    ScopedPointer<ComboBox> cbxInstSet1;
+    ScopedPointer<ComboBox> cbxInstSet2;
 
 
     //==============================================================================
