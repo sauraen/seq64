@@ -144,8 +144,7 @@ FilesPane::FilesPane (AppProps& props)
     cbxKFileType->addItem (TRANS("Audiobank Index"), 5);
     cbxKFileType->addItem (TRANS("Audioseq Index"), 6);
     cbxKFileType->addItem (TRANS("Sample Set Index"), 7);
-    cbxKFileType->addItem (TRANS("Seq Unknown Table"), 8);
-    cbxKFileType->addItem (TRANS("Seq Instr Set Table"), 9);
+    cbxKFileType->addItem (TRANS("Instrument Set Index"), 8);
     cbxKFileType->addListener (this);
 
     addAndMakeVisible (label6 = new Label ("new label",
@@ -294,7 +293,7 @@ FilesPane::FilesPane (AppProps& props)
     optIndexType2->addListener (this);
 
     addAndMakeVisible (lblInstSet = new Label ("new label",
-                                               TRANS("Instrument set:")));
+                                               TRANS("Instrument sets:")));
     lblInstSet->setFont (Font (15.00f, Font::plain));
     lblInstSet->setJustificationType (Justification::centredLeft);
     lblInstSet->setEditable (false, false, false);
@@ -302,20 +301,12 @@ FilesPane::FilesPane (AppProps& props)
     lblInstSet->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
     addAndMakeVisible (label10 = new Label ("new label",
-                                            TRANS("Primary (Music):")));
+                                            TRANS("Set:")));
     label10->setFont (Font (15.00f, Font::plain));
     label10->setJustificationType (Justification::centredLeft);
     label10->setEditable (false, false, false);
     label10->setColour (TextEditor::textColourId, Colours::black);
     label10->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (label12 = new Label ("new label",
-                                            TRANS("Secondary (SFX):")));
-    label12->setFont (Font (15.00f, Font::plain));
-    label12->setJustificationType (Justification::centredLeft);
-    label12->setEditable (false, false, false);
-    label12->setColour (TextEditor::textColourId, Colours::black);
-    label12->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
     addAndMakeVisible (cbxInstSet1 = new ComboBox ("new combo box"));
     cbxInstSet1->setEditableText (false);
@@ -323,13 +314,6 @@ FilesPane::FilesPane (AppProps& props)
     cbxInstSet1->setTextWhenNothingSelected (String::empty);
     cbxInstSet1->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
     cbxInstSet1->addListener (this);
-
-    addAndMakeVisible (cbxInstSet2 = new ComboBox ("new combo box"));
-    cbxInstSet2->setEditableText (false);
-    cbxInstSet2->setJustificationType (Justification::centredLeft);
-    cbxInstSet2->setTextWhenNothingSelected (String::empty);
-    cbxInstSet2->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxInstSet2->addListener (this);
 
 
     //[UserPreSize]
@@ -361,6 +345,13 @@ FilesPane::FilesPane (AppProps& props)
     lstIndex->setMultipleSelectionEnabled(false);
     lstIndex->setRowHeight(16);
 
+    lsmInstSets = new TextListModel();
+    lsmInstSets->setListener(this);
+
+    addAndMakeVisible(lstInstSets = new ListBox("InstSets", lsmInstSets));
+    lstInstSets->setMultipleSelectionEnabled(false);
+    lstInstSets->setRowHeight(16);
+
     txtFTAddr->addListener(this);
     txtFileName->addListener(this);
     txtKFileAddr->addListener(this);
@@ -375,6 +366,14 @@ FilesPane::FilesPane (AppProps& props)
 
     //[Constructor] You can add your own custom stuff here..
     dataaddr = -1;
+    abi_addr = -1;
+    asi_addr = -1;
+    ssi_addr = -1;
+    isi_addr = -1;
+    abi_count = -1;
+    asi_count = -1;
+    ssi_count = -1;
+
     romDescLoaded();
     //[/Constructor]
 }
@@ -422,9 +421,7 @@ FilesPane::~FilesPane()
     optIndexType2 = nullptr;
     lblInstSet = nullptr;
     label10 = nullptr;
-    label12 = nullptr;
     cbxInstSet1 = nullptr;
-    cbxInstSet2 = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -482,15 +479,14 @@ void FilesPane::resized()
     optIndexType1->setBounds (352, 32, 392, 24);
     optIndexType2->setBounds (352, 56, 392, 24);
     lblInstSet->setBounds (344, 560, 408, 24);
-    label10->setBounds (344, 584, 120, 24);
-    label12->setBounds (344, 608, 120, 24);
-    cbxInstSet1->setBounds (464, 584, 288, 24);
-    cbxInstSet2->setBounds (464, 608, 288, 24);
+    label10->setBounds (344, 680, 40, 24);
+    cbxInstSet1->setBounds (384, 680, 368, 24);
     //[UserResized] Add your own custom resize handling here..
     lstFileTable->setBounds (8, 48, 320, 240);
     lstKFiles->setBounds (8, 384, 320, 152);
     lstCodeRefs->setBounds (16, 592, 96, 96);
     lstIndex->setBounds (344, 120, 408, 320);
+    lstInstSets->setBounds (344, 584, 408, 88);
     //[/UserResized]
 }
 
@@ -507,12 +503,13 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
         if(ftaddr == 0) return;
         String type = cbxFileType->getText();
         //See if we are removing a known file
-        ValueTree kfile = kfilelistnode.getChildWithProperty(Identifier("ftindex"), findex);
+        ValueTree kfile = kfilelistnode.getChildWithProperty("ftindex", findex);
         if(kfile.isValid()){
+            changedIndexAddress(type, -1);
             kfilelistnode.removeChild(kfile, nullptr);
             fillKFiles();
         }
-        if(type == "Audiobank" || type == "Audioseq" || type == "Audiotable"){
+        if(isKnownFileType(type)){
             //See if we already know about this type of file
             kfile = kfilelistnode.getChildWithProperty(Identifier("type"), type);
             if(kfile.isValid()){
@@ -526,8 +523,10 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
             kfile.setProperty(Identifier("from_ft"), true, nullptr);
             kfile.setProperty(Identifier("ftindex"), findex, nullptr);
             uint32 a = ftaddr + 0x10*findex;
-            kfile.setProperty(Identifier("address"), (int)p.rom.readWord(a), nullptr);
+            uint32 file_addr = (int)p.rom.readWord(a);
+            kfile.setProperty(Identifier("address"), (int)file_addr, nullptr);
             kfile.setProperty(Identifier("length"), (int)(p.rom.readWord(a+4) - p.rom.readWord(a)), nullptr);
+            changedIndexAddress(type, file_addr);
             kfilelistnode.addChild(kfile, kfilelistnode.getNumChildren(), nullptr);
             fillKFiles();
             lstKFiles->selectRow(lsmKFiles->getNumRows() - 1);
@@ -560,8 +559,14 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
                 type = "Unsupported";
             }
         }
-        int idx = lstKFiles->getLastRowSelected();
+        //Remove old index address, insert new
+        String oldtype = selkfile.getProperty("type");
+        changedIndexAddress(type, -1);
+        uint32 addr = (int)selkfile.getProperty("address");
+        changedIndexAddress(type, addr);
         selkfile.setProperty("type", type, nullptr);
+        //Refresh display
+        int idx = lstKFiles->getLastRowSelected();
         lsmKFiles->set(idx, cbxKFileType->getText());
         lstKFiles->repaintRow(idx);
         //[/UserComboBoxCode_cbxKFileType]
@@ -569,26 +574,18 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     else if (comboBoxThatHasChanged == cbxInstSet1)
     {
         //[UserComboBoxCode_cbxInstSet1] -- add your combo box handling code here..
-        if(ientryidx < 0) return;
+        if(!selindex.isValid()) return;
         if(selindex.getProperty("type", "Unsupported").toString() != "Audioseq Index") return;
-        ValueTree ist_kf = kfilelistnode.getChildWithProperty("type", "Seq Instr Set Table");
-        if(!ist_kf.isValid()) return;
-        uint32 ist_addr = (int)ist_kf.getProperty("address", 0);
+        if(ientryidx < 0) return;
+        if(isi_addr < 0) return;
         int idx = cbxInstSet1->getSelectedItemIndex();
-        p.rom.writeByte(ist_addr + (ientryidx << 1), idx & 0x000000FF);
+        int row = lstInstSets->getLastRowSelected();
+        if(idx < 0 || row < 0) return;
+        uint16 ptr = p.rom.readHalfWord(isi_addr + (ientryidx << 1));
+        p.rom.writeByte(isi_addr + ptr + row + 1, idx & 0x000000FF);
+        lsmInstSets->set(row, cbxInstSet1->getText());
+        lstInstSets->repaintRow(row);
         //[/UserComboBoxCode_cbxInstSet1]
-    }
-    else if (comboBoxThatHasChanged == cbxInstSet2)
-    {
-        //[UserComboBoxCode_cbxInstSet2] -- add your combo box handling code here..
-        if(ientryidx < 0) return;
-        if(selindex.getProperty("type", "Unsupported").toString() != "Audioseq Index") return;
-        ValueTree ist_kf = kfilelistnode.getChildWithProperty("type", "Seq Instr Set Table");
-        if(!ist_kf.isValid()) return;
-        uint32 ist_addr = (int)ist_kf.getProperty("address", 0);
-        int idx = cbxInstSet2->getSelectedItemIndex();
-        p.rom.writeByte(ist_addr + (ientryidx << 1) + 1, idx & 0x000000FF);
-        //[/UserComboBoxCode_cbxInstSet2]
     }
 
     //[UsercomboBoxChanged_Post]
@@ -621,6 +618,10 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
             DBG("From file table, can't delete!");
             return;
         }
+        //Remove old index address
+        String oldtype = selkfile.getProperty("type");
+        changedIndexAddress(oldtype, -1);
+        //Remove kfile
         kfilelistnode.removeChild(selkfile, nullptr);
         selkfile = ValueTree();
         fillKFiles();
@@ -746,6 +747,17 @@ void FilesPane::rowSelected(TextListModel* parent, int row){
     }else if(parent == &*lsmIndex){
         ientryidx = row;
         fillIEntryParams();
+    }else if(parent == &*lsmInstSets){
+        if(isi_addr < 0) return;
+        if(abi_addr < 0) return;
+        if(abi_count < 0 || abi_count >= 0x100) return;
+        uint16 ptr = p.rom.readHalfWord(isi_addr + (ientryidx << 1));
+        uint8 b = p.rom.readByte(isi_addr + ptr + row + 1);
+        if(b >= abi_count){
+            cbxInstSet1->setText("Error: value " + ROM::hex(b) + "!", dontSendNotification);
+        }else{
+            cbxInstSet1->setSelectedItemIndex(b, dontSendNotification);
+        }
     }
 }
 void FilesPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
@@ -902,7 +914,10 @@ String FilesPane::getIEntryDescription(int i){
 }
 
 void FilesPane::fillIndex(){
+    lsmInstSets->clear();
+    lstInstSets->updateContent();
     lsmIndex->clear();
+    lstIndex->updateContent();
     if(p.rom.getSize() == 0){
         lblIndexProps->setText("No ROM loaded", dontSendNotification);
         lstIndex->updateContent();
@@ -999,32 +1014,33 @@ void FilesPane::fillIEntryParams(){
     }
     //Select instrument sets
     if(selindex.getProperty("type", "Unsupported").toString() != "Audioseq Index") return;
-    ValueTree ist_kf = kfilelistnode.getChildWithProperty("type", "Seq Instr Set Table");
-    ValueTree abi_kf = kfilelistnode.getChildWithProperty("type", "Audiobank Index");
-    if(!ist_kf.isValid()) return;
-    if(!abi_kf.isValid()) return;
-    uint32 ist_addr = (int)ist_kf.getProperty("address", 0);
-    uint32 abi_addr = (int)abi_kf.getProperty("address", 0);
-    uint8 i1 = p.rom.readByte(ist_addr + (ientryidx << 1));
-    uint8 i2 = p.rom.readByte(ist_addr + (ientryidx << 1) + 1);
-    int count;
-    if((int)p.romdesc.getProperty("indextype", 1) == 2){
-        count = p.rom.readHalfWord(abi_addr);
-    }else{
-        count = p.rom.readHalfWord(abi_addr+2);
+    if(isi_addr < 0) return;
+    if(abi_addr < 0) return;
+    if(abi_count < 0 || abi_count >= 0x100) return;
+    uint16 ptr = p.rom.readHalfWord(isi_addr + (ientryidx << 1));
+    uint32 a = isi_addr + ptr;
+    int seq_isetcount = p.rom.readByte(a);
+    a++;
+    int sel_seqiset = lstInstSets->getLastRowSelected();
+    //Make list
+    lsmInstSets->clear();
+    lstInstSets->updateContent();
+    uint8 b;
+    ValueTree abk_names = p.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
+    String desc;
+    ValueTree bank;
+    for(int i=0; i<seq_isetcount; i++){
+        b = p.rom.readByte(a);
+        a++;
+        desc = ROM::hex(b);
+        bank = abk_names.getChildWithProperty("index", b);
+        if(bank.isValid()){
+            desc += ": " + bank.getProperty("name", "[Unnamed]").toString();
+        }
+        lsmInstSets->add(desc);
     }
-    if(i1 >= count){
-        cbxInstSet1->clear();
-        cbxInstSet1->setTextWhenNothingSelected("Error: value " + ROM::hex(i1) + "!");
-    }else{
-        cbxInstSet1->setSelectedItemIndex(i1, dontSendNotification);
-    }
-    if(i2 >= count){
-        cbxInstSet2->clear();
-        cbxInstSet2->setTextWhenNothingSelected("Error: value " + ROM::hex(i2) + "!");
-    }else{
-        cbxInstSet2->setSelectedItemIndex(i2, dontSendNotification);
-    }
+    lstInstSets->updateContent();
+    lstInstSets->selectRow(sel_seqiset);
 }
 
 void FilesPane::romDescLoaded(){
@@ -1034,49 +1050,107 @@ void FilesPane::romDescLoaded(){
     int indextype = (int)p.romdesc.getProperty("indextype", 1);
     optIndexType1->setToggleState((indextype == 1), dontSendNotification);
     optIndexType2->setToggleState((indextype == 2), dontSendNotification);
+    //Load index addresses
+    ValueTree index;
+    int addr;
+    index = kfilelistnode.getChildWithProperty("type", "Audiobank Index");
+    if(index.isValid()){ addr = index.getProperty("address", -1);
+    }else{ addr = -1; }
+    changedIndexAddress("Audiobank Index", addr);
+    index = kfilelistnode.getChildWithProperty("type", "Audioseq Index");
+    if(index.isValid()){ addr = index.getProperty("address", -1);
+    }else{ addr = -1; }
+    changedIndexAddress("Audioseq Index", addr);
+    index = kfilelistnode.getChildWithProperty("type", "Sample Set Index");
+    if(index.isValid()){ addr = index.getProperty("address", -1);
+    }else{ addr = -1; }
+    changedIndexAddress("Sample Set Index", addr);
+    index = kfilelistnode.getChildWithProperty("type", "Instrument Set Index");
+    if(index.isValid()){ addr = index.getProperty("address", -1);
+    }else{ addr = -1; }
+    changedIndexAddress("Instrument Set Index", addr);
+    //Refresh screen
     fillFileTable();
     fillKFiles();
 }
 
 void FilesPane::fillInstSetBoxes(){
     cbxInstSet1->clear();
-    cbxInstSet2->clear();
     if(p.rom.getSize() == 0) return;
     if(!selindex.isValid()) return;
     if(selindex.getProperty("type", "Unsupported").toString() != "Audioseq Index"){
-        lblInstSet->setText("Instrument set (Audioseq Index only):", dontSendNotification);
+        lblInstSet->setText("Instrument sets (Audioseq Index only):", dontSendNotification);
         return;
     }
-    ValueTree abk_names = p.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
-    ValueTree ist_kf = kfilelistnode.getChildWithProperty("type", "Seq Instr Set Table");
-    if(!ist_kf.isValid()){
-        lblInstSet->setText("No Seq Instr Set Table defined!", dontSendNotification);
+    if(isi_addr < 0){
+        lblInstSet->setText("No Instrument Set Index defined!", dontSendNotification);
         return;
     }
-    ValueTree abi_kf = kfilelistnode.getChildWithProperty("type", "Audiobank Index");
-    if(!abi_kf.isValid()){
+    if(abi_addr < 0){
         lblInstSet->setText("No Audiobank Index defined!", dontSendNotification);
         return;
     }
-    lblInstSet->setText("Instrument set:", dontSendNotification);
-    uint32 abi_addr = (int)abi_kf.getProperty("address", 0);
-    uint32 ist_addr = (int)ist_kf.getProperty("address", 0);
-    int count;
-    if((int)p.romdesc.getProperty("indextype", 1) == 2){
-        count = p.rom.readHalfWord(abi_addr);
-    }else{
-        count = p.rom.readHalfWord(abi_addr+2);
+    if(abi_count < 0 || abi_count >= 0x100){
+        lblInstSet->setText("Invalid inst set count, probably wrong addr for Audiobank Index", dontSendNotification);
+        return;
     }
+    lblInstSet->setText("Instrument sets:", dontSendNotification);
+    ValueTree abk_names = p.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
     String desc;
     ValueTree bank;
-    for(int i=0; i<count; i++){
+    for(int i=0; i<abi_count; i++){
         desc = ROM::hex((uint8)i);
         bank = abk_names.getChildWithProperty("index", i);
         if(bank.isValid()){
             desc += ": " + bank.getProperty("name", "[Unnamed]").toString();
         }
         cbxInstSet1->addItem(desc, cbxInstSet1->getNumItems()+1);
-        cbxInstSet2->addItem(desc, cbxInstSet2->getNumItems()+1);
+    }
+}
+
+bool FilesPane::isKnownFileType(String filetype){
+    for(int i=0; i<cbxKFileType->getNumItems(); i++){
+        if(cbxKFileType->getItemText(i).equalsIgnoreCase(filetype)) return true;
+    }
+    return false;
+}
+
+void FilesPane::changedIndexAddress(String indextype, int newaddress){
+    if(indextype == "Audiobank Index"){
+        abi_addr = newaddress;
+        if(newaddress < 0 || p.rom.getSize() <= abi_addr + 4){
+            abi_count = -1;
+            return;
+        }
+        if((int)p.romdesc.getProperty("indextype", 1) == 2){
+            abi_count = p.rom.readHalfWord(abi_addr);
+        }else{
+            abi_count = p.rom.readHalfWord(abi_addr+2);
+        }
+    }else if(indextype == "Audioseq Index"){
+        asi_addr = newaddress;
+        if(newaddress < 0 || p.rom.getSize() <= asi_addr + 4){
+            asi_count = -1;
+            return;
+        }
+        if((int)p.romdesc.getProperty("indextype", 1) == 2){
+            asi_count = p.rom.readHalfWord(asi_addr);
+        }else{
+            asi_count = p.rom.readHalfWord(asi_addr+2);
+        }
+    }else if(indextype == "Sample Set Index"){
+        ssi_addr = newaddress;
+        if(newaddress < 0 || p.rom.getSize() <= ssi_addr + 4){
+            ssi_count = -1;
+            return;
+        }
+        if((int)p.romdesc.getProperty("indextype", 1) == 2){
+            ssi_count = p.rom.readHalfWord(ssi_addr);
+        }else{
+            ssi_count = p.rom.readHalfWord(ssi_addr+2);
+        }
+    }else if(indextype == "Instrument Set Index"){
+        isi_addr = newaddress;
     }
 }
 
@@ -1150,7 +1224,7 @@ BEGIN_JUCER_METADATA
          bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="dba63b9be0a5c57" memberName="cbxKFileType"
             virtualName="" explicitFocusOrder="0" pos="144 544 184 24" editable="0"
-            layout="33" items="Unsupported&#10;Audiobank&#10;Audioseq&#10;Audiotable&#10;Audiobank Index&#10;Audioseq Index&#10;Sample Set Index&#10;Seq Unknown Table&#10;Seq Instr Set Table"
+            layout="33" items="Unsupported&#10;Audiobank&#10;Audioseq&#10;Audiotable&#10;Audiobank Index&#10;Audioseq Index&#10;Sample Set Index&#10;Instrument Set Index"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="1756f94b14c6940f" memberName="label6" virtualName=""
          explicitFocusOrder="0" pos="176 576 72 24" edTextCol="ff000000"
@@ -1238,24 +1312,16 @@ BEGIN_JUCER_METADATA
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <LABEL name="new label" id="52709144fcf447d1" memberName="lblInstSet"
          virtualName="" explicitFocusOrder="0" pos="344 560 408 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Instrument set:" editableSingleClick="0"
+         edBkgCol="0" labelText="Instrument sets:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="6d5d89e6ea22ae4c" memberName="label10" virtualName=""
-         explicitFocusOrder="0" pos="344 584 120 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Primary (Music):" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="ae1e54f0d374c2a0" memberName="label12" virtualName=""
-         explicitFocusOrder="0" pos="344 608 120 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Secondary (SFX):" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
+         explicitFocusOrder="0" pos="344 680 40 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Set:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="eb9c8b0efed24a37" memberName="cbxInstSet1"
-            virtualName="" explicitFocusOrder="0" pos="464 584 288 24" editable="0"
-            layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
-  <COMBOBOX name="new combo box" id="e0a8c6274a3058f2" memberName="cbxInstSet2"
-            virtualName="" explicitFocusOrder="0" pos="464 608 288 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="384 680 368 24" editable="0"
             layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
 </JUCER_COMPONENT>
 

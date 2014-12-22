@@ -53,6 +53,8 @@ public:
     void rowSelected(TextListModel* parent, int row);
     void textEditorTextChanged(TextEditor& editorThatWasChanged);
 
+    bool isKnownFileType(String filetype);
+    void changedIndexAddress(String indextype, int newaddress);
     String getFileDescription(uint32 a, int i);
     void fillFileTable();
 
@@ -90,6 +92,15 @@ private:
     ValueTree selindex;
     ValueTree seldata;
 
+    int abi_addr;
+    int asi_addr;
+    int ssi_addr;
+    int isi_addr;
+
+    int abi_count;
+    int asi_count;
+    int ssi_count;
+
     ScopedPointer<TextListModel> lsmFileTable;
     ScopedPointer<ListBox> lstFileTable;
 
@@ -101,6 +112,9 @@ private:
 
     ScopedPointer<TextListModel> lsmIndex;
     ScopedPointer<ListBox> lstIndex;
+
+    ScopedPointer<TextListModel> lsmInstSets;
+    ScopedPointer<ListBox> lstInstSets;
 
     //[/UserVariables]
 
@@ -143,9 +157,7 @@ private:
     ScopedPointer<ToggleButton> optIndexType2;
     ScopedPointer<Label> lblInstSet;
     ScopedPointer<Label> label10;
-    ScopedPointer<Label> label12;
     ScopedPointer<ComboBox> cbxInstSet1;
-    ScopedPointer<ComboBox> cbxInstSet2;
 
 
     //==============================================================================

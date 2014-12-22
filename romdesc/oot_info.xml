@@ -6,8 +6,7 @@
   <cmdlist>
     <command cmd="255" name="End of Data" action="End of Data" validinseq="1"
              validinchn="1" validintrk="1"/>
-    <command cmd="0" name="Chn Timestamp" action="Timestamp" cmdend="111"
-             validinchn="1">
+    <command cmd="0" name="Chn Timestamp" action="Timestamp" cmdend="31" validinchn="1">
       <parameter datasrc="offset" datalen="0" name="Time" meaning="Delay" add="0"
                  multiply="1"/>
     </command>
@@ -319,13 +318,13 @@
     <knownfile type="Audiobank" from_ft="1" ftindex="3" address="54160" length="117328"/>
     <knownfile type="Audiotable" from_ft="1" ftindex="5" address="496752" length="4590288"/>
     <knownfile type="Audioseq" from_ft="1" ftindex="4" address="171488" length="325264"/>
-    <knownfile type="Seq Instr Set Table" from_ft="0" address="12098029" length="0"/>
+    <knownfile type="Instrument Set Index" from_ft="0" address="12097808" length="0"/>
   </knownfilelist>
   <audiobankidx>
     <indexentry index="5" name="Hylian Troupe"/>
     <indexentry index="6" name="Title Screen"/>
     <indexentry index="3" name="Main Orchestra"/>
-    <indexentry index="0" name="Ocarina Songs"/>
+    <indexentry index="0" name="Master Instrument Set"/>
     <indexentry index="1" name="Actor Sounds"/>
     <indexentry index="2" name="Nature Sounds"/>
     <indexentry index="4" name="Deku Tree"/>
@@ -443,7 +442,7 @@
             q_vol_amp="2" q_other_amp="1" stacksize="4" formatbytedefault="32"
             typebytedefault="50" delta_vel="5" delta_gate="3" delta_cc="3"
             writeseqformat="1" writeseqtype="1" writechanbits="1" writeloopall="1"
-            writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="1"
+            writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="0"
             useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
             q_pan_amp="2"/>
 </RomDesc>

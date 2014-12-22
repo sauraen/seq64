@@ -315,10 +315,10 @@
     <knownfile type="Audiobank Index" from_ft="0" address="13072064" length="0"/>
     <knownfile type="Audioseq Index" from_ft="0" address="13073264" length="0"/>
     <knownfile type="Sample Set Index" from_ft="0" address="13075328" length="0"/>
-    <knownfile type="Seq Instr Set Table" from_ft="0" address="13072993" length="0"/>
+    <knownfile type="Instrument Set Index" from_ft="0" address="13072736" length="0"/>
   </knownfilelist>
   <audiobankidx>
-    <indexentry index="0" name="Ocarina Songs"/>
+    <indexentry index="0" name="Master Instrument Set"/>
     <indexentry index="1" name="Actor Sounds"/>
     <indexentry index="2" name="Nature Sounds"/>
     <indexentry index="3" name="Main Orchestra"/>
@@ -403,7 +403,7 @@
     <indexentry index="0" name="Ocarina Playing Master"/>
     <indexentry index="16" name="Northern Mountains"/>
     <indexentry index="17" name="Ikana Canyon"/>
-    <indexentry index="15" name="(Hurry?)"/>
+    <indexentry index="15" name="Sharp Slowly Kills You"/>
     <indexentry index="18" name="Deku Palace"/>
     <indexentry index="19" name="Great Bay Coast"/>
     <indexentry index="20" name="Pirates' Fortress"/>
@@ -411,7 +411,7 @@
     <indexentry index="22" name="Clock Town Day 2"/>
     <indexentry index="23" name="Clock Town Day 3"/>
     <indexentry index="24" name="Fairy Fountain"/>
-    <indexentry index="25" name="Escape Lon Lon Ran... oh wait"/>
+    <indexentry index="25" name="Got Epona Back"/>
     <indexentry index="28" name="Woodfall Temple"/>
     <indexentry index="29" name="Termina Field Morning Theme"/>
     <indexentry index="30" name="Opening ~Lost in a Dark Wood~ (1)"/>
@@ -430,7 +430,7 @@
     <indexentry index="43" name="Open Treasure Chest"/>
     <indexentry index="44" name="Potion Shop"/>
     <indexentry index="45" name="Giants' Theme"/>
-    <indexentry index="46" name="Guru-Guru's Theme"/>
+    <indexentry index="46" name="Guru-Guru's Theme (Windmill)"/>
     <indexentry index="47" name="Romani Ranch"/>
     <indexentry index="48" name="Goron City"/>
     <indexentry index="49" name="Mayor's Office"/>

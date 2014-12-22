@@ -303,6 +303,9 @@
   <knownfilelist>
     <knownfile type="Audioseq Index" from_ft="0" address="8063072" length="0"/>
     <knownfile type="Audioseq" from_ft="0" address="8063072" length="0"/>
+    <knownfile type="Audiobank Index" from_ft="0" address="5748512" length="0"/>
+    <knownfile type="Audiobank" from_ft="0" address="5748512" length="0"/>
+    <knownfile type="Instrument Set Index" from_ft="0" address="8177184" length="0"/>
   </knownfilelist>
   <audioseqidx>
     <indexentry index="1" name="Star Fanfare"/>
@@ -311,10 +314,10 @@
     <indexentry index="4" name="Inside the Castle"/>
     <indexentry index="5" name="Water Theme (all parts)"/>
     <indexentry index="6" name="Lava/Sand Levels"/>
-    <indexentry index="0" name="???"/>
+    <indexentry index="0" name="Master Sequence"/>
     <indexentry index="7" name="Bowser's Theme"/>
     <indexentry index="8" name="Snow Levels"/>
-    <indexentry index="9" name="Princess's Secret Slide"/>
+    <indexentry index="9" name="Slider Theme"/>
     <indexentry index="10" name="Big Boo's Haunt"/>
     <indexentry index="11" name="Piranha Plant's Lullaby"/>
     <indexentry index="12" name="Hazy Maze Cave"/>
@@ -349,4 +352,44 @@
             writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="1"
             useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
             q_pan_amp="2"/>
+  <audiobankidx>
+    <indexentry index="34" name="Main Theme"/>
+    <indexentry index="17" name="Title Theme"/>
+    <indexentry index="14" name="Peach's Strings"/>
+    <indexentry index="19" name="The Eel's DX7"/>
+    <indexentry index="15" name="Middle Eastern"/>
+    <indexentry index="18" name="Bowser's Band"/>
+    <indexentry index="11" name="Snowman's Accordion"/>
+    <indexentry index="13" name="Bluegrass Ensemble"/>
+    <indexentry index="16" name="Big Boo's Haunt Ambience"/>
+    <indexentry index="33" name="Merry-Go-Round"/>
+    <indexentry index="20" name="Piranha's Music Box"/>
+    <indexentry index="21" name="Mazy Haze Cave"/>
+    <indexentry index="37" name="Credits Band"/>
+    <indexentry index="36" name="File Select Theme"/>
+    <indexentry index="35" name="Ending Band"/>
+    <indexentry index="27" name="Opening Band"/>
+    <indexentry index="31" name="Brass Ensemble"/>
+    <indexentry index="29" name="Bowser's Organ of Doom"/>
+    <indexentry index="25" name="Koopa's Road"/>
+    <indexentry index="22" name="Course Start"/>
+    <indexentry index="23" name="Wings Theme"/>
+    <indexentry index="24" name="Metal Theme"/>
+    <indexentry index="26" name="Koopa-the-Quick"/>
+    <indexentry index="28" name="Endless Stairs"/>
+    <indexentry index="32" name="Toad's Theme"/>
+    <indexentry index="30" name="Peach's Letter"/>
+    <indexentry index="0" name="Master 0"/>
+    <indexentry index="1" name="Master 1"/>
+    <indexentry index="2" name="Master 2"/>
+    <indexentry index="3" name="Master 3"/>
+    <indexentry index="4" name="Master 4"/>
+    <indexentry index="5" name="Master 5"/>
+    <indexentry index="6" name="Master 6"/>
+    <indexentry index="7" name="Master 7"/>
+    <indexentry index="8" name="Master 8"/>
+    <indexentry index="9" name="Master 9"/>
+    <indexentry index="10" name="Master 10"/>
+    <indexentry index="12" name="Unused- Acoustic Guitar"/>
+  </audiobankidx>
 </RomDesc>

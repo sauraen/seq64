@@ -281,7 +281,7 @@
       <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
                  add="0" multiply="1"/>
     </command>
-    <command cmd="251" name="Branch Abs Always" action="Jump Same Level" validinseq="1"
+    <command cmd="251" name="Branch Abs Always" action="End of Data" validinseq="1"
              validinchn="1" validintrk="1">
       <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
                  add="0" multiply="1"/>
@@ -303,6 +303,10 @@
   <knownfilelist>
     <knownfile type="Audioseq Index" from_ft="0" address="742496" length="0"/>
     <knownfile type="Audioseq" from_ft="0" address="5191984" length="0"/>
+    <knownfile type="Audiobank Index" from_ft="0" address="741216" length="0"/>
+    <knownfile type="Instrument Set Index" from_ft="0" address="742224" length="0"/>
+    <knownfile type="Sample Set Index" from_ft="0" address="743552" length="0"/>
+    <knownfile type="Audiobank" from_ft="0" address="743600" length="0"/>
   </knownfilelist>
   <audioseqidx>
     <indexentry index="24" name="World 7 - Ending (Unused)"/>
@@ -339,9 +343,9 @@
     <indexentry index="54" name="Baby Bowser Busted"/>
     <indexentry index="55" name="Baby Bowser Dethroned"/>
     <indexentry index="56" name="Boss Stage Results"/>
-    <indexentry index="57" name="Yoshi's Death"/>
+    <indexentry index="57" name="Game Over"/>
     <indexentry index="16" name="World 1 - Beginning"/>
-    <indexentry index="9" name="Electronic"/>
+    <indexentry index="9" name="Electronic (Rail Lift)"/>
     <indexentry index="58" name="Yoshi Eats All The Fruit 2"/>
     <indexentry index="59" name="Boss Intervenes"/>
     <indexentry index="60" name="Yoshi Eats All The Melons 2"/>
@@ -360,6 +364,7 @@
     <indexentry index="13" name="Stage Results"/>
     <indexentry index="14" name="Boss Battle"/>
     <indexentry index="15" name="Game Over"/>
+    <indexentry index="64" name="Yoshi's Death"/>
   </audioseqidx>
   <midiopts ppqnmultiplier="10" mtrvol="SysEx MstrVol" chnvol="CC7 (Volume)"
             chnpriority="CC25 (None)" bendrange="6" q_other_time="1" q_vol_time="3"
@@ -369,4 +374,6 @@
             writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="1"
             useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
             q_pan_amp="2"/>
+  <audiobankidx/>
+  <samplesetidx/>
 </RomDesc>
