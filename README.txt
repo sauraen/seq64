@@ -3,32 +3,58 @@ Created by and Copyright (C) 2015 Sauraen, sauraen@gmail.com
 Licensed under the GNU General Public License - see LICENSE.txt
 Made using Juce Cross-Platform C++ Library (free for GPL use) - http://www.juce.com/
 
-Contents:
----------
-- Pre-built executables in bin folder for 32-bit Windows and 64-bit Linux (built
- on Ubuntu 14.04 LTS 64-bit, if it doesn't work download Juce and build it
-  yourself!)
-- Some sample ROM Description Files in the romdesc folder
-- Source code and Juce project files
+SEQ64 is a full-featured editor for sequenced music in first-party Nintendo 64 games.
 
-What's Working:
----------------
-- ROM and RomDesc loading and saving (works directly on ABCD and BADC byte
-  ordering, with option to actually perform the swap)
-- Definition of Audioseq format
-- Loading sequence files from ROM according to table; viewing sequence data
-- Exporting loaded sequence as MIDI
+Click the Wiki tab for more information. Click Source > Browse and find the "bin" folder to download, or compile from source.
 
-Coming Soon:
-------------
-- Importing MIDI to loaded sequence
-- Editing sequence commands
-- Saving sequence to ROM (without overwriting other data!)
-- Editing/tagging Audiobank files so MIDIs are imported/exported with the 
-  correct instruments
+Features:
+
+- Full MIDI import/export of sequences in Audioseq format
+- User-editable definition of Audioseq format
+- Edit sequence data directly (e.g. to add commands not supported by MIDI)
+- Edit and tag Audiobank instrument definitions
+- User-editable definition of Audiobank format
+- Move files in ROM while maintaining system integrity
+- Seamlessly recalculates CRC/CIC upon saving ROM
+- Supports all versions of games that use similar sequence formats
+- All ROM description data saved in human-editable format
+- Supports all three ROM bytes orderings
+- Yay0/Yaz0 compressor/decompressor tool
+- Mature, comprehensible GUI
+- GPL licensed, cross-platform (Juce C++, full-speed on Windows, Mac, Linux) 
+
+Current project state:
+
+- MIDI export complete
+- MIDI import mostly complete, some bugs with call-based optimization
+- Editing which instrument set(s) are used with each sequence is complete
+- Audiobank parsing in progress 
+
+Available versions:
+
+- 32-bit Windows (compiled and tested on Windows 7)
+- 64-bit Windows (compiled and tested on Windows 7)
+- 64-bit Linux (compiled and tested on Ubuntu 14.04) 
+
+Games known to use sequenced music formats compatible with SEQ64:
+
+- Super Mario 64 (+)
+- Mario Kart 64 (+)
+- Yoshi's Story (+)
+- Legend of Zelda: Ocarina of Time: v1.0 (+)(*), Debug ROM (+)
+- Legend of Zelda: Majora's Mask (+)(*)
+- 1080 Snowboarding
+- F-ZERO X
+- Lylat Wars
+- Pokemon Stadium
+- Pokemon Stadium 2
+- Wave Race 64
+
+(+: RomDesc included) (*: Relevant data is stored in compressed format; must be decompressed before use) 
+
 
 Tips/How To:
-------------
+
 I recommend running seq64 from a terminal, lots of useful information is 
 printed!
 
