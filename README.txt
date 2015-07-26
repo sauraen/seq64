@@ -5,7 +5,7 @@ Made using Juce Cross-Platform C++ Library (free for GPL use) - http://www.juce.
 
 SEQ64 is a full-featured editor for sequenced music in first-party Nintendo 64 games.
 
-Click the Wiki tab for more information. Click Source > Browse and find the "bin" folder to download, or compile from source.
+Click the Wiki tab for more information. Program downloads are in the "bin" folder, or compile from source.
 
 Features:
 
