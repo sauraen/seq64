@@ -119,18 +119,20 @@ private:
     ScopedPointer<Label> label8;
     ScopedPointer<TextEditor> txtLibItemName;
     ScopedPointer<ToggleButton> toggleButton;
-    ScopedPointer<ComboBox> cbxISItems;
+    ScopedPointer<ComboBox> cbxBItems;
     ScopedPointer<Label> label9;
-    ScopedPointer<Label> label10;
-    ScopedPointer<TextEditor> PH_lstISItems;
-    ScopedPointer<TextButton> btnISItemAdd;
-    ScopedPointer<TextButton> btnISItemDel;
-    ScopedPointer<TextButton> btnISItemUp;
-    ScopedPointer<TextButton> btnISItemDn;
+    ScopedPointer<Label> lblBSize;
+    ScopedPointer<TextEditor> PH_lstBItems;
+    ScopedPointer<TextButton> btnBItemAdd;
+    ScopedPointer<TextButton> btnBItemDel;
+    ScopedPointer<TextButton> btnBItemUp;
+    ScopedPointer<TextButton> btnBItemDn;
     ScopedPointer<Label> label11;
     ScopedPointer<Label> label12;
-    ScopedPointer<TextEditor> txtISItemName;
-    ScopedPointer<Label> label13;
+    ScopedPointer<TextEditor> txtBItemName;
+    ScopedPointer<ComboBox> cbxAlign;
+    ScopedPointer<TextButton> btnBMergeAll;
+    ScopedPointer<TextButton> btnBItemDupl;
 
 
     //==============================================================================

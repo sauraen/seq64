@@ -15,9 +15,16 @@
 
 class ROM : public MemoryBlock {
     public:
-    ROM();
+    enum BYTEORDERING {
+        //Letter A is the most significant byte, letter D is the least significant
+        ABCD,
+        BADC,
+        DCBA
+    };
+    
+    //ROM();
     ROM(const size_t initialSize, bool initialiseToZero=false);
-    bool isByteSwapped;
+    BYTEORDERING byteOrdering;
     int cic_index;
     
     uint32 readWord(uint32 address);
@@ -28,8 +35,6 @@ class ROM : public MemoryBlock {
     void writeByte(uint32 address, uint8 data);
     
     String getROMName();
-    
-    void doByteSwap();
     
     static String hex(uint32 a, int digits = 8);
     static String hex(uint8 a, int digits = 2);

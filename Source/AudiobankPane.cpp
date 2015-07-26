@@ -36,7 +36,7 @@ AudiobankPane::AudiobankPane (AppProps& props)
                                                              TRANS("Audiobank Library")));
 
     addAndMakeVisible (groupComponent3 = new GroupComponent ("new group",
-                                                             TRANS("Loaded Instrument Set")));
+                                                             TRANS("Loaded Bank")));
 
     addAndMakeVisible (groupComponent = new GroupComponent ("new group",
                                                             TRANS("Audiobank File Data Structures")));
@@ -46,21 +46,20 @@ AudiobankPane::AudiobankPane (AppProps& props)
     cbxEditStruct->setJustificationType (Justification::centredLeft);
     cbxEditStruct->setTextWhenNothingSelected (String::empty);
     cbxEditStruct->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxEditStruct->addItem (TRANS("ABI_Entry"), 1);
-    cbxEditStruct->addItem (TRANS("ABF_Header"), 2);
-    cbxEditStruct->addItem (TRANS("ABF_Main"), 3);
-    cbxEditStruct->addItem (TRANS("ABF_DrumList"), 4);
-    cbxEditStruct->addItem (TRANS("ABF_SFXList"), 5);
-    cbxEditStruct->addItem (TRANS("ABF_Instrument"), 6);
-    cbxEditStruct->addItem (TRANS("ABF_Drum"), 7);
-    cbxEditStruct->addItem (TRANS("ABF_PatchProps"), 8);
-    cbxEditStruct->addItem (TRANS("ABF_PPEntry"), 9);
-    cbxEditStruct->addItem (TRANS("ABF_Sound"), 10);
-    cbxEditStruct->addItem (TRANS("ABF_Sample"), 11);
-    cbxEditStruct->addItem (TRANS("ABF_SampleStruct1"), 12);
-    cbxEditStruct->addItem (TRANS("ABF_SS1Block"), 13);
-    cbxEditStruct->addItem (TRANS("ABF_SampleStruct2"), 14);
-    cbxEditStruct->addItem (TRANS("ABF_SS2Block"), 15);
+    cbxEditStruct->addItem (TRANS("ABIndexEntry"), 1);
+    cbxEditStruct->addItem (TRANS("ABHeader"), 2);
+    cbxEditStruct->addItem (TRANS("ABBank"), 3);
+    cbxEditStruct->addItem (TRANS("ABDrumList"), 4);
+    cbxEditStruct->addItem (TRANS("ABSFXList"), 5);
+    cbxEditStruct->addItem (TRANS("ABInstrument"), 6);
+    cbxEditStruct->addItem (TRANS("ABDrum"), 7);
+    cbxEditStruct->addItem (TRANS("ABPatchProps"), 8);
+    cbxEditStruct->addItem (TRANS("ABSound"), 9);
+    cbxEditStruct->addItem (TRANS("ABSample"), 10);
+    cbxEditStruct->addItem (TRANS("ALADPCMBook"), 11);
+    cbxEditStruct->addItem (TRANS("ALADPCMPredictor"), 12);
+    cbxEditStruct->addItem (TRANS("ALADPCMLoop"), 13);
+    cbxEditStruct->addItem (TRANS("ALADPCMTail"), 14);
     cbxEditStruct->addListener (this);
 
     addAndMakeVisible (label2 = new Label ("new label",
@@ -86,10 +85,9 @@ AudiobankPane::AudiobankPane (AppProps& props)
     cbxDataType->addItem (TRANS("int8"), 4);
     cbxDataType->addItem (TRANS("int16"), 5);
     cbxDataType->addItem (TRANS("int32"), 6);
-    cbxDataType->addItem (TRANS("ABF_PPEntry"), 7);
-    cbxDataType->addItem (TRANS("ABF_Sound"), 8);
-    cbxDataType->addItem (TRANS("ABF_SS1Block"), 9);
-    cbxDataType->addItem (TRANS("ABF_SS2Block"), 10);
+    cbxDataType->addItem (TRANS("ABSound"), 7);
+    cbxDataType->addItem (TRANS("ALADPCMPredictor"), 8);
+    cbxDataType->addItem (TRANS("ALADPCMTail"), 9);
     cbxDataType->addListener (this);
 
     addAndMakeVisible (cbxPtrTo = new ComboBox ("new combo box"));
@@ -97,14 +95,16 @@ AudiobankPane::AudiobankPane (AppProps& props)
     cbxPtrTo->setJustificationType (Justification::centredLeft);
     cbxPtrTo->setTextWhenNothingSelected (String::empty);
     cbxPtrTo->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxPtrTo->addItem (TRANS("ABF_DrumList"), 1);
-    cbxPtrTo->addItem (TRANS("ABF_SFXList"), 2);
-    cbxPtrTo->addItem (TRANS("ABF_Instrument"), 3);
-    cbxPtrTo->addItem (TRANS("ABF_Drum"), 4);
-    cbxPtrTo->addItem (TRANS("ABF_PatchProps"), 5);
-    cbxPtrTo->addItem (TRANS("ABF_Sample"), 6);
-    cbxPtrTo->addItem (TRANS("ABF_SampleStruct1"), 7);
-    cbxPtrTo->addItem (TRANS("ABF_SampleStruct2"), 8);
+    cbxPtrTo->addItem (TRANS("ABHeader"), 1);
+    cbxPtrTo->addItem (TRANS("ABDrumList"), 2);
+    cbxPtrTo->addItem (TRANS("ABSFXList"), 3);
+    cbxPtrTo->addItem (TRANS("ABInstrument"), 4);
+    cbxPtrTo->addItem (TRANS("ABDrum"), 5);
+    cbxPtrTo->addItem (TRANS("ABPatchProps"), 6);
+    cbxPtrTo->addItem (TRANS("ABSample"), 7);
+    cbxPtrTo->addItem (TRANS("ATSample"), 8);
+    cbxPtrTo->addItem (TRANS("ALADPCMBook"), 9);
+    cbxPtrTo->addItem (TRANS("ALADPCMLoop"), 10);
     cbxPtrTo->addListener (this);
 
     addAndMakeVisible (label3 = new Label ("new label",
@@ -132,7 +132,6 @@ AudiobankPane::AudiobankPane (AppProps& props)
     optArrayFixed->setButtonText (TRANS("Fixed:"));
     optArrayFixed->setRadioGroupId (1);
     optArrayFixed->addListener (this);
-    optArrayFixed->setToggleState (true, dontSendNotification);
 
     addAndMakeVisible (optArrayVar = new ToggleButton ("new toggle button"));
     optArrayVar->setButtonText (TRANS("Variable:"));
@@ -153,9 +152,12 @@ AudiobankPane::AudiobankPane (AppProps& props)
     cbxArrayLenVar->setJustificationType (Justification::centredLeft);
     cbxArrayLenVar->setTextWhenNothingSelected (String::empty);
     cbxArrayLenVar->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxArrayLenVar->addItem (TRANS("NUM_INST"), 1);
-    cbxArrayLenVar->addItem (TRANS("NUM_DRUM"), 2);
-    cbxArrayLenVar->addItem (TRANS("NUM_SFX"), 3);
+    cbxArrayLenVar->addItem (TRANS("NUM_BANK"), 1);
+    cbxArrayLenVar->addItem (TRANS("NUM_INST"), 2);
+    cbxArrayLenVar->addItem (TRANS("NUM_DRUM"), 3);
+    cbxArrayLenVar->addItem (TRANS("NUM_SFX"), 4);
+    cbxArrayLenVar->addItem (TRANS("NUM_PRED"), 5);
+    cbxArrayLenVar->addItem (TRANS("HAS_TAIL"), 6);
     cbxArrayLenVar->addListener (this);
 
     addAndMakeVisible (label4 = new Label ("new label",
@@ -174,7 +176,7 @@ AudiobankPane::AudiobankPane (AppProps& props)
     cbxMeaning->addListener (this);
 
     addAndMakeVisible (lblStructBegin = new Label ("new label",
-                                                   TRANS("typedef struct {")));
+                                                   TRANS("typedef struct {                        //Align all to:                bytes")));
     lblStructBegin->setFont (Font (15.00f, Font::plain));
     lblStructBegin->setJustificationType (Justification::centredLeft);
     lblStructBegin->setEditable (false, false, false);
@@ -312,24 +314,24 @@ AudiobankPane::AudiobankPane (AppProps& props)
     toggleButton->addListener (this);
     toggleButton->setToggleState (true, dontSendNotification);
 
-    addAndMakeVisible (cbxISItems = new ComboBox ("new combo box"));
-    cbxISItems->setEditableText (false);
-    cbxISItems->setJustificationType (Justification::centredLeft);
-    cbxISItems->setTextWhenNothingSelected (String::empty);
-    cbxISItems->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxISItems->addItem (TRANS("List of Instruments"), 1);
-    cbxISItems->addItem (TRANS("List of Drums"), 2);
-    cbxISItems->addItem (TRANS("List of SFX"), 3);
-    cbxISItems->addItem (TRANS("List of PatchProps"), 4);
-    cbxISItems->addItem (TRANS("List of Samples"), 5);
-    cbxISItems->addItem (TRANS("List of SampleStruct1s"), 6);
-    cbxISItems->addItem (TRANS("List of SampleStruct2s"), 7);
-    cbxISItems->addItem (TRANS("ABI_Entry"), 8);
-    cbxISItems->addItem (TRANS("ABF_Header"), 9);
-    cbxISItems->addItem (TRANS("ABF_Main"), 10);
-    cbxISItems->addItem (TRANS("ABF_DrumList"), 11);
-    cbxISItems->addItem (TRANS("ABF_SFXList"), 12);
-    cbxISItems->addListener (this);
+    addAndMakeVisible (cbxBItems = new ComboBox ("new combo box"));
+    cbxBItems->setEditableText (false);
+    cbxBItems->setJustificationType (Justification::centredLeft);
+    cbxBItems->setTextWhenNothingSelected (String::empty);
+    cbxBItems->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
+    cbxBItems->addItem (TRANS("List of Instruments"), 1);
+    cbxBItems->addItem (TRANS("List of Drums"), 2);
+    cbxBItems->addItem (TRANS("List of SFX"), 3);
+    cbxBItems->addItem (TRANS("List of PatchProps"), 4);
+    cbxBItems->addItem (TRANS("List of Samples"), 5);
+    cbxBItems->addItem (TRANS("List of ALADPCMBooks"), 6);
+    cbxBItems->addItem (TRANS("List of ALADPCMLoops"), 7);
+    cbxBItems->addItem (TRANS("Bank\'s ABIndexEntry"), 8);
+    cbxBItems->addItem (TRANS("Bank\'s ABHeader"), 9);
+    cbxBItems->addItem (TRANS("Bank\'s ABBank"), 10);
+    cbxBItems->addItem (TRANS("Bank\'s ABDrumList"), 11);
+    cbxBItems->addItem (TRANS("Bank\'s ABSFXList"), 12);
+    cbxBItems->addListener (this);
 
     addAndMakeVisible (label9 = new Label ("new label",
                                            TRANS("Edit:")));
@@ -339,42 +341,42 @@ AudiobankPane::AudiobankPane (AppProps& props)
     label9->setColour (TextEditor::textColourId, Colours::black);
     label9->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (label10 = new Label ("new label",
-                                            TRANS("Size XXXX bytes")));
-    label10->setFont (Font (15.00f, Font::plain));
-    label10->setJustificationType (Justification::centredLeft);
-    label10->setEditable (false, false, false);
-    label10->setColour (TextEditor::textColourId, Colours::black);
-    label10->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+    addAndMakeVisible (lblBSize = new Label ("new label",
+                                             TRANS("Size XXXX bytes")));
+    lblBSize->setFont (Font (15.00f, Font::plain));
+    lblBSize->setJustificationType (Justification::centredLeft);
+    lblBSize->setEditable (false, false, false);
+    lblBSize->setColour (TextEditor::textColourId, Colours::black);
+    lblBSize->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (PH_lstISItems = new TextEditor ("new text editor"));
-    PH_lstISItems->setMultiLine (false);
-    PH_lstISItems->setReturnKeyStartsNewLine (false);
-    PH_lstISItems->setReadOnly (false);
-    PH_lstISItems->setScrollbarsShown (true);
-    PH_lstISItems->setCaretVisible (true);
-    PH_lstISItems->setPopupMenuEnabled (true);
-    PH_lstISItems->setText (String::empty);
+    addAndMakeVisible (PH_lstBItems = new TextEditor ("new text editor"));
+    PH_lstBItems->setMultiLine (false);
+    PH_lstBItems->setReturnKeyStartsNewLine (false);
+    PH_lstBItems->setReadOnly (false);
+    PH_lstBItems->setScrollbarsShown (true);
+    PH_lstBItems->setCaretVisible (true);
+    PH_lstBItems->setPopupMenuEnabled (true);
+    PH_lstBItems->setText (String::empty);
 
-    addAndMakeVisible (btnISItemAdd = new TextButton ("new button"));
-    btnISItemAdd->setButtonText (TRANS("Add"));
-    btnISItemAdd->setConnectedEdges (Button::ConnectedOnRight | Button::ConnectedOnBottom);
-    btnISItemAdd->addListener (this);
+    addAndMakeVisible (btnBItemAdd = new TextButton ("new button"));
+    btnBItemAdd->setButtonText (TRANS("Add"));
+    btnBItemAdd->setConnectedEdges (Button::ConnectedOnRight);
+    btnBItemAdd->addListener (this);
 
-    addAndMakeVisible (btnISItemDel = new TextButton ("new button"));
-    btnISItemDel->setButtonText (TRANS("Del"));
-    btnISItemDel->setConnectedEdges (Button::ConnectedOnRight | Button::ConnectedOnTop);
-    btnISItemDel->addListener (this);
+    addAndMakeVisible (btnBItemDel = new TextButton ("new button"));
+    btnBItemDel->setButtonText (TRANS("Del"));
+    btnBItemDel->setConnectedEdges (Button::ConnectedOnLeft);
+    btnBItemDel->addListener (this);
 
-    addAndMakeVisible (btnISItemUp = new TextButton ("new button"));
-    btnISItemUp->setButtonText (TRANS("Up"));
-    btnISItemUp->setConnectedEdges (Button::ConnectedOnLeft | Button::ConnectedOnBottom);
-    btnISItemUp->addListener (this);
+    addAndMakeVisible (btnBItemUp = new TextButton ("new button"));
+    btnBItemUp->setButtonText (TRANS("Up"));
+    btnBItemUp->setConnectedEdges (Button::ConnectedOnRight);
+    btnBItemUp->addListener (this);
 
-    addAndMakeVisible (btnISItemDn = new TextButton ("new button"));
-    btnISItemDn->setButtonText (TRANS("Dn"));
-    btnISItemDn->setConnectedEdges (Button::ConnectedOnLeft | Button::ConnectedOnTop);
-    btnISItemDn->addListener (this);
+    addAndMakeVisible (btnBItemDn = new TextButton ("new button"));
+    btnBItemDn->setButtonText (TRANS("Dn"));
+    btnBItemDn->setConnectedEdges (Button::ConnectedOnLeft);
+    btnBItemDn->addListener (this);
 
     addAndMakeVisible (label11 = new Label ("new label",
                                             TRANS("Item Fields:")));
@@ -392,23 +394,32 @@ AudiobankPane::AudiobankPane (AppProps& props)
     label12->setColour (TextEditor::textColourId, Colours::black);
     label12->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (txtISItemName = new TextEditor ("new text editor"));
-    txtISItemName->setMultiLine (false);
-    txtISItemName->setReturnKeyStartsNewLine (false);
-    txtISItemName->setReadOnly (false);
-    txtISItemName->setScrollbarsShown (true);
-    txtISItemName->setCaretVisible (true);
-    txtISItemName->setPopupMenuEnabled (true);
-    txtISItemName->setText (String::empty);
+    addAndMakeVisible (txtBItemName = new TextEditor ("new text editor"));
+    txtBItemName->setMultiLine (false);
+    txtBItemName->setReturnKeyStartsNewLine (false);
+    txtBItemName->setReadOnly (false);
+    txtBItemName->setScrollbarsShown (true);
+    txtBItemName->setCaretVisible (true);
+    txtBItemName->setPopupMenuEnabled (true);
+    txtBItemName->setText (String::empty);
 
-    addAndMakeVisible (label13 = new Label ("new label",
-                                            TRANS("This tab is under development")));
-    label13->setFont (Font (24.20f, Font::plain));
-    label13->setJustificationType (Justification::centredLeft);
-    label13->setEditable (false, false, false);
-    label13->setColour (Label::textColourId, Colours::red);
-    label13->setColour (TextEditor::textColourId, Colours::black);
-    label13->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+    addAndMakeVisible (cbxAlign = new ComboBox ("new combo box"));
+    cbxAlign->setEditableText (false);
+    cbxAlign->setJustificationType (Justification::centredLeft);
+    cbxAlign->setTextWhenNothingSelected (String::empty);
+    cbxAlign->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
+    cbxAlign->addItem (TRANS("4"), 1);
+    cbxAlign->addItem (TRANS("8"), 2);
+    cbxAlign->addItem (TRANS("16"), 3);
+    cbxAlign->addListener (this);
+
+    addAndMakeVisible (btnBMergeAll = new TextButton ("new button"));
+    btnBMergeAll->setButtonText (TRANS("Merge All"));
+    btnBMergeAll->addListener (this);
+
+    addAndMakeVisible (btnBItemDupl = new TextButton ("new button"));
+    btnBItemDupl->setButtonText (TRANS("Dupl"));
+    btnBItemDupl->addListener (this);
 
 
     //[UserPreSize]
@@ -476,18 +487,20 @@ AudiobankPane::~AudiobankPane()
     label8 = nullptr;
     txtLibItemName = nullptr;
     toggleButton = nullptr;
-    cbxISItems = nullptr;
+    cbxBItems = nullptr;
     label9 = nullptr;
-    label10 = nullptr;
-    PH_lstISItems = nullptr;
-    btnISItemAdd = nullptr;
-    btnISItemDel = nullptr;
-    btnISItemUp = nullptr;
-    btnISItemDn = nullptr;
+    lblBSize = nullptr;
+    PH_lstBItems = nullptr;
+    btnBItemAdd = nullptr;
+    btnBItemDel = nullptr;
+    btnBItemUp = nullptr;
+    btnBItemDn = nullptr;
     label11 = nullptr;
     label12 = nullptr;
-    txtISItemName = nullptr;
-    label13 = nullptr;
+    txtBItemName = nullptr;
+    cbxAlign = nullptr;
+    btnBMergeAll = nullptr;
+    btnBItemDupl = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -531,7 +544,7 @@ void AudiobankPane::resized()
     cbxArrayLenVar->setBounds (296, 264, 144, 24);
     label4->setBounds (200, 288, 80, 24);
     cbxMeaning->setBounds (200, 312, 240, 24);
-    lblStructBegin->setBounds (8, 16, 424, 24);
+    lblStructBegin->setBounds (8, 16, 432, 24);
     lblStructEnd->setBounds (8, 160, 20, 24);
     label5->setBounds (8, 288, 104, 24);
     txtDefaultVal->setBounds (32, 312, 160, 24);
@@ -550,18 +563,20 @@ void AudiobankPane::resized()
     label8->setBounds (704, 288, 56, 24);
     txtLibItemName->setBounds (760, 288, 182, 24);
     toggleButton->setBounds (880, 312, 64, 24);
-    cbxISItems->setBounds (48, 384, 200, 24);
+    cbxBItems->setBounds (48, 384, 200, 24);
     label9->setBounds (8, 384, 40, 24);
-    label10->setBounds (8, 360, 240, 24);
-    PH_lstISItems->setBounds (8, 408, 240, 224);
-    btnISItemAdd->setBounds (168, 632, 40, 24);
-    btnISItemDel->setBounds (168, 656, 40, 24);
-    btnISItemUp->setBounds (208, 632, 40, 24);
-    btnISItemDn->setBounds (208, 656, 40, 24);
+    lblBSize->setBounds (8, 360, 128, 24);
+    PH_lstBItems->setBounds (8, 408, 240, 224);
+    btnBItemAdd->setBounds (8, 632, 40, 24);
+    btnBItemDel->setBounds (48, 632, 40, 24);
+    btnBItemUp->setBounds (168, 632, 40, 24);
+    btnBItemDn->setBounds (208, 632, 40, 24);
     label11->setBounds (256, 360, 240, 24);
-    label12->setBounds (8, 632, 64, 24);
-    txtISItemName->setBounds (16, 656, 144, 24);
-    label13->setBounds (416, 448, 240, 24);
+    label12->setBounds (8, 656, 56, 24);
+    txtBItemName->setBounds (64, 656, 184, 24);
+    cbxAlign->setBounds (304, 16, 56, 24);
+    btnBMergeAll->setBounds (144, 360, 104, 24);
+    btnBItemDupl->setBounds (104, 632, 48, 24);
     //[UserResized] Add your own custom resize handling here..
     lstFields->setBounds(8, 40, 432, 112);
     //[/UserResized]
@@ -600,7 +615,7 @@ void AudiobankPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     {
         //[UserComboBoxCode_cbxPtrTo] -- add your combo box handling code here..
         if(!selfield.isValid()) return;
-        if(text == "") text = "ABF_DrumList";
+        if(text == "") text = "ABDrumList";
         selfield.setProperty("ptrto", text, nullptr);
         repaintFieldEntry = true;
         //[/UserComboBoxCode_cbxPtrTo]
@@ -631,10 +646,16 @@ void AudiobankPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
         //[UserComboBoxCode_cbxLibList] -- add your combo box handling code here..
         //[/UserComboBoxCode_cbxLibList]
     }
-    else if (comboBoxThatHasChanged == cbxISItems)
+    else if (comboBoxThatHasChanged == cbxBItems)
     {
-        //[UserComboBoxCode_cbxISItems] -- add your combo box handling code here..
-        //[/UserComboBoxCode_cbxISItems]
+        //[UserComboBoxCode_cbxBItems] -- add your combo box handling code here..
+        //[/UserComboBoxCode_cbxBItems]
+    }
+    else if (comboBoxThatHasChanged == cbxAlign)
+    {
+        //[UserComboBoxCode_cbxAlign] -- add your combo box handling code here..
+        abfstructsnode.setProperty("align", text, nullptr);
+        //[/UserComboBoxCode_cbxAlign]
     }
 
     //[UsercomboBoxChanged_Post]
@@ -660,9 +681,9 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         selfield.setProperty("ispointer", state, nullptr);
         if(state){
             if(selfield.getProperty("ptrto", "") == ""){
-                selfield.setProperty("ptrto", "ABF_DrumList", nullptr);
+                selfield.setProperty("ptrto", "ABDrumList", nullptr);
             }
-            cbxPtrTo->setText(selfield.getProperty("ptrto", "ABF_DrumList").toString());
+            cbxPtrTo->setText(selfield.getProperty("ptrto", "ABDrumList").toString());
         }else{
             cbxPtrTo->setText("");
         }
@@ -780,25 +801,35 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_toggleButton] -- add your button handler code here..
         //[/UserButtonCode_toggleButton]
     }
-    else if (buttonThatWasClicked == btnISItemAdd)
+    else if (buttonThatWasClicked == btnBItemAdd)
     {
-        //[UserButtonCode_btnISItemAdd] -- add your button handler code here..
-        //[/UserButtonCode_btnISItemAdd]
+        //[UserButtonCode_btnBItemAdd] -- add your button handler code here..
+        //[/UserButtonCode_btnBItemAdd]
     }
-    else if (buttonThatWasClicked == btnISItemDel)
+    else if (buttonThatWasClicked == btnBItemDel)
     {
-        //[UserButtonCode_btnISItemDel] -- add your button handler code here..
-        //[/UserButtonCode_btnISItemDel]
+        //[UserButtonCode_btnBItemDel] -- add your button handler code here..
+        //[/UserButtonCode_btnBItemDel]
     }
-    else if (buttonThatWasClicked == btnISItemUp)
+    else if (buttonThatWasClicked == btnBItemUp)
     {
-        //[UserButtonCode_btnISItemUp] -- add your button handler code here..
-        //[/UserButtonCode_btnISItemUp]
+        //[UserButtonCode_btnBItemUp] -- add your button handler code here..
+        //[/UserButtonCode_btnBItemUp]
     }
-    else if (buttonThatWasClicked == btnISItemDn)
+    else if (buttonThatWasClicked == btnBItemDn)
     {
-        //[UserButtonCode_btnISItemDn] -- add your button handler code here..
-        //[/UserButtonCode_btnISItemDn]
+        //[UserButtonCode_btnBItemDn] -- add your button handler code here..
+        //[/UserButtonCode_btnBItemDn]
+    }
+    else if (buttonThatWasClicked == btnBMergeAll)
+    {
+        //[UserButtonCode_btnBMergeAll] -- add your button handler code here..
+        //[/UserButtonCode_btnBMergeAll]
+    }
+    else if (buttonThatWasClicked == btnBItemDupl)
+    {
+        //[UserButtonCode_btnBItemDupl] -- add your button handler code here..
+        //[/UserButtonCode_btnBItemDupl]
     }
 
     //[UserbuttonClicked_Post]
@@ -883,6 +914,7 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
 
 void AudiobankPane::romDescLoaded(){
     abfstructsnode = p.romdesc.getOrCreateChildWithName("abfstructs", nullptr);
+    cbxAlign->setText(abfstructsnode.getProperty("align", "16"));
     selstruct = ValueTree();
     selfield = ValueTree();
 }
@@ -938,22 +970,24 @@ void AudiobankPane::fillFieldParams(){
     optPointer->setToggleState((bool)selfield.getProperty("ispointer", false), dontSendNotification);
     cbxPtrTo->setText(selfield.getProperty("ptrto", "").toString());
     if((bool)selfield.getProperty("isarray", false)){
+        optArray->setToggleState(true, dontSendNotification);
         if(selfield.hasProperty("arraylenfixed")){
-            optArrayFixed->setToggleState(true, dontSendNotification);
-            optArrayVar->setToggleState(false, dontSendNotification);
             txtArrayLen->setText(ROM::hex((uint8)(int)selfield.getProperty("arraylenfixed", 0)));
             cbxArrayLenVar->setText("");
+            optArrayFixed->setToggleState(true, dontSendNotification);
+            optArrayVar->setToggleState(false, dontSendNotification);
         }else{
-            optArrayFixed->setToggleState(false, dontSendNotification);
-            optArrayVar->setToggleState(true, dontSendNotification);
             txtArrayLen->setText("");
             cbxArrayLenVar->setText(selfield.getProperty("arraylenvar", "NUM_INST").toString());
+            optArrayFixed->setToggleState(false, dontSendNotification);
+            optArrayVar->setToggleState(true, dontSendNotification);
         }
     }else{
-        optArrayFixed->setToggleState(false, dontSendNotification);
-        optArrayVar->setToggleState(false, dontSendNotification);
+        optArray->setToggleState(false, dontSendNotification);
         txtArrayLen->setText("");
         cbxArrayLenVar->setText("");
+        optArrayFixed->setToggleState(false, dontSendNotification);
+        optArrayVar->setToggleState(false, dontSendNotification);
     }
     cbxMeaning->setText(selfield.getProperty("meaning", "None").toString());
     if(selfield.hasProperty("defaultval")){
@@ -967,47 +1001,51 @@ void AudiobankPane::fillMeaningsBox(){
     String editstruct = cbxEditStruct->getText();
     cbxMeaning->clear();
     cbxMeaning->addItem("None", cbxMeaning->getNumItems()+1);
-    if(editstruct == "ABI_Entry"){
-        cbxMeaning->addItem("Ptr Inst Set (in Audiobank)", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Instrument Set Length", cbxMeaning->getNumItems()+1);
+    if(editstruct == "ABIndexEntry"){
+        cbxMeaning->addItem("Ptr Bank (in Audiobank)", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Bank Length", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Sample Set Index number", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_INST", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_DRUM", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_SFX", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_Header"){
+    }else if(editstruct == "ABHeader"){
         cbxMeaning->addItem("NUM_INST", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_Main"){
+    }else if(editstruct == "ABBank"){
         cbxMeaning->addItem("Ptr Drum List", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Ptr SFX List", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("List of Ptrs to Insts", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_DrumList"){
+        cbxMeaning->addItem("Ptr Ch10 Drum", cbxMeaning->getNumItems()+1);
+    }else if(editstruct == "ABDrumList"){
         cbxMeaning->addItem("List of Ptrs to Drums", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_SFXList"){
+    }else if(editstruct == "ABSFXList"){
         cbxMeaning->addItem("List of Sounds", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_Instrument"){
+    }else if(editstruct == "ABInstrument"){
         cbxMeaning->addItem("Ptr Patch Props", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("List of 3 Sounds for Splits", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_Drum"){
+    }else if(editstruct == "ABDrum"){
         cbxMeaning->addItem("Drum Sound", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Ptr Patch Props", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_PatchProps"){
-        cbxMeaning->addItem("List of 4 PPEntries", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_PPEntry"){
-
-    }else if(editstruct == "ABF_Sound"){
+    }else if(editstruct == "ABPatchProps"){
+        //none
+    }else if(editstruct == "ABSound"){
         cbxMeaning->addItem("Ptr Sample", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_Sample"){
+    }else if(editstruct == "ABSample"){
         cbxMeaning->addItem("Sample Address (+offset)", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Ptr SampleStruct2", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Ptr SampleStruct1", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABF_SampleStruct1"){
-
-    }else if(editstruct == "ABF_SS1Block"){
-
-    }else if(editstruct == "ABF_SampleStruct2"){
-
-    }else if(editstruct == "ABF_SS2Block"){
-
+        cbxMeaning->addItem("Sample Length", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Ptr ALADPCMLoop", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Ptr ALADPCMBook", cbxMeaning->getNumItems()+1);
+    }else if(editstruct == "ALADPCMBook"){
+        cbxMeaning->addItem("NUM_PRED", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Array of Predictors", cbxMeaning->getNumItems()+1);
+    }else if(editstruct == "ALADPCMPredictor"){
+        //none
+    }else if(editstruct == "ALADPCMLoop"){
+        cbxMeaning->addItem("Loop Start", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Loop End", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Loop Count", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Tail Data (if Loop Start != 0)", cbxMeaning->getNumItems()+1);
+    }else if(editstruct == "ALADPCMTail"){
+        //none
     }else{
         cbxMeaning->clear(dontSendNotification);
         cbxMeaning->addItem("ERROR fillMeaningsBox", cbxMeaning->getNumItems()+1);
@@ -1041,12 +1079,12 @@ BEGIN_JUCER_METADATA
   <GROUPCOMPONENT name="new group" id="174f2978675eba2d" memberName="groupComponent2"
                   virtualName="" explicitFocusOrder="0" pos="448 0 504 344" title="Audiobank Library"/>
   <GROUPCOMPONENT name="new group" id="7edf637b2e2b1d8d" memberName="groupComponent3"
-                  virtualName="" explicitFocusOrder="0" pos="0 344 952 344" title="Loaded Instrument Set"/>
+                  virtualName="" explicitFocusOrder="0" pos="0 344 952 344" title="Loaded Bank"/>
   <GROUPCOMPONENT name="new group" id="5c7a626fd18eb8e4" memberName="groupComponent"
                   virtualName="" explicitFocusOrder="0" pos="0 0 448 344" title="Audiobank File Data Structures"/>
   <COMBOBOX name="new combo box" id="d0dc297a3163ca7c" memberName="cbxEditStruct"
             virtualName="" explicitFocusOrder="0" pos="28 160 164 24" editable="0"
-            layout="33" items="ABI_Entry&#10;ABF_Header&#10;ABF_Main&#10;ABF_DrumList&#10;ABF_SFXList&#10;ABF_Instrument&#10;ABF_Drum&#10;ABF_PatchProps&#10;ABF_PPEntry&#10;ABF_Sound&#10;ABF_Sample&#10;ABF_SampleStruct1&#10;ABF_SS1Block&#10;ABF_SampleStruct2&#10;ABF_SS2Block"
+            layout="33" items="ABIndexEntry&#10;ABHeader&#10;ABBank&#10;ABDrumList&#10;ABSFXList&#10;ABInstrument&#10;ABDrum&#10;ABPatchProps&#10;ABSound&#10;ABSample&#10;ALADPCMBook&#10;ALADPCMPredictor&#10;ALADPCMLoop&#10;ALADPCMTail"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="6fa88c9721ab254d" memberName="label2" virtualName=""
          explicitFocusOrder="0" pos="200 192 80 24" edTextCol="ff000000"
@@ -1058,11 +1096,11 @@ BEGIN_JUCER_METADATA
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <COMBOBOX name="new combo box" id="dc9c4ee50f2e6d61" memberName="cbxDataType"
             virtualName="" explicitFocusOrder="0" pos="280 192 160 24" editable="0"
-            layout="33" items="uint8&#10;uint16&#10;uint32&#10;int8&#10;int16&#10;int32&#10;ABF_PPEntry&#10;ABF_Sound&#10;ABF_SS1Block&#10;ABF_SS2Block"
+            layout="33" items="uint8&#10;uint16&#10;uint32&#10;int8&#10;int16&#10;int32&#10;ABSound&#10;ALADPCMPredictor&#10;ALADPCMTail"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <COMBOBOX name="new combo box" id="13ddb6d22233c898" memberName="cbxPtrTo"
             virtualName="" explicitFocusOrder="0" pos="24 240 168 24" editable="0"
-            layout="33" items="ABF_DrumList&#10;ABF_SFXList&#10;ABF_Instrument&#10;ABF_Drum&#10;ABF_PatchProps&#10;ABF_Sample&#10;ABF_SampleStruct1&#10;ABF_SampleStruct2"
+            layout="33" items="ABHeader&#10;ABDrumList&#10;ABSFXList&#10;ABInstrument&#10;ABDrum&#10;ABPatchProps&#10;ABSample&#10;ATSample&#10;ALADPCMBook&#10;ALADPCMLoop"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="e3721257fc5becec" memberName="label3" virtualName=""
          explicitFocusOrder="0" pos="8 192 56 24" edTextCol="ff000000"
@@ -1078,7 +1116,7 @@ BEGIN_JUCER_METADATA
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="5845bcc7bddd2d61" memberName="optArrayFixed"
                 virtualName="" explicitFocusOrder="0" pos="216 240 80 24" buttonText="Fixed:"
-                connectedEdges="0" needsCallback="1" radioGroupId="1" state="1"/>
+                connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="82bd043ef914492b" memberName="optArrayVar"
                 virtualName="" explicitFocusOrder="0" pos="216 264 80 24" buttonText="Variable:"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
@@ -1088,8 +1126,8 @@ BEGIN_JUCER_METADATA
               caret="1" popupmenu="1"/>
   <COMBOBOX name="new combo box" id="2d1b4dd0ebb4dfc9" memberName="cbxArrayLenVar"
             virtualName="" explicitFocusOrder="0" pos="296 264 144 24" editable="0"
-            layout="33" items="NUM_INST&#10;NUM_DRUM&#10;NUM_SFX" textWhenNonSelected=""
-            textWhenNoItems="(no choices)"/>
+            layout="33" items="NUM_BANK&#10;NUM_INST&#10;NUM_DRUM&#10;NUM_SFX&#10;NUM_PRED&#10;HAS_TAIL"
+            textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="8da47d91aaa2bce" memberName="label4" virtualName=""
          explicitFocusOrder="0" pos="200 288 80 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Meaning:" editableSingleClick="0" editableDoubleClick="0"
@@ -1099,10 +1137,10 @@ BEGIN_JUCER_METADATA
             virtualName="" explicitFocusOrder="0" pos="200 312 240 24" editable="0"
             layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="8270ae60fb0a1f08" memberName="lblStructBegin"
-         virtualName="" explicitFocusOrder="0" pos="8 16 424 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="typedef struct {" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
+         virtualName="" explicitFocusOrder="0" pos="8 16 432 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="typedef struct {                        //Align all to:                bytes"
+         editableSingleClick="0" editableDoubleClick="0" focusDiscardsChanges="0"
+         fontname="Default font" fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="339568e39a096dda" memberName="lblStructEnd"
          virtualName="" explicitFocusOrder="0" pos="8 160 20 24" edTextCol="ff000000"
          edBkgCol="0" labelText="}" editableSingleClick="0" editableDoubleClick="0"
@@ -1176,56 +1214,59 @@ BEGIN_JUCER_METADATA
   <TOGGLEBUTTON name="new toggle button" id="35162d8ea694d708" memberName="toggleButton"
                 virtualName="" explicitFocusOrder="0" pos="880 312 64 24" buttonText="Merge"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
-  <COMBOBOX name="new combo box" id="fdc8bf6df2be26a5" memberName="cbxISItems"
+  <COMBOBOX name="new combo box" id="fdc8bf6df2be26a5" memberName="cbxBItems"
             virtualName="" explicitFocusOrder="0" pos="48 384 200 24" editable="0"
-            layout="33" items="List of Instruments&#10;List of Drums&#10;List of SFX&#10;List of PatchProps&#10;List of Samples&#10;List of SampleStruct1s&#10;List of SampleStruct2s&#10;ABI_Entry&#10;ABF_Header&#10;ABF_Main&#10;ABF_DrumList&#10;ABF_SFXList"
+            layout="33" items="List of Instruments&#10;List of Drums&#10;List of SFX&#10;List of PatchProps&#10;List of Samples&#10;List of ALADPCMBooks&#10;List of ALADPCMLoops&#10;Bank's ABIndexEntry&#10;Bank's ABHeader&#10;Bank's ABBank&#10;Bank's ABDrumList&#10;Bank's ABSFXList"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="fca8e093e749e72d" memberName="label9" virtualName=""
          explicitFocusOrder="0" pos="8 384 40 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Edit:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="5b9ec0c75821be89" memberName="label10" virtualName=""
-         explicitFocusOrder="0" pos="8 360 240 24" edTextCol="ff000000"
+  <LABEL name="new label" id="5b9ec0c75821be89" memberName="lblBSize"
+         virtualName="" explicitFocusOrder="0" pos="8 360 128 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Size XXXX bytes" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="d41cc744fa0fe0f0" memberName="PH_lstISItems"
+  <TEXTEDITOR name="new text editor" id="d41cc744fa0fe0f0" memberName="PH_lstBItems"
               virtualName="" explicitFocusOrder="0" pos="8 408 240 224" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
-  <TEXTBUTTON name="new button" id="95b805434c056546" memberName="btnISItemAdd"
-              virtualName="" explicitFocusOrder="0" pos="168 632 40 24" buttonText="Add"
-              connectedEdges="10" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="5437999e821d0f9" memberName="btnISItemDel"
-              virtualName="" explicitFocusOrder="0" pos="168 656 40 24" buttonText="Del"
-              connectedEdges="6" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="53c617d9b6236e17" memberName="btnISItemUp"
-              virtualName="" explicitFocusOrder="0" pos="208 632 40 24" buttonText="Up"
-              connectedEdges="9" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="7aa4ba34a22a9127" memberName="btnISItemDn"
-              virtualName="" explicitFocusOrder="0" pos="208 656 40 24" buttonText="Dn"
-              connectedEdges="5" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="95b805434c056546" memberName="btnBItemAdd"
+              virtualName="" explicitFocusOrder="0" pos="8 632 40 24" buttonText="Add"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="5437999e821d0f9" memberName="btnBItemDel"
+              virtualName="" explicitFocusOrder="0" pos="48 632 40 24" buttonText="Del"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="53c617d9b6236e17" memberName="btnBItemUp"
+              virtualName="" explicitFocusOrder="0" pos="168 632 40 24" buttonText="Up"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="7aa4ba34a22a9127" memberName="btnBItemDn"
+              virtualName="" explicitFocusOrder="0" pos="208 632 40 24" buttonText="Dn"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="ede4922f8220d0ea" memberName="label11" virtualName=""
          explicitFocusOrder="0" pos="256 360 240 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Item Fields:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="fedcaca14cadb7e6" memberName="label12" virtualName=""
-         explicitFocusOrder="0" pos="8 632 64 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 656 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="789b2d42c36319de" memberName="txtISItemName"
-              virtualName="" explicitFocusOrder="0" pos="16 656 144 24" initialText=""
+  <TEXTEDITOR name="new text editor" id="789b2d42c36319de" memberName="txtBItemName"
+              virtualName="" explicitFocusOrder="0" pos="64 656 184 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
-  <LABEL name="new label" id="c62c5e2e3b6fc24c" memberName="label13" virtualName=""
-         explicitFocusOrder="0" pos="416 448 240 24" textCol="ffff0000"
-         edTextCol="ff000000" edBkgCol="0" labelText="This tab is under development"
-         editableSingleClick="0" editableDoubleClick="0" focusDiscardsChanges="0"
-         fontname="Default font" fontsize="24.199999999999999289" bold="0"
-         italic="0" justification="33"/>
+  <COMBOBOX name="new combo box" id="624a2f6acff61c45" memberName="cbxAlign"
+            virtualName="" explicitFocusOrder="0" pos="304 16 56 24" editable="0"
+            layout="33" items="4&#10;8&#10;16" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
+  <TEXTBUTTON name="new button" id="b2b74c8108c51241" memberName="btnBMergeAll"
+              virtualName="" explicitFocusOrder="0" pos="144 360 104 24" buttonText="Merge All"
+              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="b4f552bc87690c64" memberName="btnBItemDupl"
+              virtualName="" explicitFocusOrder="0" pos="104 632 48 24" buttonText="Dupl"
+              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

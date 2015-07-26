@@ -12,18 +12,28 @@
 #include "JuceHeader.h"
 
 
-ROM::ROM() {}
+//ROM::ROM() {}
 ROM::ROM(const size_t initialSize, bool initialiseToZero)
         : MemoryBlock(initialSize, initialiseToZero) {
-    isByteSwapped = false;
+    byteOrdering = ABCD;
 }
 
 
 uint32 ROM::readWord(uint32 address){
     address = (uint32)((uint32)address & (uint32)0xFFFFFFFC); //Clear lower two bits
-    if(address+3 >= getSize()) return 0;
+    if(address+3 >= getSize()){jassertfalse; return 0;}
     uint32 ret = 0;
-    if(isByteSwapped){
+    switch(byteOrdering){
+    case ABCD:
+        ret = (uint8)(*this)[address];
+        ret <<= 8;
+        ret += (uint8)(*this)[++address];
+        ret <<= 8;
+        ret += (uint8)(*this)[++address];
+        ret <<= 8;
+        ret += (uint8)(*this)[++address];
+        break;
+    case BADC:
         ret = (uint8)(*this)[address+1];
         ret <<= 8;
         ret += (uint8)(*this)[address];
@@ -31,69 +41,97 @@ uint32 ROM::readWord(uint32 address){
         ret += (uint8)(*this)[address+3];
         ret <<= 8;
         ret += (uint8)(*this)[address+2];
-    }else{
+        break;
+    case DCBA:
+        address += 3;
         ret = (uint8)(*this)[address];
         ret <<= 8;
-        ret += (uint8)(*this)[++address];
+        ret += (uint8)(*this)[--address];
         ret <<= 8;
-        ret += (uint8)(*this)[++address];
+        ret += (uint8)(*this)[--address];
         ret <<= 8;
-        ret += (uint8)(*this)[++address];
+        ret += (uint8)(*this)[--address];
+        break;
+    default:
+        jassertfalse;
     }
     return ret;
 }
 
 uint16 ROM::readHalfWord(uint32 address){
     address = (uint32)((uint32)address & (uint32)0xFFFFFFFE); //Clear lower bit
-    if(address+1 >= getSize()) return 0;
+    if(byteOrdering == DCBA){
+        address = (uint32)((uint32)address ^ (uint32)0x00000002); //Flip bit 1
+    }
+    if(address+1 >= getSize()){jassertfalse; return 0;}
     uint16 ret = 0;
-    if(isByteSwapped){
-        ret = (uint8)(*this)[++address];
-        ret <<= 8;
-        ret += (uint8)(*this)[--address];
-    }else{
+    if(byteOrdering == ABCD){
         ret = (uint8)(*this)[address];
         ret <<= 8;
         ret += (uint8)(*this)[++address];
+    }else{
+        ret = (uint8)(*this)[++address];
+        ret <<= 8;
+        ret += (uint8)(*this)[--address];
     }
     return ret;
 }
 
 uint8 ROM::readByte(uint32 address){
-    if(address >= getSize()) return 0;
-    if(isByteSwapped){
+    if(address >= getSize()){jassertfalse; return 0;}
+    if(byteOrdering != ABCD){
         address = (uint32)((uint32)address ^ (uint32)0x00000001); //Flip lower bit
+        if(byteOrdering == DCBA){
+            address = (uint32)((uint32)address ^ (uint32)0x00000002); //Flip bit 1
+        }
     }
     return (uint8)(*this)[address];
 }
 
 void ROM::writeWord(uint32 address, uint32 data){
     address = (uint32)((uint32)address & (uint32)0xFFFFFFFC); //Clear lower two bits
-    if(address+3 >= getSize()) return;
-    if(isByteSwapped){
-        (*this)[address+2] = (data & 0x000000FF);
+    if(address+3 >= getSize()){jassertfalse; return;}
+    switch(byteOrdering){
+    case ABCD:
+        address += 3;
+        (*this)[address] = (data & (uint32)0x000000FF);
         data >>= 8;
-        (*this)[address+3] = (data & 0x000000FF);
+        (*this)[--address] = (data & (uint32)0x000000FF);
         data >>= 8;
-        (*this)[address] = (data & 0x000000FF);
+        (*this)[--address] = (data & (uint32)0x000000FF);
         data >>= 8;
-        (*this)[address+1] = (data & 0x000000FF);
-    }else{
-        address += 4;
-        (*this)[--address] = (data & 0x000000FF);
+        (*this)[--address] = (data & (uint32)0x000000FF);
+        break;
+    case BADC:
+        (*this)[address+2] = (data & (uint32)0x000000FF);
         data >>= 8;
-        (*this)[--address] = (data & 0x000000FF);
+        (*this)[address+3] = (data & (uint32)0x000000FF);
         data >>= 8;
-        (*this)[--address] = (data & 0x000000FF);
+        (*this)[address] = (data & (uint32)0x000000FF);
         data >>= 8;
-        (*this)[--address] = (data & 0x000000FF);
+        (*this)[address+1] = (data & (uint32)0x000000FF);
+        break;
+    case DCBA:
+        (*this)[address] = (data & (uint32)0x000000FF);
+        data >>= 8;
+        (*this)[++address] = (data & (uint32)0x000000FF);
+        data >>= 8;
+        (*this)[++address] = (data & (uint32)0x000000FF);
+        data >>= 8;
+        (*this)[++address] = (data & (uint32)0x000000FF);
+        break;
+    default:
+        jassertfalse;
     }
 }
 
 void ROM::writeByte(uint32 address, uint8 data){
-    if(address >= getSize()) return;
-    if(isByteSwapped){
+    if(address >= getSize()){jassertfalse; return;}
+    if(byteOrdering != ABCD){
         address = (uint32)((uint32)address ^ (uint32)0x00000001); //Flip lower bit
+        if(byteOrdering == DCBA){
+            address = (uint32)((uint32)address ^ (uint32)0x00000002); //Flip bit 1
+        }
     }
     (*this)[address] = data;
 }
@@ -109,16 +147,6 @@ String ROM::getROMName(){
         ret += c;
         a++;
     }
-}
-
-void ROM::doByteSwap(){
-    char temp;
-    for(int a=0; a<getSize()-1; a+=2){
-        temp = (*this)[a];
-        (*this)[a] = (*this)[a+1];
-        (*this)[a+1] = temp;
-    }
-    isByteSwapped = !isByteSwapped;
 }
 
 String ROM::hex(uint32 a, int digits){

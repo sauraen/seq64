@@ -59,6 +59,6 @@ String AppProps::readProperty(Identifier name){
     return "";
 }
 
-AppProps::AppProps() : romdesc(Identifier("RomDesc")){
+AppProps::AppProps() : romdesc(Identifier("RomDesc")), rom(0, false){
     //do nothing
 }

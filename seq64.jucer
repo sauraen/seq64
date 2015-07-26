@@ -13,6 +13,8 @@
       <FILE id="fGg3Oy" name="AudioseqPane.cpp" compile="1" resource="0"
             file="Source/AudioseqPane.cpp"/>
       <FILE id="cmIxOz" name="AudioseqPane.h" compile="0" resource="0" file="Source/AudioseqPane.h"/>
+      <FILE id="UAZ4s8" name="BankFile.cpp" compile="1" resource="0" file="Source/BankFile.cpp"/>
+      <FILE id="UfeFGC" name="BankFile.h" compile="0" resource="0" file="Source/BankFile.h"/>
       <FILE id="EQoEGq" name="CICSetter.cpp" compile="1" resource="0" file="Source/CICSetter.cpp"/>
       <FILE id="NLWvvN" name="CICSetter.h" compile="0" resource="0" file="Source/CICSetter.h"/>
       <FILE id="WjqAob" name="FilesPane.cpp" compile="1" resource="0" file="Source/FilesPane.cpp"/>
@@ -32,6 +34,8 @@
       <FILE id="mUrQ7s" name="TextListModel.cpp" compile="1" resource="0"
             file="Source/TextListModel.cpp"/>
       <FILE id="tOetGe" name="TextListModel.h" compile="0" resource="0" file="Source/TextListModel.h"/>
+      <FILE id="o0JWoA" name="yaz0_yay0.cpp" compile="1" resource="0" file="Source/yaz0_yay0.cpp"/>
+      <FILE id="dXxSbW" name="yaz0_yay0.h" compile="0" resource="0" file="Source/yaz0_yay0.h"/>
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
@@ -57,10 +61,10 @@
     </LINUX_MAKE>
     <VS2013 targetFolder="Builds/VisualStudio2013">
       <CONFIGURATIONS>
-        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
                        isDebug="1" optimisation="1" targetName="seq64"/>
-        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="1" optimisation="3" targetName="seq64" alwaysGenerateDebugSymbols="1"/>
+        <CONFIGURATION name="Release" winWarningLevel="3" generateManifest="1" winArchitecture="x64"
+                       isDebug="1" optimisation="2" targetName="seq64" alwaysGenerateDebugSymbols="1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_gui_extra" path="C:\Users\Public\Juce\modules\"/>

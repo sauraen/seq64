@@ -69,7 +69,7 @@ SeqFile::SeqFile(ROM& rom, ValueTree romdesc, uint32 seqaddr, uint32 length){
     debug = false;
     cmdlist = romdesc.getOrCreateChildWithName("cmdlist", nullptr);
     midiopts = romdesc.getOrCreateChildWithName("midiopts", nullptr);
-    if(rom.isByteSwapped && ((seqaddr & 0x00000003) || (length & 0x00000003))){
+    if(rom.byteOrdering != ROM::ABCD && ((seqaddr & 0x00000003) || (length & 0x00000003))){
         DBG("Byte-swapped ROM with non-word-aligned data... this will end poorly!");
     }
     if(length >= 10000000){
