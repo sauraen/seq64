@@ -615,6 +615,7 @@ void AudiobankPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     {
         //[UserComboBoxCode_cbxPtrTo] -- add your combo box handling code here..
         if(!selfield.isValid()) return;
+        if((bool)selfield.getProperty("ispointer", false) == false) return;
         if(text == "") text = "ABDrumList";
         selfield.setProperty("ptrto", text, nullptr);
         repaintFieldEntry = true;
@@ -624,6 +625,7 @@ void AudiobankPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     {
         //[UserComboBoxCode_cbxArrayLenVar] -- add your combo box handling code here..
         if(!selfield.isValid()) return;
+        if((bool)selfield.getProperty("isarray", false) == false) return;
         if(text == "") text = "NUM_INST";
         selfield.setProperty("arraylenvar", text, nullptr);
         selfield.removeProperty("arraylenfixed", nullptr);
@@ -701,6 +703,8 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
             optArrayFixed->setToggleState(true, dontSendNotification);
             optArrayVar->setToggleState(false, dontSendNotification);
         }else{
+            selfield.removeProperty("arraylenfixed", nullptr);
+            selfield.removeProperty("arraylenvar", nullptr);
             cbxArrayLenVar->setText("", dontSendNotification);
             txtArrayLen->setText("", false);
             optArrayFixed->setToggleState(false, dontSendNotification);
@@ -713,6 +717,7 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
     {
         //[UserButtonCode_optArrayFixed] -- add your button handler code here..
         if(!selfield.isValid()) return;
+        if(!state) return;
         if(!(bool)selfield.getProperty("isarray", false)) return;
         selfield.setProperty("arraylenfixed", 1, nullptr);
         selfield.removeProperty("arraylenvar", nullptr);
@@ -725,6 +730,7 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
     {
         //[UserButtonCode_optArrayVar] -- add your button handler code here..
         if(!selfield.isValid()) return;
+        if(!state) return;
         if(!(bool)selfield.getProperty("isarray", false)) return;
         selfield.removeProperty("arraylenfixed", nullptr);
         selfield.setProperty("arraylenvar", "NUM_INST", nullptr);

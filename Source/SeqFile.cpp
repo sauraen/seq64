@@ -2666,7 +2666,7 @@ void SeqFile::render(){
     }
     //Write data
     address = 0;
-    int ptraddr, ptrsec, ptrhash, cmd2;
+    int ptraddr = -1, ptrsec, ptrhash, cmd2;
     ValueTree section2, command2, param;
     for(sec=0; sec<structure.getNumChildren(); sec++){
         //DBG("----Section " + String(sec));

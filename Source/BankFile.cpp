@@ -19,6 +19,7 @@ BankFile::BankFile(ValueTree romdesc){
 
 void BankFile::reset(){
     d = ValueTree("bank");
+    //Bank data components
     ValueTree temp;
     temp = ValueTree("abindexentry");
     d.addChild(temp, -1, nullptr);
@@ -44,10 +45,17 @@ void BankFile::reset(){
     d.addChild(temp, -1, nullptr);
     temp = ValueTree("aladpcmloops");
     d.addChild(temp, -1, nullptr);
-    NUM_INST = NUM_DRUM = NUM_SFX = NUM_BANK = SSIindex = -1;
+    //Bank data parameters
+    d.setProperty("NUM_INST", -1, nullptr);
+    d.setProperty("NUM_DRUM", -1, nullptr);
+    d.setProperty("NUM_SFX", -1, nullptr);
+    d.setProperty("SSIindex", -1, nullptr);
 }
 
-
+/**
+ * For a named data structure, returns a copy of the template from the romdesc.
+ * Creates it if it does not exist.
+ */
 ValueTree BankFile::getCopyOfTemplate(String name){
     ValueTree stru = abfstructsnode.getChildWithProperty("name", name);
     if(!stru.isValid()){
@@ -55,9 +63,24 @@ ValueTree BankFile::getCopyOfTemplate(String name){
         stru.setProperty("name", name, nullptr);
         abfstructsnode.addChild(stru, -1, nullptr);
     }
+    //Struct local parameters
+    if(name == "ALADPCMBook"){
+        if(!stru.hasProperty("NUM_PRED")){
+            stru.setProperty("NUM_PRED", -1, nullptr);
+        }
+    }else if(name == "ALADPCMLoop"){
+        if(!stru.hasProperty("HAS_TAIL")){
+            stru.setProperty("HAS_TAIL", -1, nullptr);
+        }
+    }
     return stru.createCopy();
 }
 
+/**
+ * For a list within d with the given name, check if an item exists with the
+ * given address. If it doens't exist, create it. In either case, write back the
+ * index within that list of the found/created item to the given node.
+ */
 void BankFile::checkAddListItem(String listname, int addressval, ValueTree node){
     ValueTree dstru = d.getChildWithName(listname);
     ValueTree sub = dstru.getChildWithProperty("address", addressval);
@@ -73,12 +96,18 @@ void BankFile::checkAddListItem(String listname, int addressval, ValueTree node)
     node.setProperty("index", dstruindex, nullptr);
 }
 
-
+/**
+ * For any of the elements of d which are lists: for the existing contents of
+ * the list (with addresses already saved to them), go through each element 
+ * and load its struct as a new child of that element.
+ */
 void BankFile::loadElementList(ROM& rom, uint32 baseaddr, int bank_length, String listname, String elementname){
+    DBG("Loading element list " + listname + "...");
     uint32 a;
     ValueTree stru = d.getChildWithName(listname);
     ValueTree temp, item;
     int count = stru.getNumChildren();
+    int ret;
     for(int i=0; i<count; i++){
         temp = stru.getChild(i);
         a = (int)temp.getProperty("address", 0);
@@ -89,16 +118,24 @@ void BankFile::loadElementList(ROM& rom, uint32 baseaddr, int bank_length, Strin
         }
         item = getCopyOfTemplate(elementname);
         temp.addChild(item, -1, nullptr);
-        readStruct(rom, a + baseaddr, item);
+        ret = readStruct(rom, a + baseaddr, item);
+        if(ret < 0){
+            DBG("Reading " + elementname + " index " + String(i) + " from " + listname + " failed");
+            return;
+        }
     }
 }
 
-
-void BankFile::load(ROM& rom, uint32 abientryaddr, uint32 abfaddr){
+/**
+ * Load a complete Audiobank file, given the addresses of the index entry and 
+ * the file itself.
+ */
+bool BankFile::load(ROM& rom, uint32 abientryaddr, uint32 abfaddr){
+    DBG("Loading bank file from index entry @" + ROM::hex(abientryaddr) + ", file @" + ROM::hex(abfaddr));
     //Check inputs
     if(abientryaddr >= rom.getSize() || abfaddr >= rom.getSize()){
         DBG("Invalid addresses to BankFile::load!");
-        return;
+        return false;
     }
     //Init
     uint32 a, baseaddr;
@@ -108,54 +145,56 @@ void BankFile::load(ROM& rom, uint32 abientryaddr, uint32 abfaddr){
     //========================================================================
     //Load index entry
     //========================================================================
+    DBG("Reading index entry...");
     stru = getCopyOfTemplate("ABIndexEntry");
     d.getChildWithName("abindexentry").addChild(stru, -1, nullptr);
     readStruct(rom, abientryaddr, stru);
-    //Read relevant data from index entry
+    //Copy relevant data from index entry into C++ class
     temp = stru.getChildWithProperty("meaning", "Ptr Bank (in Audiobank)");
     if(!temp.isValid()){
         DBG("ABIndexEntry must include a field with meaning Ptr Bank (in Audiobank)!");
-        return;
+        return false;
     }
     uint32 ptr_bank = (int)temp.getProperty("value", 0x8000000);
     if(ptr_bank + abfaddr >= rom.getSize()){
         DBG("Ptr Bank " + ROM::hex(ptr_bank) + " + base " + ROM::hex(abfaddr) + " goes off end of ROM!");
-        return;
+        return false;
     }
     //
     temp = stru.getChildWithProperty("meaning", "Bank Length");
     if(!temp.isValid()){
         DBG("ABIndexEntry must include a field with meaning Bank Length!");
-        return;
+        return false;
     }
     uint32 bank_length = (int)temp.getProperty("value", 0x8000000);
     if(bank_length >= 0x20000){
         DBG("Bank Length " + ROM::hex(bank_length) + ", probably wrong!");
-        return;
+        return false;
     }
     //
     temp = stru.getChildWithProperty("meaning", "Sample Set Index number");
     if(temp.isValid()){
-        SSIindex = temp.getProperty("value", 0);
+        d.setProperty("SSIindex", temp.getProperty("value", 0), nullptr);
     }
     //
     temp = stru.getChildWithProperty("meaning", "NUM_INST");
     if(temp.isValid()){
-        NUM_INST = temp.getProperty("value", 0);
+        d.setProperty("NUM_INST", temp.getProperty("value", 0), nullptr);
     }
     //
     temp = stru.getChildWithProperty("meaning", "NUM_DRUM");
     if(temp.isValid()){
-        NUM_DRUM = temp.getProperty("value", 0);
+        d.setProperty("NUM_DRUM", temp.getProperty("value", 0), nullptr);
     }
     //
     temp = stru.getChildWithProperty("meaning", "NUM_SFX");
     if(temp.isValid()){
-        NUM_SFX = temp.getProperty("value", 0);
+        d.setProperty("NUM_SFX", temp.getProperty("value", 0), nullptr);
     }
     //========================================================================
     //Load bank header
     //========================================================================
+    DBG("Reading bank header...");
     stru = getCopyOfTemplate("ABHeader");
     d.getChildWithName("abheader").addChild(stru, -1, nullptr);
     a = abfaddr + ptr_bank;
@@ -165,15 +204,16 @@ void BankFile::load(ROM& rom, uint32 abientryaddr, uint32 abfaddr){
     //Read relevant data from header
     temp = stru.getChildWithProperty("meaning", "NUM_INST");
     if(temp.isValid()){
-        NUM_INST = temp.getProperty("value", 0);
+        d.setProperty("NUM_INST", temp.getProperty("value", 0), nullptr);
     }
-    if(NUM_INST < 0){
+    if((int)d.getProperty("NUM_INST") < 0){
         DBG("NUM_INST not defined in either ABIndexEntry or ABHeader!");
-        return;
+        return false;
     }
     //========================================================================
     //Load bank (main)
     //========================================================================
+    DBG("Reading bank main...");
     stru = getCopyOfTemplate("ABBank");
     d.getChildWithName("abbank").addChild(stru, -1, nullptr);
     strsize = readStruct(rom, a, stru);
@@ -184,16 +224,22 @@ void BankFile::load(ROM& rom, uint32 abientryaddr, uint32 abfaddr){
     temp = d.getChildWithName("abdrumlist");
     if((int)temp.getProperty("address", -1) > 0){
         a = baseaddr + (int)temp.getProperty("address");
+        DBG("Reading ABDrumList from @" + ROM::hex(a));
         stru = getCopyOfTemplate("ABDrumList");
         d.getChildWithName("abdrumlist").addChild(stru, -1, nullptr);
         readStruct(rom, a, stru);
+    }else{
+        DBG("No ABDrumList found");
     }
     temp = d.getChildWithName("absfxlist");
     if((int)temp.getProperty("address", -1) > 0){
         a = baseaddr + (int)temp.getProperty("address");
+        DBG("Reading ABSFXList from @" + ROM::hex(a));
         stru = getCopyOfTemplate("ABSFXList");
         d.getChildWithName("absfxlist").addChild(stru, -1, nullptr);
         readStruct(rom, a, stru);
+    }else{
+        DBG("No ABSFXList found");
     }
     //========================================================================
     //Load lists of elements
@@ -205,24 +251,26 @@ void BankFile::load(ROM& rom, uint32 abientryaddr, uint32 abfaddr){
     loadElementList(rom, baseaddr, bank_length, "samples", "ABSample");
     loadElementList(rom, baseaddr, bank_length, "aladpcmbooks", "ALADPCMBook");
     loadElementList(rom, baseaddr, bank_length, "aladpcmloops", "ALADPCMLoop");
-    
+    DBG("Done loading bank!");
 }
-void BankFile::save(ROM& rom, uint32 abientryaddr, uint32 abfaddr){
-    
+bool BankFile::save(ROM& rom, uint32 abientryaddr, uint32 abfaddr){
+    //TODO
+    return false;
 }
 
 int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
-    if(!stru.isValid()) return 0;
-    int len = 0, fieldlen;
+    if(!stru.isValid()) return -1;
+    int len = 0, fieldlen, fieldelementlen;
     int count = stru.getNumChildren();
     String struname = stru.getProperty("name", "Error");
-    ValueTree field, sub, dstru;
+    ValueTree field, sub, dstru, fieldelement;
     String datatype, ptrto, arraylenvar, meaning;
-    bool ispointer, isarray;
+    bool ispointer, isarray, arrayloopflag;
     int arraylenfixed;
     uint32 a = addr;
     int val;
     int dstruindex;
+    int arraycount, arraymax;
     for(int i=0; i<count; i++){
         field = stru.getChild(i);
         //Load field properties from stru
@@ -238,75 +286,138 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
             if(field.hasProperty("arraylenfixed")){
                 arraylenfixed = field.getProperty("arraylenfixed", 0);
                 arraylenvar = "";
+                arraymax = arraylenfixed;
             }else{
                 arraylenfixed = -1;
                 arraylenvar = field.getProperty("arraylenvar", 0).toString();
+                arraymax = -1;
+                if(d.hasProperty(arraylenvar)){
+                    arraymax = (int)d.getProperty(arraylenvar);
+                }else if(stru.hasProperty(arraylenvar)){
+                    arraymax = (int)stru.getProperty(arraylenvar);
+                }else{
+                    DBG("Invalid array length variable " + arraylenvar + "!");
+                    return -1;
+                }
+                if(arraymax < 0){
+                    DBG("Array length using not-yet-set variable " + arraylenvar + "!");
+                    return -1;
+                }
             }
         }
         meaning = field.getProperty("meaning", "None").toString();
         //Read data from ROM
-        //TODO arrays
-        if(datatype == "uint32" || datatype == "int32"){
-            val = rom.readWord(a);
-            fieldlen = 4;
-        }else if(datatype == "uint16"){
-            val = rom.readHalfWord(a);
-            fieldlen = 2;
-        }else if(datatype == "int16"){
-            val = (int16)rom.readHalfWord(a);
-            fieldlen = 2;
-        }else if(datatype == "uint8"){
-            val = rom.readByte(a);
-            fieldlen = 1;
-        }else if(datatype == "int16"){
-            val = (int8)rom.readByte(a);
-            fieldlen = 1;
-        }else if(datatype == "ABSound" || datatype == "ALADPCMPredictor" || datatype == "ALADPCMTail"){
-            sub = getCopyOfTemplate(datatype);
-            field.addChild(sub, -1, nullptr);
-            fieldlen = readStruct(rom, a, sub);
-            val = 0;
-        }else{
-            DBG("Invalid data type " + datatype + "!")
-            return 0;
-        }
-        field.setProperty("value", val, nullptr);
-        if(ispointer){
-            if(ptrto == "ABHeader"){
-                //do nothing
-            }else if(ptrto == "ABDrumList"){
-                dstru = d.getChildWithName("abdrumlist");
-                dstru.setProperty("address", val, nullptr);
-            }else if(ptrto == "ABSFXList"){
-                dstru = d.getChildWithName("absfxlist");
-                dstru.setProperty("address", val, nullptr);
-            }else if(ptrto == "ABInstrument"){
-                checkAddListItem("instruments", val, field);
-            }else if(ptrto == "ABDrum"){
-                checkAddListItem("drums", val, field);
-            }else if(ptrto == "ABPatchProps"){
-                checkAddListItem("patchprops", val, field);
-            }else if(ptrto == "ABSample"){
-                checkAddListItem("samples", val, field);
-            }else if(ptrto == "ATSample"){
-                //do nothing
-            }else if(ptrto == "ALADPCMBook"){
-                checkAddListItem("aladpcmbooks", val, field);
-            }else if(ptrto == "ALADPCMLoop"){
-                checkAddListItem("aladpcmloops", val, field);
+        arrayloopflag = true;
+        fieldlen = 0;
+        arraycount = -1;
+        while(arrayloopflag){
+            //Pre-deal with arrays
+            if(isarray){
+                arraycount++;
+                if(arraycount >= arraymax) break;
+                fieldelement = ValueTree("element");
+                fieldelement.setProperty("datatype", datatype, nullptr);
+                field.addChild(fieldelement, -1, nullptr);
             }else{
-                DBG("Invalid pointer type " + ptrto + "!")
-                return 0;
+                arrayloopflag = false;
+                fieldelement = field;
+            }
+            //Read actual data
+            if(datatype == "uint32" || datatype == "int32"){
+                val = rom.readWord(a);
+                fieldelementlen = 4;
+            }else if(datatype == "uint16"){
+                val = rom.readHalfWord(a);
+                fieldelementlen = 2;
+            }else if(datatype == "int16"){
+                val = (int16)rom.readHalfWord(a);
+                fieldelementlen = 2;
+            }else if(datatype == "uint8"){
+                val = rom.readByte(a);
+                fieldelementlen = 1;
+            }else if(datatype == "int8"){
+                val = (int8)rom.readByte(a);
+                fieldelementlen = 1;
+            }else if(datatype == "ABSound" || datatype == "ALADPCMPredictor" || datatype == "ALADPCMTail"){
+                sub = getCopyOfTemplate(datatype);
+                fieldelement.addChild(sub, -1, nullptr);
+                fieldelementlen = readStruct(rom, a, sub);
+                val = 0;
+            }else{
+                DBG("Invalid data type " + datatype + "!");
+                return -1;
+            }
+            //Length, address, data
+            fieldlen += fieldelementlen;
+            a += fieldelementlen;
+            fieldelement.setProperty("value", val, nullptr);
+            //Meaning
+            if(ispointer){
+                if(ptrto == "ABHeader"){
+                    //do nothing
+                }else if(ptrto == "ABDrumList"){
+                    dstru = d.getChildWithName("abdrumlist");
+                    dstru.setProperty("address", val, nullptr);
+                }else if(ptrto == "ABSFXList"){
+                    dstru = d.getChildWithName("absfxlist");
+                    dstru.setProperty("address", val, nullptr);
+                }else if(ptrto == "ABInstrument"){
+                    checkAddListItem("instruments", val, field);
+                }else if(ptrto == "ABDrum"){
+                    checkAddListItem("drums", val, field);
+                }else if(ptrto == "ABPatchProps"){
+                    checkAddListItem("patchprops", val, field);
+                }else if(ptrto == "ABSample"){
+                    checkAddListItem("samples", val, field);
+                }else if(ptrto == "ATSample"){
+                    //do nothing
+                }else if(ptrto == "ALADPCMBook"){
+                    checkAddListItem("aladpcmbooks", val, field);
+                }else if(ptrto == "ALADPCMLoop"){
+                    checkAddListItem("aladpcmloops", val, field);
+                }else{
+                    DBG("Invalid pointer type " + ptrto + "!");
+                    return -1;
+                }
+            }
+            if(meaning == "NUM_INST" || meaning == "NUM_DRUM" || meaning == "NUM_SFX"){
+                if(isarray){
+                    DBG("Array cannot have meaning " + meaning + "!");
+                }else{
+                    if((int)d.getProperty(meaning) >= 0){
+                        DBG("Overwriting global property " + meaning + " with value " + String(val));
+                    }
+                    d.setProperty(meaning, val, nullptr);
+                }
+            }else if(meaning == "NUM_PRED" || meaning == "HAS_TAIL" || meaning == "Loop Start"){
+                if(isarray){
+                    DBG("Array cannot have meaning " + meaning + "!");
+                }else{
+                    if(meaning == "Loop Start"){
+                        int ht = (val > 0) ? 1 : 0;
+                        DBG("Loop Start " + String(val) + ", setting HAS_TAIL to " + String(ht));
+                        stru.setProperty("HAS_TAIL", ht, nullptr);
+                    }else{
+                        if((int)stru.getProperty(meaning) >= 0){
+                            DBG("Overwriting local property " + meaning + " with value " + String(val));
+                        }
+                        stru.setProperty(meaning, val, nullptr);
+                    }
+                }
             }
         }
+        len += fieldlen;
     }
+    return len;
 }
 int BankFile::writeStruct(ROM& rom, uint32 addr, ValueTree stru){
-    
+    //TODO
+	return -1;
 }
 
 int BankFile::getLength(){
     //TODO
+	return -1;
 }
 
 int BankFile::getLength(ValueTree stru){

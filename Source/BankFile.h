@@ -21,7 +21,7 @@ class BankFile {
     BankFile(ValueTree romdesc);
     void reset();
     
-    //Returns number of bytes read/written
+    //Returns number of bytes read/written, -1 on error
     int readStruct(ROM& rom, uint32 addr, ValueTree stru); //stru has been just copied from the template
     int writeStruct(ROM& rom, uint32 addr, ValueTree stru);
     
@@ -29,8 +29,8 @@ class BankFile {
     void loadElementList(ROM& rom, uint32 baseaddr, int bank_length, String listname, String elementname);
     void checkAddListItem(String listname, int addressval, ValueTree node);
     
-    void load(ROM& rom, uint32 abientryaddr, uint32 abfaddr);
-    void save(ROM& rom, uint32 abientryaddr, uint32 abfaddr);
+    bool load(ROM& rom, uint32 abientryaddr, uint32 abfaddr);
+    bool save(ROM& rom, uint32 abientryaddr, uint32 abfaddr);
     
     int getLength();
     int getLength(ValueTree stru);
@@ -39,11 +39,6 @@ class BankFile {
     
     ValueTree abfstructsnode;
     
-    int NUM_INST;
-    int NUM_DRUM;
-    int NUM_SFX;
-    int NUM_BANK;
-    int SSIindex;
 };
 
 

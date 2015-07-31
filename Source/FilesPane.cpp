@@ -20,6 +20,7 @@
 //[Headers] You can add your own extra header files here...
 #include "JuceHeader.h"
 #include "AppProps.h"
+#include "BankFile.h"
 //[/Headers]
 
 #include "FilesPane.h"
@@ -654,23 +655,40 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         if(!idxlistnode.isValid()) return;
         if(ientryidx < 0) return;
         if(dataaddr < 0) return;
-        if(&*p.seq != nullptr){
-            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
-                    "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
-        }
-        uint32 seqaddr, length;
-        if((int)p.romdesc.getProperty("indextype", 1) == 2){
-            seqaddr = dataaddr + p.rom.readWord(indexaddr + (16*ientryidx) + 16);
-            length = p.rom.readWord(indexaddr + (16*ientryidx) + 20);
+        if(idxlistnode.hasType("audiobankidx")){
+            //TODO debugging only
+            uint32 abientryaddr;
+            if((int)p.romdesc.getProperty("indextype", 1) == 2){
+                abientryaddr = indexaddr + (16*ientryidx) + 16;
+            }else{
+                abientryaddr = indexaddr + (8*ientryidx) + 4;
+            }
+            BankFile bank(p.romdesc);
+            bank.load(p.rom, abientryaddr, dataaddr);
+            File f = File::getSpecialLocation(File::userHomeDirectory).getChildFile("audiobank.log");
+            f.replaceWithText(bank.d.toXmlString());
+        }else if(idxlistnode.hasType("audioseqidx")){
+            if(&*p.seq != nullptr){
+                if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                        "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
+            }
+            uint32 seqaddr, length;
+            if((int)p.romdesc.getProperty("indextype", 1) == 2){
+                seqaddr = dataaddr + p.rom.readWord(indexaddr + (16*ientryidx) + 16);
+                length = p.rom.readWord(indexaddr + (16*ientryidx) + 20);
+            }else{
+                seqaddr = dataaddr + p.rom.readWord(indexaddr + (8*ientryidx) + 4);
+                length = p.rom.readWord(indexaddr + (8*ientryidx) + 8);
+            }
+            DBG("Loading sequence file from " + ROM::hex(seqaddr) + " length " + ROM::hex(length));
+            p.seq = new SeqFile(p.rom, p.romdesc, seqaddr, length);
+            p.seq->name = txtIEntryName->getText();
+            p.seq->parse();
+            p.maincomponent->onSeqLoaded();
         }else{
-            seqaddr = dataaddr + p.rom.readWord(indexaddr + (8*ientryidx) + 4);
-            length = p.rom.readWord(indexaddr + (8*ientryidx) + 8);
+            NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Load Entry",
+                    "Loading an entry from " + idxlistnode.getType().toString() + " not supported");
         }
-        DBG("Loading sequence file from " + ROM::hex(seqaddr) + " length " + ROM::hex(length));
-        p.seq = new SeqFile(p.rom, p.romdesc, seqaddr, length);
-        p.seq->name = txtIEntryName->getText();
-        p.seq->parse();
-        p.maincomponent->onSeqLoaded();
         //[/UserButtonCode_btnLoadEntry]
     }
     else if (buttonThatWasClicked == btnSaveEntry)
