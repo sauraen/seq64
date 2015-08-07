@@ -1,4 +1,6 @@
 /*
+ * ============================================================================
+ * 
  * Yaz0 / Yay0 Compression/Decompression Algorithms
  * 
  * Code (C) 2015 Sauraen, released in seq64
@@ -20,13 +22,11 @@
  * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ * ============================================================================
 */
 
-
-#include "JuceHeader.h"
-#include "ROM.h"
 #include "yaz0_yay0.h"
+#include "ROM.h"
 
 //Functions for Yax0Codec runner class
 Yax0Codec::Yax0Codec(int operation, File infile, String cv_desc) 
@@ -36,10 +36,10 @@ void Yax0Codec::run(){
     ScopedPointer<ROM> in;
     in = new ROM(0, false);
     if(!inputfile.loadFileAsData(*in)){
-        DBG("Error: could not load file " + inputfile.getFullPathName() + "!");
+        SEQ64::say("Error: could not load file " + inputfile.getFullPathName() + "!");
         return;
     }
-    DBG("Loaded " + String((int)in->getSize()) + " bytes");
+    SEQ64::say("Loaded " + String((int)in->getSize()) + " bytes");
     switch(op){
     case 0: out = yay0_decompress(*in, 0, in->getSize()); break;
     case 1: out = yaz0_decompress(*in, 0, in->getSize()); break;
@@ -64,14 +64,14 @@ void Yax0Codec::threadComplete(bool userPressedCancel){
     if(!box2.browseForFileToSave(true)) return;
     outputfile = box2.getResult();
     if(!outputfile.hasWriteAccess()){
-        DBG("Cannot write to " + outputfile.getFullPathName() + "!");
+        SEQ64::say("Cannot write to " + outputfile.getFullPathName() + "!");
         return;
     }
     if(!outputfile.replaceWithData(out->getData(), (int)out->getSize())){
-        DBG("Error: could not write file " + outputfile.getFullPathName() + "!");
+        SEQ64::say("Error: could not write file " + outputfile.getFullPathName() + "!");
         return;
     }
-    DBG("Successfully saved 0x" + ROM::hex((uint32)outputfile.getSize()) + " bytes");
+    SEQ64::say("Successfully saved 0x" + ROM::hex((uint32)outputfile.getSize()) + " bytes");
 }
 
 
@@ -95,11 +95,11 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
     //Check parameters of input
     int inputsize = input.getSize();
     if(inputaddress + 17 >= inputsize){
-        DBG("yay0_decompress: Input address is out of bounds on input data!");
+        SEQ64::say("yay0_decompress: Input address is out of bounds on input data!");
         return nullptr;
     }
     if(inputaddress + inputlength > inputsize){
-        DBG("yay0_decompress: Input length runs off the end of input data!");
+        SEQ64::say("yay0_decompress: Input length runs off the end of input data!");
         return nullptr;
     }
     int cmdaddr, cmdend, countaddr, countend, dataaddr, dataend;
@@ -110,7 +110,7 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
     //Read header
     const uint32 Yay0 = 'Y'<<24 | 'a'<<16 | 'y'<<8 | '0';
     if(input.readWord(inputaddress) != Yay0){
-        DBG("yay0_decompress: Data is not Yay0 format (illegal header)!");
+        SEQ64::say("yay0_decompress: Data is not Yay0 format (illegal header)!");
         return nullptr;
     }
     outputlength = input.readWord(inputaddress+4);
@@ -127,7 +127,7 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
             || countaddr >= dataaddr
             || cmdaddr >= countaddr 
             || cmdaddr >= dataaddr){
-        DBG("yay0_decompress: Invalid header parameters!");
+        SEQ64::say("yay0_decompress: Invalid header parameters!");
         return nullptr;
     }
     //Create return data
@@ -136,12 +136,12 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
     cmd_counter = 0;
     while(true){
         if(threadShouldExit()){
-            DBG("yay0_decompress: Asked to stop decompression");
+            SEQ64::say("yay0_decompress: Asked to stop decompression");
             break;
         }
         if(cmd_counter == 0){
             if(cmdaddr >= cmdend){
-                DBG("yay0_decompress: Commands ran off end!");
+                SEQ64::say("yay0_decompress: Commands ran off end!");
                 break;
             }
             cmd = input.readByte(cmdaddr++);
@@ -155,7 +155,7 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
             //Copy input byte to output
             //Check that we're not reading off the end of input data 
             if(dataaddr >= dataend){
-                DBG("yay0_decompress: Data ran off end!");
+                SEQ64::say("yay0_decompress: Data ran off end!");
                 break;
             }
             //Write byte
@@ -163,7 +163,7 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
         }else{
             //Copy specific data from output to output
             if(countaddr+1 >= countend){
-                DBG("yay0_decompress: Counts (2 byte) ran off end!");
+                SEQ64::say("yay0_decompress: Counts (2 byte) ran off end!");
                 break;
             }
             count1 = input.readByte(countaddr++);
@@ -172,7 +172,7 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
             if(!(count1 & 0xF0)){
                 //Read a third byte
                 if(countaddr >= countend){
-                    DBG("yay0_decompress: Counts (3 byte) ran off end!");
+                    SEQ64::say("yay0_decompress: Counts (3 byte) ran off end!");
                     break;
                 }
                 count3 = input.readByte(countaddr++);
@@ -185,12 +185,12 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
             comp_offset = ((comp_offset << 8) | count2) + 1;
             //Check to make sure we can read this many bytes
             if(comp_offset > outputaddr){
-                DBG("yay0_decompress: Tried to read from before beginning of output!");
+                SEQ64::say("yay0_decompress: Tried to read from before beginning of output!");
                 break;
             }
             //Check to make sure we can write this many bytes
             if(outputaddr + comp_count > outputlength){
-                DBG("yay0_decompress: Tried to write past end of output!");
+                SEQ64::say("yay0_decompress: Tried to write past end of output!");
                 break;
             }
             //Copy data
@@ -202,7 +202,7 @@ ROM* Yax0Codec::yay0_decompress(ROM& input, int inputaddress, int inputlength){
         setProgress((double)outputaddr / (double)outputlength);
         //Check if we filled up the output
         if(outputaddr == outputlength){
-            DBG("yay0_decompress: Success");
+            SEQ64::say("yay0_decompress: Success");
             return output;
         }
     }
@@ -231,11 +231,11 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
     //Check parameters of input
     int inputsize = input.getSize();
     if(inputaddress + 17 >= inputsize){
-        DBG("yaz0_decompress: Input address is out of bounds on input data!");
+        SEQ64::say("yaz0_decompress: Input address is out of bounds on input data!");
         return nullptr;
     }
     if(inputaddress + inputlength > inputsize){
-        DBG("yaz0_decompress: Input length runs off the end of input data!");
+        SEQ64::say("yaz0_decompress: Input length runs off the end of input data!");
         return nullptr;
     }
     int dataaddr, dataend;
@@ -248,7 +248,7 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
     if(input.readWord(inputaddress) != Yaz0
             || input.readWord(inputaddress+8) != 0
             || input.readWord(inputaddress+12) != 0){
-        DBG("yaz0_decompress: Data is not Yaz0 format (illegal header)!");
+        SEQ64::say("yaz0_decompress: Data is not Yaz0 format (illegal header)!");
         return nullptr;
     }
     outputlength = input.readWord(inputaddress+4);
@@ -256,7 +256,7 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
     dataend = (inputlength >= 0) ? (inputaddress + inputlength) : inputsize;
     //Check header parameters
     if(outputlength == 0){
-        DBG("yaz0_decompress: Invalid header parameters!");
+        SEQ64::say("yaz0_decompress: Invalid header parameters!");
         return nullptr;
     }
     //Create return data
@@ -265,12 +265,12 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
     cmd_counter = 0;
     while(true){
         if(threadShouldExit()){
-            DBG("yaz0_decompress: Asked to stop decompression");
+            SEQ64::say("yaz0_decompress: Asked to stop decompression");
             break;
         }
         if(cmd_counter == 0){
             if(dataaddr >= dataend){
-                DBG("yaz0_decompress: Input ran off end when reading command!");
+                SEQ64::say("yaz0_decompress: Input ran off end when reading command!");
                 break;
             }
             cmd = input.readByte(dataaddr++);
@@ -284,7 +284,7 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
             //Copy input byte to output
             //Check that we're not reading off the end of input data 
             if(dataaddr >= dataend){
-                DBG("yaz0_decompress: Input ran off end when reading data!");
+                SEQ64::say("yaz0_decompress: Input ran off end when reading data!");
                 break;
             }
             //Write byte
@@ -292,7 +292,7 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
         }else{
             //Copy specific data from output to output
             if(dataaddr+1 >= dataend){
-                DBG("yaz0_decompress: Input ran off end when reading counts (2 byte)!");
+                SEQ64::say("yaz0_decompress: Input ran off end when reading counts (2 byte)!");
                 break;
             }
             count1 = input.readByte(dataaddr++);
@@ -301,7 +301,7 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
             if(!(count1 & 0xF0)){
                 //Read a third byte
                 if(dataaddr >= dataend){
-                    DBG("yaz0_decompress: Input ran off end when reading counts (3 byte)!");
+                    SEQ64::say("yaz0_decompress: Input ran off end when reading counts (3 byte)!");
                     break;
                 }
                 count3 = input.readByte(dataaddr++);
@@ -314,12 +314,12 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
             comp_offset = ((comp_offset << 8) | count2) + 1;
             //Check to make sure we can read this many bytes
             if(comp_offset > outputaddr){
-                DBG("yaz0_decompress: Tried to read from before beginning of output!");
+                SEQ64::say("yaz0_decompress: Tried to read from before beginning of output!");
                 break;
             }
             //Check to make sure we can write this many bytes
             if(outputaddr + comp_count > outputlength){
-                DBG("yaz0_decompress: Tried to write past end of output!");
+                SEQ64::say("yaz0_decompress: Tried to write past end of output!");
                 break;
             }
             //Copy data
@@ -331,7 +331,7 @@ ROM* Yax0Codec::yaz0_decompress(ROM& input, int inputaddress, int inputlength){
         setProgress((double)outputaddr / (double)outputlength);
         //Check if we filled up the output
         if(outputaddr == outputlength){
-            DBG("yaz0_decompress: Success");
+            SEQ64::say("yaz0_decompress: Success");
             return output;
         }
     }
@@ -354,7 +354,7 @@ yax0_result yax0_kernel(ROM& input, int position, int lowbound, int upbound){
     res.count = 2; //Don't take anything less than 2 long
     res.dist = 0;
     if(lowbound > position || upbound < position){
-        DBG("yax0_kernel bounds error");
+        SEQ64::say("yax0_kernel bounds error");
         return res;
     }
     int lookback, lookforward;
@@ -400,11 +400,11 @@ ROM* Yax0Codec::yay0_compress(ROM& input, int inputaddress, int inputlength){
     int inputsize = input.getSize();
     int upbound = inputaddress + inputlength;
     if(inputaddress >= inputsize){
-        DBG("yay0_compress: Input address is out of bounds on input data!");
+        SEQ64::say("yay0_compress: Input address is out of bounds on input data!");
         return nullptr;
     }
     if(upbound > inputsize){
-        DBG("yay0_compress: Input length runs off the end of input data!");
+        SEQ64::say("yay0_compress: Input length runs off the end of input data!");
         return nullptr;
     }
     //Create arrays
@@ -420,7 +420,7 @@ ROM* Yax0Codec::yay0_compress(ROM& input, int inputaddress, int inputlength){
     cmd_counter = 7; cmd = 0;
     while(a < upbound){
         if(threadShouldExit()){
-            DBG("yay0_compress: Asked to stop decompression");
+            SEQ64::say("yay0_compress: Asked to stop decompression");
             break;
         }
         simpleres = yax0_kernel(input, a, inputaddress, upbound);
@@ -504,7 +504,7 @@ ROM* Yax0Codec::yay0_compress(ROM& input, int inputaddress, int inputlength){
     for(int i=0; i<data.size(); i++){
         output->writeByte(a++, data[i]);
     }
-    DBG("yay0_compress: success");
+    SEQ64::say("yay0_compress: success");
     return output;
 }
 
@@ -528,11 +528,11 @@ ROM* Yax0Codec::yaz0_compress(ROM& input, int inputaddress, int inputlength){
     int inputsize = input.getSize();
     int upbound = inputaddress + inputlength;
     if(inputaddress >= inputsize){
-        DBG("yaz0_compress: Input address is out of bounds on input data!");
+        SEQ64::say("yaz0_compress: Input address is out of bounds on input data!");
         return nullptr;
     }
     if(upbound > inputsize){
-        DBG("yaz0_compress: Input length runs off the end of input data!");
+        SEQ64::say("yaz0_compress: Input length runs off the end of input data!");
         return nullptr;
     }
     //Create array
@@ -547,7 +547,7 @@ ROM* Yax0Codec::yaz0_compress(ROM& input, int inputaddress, int inputlength){
     data.add(0); just_added_cmd = true; //Space for first command
     while(a < upbound){
         if(threadShouldExit()){
-            DBG("yaz0_compress: Asked to stop decompression");
+            SEQ64::say("yaz0_compress: Asked to stop decompression");
             break;
         }
         simpleres = yax0_kernel(input, a, inputaddress, upbound);
@@ -634,7 +634,7 @@ ROM* Yax0Codec::yaz0_compress(ROM& input, int inputaddress, int inputlength){
     for(int i=0; i<data.size(); i++){
         output->writeByte(a++, data[i]);
     }
-    DBG("yaz0_compress: success");
+    SEQ64::say("yaz0_compress: success");
     return output;
 }
 

@@ -1,18 +1,35 @@
 /*
-  ==============================================================================
-
-    SeqFile.h
-    Created: 1 Nov 2014 12:01:52pm
-    Author:  Sauraen
-
-  ==============================================================================
+ * ============================================================================
+ *
+ * SeqFile.h
+ * Class to hold/import/export a Nintendo EAD (Audioseq) format sequence file
+ * 
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
 */
 
 #ifndef SEQFILE_H_INCLUDED
 #define SEQFILE_H_INCLUDED
 
-#include "ROM.h"
+#include "JuceHeader.h"
+#include "seq64.h"
 
+class ROM;
+class BankFile;
 
 class SeqTSection{
     public:
@@ -52,14 +69,14 @@ class CCTracker{
 
 class SeqFile{
     public:
-    String name;
-    
-    SeqFile(ROM& rom, ValueTree romdesc, uint32 seqaddr, uint32 length);
-    SeqFile(ValueTree romdesc);
+    SeqFile(ValueTree romdesc_);
     ~SeqFile();
+    
     uint32 getLength();
     uint8 readByte(uint32 address);
     void writeByte(uint32 address, uint8 d);
+    
+    bool load(ROM& rom, int seqnumber);
     void saveToROM(ROM& rom, uint32 start_addr);
     
     void trim();
@@ -99,12 +116,17 @@ class SeqFile{
     void reduceTrackNotes();
     void render();
     
+    String name;
+    
     private:
     Array<uint8> data;
     ValueTree structure;
     
+    ValueTree romdesc;
     ValueTree cmdlist;
     ValueTree midiopts;
+    
+    ScopedPointer<BankFile> bank;
     
     OwnedArray<SeqData> sections;
     

@@ -5,8 +5,6 @@
               jucerVersion="3.1.0">
   <MAINGROUP id="wZlCL9" name="seq64">
     <GROUP id="{8B7F61C6-5972-43BB-094D-97D2AB9C966F}" name="Source">
-      <FILE id="LO5tCZ" name="AppProps.cpp" compile="1" resource="0" file="Source/AppProps.cpp"/>
-      <FILE id="ZNFPkJ" name="AppProps.h" compile="0" resource="0" file="Source/AppProps.h"/>
       <FILE id="mglZ3y" name="AudiobankPane.cpp" compile="1" resource="0"
             file="Source/AudiobankPane.cpp"/>
       <FILE id="gvehsL" name="AudiobankPane.h" compile="0" resource="0" file="Source/AudiobankPane.h"/>
@@ -19,7 +17,6 @@
       <FILE id="NLWvvN" name="CICSetter.h" compile="0" resource="0" file="Source/CICSetter.h"/>
       <FILE id="WjqAob" name="FilesPane.cpp" compile="1" resource="0" file="Source/FilesPane.cpp"/>
       <FILE id="ETKRIb" name="FilesPane.h" compile="0" resource="0" file="Source/FilesPane.h"/>
-      <FILE id="lM7NBa" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="wiy2KP" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
       <FILE id="Tp4gdP" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
@@ -29,6 +26,8 @@
       <FILE id="Pxmy8v" name="n64checksum.h" compile="0" resource="0" file="Source/n64checksum.h"/>
       <FILE id="L9tM8e" name="ROM.cpp" compile="1" resource="0" file="Source/ROM.cpp"/>
       <FILE id="dFvgHy" name="ROM.h" compile="0" resource="0" file="Source/ROM.h"/>
+      <FILE id="lM7NBa" name="seq64.cpp" compile="1" resource="0" file="Source/seq64.cpp"/>
+      <FILE id="r8Nmn8" name="seq64.h" compile="0" resource="0" file="Source/seq64.h"/>
       <FILE id="GI153n" name="SeqFile.cpp" compile="1" resource="0" file="Source/SeqFile.cpp"/>
       <FILE id="IuqEgu" name="SeqFile.h" compile="0" resource="0" file="Source/SeqFile.h"/>
       <FILE id="mUrQ7s" name="TextListModel.cpp" compile="1" resource="0"

@@ -1,15 +1,30 @@
 /*
-  ==============================================================================
-
-    TextListModel.cpp
-    Created: 31 Oct 2014 10:00:34pm
-    Author:  Sauraen
-
-  ==============================================================================
+ * ============================================================================
+ *
+ * TextListModel.cpp
+ * A ListBoxModel subclass that makes a standard list box of strings
+ * 
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
 */
 
-#include "JuceHeader.h"
 #include "TextListModel.h"
+
+void TextListModel::Listener::rowDoubleClicked(TextListModel* parent, int row){}
 
 TextListModel::TextListModel() : font(15){
     
@@ -56,6 +71,12 @@ void TextListModel::paintListBoxItem(int rowNumber, Graphics &g, int width, int 
 void TextListModel::selectedRowsChanged(int lastRowSelected){
     if(listener != nullptr){
         listener->rowSelected(this, lastRowSelected);
+    }
+}
+
+void TextListModel::listBoxItemDoubleClicked(int row, const MouseEvent& e){
+    if(listener != nullptr){
+        listener->rowDoubleClicked(this, row);
     }
 }
 

@@ -1,29 +1,40 @@
 /*
-  ==============================================================================
-
-    MainComponent.cpp
-    Created: 13 Nov 2014 9:25:30am
-    Author:  Sauraen
-
-  ==============================================================================
+ * ============================================================================
+ *
+ * MainComponent.cpp
+ * GUI component that holds the menus, tabs, etc. and performs menu functions
+ * 
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
 */
 
-#include "JuceHeader.h"
 #include "MainComponent.h"
-#include "AppProps.h"
 #include "FilesPane.h"
 #include "AudioseqPane.h"
 #include "MidiPane.h"
 #include "AudiobankPane.h"
 #include "CICSetter.h"
 #include "n64checksum.h"
-#include "yaz0_yay0.h"
 
 //==============================================================================
 
-MainComponent::MainComponent(DocumentWindow& window_) : window(window_)
+MainComponent::MainComponent(SEQ64& seq64_, DocumentWindow& window_) : seq64(seq64_), window(window_)
 {
-    p.maincomponent = this;
+    seq64.maincomponent = this;
     
     //Menus
     menuBarHeight = 24;
@@ -73,10 +84,10 @@ MainComponent::MainComponent(DocumentWindow& window_) : window(window_)
     addAndMakeVisible(*mnuBar);
     
     //Tabbed Panes
-    filespane = new FilesPane(p);
-    audioseqpane = new AudioseqPane(p);
-    midipane = new MidiPane(p);
-    audiobankpane = new AudiobankPane(p);
+    filespane = new FilesPane(seq64);
+    audioseqpane = new AudioseqPane(seq64);
+    midipane = new MidiPane(seq64);
+    audiobankpane = new AudiobankPane(seq64);
     
     tabbox = new TabbedComponent(TabbedButtonBar::TabsAtTop);
     tabbox->addTab("Files", Colours::white, &*filespane, false);
@@ -86,11 +97,10 @@ MainComponent::MainComponent(DocumentWindow& window_) : window(window_)
     addAndMakeVisible(*tabbox);
     
     //Other
-    setSize(1300, 850);
-        
-    mainfolder = File(AppProps::readProperty("mainfolder"));
-    DBG("Main folder " + mainfolder.getFullPathName());
-
+    setSize(1080, 768);
+    
+    onROMLoaded();
+    onRomDescLoaded();
 }
 
 MainComponent::~MainComponent()
@@ -106,71 +116,49 @@ PopupMenu MainComponent::getMenuForIndex(int topLevelMenuIndex, const String &me
 
 void MainComponent::actuallySaveROM(){
     if(!romfile.hasWriteAccess()) return;
-    UpdateCRC(p.rom);
-    DBG("Saving 0x" + ROM::hex((uint32)p.rom.getSize())
+    UpdateCRC(seq64.rom);
+    SEQ64::say("Saving 0x" + ROM::hex((uint32)seq64.rom.getSize())
             + " bytes to " + romfile.getFullPathName());
-    if(!romfile.replaceWithData(p.rom.getData(), (int)p.rom.getSize())){
-        DBG("Error: could not write file " + romfile.getFullPathName() + "!");
+    if(!romfile.replaceWithData(seq64.rom.getData(), (int)seq64.rom.getSize())){
+        SEQ64::say("Error: could not write file " + romfile.getFullPathName() + "!");
         return;
     }
-    DBG("Successfully saved 0x" + ROM::hex((uint32)romfile.getSize()) + " bytes");
+    SEQ64::say("Successfully saved 0x" + ROM::hex((uint32)romfile.getSize()) + " bytes");
 }
 void MainComponent::actuallySaveRomDesc(){
-    DBG("Saving XML ROM description parameters");
+    SEQ64::say("Saving XML ROM description parameters");
     ScopedPointer<XmlElement> xml;
-    xml = p.romdesc.createXml();
+    xml = seq64.romdesc.createXml();
     if(xml != nullptr){
         if(xml->writeToFile(romdescfile, "<!-- seq64 ROM Description File -->")){
-            DBG("Successfully saved");
+            SEQ64::say("Successfully saved");
             return;
         }
     }
-    DBG("Error: could not write file " + romdescfile.getFullPathName() + "!");
+    SEQ64::say("Error: could not write file " + romdescfile.getFullPathName() + "!");
     return;
 }
 
 void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
     if(menuItemID == 1){
         //ROM::Load...
-        File lastpath = File::getSpecialLocation(File::userHomeDirectory);
-        if(mainfolder.exists()){
-            lastpath = mainfolder;
-        }
-        FileChooser box("Select a ROM to load...", lastpath, "*.z64;*.v64;*.n64");
+        FileChooser box("Select a ROM to load...", SEQ64::readFolderProperty("romfolder"), "*.z64;*.v64;*.n64");
         if(box.browseForFileToOpen()){
             romfile = box.getResult();
             if(!romfile.existsAsFile()){
-                DBG("File " + romfile.getFullPathName() + " does not exist!");
+                SEQ64::say("File " + romfile.getFullPathName() + " does not exist!");
                 romfile = "";
-                p.rom.reset();
+                seq64.rom.reset();
                 return;
             }
             //Save what folder you're in
-            mainfolder = romfile.getParentDirectory();
-            AppProps::writeProperty("mainfolder", mainfolder.getFullPathName());
+            SEQ64::writeProperty("romfolder", romfile.getParentDirectory().getFullPathName());
             //Load ROM
-            DBG("Loading 0x" + ROM::hex((uint32)romfile.getSize())
-                    + " bytes from " + romfile.getFullPathName());
-            p.rom.reset();
-            if(!romfile.loadFileAsData(p.rom)){
-                DBG("Error: could not load file " + romfile.getFullPathName() + "!");
-                romfile = "";
-                p.rom.reset();
+            if(!seq64.loadROM(romfile)){
+                romfile = File::nonexistent;
                 return;
             }
-            String extension = romfile.getFileExtension();
-            if(extension == ".n64" || extension == ".v64"){
-                p.rom.byteOrdering = ROM::BADC;
-                DBG("Interpreting " + extension + " file as BADC order");
-            }else if(extension == ".r64"){
-                p.rom.byteOrdering = ROM::DCBA;
-                DBG("Interpreting " + extension + " file as DCBA order");
-            }else{
-                p.rom.byteOrdering = ROM::ABCD;
-                DBG("Interpreting " + extension + " file as ABCD order");
-            }
-            DBG("Successfully loaded 0x" + ROM::hex((uint32)p.rom.getSize()) + " bytes");
-            while(FindCIC(p.rom) < 0){
+            while(FindCIC(seq64.rom) < 0){
                 int res = NativeMessageBox::showYesNoCancelBox(AlertWindow::WarningIcon,
                         "CRC Check", "ROM CRCs did not match according to any known CIC!\n"
                         "\n"
@@ -184,7 +172,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
                     DialogWindow::LaunchOptions cicbox;
                     cicbox.dialogTitle = "Set CIC";
                     cicbox.dialogBackgroundColour = Colours::lightgrey;
-                    cicbox.content.setOwned(new CICSetter(p));
+                    cicbox.content.setOwned(new CICSetter(seq64));
                     cicbox.resizable = false;
                     cicbox.launchAsync();
                     break;
@@ -197,8 +185,8 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         return;
     }else if(menuItemID == 2){
         //ROM::Save
-        if(p.rom.getSize() == 0){
-            DBG("No ROM to save!");
+        if(seq64.rom.getSize() == 0){
+            SEQ64::say("No ROM to save!");
             return;
         }
         if(!romfile.exists()){
@@ -212,16 +200,16 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
     }
     if(menuItemID == 3){
         //ROM::Save As...
-        if(p.rom.getSize() == 0){
-            DBG("No ROM to save!");
+        if(seq64.rom.getSize() == 0){
+            SEQ64::say("No ROM to save!");
             return;
         }
-        File newsavelocation = (romfile.exists() ? romfile : mainfolder);
+        File newsavelocation = (romfile.exists() ? romfile : SEQ64::readFolderProperty("romfolder"));
         String extension;
         if(romfile.exists()){
             extension = romfile.getFileExtension();
         }else{
-            switch(p.rom.byteOrdering){
+            switch(seq64.rom.byteOrdering){
                 case ROM::ABCD: extension = ".z64"; break;
                 case ROM::BADC: extension = ".n64"; break;
                 case ROM::DCBA: extension = ".r64"; break;
@@ -232,7 +220,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         if(box.browseForFileToSave(true)){
             newsavelocation = box.getResult();
             if(!newsavelocation.hasWriteAccess()){
-                DBG("Cannot write to " + newsavelocation.getFullPathName() + "!");
+                SEQ64::say("Cannot write to " + newsavelocation.getFullPathName() + "!");
                 return;
             }
             if(newsavelocation.getFileExtension() == ""){
@@ -250,32 +238,21 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         return;
     }else if(menuItemID == 11){
         //RomDesc::Load...
-        File lastpath = File::getSpecialLocation(File::userHomeDirectory);
-        if(mainfolder.exists()){
-            lastpath = mainfolder;
-        }
-        FileChooser box("Select a ROM description file to load...", lastpath, "*.xml");
+        FileChooser box("Select a ROM description file to load...", SEQ64::readFolderProperty("romdescfolder"), "*.xml");
         if(box.browseForFileToOpen()){
             romdescfile = box.getResult();
             if(!romdescfile.existsAsFile()){
-                DBG("File " + romdescfile.getFullPathName() + " does not exist!");
-                romdescfile = "";
+                SEQ64::say("File " + romdescfile.getFullPathName() + " does not exist!");
+                romdescfile = File::nonexistent;
                 return;
             }
             //Save what folder you're in
-            mainfolder = romdescfile.getParentDirectory();
-            AppProps::writeProperty("mainfolder", mainfolder.getFullPathName());
+            SEQ64::writeProperty("romdescfolder", romdescfile.getParentDirectory().getFullPathName());
             //Load XML
-            DBG("Loading XML ROM description parameters");
-            ScopedPointer<XmlElement> xml;
-            xml = XmlDocument::parse(romdescfile);
-            if(xml == nullptr){
-                DBG("Error: could not load file " + romfile.getFullPathName() + "!");
-                romdescfile = "";
+            if(!seq64.loadRomDesc(romdescfile)){
+                romdescfile = File::nonexistent;
                 return;
             }
-            p.romdesc = ValueTree::fromXml(*xml);
-            DBG("Successfully loaded");
             onRomDescLoaded();
             return;
         }
@@ -285,7 +262,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         if(romdescfile.exists()){
             actuallySaveRomDesc();
         }else{
-            DBG("No file to save to!");
+            SEQ64::say("No file to save to!");
         }
         return;
     }else if(menuItemID == 13){
@@ -298,7 +275,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         if(box.browseForFileToSave(true)){
             newsavelocation = box.getResult();
             if(!newsavelocation.hasWriteAccess()){
-                DBG("Cannot write to " + newsavelocation.getFullPathName() + "!");
+                SEQ64::say("Cannot write to " + newsavelocation.getFullPathName() + "!");
                 return;
             }
             if(newsavelocation.getFileExtension() == ""){
@@ -360,17 +337,17 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         NativeMessageBox::showMessageBox (AlertWindow::NoIcon, "About seq64", helpText3);
         return;
     }
-    DBG("Bad menu item selected, " + String(menuItemID));
+    SEQ64::say("Bad menu item selected, " + String(menuItemID));
 }
 
 void MainComponent::queryByteOrdering(){
-    if(!romfile.exists() || p.rom.getSize() == 0){
-        DBG("No ROM loaded!");
+    if(!romfile.exists() || seq64.rom.getSize() == 0){
+        SEQ64::say("No ROM loaded!");
         NativeMessageBox::showMessageBox (AlertWindow::InfoIcon, "Byte Ordering",
                 "No ROM loaded!");
         return;
     }
-    ROM::BYTEORDERING orig_order = p.rom.byteOrdering;
+    ROM::BYTEORDERING orig_order = seq64.rom.byteOrdering;
     String orig_order_name;
     switch(orig_order){
         case ROM::ABCD: orig_order_name = "ABCD"; break;
@@ -378,13 +355,13 @@ void MainComponent::queryByteOrdering(){
         case ROM::DCBA: orig_order_name = "DCBA"; break;
         default: orig_order_name = "ERROR"; jassertfalse;
     }
-    String name_cur  = p.rom.getROMName();
-    p.rom.byteOrdering = ROM::ABCD;
-    String name_abcd = p.rom.getROMName();
-    p.rom.byteOrdering = ROM::BADC;
-    String name_badc = p.rom.getROMName();
-    p.rom.byteOrdering = ROM::DCBA;
-    String name_dcba = p.rom.getROMName();
+    String name_cur  = seq64.rom.getROMName();
+    seq64.rom.byteOrdering = ROM::ABCD;
+    String name_abcd = seq64.rom.getROMName();
+    seq64.rom.byteOrdering = ROM::BADC;
+    String name_badc = seq64.rom.getROMName();
+    seq64.rom.byteOrdering = ROM::DCBA;
+    String name_dcba = seq64.rom.getROMName();
     
     int res = NativeMessageBox::showYesNoCancelBox(AlertWindow::QuestionIcon, "Byte Ordering", 
             "To determine the correct byte ordering, select\n"
@@ -397,12 +374,12 @@ void MainComponent::queryByteOrdering(){
     
     String new_order_name;
     switch(res){
-        case 1: p.rom.byteOrdering = ROM::ABCD; new_order_name = "ABCD"; break;
-        case 2: p.rom.byteOrdering = ROM::BADC; new_order_name = "BADC"; break;
-        case 0: p.rom.byteOrdering = ROM::DCBA; new_order_name = "DCBA"; break;
+        case 1: seq64.rom.byteOrdering = ROM::ABCD; new_order_name = "ABCD"; break;
+        case 2: seq64.rom.byteOrdering = ROM::BADC; new_order_name = "BADC"; break;
+        case 0: seq64.rom.byteOrdering = ROM::DCBA; new_order_name = "DCBA"; break;
         default: jassertfalse; new_order_name = "ERROR";
     }
-    if(orig_order != p.rom.byteOrdering){
+    if(orig_order != seq64.rom.byteOrdering){
         NativeMessageBox::showMessageBox(AlertWindow::InfoIcon, "Byte Ordering", 
                 "Changed from " + orig_order_name + " to " + new_order_name + " byte ordering.");
         onROMLoaded();
@@ -416,19 +393,16 @@ void MainComponent::doCodecOperation(int operation){
     case 1: conv_desc = "Yaz0 compressed"; op_desc = "Decompressing from Yaz0..."; break;
     case 2: conv_desc = "uncompressed"; op_desc = "Compressing as Yay0..."; break;
     case 3: conv_desc = "uncompressed"; op_desc = "Compressing as Yaz0..."; break;
-    default: DBG("Error"); return;
+    default: SEQ64::say("Error"); return;
     };
-    File inputfile = File::getSpecialLocation(File::userHomeDirectory);
-    if(mainfolder.exists()){
-        inputfile = mainfolder;
-    }
-    FileChooser box("Choose input " + conv_desc + " file...", inputfile, "");
+    FileChooser box("Choose input " + conv_desc + " file...", SEQ64::readFolderProperty("codecfolder"), "");
     if(!box.browseForFileToOpen()) return;
-    inputfile = box.getResult();
+    File inputfile = box.getResult();
     if(!inputfile.existsAsFile()){
-        DBG("File does not exist!");
+        SEQ64::say("File does not exist!");
         return;
     }
+    SEQ64::writeProperty("codecfolder", inputfile.getParentDirectory().getFullPathName());
     codec = nullptr;
     codec = new Yax0Codec(operation, inputfile, conv_desc);
     codec->setStatusMessage(op_desc);
@@ -447,20 +421,24 @@ void MainComponent::resized()
 }
 
 void MainComponent::onROMLoaded(){
-    window.setName(p.rom.getROMName() + "- seq64");
+    window.setName(seq64.rom.getROMName() + "- seq64");
 }
 void MainComponent::onRomDescLoaded(){
     filespane->romDescLoaded();
     audiobankpane->romDescLoaded();
     audioseqpane->refreshCmdList();
     midipane->refreshMIDIControls();
+    onGotABI();
 }
 void MainComponent::onSeqLoaded(){
     audioseqpane->fillSeqSections();
     audioseqpane->fillSeqCommands();
 }
 void MainComponent::onBankLoaded(){
-    
+    audiobankpane->bankLoaded();
+}
+void MainComponent::onGotABI(){
+    audiobankpane->gotABI();
 }
 
 const String MainComponent::helpText1 = String(

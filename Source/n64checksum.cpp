@@ -3,8 +3,8 @@
  * All known versions of this code have been released under the GPL
  * 
  * Authors/editors in reverse chronological order (AKA rabbit hole):
- * Modifications (C) 2014 Sauraen, released in seq64
- *     (http://code.google.com/p/seq-64/)
+ * Modifications (C) 2014-2015 Sauraen, released in seq64
+ *     (https://github.com/sauraen/seq64/)
  * Modifications (C) 2005 Parasyte, released in M64ROMExtender1.3b
  *     (http://qubedstudios.rustedlogic.net/Mario64Tools.htm)
  *     (http://www.smwcentral.net/?p=section&a=details&id=4812)
@@ -126,11 +126,8 @@ R4300i CPU.
 *************************************************************************
  */
 
-#include "JuceHeader.h"
-#include "ROM.h"
-
 #include "n64checksum.h"
-
+#include "ROM.h"
 
 
 #define NUM_CICS 4
@@ -169,16 +166,16 @@ int getCICName(int i) { if(i < 0 || i >= NUM_CICS) return 0; return cic_name_lis
 
 int CalculateCRC(ROM& rom, int cic_index, uint32* crc1, uint32* crc2) {
     if(cic_index >= NUM_CICS){
-        DBG("Unknown CIC index " + String(cic_index) + "! See n64checksum.cpp for usage!");
+        SEQ64::say("Unknown CIC index " + String(cic_index) + "! See n64checksum.cpp for usage!");
         return -1;
     }
     if(rom.getSize() < CHECKSUM_START+CHECKSUM_LENGTH){
-        DBG("ROM smaller than area to calculate checksum on!");
+        SEQ64::say("ROM smaller than area to calculate checksum on!");
         return -1;
     }
 	uint32 seed = cic_seed_list[cic_index];
 	int bootcode = cic_name_list[cic_index];
-	//DBG("Checking CRCs of ROM with CIC " + String(bootcode) + "...");
+	//SEQ64::say("Checking CRCs of ROM with CIC " + String(bootcode) + "...");
 
 	uint32 t1, t2, t3, t4, t5, t6;
 	uint32 r, d, i;
@@ -224,7 +221,7 @@ int CalculateCRC(ROM& rom, int cic_index, uint32* crc1, uint32* crc2) {
 
 int UpdateCRC(ROM& rom){
     if(rom.cic_index < 0 || rom.cic_index >= NUM_CICS){
-        DBG("ROM has unknown CIC, cannot update CRC!");
+        SEQ64::say("ROM has unknown CIC, cannot update CRC!");
         return -1;
     }
     uint32 crc1, crc2;
@@ -233,12 +230,12 @@ int UpdateCRC(ROM& rom){
     uint32 old_crc1 = rom.readWord(N64_CRC1);
 	uint32 old_crc2 = rom.readWord(N64_CRC2);
 	if(crc1 == old_crc1 && crc2 == old_crc2){
-	    DBG("CRCs match: 0x" + ROM::hex(crc1) + ", 0x" + ROM::hex(crc2));
+	    SEQ64::say("CRCs match: 0x" + ROM::hex(crc1) + ", 0x" + ROM::hex(crc2));
 	    return 0;
 	}
-	DBG("CRC mismatch: original 0x" + ROM::hex(old_crc1) + ", 0x" + ROM::hex(old_crc2));
-	DBG("            calculated 0x" + ROM::hex(crc1) + ", 0x" + ROM::hex(crc2));
-	DBG("Updating CRCs in ROM...");
+	SEQ64::say("CRC mismatch: original 0x" + ROM::hex(old_crc1) + ", 0x" + ROM::hex(old_crc2));
+	SEQ64::say("            calculated 0x" + ROM::hex(crc1) + ", 0x" + ROM::hex(crc2));
+	SEQ64::say("Updating CRCs in ROM...");
 	rom.writeWord(N64_CRC1, crc1);
 	rom.writeWord(N64_CRC2, crc2);
 	return 1;
@@ -246,7 +243,7 @@ int UpdateCRC(ROM& rom){
 
 int FindCIC(ROM& rom){
     if(rom.getSize() < CHECKSUM_START+CHECKSUM_LENGTH){
-        DBG("ROM smaller than area to calculate checksum on!");
+        SEQ64::say("ROM smaller than area to calculate checksum on!");
         return -1;
     }
     uint32 crc1, crc2;
@@ -256,13 +253,13 @@ int FindCIC(ROM& rom){
     for(int cic_index = 0; cic_index < NUM_CICS; cic_index++){
         ret = CalculateCRC(rom, cic_index, &crc1, &crc2);
         if(crc1 == old_crc1 && crc2 == old_crc2){
-	        DBG("CRCs match: 0x" + ROM::hex(crc1) + ", 0x" + ROM::hex(crc2) 
+	        SEQ64::say("CRCs match: 0x" + ROM::hex(crc1) + ", 0x" + ROM::hex(crc2) 
 	                + "-- ROM has CIC " + String(cic_name_list[cic_index]));
 	        rom.cic_index = cic_index;
 	        return cic_index;
 	    }
     }
-    DBG("CRCs did not match with any CIC!");
+    SEQ64::say("CRCs did not match with any CIC!");
     rom.cic_index = -1;
     return -1;
 }

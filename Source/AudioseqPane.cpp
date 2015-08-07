@@ -18,8 +18,31 @@
 */
 
 //[Headers] You can add your own extra header files here...
-#include "JuceHeader.h"
-#include "AppProps.h"
+/*
+ * ============================================================================
+ *
+ * AudioseqPane.cpp
+ * GUI component for sequence editor screen
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
+
+#include "SeqFile.h"
 //[/Headers]
 
 #include "AudioseqPane.h"
@@ -29,8 +52,8 @@
 //[/MiscUserDefs]
 
 //==============================================================================
-AudioseqPane::AudioseqPane (AppProps& props)
-    : p(props)
+AudioseqPane::AudioseqPane (SEQ64& seq64_)
+    : seq64(seq64_)
 {
     addAndMakeVisible (groupComponent = new GroupComponent ("new group",
                                                             TRANS("Loaded Sequence")));
@@ -653,7 +676,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
     if (buttonThatWasClicked == btnCmdAdd)
     {
         //[UserButtonCode_btnCmdAdd] -- add your button handler code here..
-        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
+        ValueTree cmdlistnode = seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
         ValueTree cmd("command");
         cmd.setProperty("cmd", 0, nullptr);
         cmd.setProperty("name", "Unnamed", nullptr);
@@ -668,7 +691,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnCmdDel] -- add your button handler code here..
         int pos = lstCommands->getLastRowSelected();
         if(pos >= 0){
-            p.romdesc.getChildWithName("cmdlist").removeChild(pos, nullptr);
+            seq64.romdesc.getChildWithName("cmdlist").removeChild(pos, nullptr);
             refreshCmdList();
             lstCommands->selectRow(-1);
         }
@@ -780,7 +803,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnCmdUp] -- add your button handler code here..
         int pos = lstCommands->getLastRowSelected();
         if(pos > 0){
-            p.romdesc.getChildWithName("cmdlist").moveChild(pos, pos-1, nullptr);
+            seq64.romdesc.getChildWithName("cmdlist").moveChild(pos, pos-1, nullptr);
             refreshCmdList();
             lstCommands->selectRow(pos-1);
         }
@@ -791,7 +814,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnCmdDn] -- add your button handler code here..
         int pos = lstCommands->getLastRowSelected();
         if(pos >= 0 && pos < lsmCommands->getNumRows() - 1){
-            p.romdesc.getChildWithName("cmdlist").moveChild(pos, pos+1, nullptr);
+            seq64.romdesc.getChildWithName("cmdlist").moveChild(pos, pos+1, nullptr);
             refreshCmdList();
             lstCommands->selectRow(pos+1);
         }
@@ -815,18 +838,18 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnSeqCmdAdd)
     {
         //[UserButtonCode_btnSeqCmdAdd] -- add your button handler code here..
-        if(&*p.seq == nullptr) return;
+        if(&*seq64.seq == nullptr) return;
         int selsec = lstSeqSections->getLastRowSelected();
-        if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
-        SeqData* section = p.seq->getSection(selsec);
+        if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
+        SeqData* section = seq64.seq->getSection(selsec);
         int selcmd = lstSeqCommands->getLastRowSelected();
         if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
         uint32 cmdaddr = section->cmdoffsets[selcmd];
         //Calculate the number of bytes to add
-        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
+        ValueTree cmdlistnode = seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
         ValueTree cmd = cmdlistnode.getChildWithProperty("name", cbxSeqCmdType->getText());
         if(!cmd.isValid()){
-            DBG("No command found with name " + cbxSeqCmdType->getText() + "!");
+            SEQ64::say("No command found with name " + cbxSeqCmdType->getText() + "!");
             return;
         }
         int bytesToAdd = 1;
@@ -843,26 +866,26 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
                 bytesToAdd += datalen - 1;
             }
         }
-        DBG("Adding " + String(bytesToAdd) + " bytes @" + ROM::hex(cmdaddr,4));
-        p.seq->insertSpaceAt(cmdaddr, bytesToAdd, (selcmd != 0));
-        p.seq->writeByte(cmdaddr, (int)cmd.getProperty("cmd", 0));
+        SEQ64::say("Adding " + String(bytesToAdd) + " bytes @" + ROM::hex(cmdaddr,4));
+        seq64.seq->insertSpaceAt(cmdaddr, bytesToAdd, (selcmd != 0));
+        seq64.seq->writeByte(cmdaddr, (int)cmd.getProperty("cmd", 0));
         seqStructureChanged();
         //[/UserButtonCode_btnSeqCmdAdd]
     }
     else if (buttonThatWasClicked == btnSeqCmdDelete)
     {
         //[UserButtonCode_btnSeqCmdDelete] -- add your button handler code here..
-        if(&*p.seq == nullptr) return;
+        if(&*seq64.seq == nullptr) return;
         int selsec = lstSeqSections->getLastRowSelected();
-        if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
-        SeqData* section = p.seq->getSection(selsec);
+        if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
+        SeqData* section = seq64.seq->getSection(selsec);
         int selcmd = lstSeqCommands->getLastRowSelected();
         if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
         uint32 cmdaddr = section->cmdoffsets[selcmd];
-        ValueTree command = p.seq->getCommand(cmdaddr, section->stype);
+        ValueTree command = seq64.seq->getCommand(cmdaddr, section->stype);
         int len = command.getProperty("length", 1);
-        DBG("Removing " + String(len) + " bytes @" + ROM::hex(cmdaddr,4));
-        p.seq->removeData(cmdaddr, len, selsec);
+        SEQ64::say("Removing " + String(len) + " bytes @" + ROM::hex(cmdaddr,4));
+        seq64.seq->removeData(cmdaddr, len, selsec);
         seqStructureChanged();
         //[/UserButtonCode_btnSeqCmdDelete]
     }
@@ -948,7 +971,7 @@ void AudioseqPane::focusGained (FocusChangeType cause)
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
 void AudioseqPane::rowSelected(TextListModel* parent, int row){
     if(parent == &*lsmCommands){
-        ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
+        ValueTree cmdlistnode = seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
         selcmd = cmdlistnode.getChild(row);
         refreshCmdControls();
     }else if(parent == &*lsmParameters){
@@ -1016,23 +1039,23 @@ void AudioseqPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         selparam.setProperty("datalen", val, nullptr);
         turnRed = false;
     }else if(&editorThatWasChanged == &*txtSeqCmdValue){
-        if(&*p.seq == nullptr) return;
+        if(&*seq64.seq == nullptr) return;
         int selsec = lstSeqSections->getLastRowSelected();
-            if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
-            SeqData* section = p.seq->getSection(selsec);
+            if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
+            SeqData* section = seq64.seq->getSection(selsec);
         int selcmd = lstSeqCommands->getLastRowSelected();
             if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
             uint32 cmdaddr = section->cmdoffsets[selcmd];
-            ValueTree cmd = p.seq->getCommand(cmdaddr, section->stype);
+            ValueTree cmd = seq64.seq->getCommand(cmdaddr, section->stype);
         int selparam = lstSeqCmdParams->getLastRowSelected();
             if(selparam < 0 || selparam >= cmd.getNumChildren()) return;
             ValueTree param = cmd.getChild(selparam);
-        int ret = p.seq->editCmdParam(selsec, cmdaddr, section->stype, param.getProperty("meaning", "None"), val);
+        int ret = seq64.seq->editCmdParam(selsec, cmdaddr, section->stype, param.getProperty("meaning", "None"), val);
         turnRed = (ret < 0);
         if(ret > 0){
             seqStructureChanged();
         }else if(ret == 0){
-            lsmSeqCommands->set(selcmd, p.seq->getCommandDescription(selsec, selcmd));
+            lsmSeqCommands->set(selcmd, seq64.seq->getCommandDescription(selsec, selcmd));
             lstSeqCommands->repaintRow(selcmd);
         }
     }
@@ -1113,7 +1136,7 @@ void AudioseqPane::refreshParamControls(){
 void AudioseqPane::refreshCmdList(){
     lsmCommands->clear();
     lstCommands->updateContent();
-    ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
+    ValueTree cmdlistnode = seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
     ValueTree cmd;
     String desc;
     for(int i=0; i<cmdlistnode.getNumChildren(); i++){
@@ -1223,18 +1246,18 @@ void AudioseqPane::fillMeaningsBox(String action){
 }
 
 void AudioseqPane::fillSeqSections(){
-    if(&*p.seq == nullptr) return;
+    if(&*seq64.seq == nullptr) return;
     lsmSeqSections->clear();
     lstSeqSections->updateContent();
-    for(int s=0; s<p.seq->getNumSections(); s++){
-        lsmSeqSections->add(p.seq->getSectionDescription(s));
+    for(int s=0; s<seq64.seq->getNumSections(); s++){
+        lsmSeqSections->add(seq64.seq->getSectionDescription(s));
     }
     String seqinfo = "Sequence ";
-    if(p.seq->name != ""){
-        seqinfo += "\"" + p.seq->name + "\"";
+    if(seq64.seq->name != ""){
+        seqinfo += "\"" + seq64.seq->name + "\"";
     }
-    seqinfo += ": length " + ROM::hex(p.seq->getLength(), 4);
-    seqinfo += " (" + String(p.seq->getNumSections()) + " sections)";
+    seqinfo += ": length " + ROM::hex(seq64.seq->getLength(), 4);
+    seqinfo += " (" + String(seq64.seq->getNumSections()) + " sections)";
     lblSeqInfo->setText(seqinfo, dontSendNotification);
     lstSeqSections->updateContent();
 }
@@ -1243,19 +1266,19 @@ void AudioseqPane::fillSeqCommands(){
     int selcmd = lstSeqCommands->getLastRowSelected();
     lsmSeqCommands->clear();
     lstSeqCommands->updateContent();
-    if(&*p.seq == nullptr) return;
+    if(&*seq64.seq == nullptr) return;
     int selsec = lstSeqSections->getLastRowSelected();
-    if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
-    int cmds = p.seq->getSection(selsec)->cmdoffsets.size();
+    if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
+    int cmds = seq64.seq->getSection(selsec)->cmdoffsets.size();
     for(int c=0; c<cmds; c++){
-        lsmSeqCommands->add(p.seq->getCommandDescription(selsec, c));
+        lsmSeqCommands->add(seq64.seq->getCommandDescription(selsec, c));
     }
     lstSeqCommands->updateContent();
     lstSeqCommands->selectRow(selcmd);
     //Fill New Command box
     cbxSeqCmdType->clear(dontSendNotification);
-    int stype = p.seq->getSection(selsec)->stype;
-    ValueTree cmdlistnode = p.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
+    int stype = seq64.seq->getSection(selsec)->stype;
+    ValueTree cmdlistnode = seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
     ValueTree cmd;
     String desc;
     for(int i=0; i<cmdlistnode.getNumChildren(); i++){
@@ -1273,15 +1296,15 @@ void AudioseqPane::fillSeqCommands(){
 
 
 void AudioseqPane::refreshSeqCmdControls(){
-    if(&*p.seq == nullptr) return;
+    if(&*seq64.seq == nullptr) return;
     int selparam = lstSeqCmdParams->getLastRowSelected();
     int selsec = lstSeqSections->getLastRowSelected();
-    if(selsec < 0 || selsec >= p.seq->getNumSections()) return;
-    SeqData* section = p.seq->getSection(selsec);
+    if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
+    SeqData* section = seq64.seq->getSection(selsec);
     int selcmd = lstSeqCommands->getLastRowSelected();
     if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
     uint32 cmdaddr = section->cmdoffsets[selcmd];
-    ValueTree cmd = p.seq->getCommand(cmdaddr, section->stype);
+    ValueTree cmd = seq64.seq->getCommand(cmdaddr, section->stype);
     lblSeqCmdAction->setText("Command Action: " + cmd.getProperty("action", "No Action").toString(), dontSendNotification);
     ValueTree param;
     lsmSeqCmdParams->clear();
@@ -1296,20 +1319,20 @@ void AudioseqPane::refreshSeqCmdControls(){
 }
 
 void AudioseqPane::refreshSeqCmdParamControls(){
-    if(&*p.seq == nullptr) return;
+    if(&*seq64.seq == nullptr) return;
     int selsec = lstSeqSections->getLastRowSelected();
-        if(selsec < 0 || selsec >= p.seq->getNumSections()){
+        if(selsec < 0 || selsec >= seq64.seq->getNumSections()){
             txtSeqCmdValue->setText("", dontSendNotification);
             return;
         }
-        SeqData* section = p.seq->getSection(selsec);
+        SeqData* section = seq64.seq->getSection(selsec);
     int selcmd = lstSeqCommands->getLastRowSelected();
         if(selcmd < 0 || selcmd >= section->cmdoffsets.size()){
             txtSeqCmdValue->setText("", dontSendNotification);
             return;
         }
         uint32 cmdaddr = section->cmdoffsets[selcmd];
-        ValueTree cmd = p.seq->getCommand(cmdaddr, section->stype);
+        ValueTree cmd = seq64.seq->getCommand(cmdaddr, section->stype);
     int selparam = lstSeqCmdParams->getLastRowSelected();
         if(selparam < 0 || selparam >= cmd.getNumChildren()){
             txtSeqCmdValue->setText("", dontSendNotification);
@@ -1323,9 +1346,9 @@ void AudioseqPane::refreshSeqCmdParamControls(){
 }
 
 void AudioseqPane::seqStructureChanged(){
-    if(&*p.seq == nullptr) return;
+    if(&*seq64.seq == nullptr) return;
     int selsec = lstSeqSections->getLastRowSelected();
-    p.seq->parse();
+    seq64.seq->parse();
     fillSeqSections();
     lstSeqSections->selectRow(selsec);
 }
@@ -1344,7 +1367,7 @@ BEGIN_JUCER_METADATA
 
 <JUCER_COMPONENT documentType="Component" className="AudioseqPane" componentName=""
                  parentClasses="public Component, public TextEditor::Listener, public TextListModel::Listener"
-                 constructorParams="AppProps&amp; props" variableInitialisers="p(props)"
+                 constructorParams="SEQ64&amp; seq64_" variableInitialisers="seq64(seq64_)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
                  fixedSize="0" initialWidth="1000" initialHeight="632">
   <METHODS>

@@ -321,44 +321,3879 @@
     <knownfile type="Instrument Set Index" from_ft="0" address="12097808" length="0"/>
   </knownfilelist>
   <audiobankidx>
-    <indexentry index="5" name="Hylian Troupe"/>
-    <indexentry index="6" name="Title Screen"/>
-    <indexentry index="3" name="Main Orchestra"/>
-    <indexentry index="0" name="Master Instrument Set"/>
-    <indexentry index="1" name="Actor Sounds"/>
-    <indexentry index="2" name="Nature Sounds"/>
-    <indexentry index="4" name="Deku Tree"/>
-    <indexentry index="7" name="Jabu-Jabu's Belly"/>
-    <indexentry index="8" name="Kakariko (Guitar)"/>
-    <indexentry index="9" name="Harp, Strings"/>
-    <indexentry index="10" name="Fire Temple"/>
-    <indexentry index="11" name="Dodongo's Cavern"/>
-    <indexentry index="12" name="Forest Temple"/>
-    <indexentry index="13" name="Lon Lon Ranch"/>
-    <indexentry index="14" name="Goron City"/>
-    <indexentry index="15" name="Kokiri Forest"/>
-    <indexentry index="16" name="Spirit Temple"/>
-    <indexentry index="17" name="Horse Race"/>
-    <indexentry index="18" name="Warp Songs"/>
-    <indexentry index="19" name="Legend of Hyrule"/>
-    <indexentry index="20" name="Minigame Shop"/>
-    <indexentry index="21" name="Zora's Domain"/>
-    <indexentry index="22" name="Shop Theme"/>
-    <indexentry index="23" name="Ice Cavern"/>
-    <indexentry index="24" name="Shadow Temple"/>
-    <indexentry index="25" name="Water Temple"/>
-    <indexentry index="26" name="??? (Unused)"/>
-    <indexentry index="27" name="Gerudo Valley"/>
-    <indexentry index="28" name="Potion Shop"/>
-    <indexentry index="29" name="Konami &amp; Kotaku's Theme"/>
-    <indexentry index="30" name="Organ"/>
-    <indexentry index="31" name="Inside Ganon's Castle"/>
-    <indexentry index="32" name="Battle 2"/>
-    <indexentry index="33" name="Ending Orchestra 1"/>
-    <indexentry index="34" name="Ending Orchestra 2"/>
-    <indexentry index="35" name="Fanfare Orchestra"/>
-    <indexentry index="36" name="Do you want to hear that again?"/>
-    <indexentry index="37" name="??? (Last)"/>
+    <indexentry index="5" name="Hylian Troupe">
+      <instruments>
+        <item index="0" name="Koto" map="program" program="107" transpose="0"/>
+        <item index="1" name="Ocarina" map="program" program="79" transpose="12"/>
+        <item index="2" name="Bassoon" map="program" program="70" transpose="0"/>
+        <item index="3" name="Oboe" map="program" program="68"/>
+        <item index="4" name="Pizz Strings" map="program" program="45"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="6" name="Title Screen">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="3" name="Main Orchestra">
+      <instruments>
+        <item index="0" name="Flute" map="program" program="72" transpose="0"/>
+        <item index="1" name="Oboe" map="program" program="68"/>
+        <item index="2" name="Clarinet" map="program" program="71"/>
+        <item index="3" name="Bassoon" map="program" program="70"/>
+        <item index="4" name="Horn" map="program" program="60"/>
+        <item index="5" name="Trumpet" map="program" program="56"/>
+        <item index="6" name="Trombone" map="program" program="57"/>
+        <item index="7" name="Tuba" map="program" program="58"/>
+        <item index="8" name="Glockenspiel" map="program" program="9"/>
+        <item index="9" name="Strings 1" map="program" program="48"/>
+        <item index="10" name="Strings 2" map="program" program="48"/>
+        <item index="11" name="Pizz Strings" map="program" program="45"/>
+        <item index="12" name="Piano" map="program" program="1"/>
+        <item index="13" name="Harp" map="program" program="46"/>
+        <item index="14" name="Marimba" map="program" program="12"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="0" name="Master Instrument Set">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+        <item index="64" name="[unnamed]"/>
+        <item index="65" name="[unnamed]"/>
+        <item index="66" name="[unnamed]"/>
+        <item index="67" name="[unnamed]"/>
+        <item index="68" name="[unnamed]"/>
+        <item index="69" name="[unnamed]"/>
+        <item index="70" name="[unnamed]"/>
+        <item index="71" name="[unnamed]"/>
+        <item index="72" name="[unnamed]"/>
+        <item index="73" name="[unnamed]"/>
+        <item index="74" name="[unnamed]"/>
+        <item index="75" name="[unnamed]"/>
+        <item index="76" name="[unnamed]"/>
+        <item index="77" name="[unnamed]"/>
+        <item index="78" name="[unnamed]"/>
+        <item index="79" name="[unnamed]"/>
+        <item index="80" name="[unnamed]"/>
+        <item index="81" name="[unnamed]"/>
+        <item index="82" name="[unnamed]"/>
+        <item index="83" name="[unnamed]"/>
+        <item index="84" name="[unnamed]"/>
+        <item index="85" name="[unnamed]"/>
+        <item index="86" name="[unnamed]"/>
+        <item index="87" name="[unnamed]"/>
+        <item index="88" name="[unnamed]"/>
+        <item index="89" name="[unnamed]"/>
+        <item index="90" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </drums>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+        <item index="64" name="[unnamed]"/>
+        <item index="65" name="[unnamed]"/>
+        <item index="66" name="[unnamed]"/>
+        <item index="67" name="[unnamed]"/>
+        <item index="68" name="[unnamed]"/>
+        <item index="69" name="[unnamed]"/>
+        <item index="70" name="[unnamed]"/>
+        <item index="71" name="[unnamed]"/>
+        <item index="72" name="[unnamed]"/>
+        <item index="73" name="[unnamed]"/>
+        <item index="74" name="[unnamed]"/>
+        <item index="75" name="[unnamed]"/>
+        <item index="76" name="[unnamed]"/>
+        <item index="77" name="[unnamed]"/>
+        <item index="78" name="[unnamed]"/>
+        <item index="79" name="[unnamed]"/>
+        <item index="80" name="[unnamed]"/>
+        <item index="81" name="[unnamed]"/>
+        <item index="82" name="[unnamed]"/>
+        <item index="83" name="[unnamed]"/>
+        <item index="84" name="[unnamed]"/>
+        <item index="85" name="[unnamed]"/>
+        <item index="86" name="[unnamed]"/>
+        <item index="87" name="[unnamed]"/>
+        <item index="88" name="[unnamed]"/>
+        <item index="89" name="[unnamed]"/>
+        <item index="90" name="[unnamed]"/>
+        <item index="91" name="[unnamed]"/>
+        <item index="92" name="[unnamed]"/>
+        <item index="93" name="[unnamed]"/>
+        <item index="94" name="[unnamed]"/>
+        <item index="95" name="[unnamed]"/>
+        <item index="96" name="[unnamed]"/>
+        <item index="97" name="[unnamed]"/>
+        <item index="98" name="[unnamed]"/>
+        <item index="99" name="[unnamed]"/>
+        <item index="100" name="[unnamed]"/>
+        <item index="101" name="[unnamed]"/>
+        <item index="102" name="[unnamed]"/>
+        <item index="103" name="[unnamed]"/>
+        <item index="104" name="[unnamed]"/>
+        <item index="105" name="[unnamed]"/>
+        <item index="106" name="[unnamed]"/>
+        <item index="107" name="[unnamed]"/>
+        <item index="108" name="[unnamed]"/>
+        <item index="109" name="[unnamed]"/>
+        <item index="110" name="[unnamed]"/>
+        <item index="111" name="[unnamed]"/>
+        <item index="112" name="[unnamed]"/>
+        <item index="113" name="[unnamed]"/>
+        <item index="114" name="[unnamed]"/>
+        <item index="115" name="[unnamed]"/>
+        <item index="116" name="[unnamed]"/>
+        <item index="117" name="[unnamed]"/>
+        <item index="118" name="[unnamed]"/>
+        <item index="119" name="[unnamed]"/>
+        <item index="120" name="[unnamed]"/>
+        <item index="121" name="[unnamed]"/>
+        <item index="122" name="[unnamed]"/>
+        <item index="123" name="[unnamed]"/>
+        <item index="124" name="[unnamed]"/>
+        <item index="125" name="[unnamed]"/>
+        <item index="126" name="[unnamed]"/>
+        <item index="127" name="[unnamed]"/>
+        <item index="128" name="[unnamed]"/>
+        <item index="129" name="[unnamed]"/>
+        <item index="130" name="[unnamed]"/>
+        <item index="131" name="[unnamed]"/>
+        <item index="132" name="[unnamed]"/>
+        <item index="133" name="[unnamed]"/>
+        <item index="134" name="[unnamed]"/>
+        <item index="135" name="[unnamed]"/>
+        <item index="136" name="[unnamed]"/>
+        <item index="137" name="[unnamed]"/>
+        <item index="138" name="[unnamed]"/>
+        <item index="139" name="[unnamed]"/>
+        <item index="140" name="[unnamed]"/>
+        <item index="141" name="[unnamed]"/>
+        <item index="142" name="[unnamed]"/>
+        <item index="143" name="[unnamed]"/>
+        <item index="144" name="[unnamed]"/>
+        <item index="145" name="[unnamed]"/>
+        <item index="146" name="[unnamed]"/>
+        <item index="147" name="[unnamed]"/>
+        <item index="148" name="[unnamed]"/>
+        <item index="149" name="[unnamed]"/>
+        <item index="150" name="[unnamed]"/>
+        <item index="151" name="[unnamed]"/>
+        <item index="152" name="[unnamed]"/>
+        <item index="153" name="[unnamed]"/>
+        <item index="154" name="[unnamed]"/>
+        <item index="155" name="[unnamed]"/>
+        <item index="156" name="[unnamed]"/>
+        <item index="157" name="[unnamed]"/>
+        <item index="158" name="[unnamed]"/>
+        <item index="159" name="[unnamed]"/>
+        <item index="160" name="[unnamed]"/>
+        <item index="161" name="[unnamed]"/>
+        <item index="162" name="[unnamed]"/>
+        <item index="163" name="[unnamed]"/>
+        <item index="164" name="[unnamed]"/>
+        <item index="165" name="[unnamed]"/>
+        <item index="166" name="[unnamed]"/>
+        <item index="167" name="[unnamed]"/>
+        <item index="168" name="[unnamed]"/>
+        <item index="169" name="[unnamed]"/>
+        <item index="170" name="[unnamed]"/>
+        <item index="171" name="[unnamed]"/>
+        <item index="172" name="[unnamed]"/>
+        <item index="173" name="[unnamed]"/>
+        <item index="174" name="[unnamed]"/>
+        <item index="175" name="[unnamed]"/>
+        <item index="176" name="[unnamed]"/>
+        <item index="177" name="[unnamed]"/>
+        <item index="178" name="[unnamed]"/>
+        <item index="179" name="[unnamed]"/>
+        <item index="180" name="[unnamed]"/>
+        <item index="181" name="[unnamed]"/>
+        <item index="182" name="[unnamed]"/>
+        <item index="183" name="[unnamed]"/>
+        <item index="184" name="[unnamed]"/>
+        <item index="185" name="[unnamed]"/>
+        <item index="186" name="[unnamed]"/>
+        <item index="187" name="[unnamed]"/>
+        <item index="188" name="[unnamed]"/>
+        <item index="189" name="[unnamed]"/>
+        <item index="190" name="[unnamed]"/>
+        <item index="191" name="[unnamed]"/>
+        <item index="192" name="[unnamed]"/>
+        <item index="193" name="[unnamed]"/>
+        <item index="194" name="[unnamed]"/>
+        <item index="195" name="[unnamed]"/>
+        <item index="196" name="[unnamed]"/>
+        <item index="197" name="[unnamed]"/>
+        <item index="198" name="[unnamed]"/>
+        <item index="199" name="[unnamed]"/>
+        <item index="200" name="[unnamed]"/>
+        <item index="201" name="[unnamed]"/>
+        <item index="202" name="[unnamed]"/>
+        <item index="203" name="[unnamed]"/>
+        <item index="204" name="[unnamed]"/>
+        <item index="205" name="[unnamed]"/>
+        <item index="206" name="[unnamed]"/>
+        <item index="207" name="[unnamed]"/>
+        <item index="208" name="[unnamed]"/>
+        <item index="209" name="[unnamed]"/>
+        <item index="210" name="[unnamed]"/>
+        <item index="211" name="[unnamed]"/>
+        <item index="212" name="[unnamed]"/>
+        <item index="213" name="[unnamed]"/>
+        <item index="214" name="[unnamed]"/>
+        <item index="215" name="[unnamed]"/>
+        <item index="216" name="[unnamed]"/>
+        <item index="217" name="[unnamed]"/>
+        <item index="218" name="[unnamed]"/>
+        <item index="219" name="[unnamed]"/>
+        <item index="220" name="[unnamed]"/>
+        <item index="221" name="[unnamed]"/>
+        <item index="222" name="[unnamed]"/>
+        <item index="223" name="[unnamed]"/>
+        <item index="224" name="[unnamed]"/>
+        <item index="225" name="[unnamed]"/>
+        <item index="226" name="[unnamed]"/>
+        <item index="227" name="[unnamed]"/>
+        <item index="228" name="[unnamed]"/>
+        <item index="229" name="[unnamed]"/>
+        <item index="230" name="[unnamed]"/>
+        <item index="231" name="[unnamed]"/>
+        <item index="232" name="[unnamed]"/>
+        <item index="233" name="[unnamed]"/>
+        <item index="234" name="[unnamed]"/>
+        <item index="235" name="[unnamed]"/>
+        <item index="236" name="[unnamed]"/>
+        <item index="237" name="[unnamed]"/>
+        <item index="238" name="[unnamed]"/>
+        <item index="239" name="[unnamed]"/>
+        <item index="240" name="[unnamed]"/>
+        <item index="241" name="[unnamed]"/>
+        <item index="242" name="[unnamed]"/>
+        <item index="243" name="[unnamed]"/>
+        <item index="244" name="[unnamed]"/>
+        <item index="245" name="[unnamed]"/>
+        <item index="246" name="[unnamed]"/>
+      </samples>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </patchprops>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+        <item index="64" name="[unnamed]"/>
+        <item index="65" name="[unnamed]"/>
+        <item index="66" name="[unnamed]"/>
+        <item index="67" name="[unnamed]"/>
+        <item index="68" name="[unnamed]"/>
+        <item index="69" name="[unnamed]"/>
+        <item index="70" name="[unnamed]"/>
+        <item index="71" name="[unnamed]"/>
+        <item index="72" name="[unnamed]"/>
+        <item index="73" name="[unnamed]"/>
+        <item index="74" name="[unnamed]"/>
+        <item index="75" name="[unnamed]"/>
+        <item index="76" name="[unnamed]"/>
+        <item index="77" name="[unnamed]"/>
+        <item index="78" name="[unnamed]"/>
+        <item index="79" name="[unnamed]"/>
+        <item index="80" name="[unnamed]"/>
+        <item index="81" name="[unnamed]"/>
+        <item index="82" name="[unnamed]"/>
+        <item index="83" name="[unnamed]"/>
+        <item index="84" name="[unnamed]"/>
+        <item index="85" name="[unnamed]"/>
+        <item index="86" name="[unnamed]"/>
+        <item index="87" name="[unnamed]"/>
+        <item index="88" name="[unnamed]"/>
+        <item index="89" name="[unnamed]"/>
+        <item index="90" name="[unnamed]"/>
+        <item index="91" name="[unnamed]"/>
+        <item index="92" name="[unnamed]"/>
+        <item index="93" name="[unnamed]"/>
+        <item index="94" name="[unnamed]"/>
+        <item index="95" name="[unnamed]"/>
+        <item index="96" name="[unnamed]"/>
+        <item index="97" name="[unnamed]"/>
+        <item index="98" name="[unnamed]"/>
+        <item index="99" name="[unnamed]"/>
+        <item index="100" name="[unnamed]"/>
+        <item index="101" name="[unnamed]"/>
+        <item index="102" name="[unnamed]"/>
+        <item index="103" name="[unnamed]"/>
+        <item index="104" name="[unnamed]"/>
+        <item index="105" name="[unnamed]"/>
+        <item index="106" name="[unnamed]"/>
+        <item index="107" name="[unnamed]"/>
+        <item index="108" name="[unnamed]"/>
+        <item index="109" name="[unnamed]"/>
+        <item index="110" name="[unnamed]"/>
+        <item index="111" name="[unnamed]"/>
+        <item index="112" name="[unnamed]"/>
+        <item index="113" name="[unnamed]"/>
+        <item index="114" name="[unnamed]"/>
+        <item index="115" name="[unnamed]"/>
+        <item index="116" name="[unnamed]"/>
+        <item index="117" name="[unnamed]"/>
+        <item index="118" name="[unnamed]"/>
+        <item index="119" name="[unnamed]"/>
+        <item index="120" name="[unnamed]"/>
+        <item index="121" name="[unnamed]"/>
+        <item index="122" name="[unnamed]"/>
+        <item index="123" name="[unnamed]"/>
+        <item index="124" name="[unnamed]"/>
+        <item index="125" name="[unnamed]"/>
+        <item index="126" name="[unnamed]"/>
+        <item index="127" name="[unnamed]"/>
+        <item index="128" name="[unnamed]"/>
+        <item index="129" name="[unnamed]"/>
+        <item index="130" name="[unnamed]"/>
+        <item index="131" name="[unnamed]"/>
+        <item index="132" name="[unnamed]"/>
+        <item index="133" name="[unnamed]"/>
+        <item index="134" name="[unnamed]"/>
+        <item index="135" name="[unnamed]"/>
+        <item index="136" name="[unnamed]"/>
+        <item index="137" name="[unnamed]"/>
+        <item index="138" name="[unnamed]"/>
+        <item index="139" name="[unnamed]"/>
+        <item index="140" name="[unnamed]"/>
+        <item index="141" name="[unnamed]"/>
+        <item index="142" name="[unnamed]"/>
+        <item index="143" name="[unnamed]"/>
+        <item index="144" name="[unnamed]"/>
+        <item index="145" name="[unnamed]"/>
+        <item index="146" name="[unnamed]"/>
+        <item index="147" name="[unnamed]"/>
+        <item index="148" name="[unnamed]"/>
+        <item index="149" name="[unnamed]"/>
+        <item index="150" name="[unnamed]"/>
+        <item index="151" name="[unnamed]"/>
+        <item index="152" name="[unnamed]"/>
+        <item index="153" name="[unnamed]"/>
+        <item index="154" name="[unnamed]"/>
+        <item index="155" name="[unnamed]"/>
+        <item index="156" name="[unnamed]"/>
+        <item index="157" name="[unnamed]"/>
+        <item index="158" name="[unnamed]"/>
+        <item index="159" name="[unnamed]"/>
+        <item index="160" name="[unnamed]"/>
+        <item index="161" name="[unnamed]"/>
+        <item index="162" name="[unnamed]"/>
+        <item index="163" name="[unnamed]"/>
+        <item index="164" name="[unnamed]"/>
+        <item index="165" name="[unnamed]"/>
+        <item index="166" name="[unnamed]"/>
+        <item index="167" name="[unnamed]"/>
+        <item index="168" name="[unnamed]"/>
+        <item index="169" name="[unnamed]"/>
+        <item index="170" name="[unnamed]"/>
+        <item index="171" name="[unnamed]"/>
+        <item index="172" name="[unnamed]"/>
+        <item index="173" name="[unnamed]"/>
+        <item index="174" name="[unnamed]"/>
+        <item index="175" name="[unnamed]"/>
+        <item index="176" name="[unnamed]"/>
+        <item index="177" name="[unnamed]"/>
+        <item index="178" name="[unnamed]"/>
+        <item index="179" name="[unnamed]"/>
+        <item index="180" name="[unnamed]"/>
+        <item index="181" name="[unnamed]"/>
+        <item index="182" name="[unnamed]"/>
+        <item index="183" name="[unnamed]"/>
+        <item index="184" name="[unnamed]"/>
+        <item index="185" name="[unnamed]"/>
+        <item index="186" name="[unnamed]"/>
+        <item index="187" name="[unnamed]"/>
+        <item index="188" name="[unnamed]"/>
+        <item index="189" name="[unnamed]"/>
+        <item index="190" name="[unnamed]"/>
+        <item index="191" name="[unnamed]"/>
+        <item index="192" name="[unnamed]"/>
+        <item index="193" name="[unnamed]"/>
+        <item index="194" name="[unnamed]"/>
+        <item index="195" name="[unnamed]"/>
+        <item index="196" name="[unnamed]"/>
+        <item index="197" name="[unnamed]"/>
+        <item index="198" name="[unnamed]"/>
+        <item index="199" name="[unnamed]"/>
+        <item index="200" name="[unnamed]"/>
+        <item index="201" name="[unnamed]"/>
+        <item index="202" name="[unnamed]"/>
+        <item index="203" name="[unnamed]"/>
+        <item index="204" name="[unnamed]"/>
+        <item index="205" name="[unnamed]"/>
+        <item index="206" name="[unnamed]"/>
+        <item index="207" name="[unnamed]"/>
+        <item index="208" name="[unnamed]"/>
+        <item index="209" name="[unnamed]"/>
+        <item index="210" name="[unnamed]"/>
+        <item index="211" name="[unnamed]"/>
+        <item index="212" name="[unnamed]"/>
+        <item index="213" name="[unnamed]"/>
+        <item index="214" name="[unnamed]"/>
+        <item index="215" name="[unnamed]"/>
+        <item index="216" name="[unnamed]"/>
+        <item index="217" name="[unnamed]"/>
+        <item index="218" name="[unnamed]"/>
+        <item index="219" name="[unnamed]"/>
+        <item index="220" name="[unnamed]"/>
+        <item index="221" name="[unnamed]"/>
+        <item index="222" name="[unnamed]"/>
+        <item index="223" name="[unnamed]"/>
+        <item index="224" name="[unnamed]"/>
+        <item index="225" name="[unnamed]"/>
+        <item index="226" name="[unnamed]"/>
+        <item index="227" name="[unnamed]"/>
+        <item index="228" name="[unnamed]"/>
+        <item index="229" name="[unnamed]"/>
+        <item index="230" name="[unnamed]"/>
+        <item index="231" name="[unnamed]"/>
+        <item index="232" name="[unnamed]"/>
+        <item index="233" name="[unnamed]"/>
+        <item index="234" name="[unnamed]"/>
+        <item index="235" name="[unnamed]"/>
+        <item index="236" name="[unnamed]"/>
+        <item index="237" name="[unnamed]"/>
+        <item index="238" name="[unnamed]"/>
+        <item index="239" name="[unnamed]"/>
+        <item index="240" name="[unnamed]"/>
+        <item index="241" name="[unnamed]"/>
+        <item index="242" name="[unnamed]"/>
+        <item index="243" name="[unnamed]"/>
+        <item index="244" name="[unnamed]"/>
+        <item index="245" name="[unnamed]"/>
+        <item index="246" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="1" name="Actor Sounds">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+      </instruments>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+        <item index="64" name="[unnamed]"/>
+        <item index="65" name="[unnamed]"/>
+        <item index="66" name="[unnamed]"/>
+        <item index="67" name="[unnamed]"/>
+        <item index="68" name="[unnamed]"/>
+        <item index="69" name="[unnamed]"/>
+        <item index="70" name="[unnamed]"/>
+        <item index="71" name="[unnamed]"/>
+        <item index="72" name="[unnamed]"/>
+        <item index="73" name="[unnamed]"/>
+        <item index="74" name="[unnamed]"/>
+        <item index="75" name="[unnamed]"/>
+        <item index="76" name="[unnamed]"/>
+        <item index="77" name="[unnamed]"/>
+        <item index="78" name="[unnamed]"/>
+        <item index="79" name="[unnamed]"/>
+        <item index="80" name="[unnamed]"/>
+        <item index="81" name="[unnamed]"/>
+        <item index="82" name="[unnamed]"/>
+        <item index="83" name="[unnamed]"/>
+        <item index="84" name="[unnamed]"/>
+        <item index="85" name="[unnamed]"/>
+        <item index="86" name="[unnamed]"/>
+        <item index="87" name="[unnamed]"/>
+        <item index="88" name="[unnamed]"/>
+        <item index="89" name="[unnamed]"/>
+        <item index="90" name="[unnamed]"/>
+        <item index="91" name="[unnamed]"/>
+        <item index="92" name="[unnamed]"/>
+        <item index="93" name="[unnamed]"/>
+        <item index="94" name="[unnamed]"/>
+        <item index="95" name="[unnamed]"/>
+        <item index="96" name="[unnamed]"/>
+        <item index="97" name="[unnamed]"/>
+        <item index="98" name="[unnamed]"/>
+        <item index="99" name="[unnamed]"/>
+        <item index="100" name="[unnamed]"/>
+        <item index="101" name="[unnamed]"/>
+        <item index="102" name="[unnamed]"/>
+      </samples>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+      </patchprops>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+        <item index="64" name="[unnamed]"/>
+        <item index="65" name="[unnamed]"/>
+        <item index="66" name="[unnamed]"/>
+        <item index="67" name="[unnamed]"/>
+        <item index="68" name="[unnamed]"/>
+        <item index="69" name="[unnamed]"/>
+        <item index="70" name="[unnamed]"/>
+        <item index="71" name="[unnamed]"/>
+        <item index="72" name="[unnamed]"/>
+        <item index="73" name="[unnamed]"/>
+        <item index="74" name="[unnamed]"/>
+        <item index="75" name="[unnamed]"/>
+        <item index="76" name="[unnamed]"/>
+        <item index="77" name="[unnamed]"/>
+        <item index="78" name="[unnamed]"/>
+        <item index="79" name="[unnamed]"/>
+        <item index="80" name="[unnamed]"/>
+        <item index="81" name="[unnamed]"/>
+        <item index="82" name="[unnamed]"/>
+        <item index="83" name="[unnamed]"/>
+        <item index="84" name="[unnamed]"/>
+        <item index="85" name="[unnamed]"/>
+        <item index="86" name="[unnamed]"/>
+        <item index="87" name="[unnamed]"/>
+        <item index="88" name="[unnamed]"/>
+        <item index="89" name="[unnamed]"/>
+        <item index="90" name="[unnamed]"/>
+        <item index="91" name="[unnamed]"/>
+        <item index="92" name="[unnamed]"/>
+        <item index="93" name="[unnamed]"/>
+        <item index="94" name="[unnamed]"/>
+        <item index="95" name="[unnamed]"/>
+        <item index="96" name="[unnamed]"/>
+        <item index="97" name="[unnamed]"/>
+        <item index="98" name="[unnamed]"/>
+        <item index="99" name="[unnamed]"/>
+        <item index="100" name="[unnamed]"/>
+        <item index="101" name="[unnamed]"/>
+        <item index="102" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="2" name="Nature Sounds">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="4" name="Deku Tree">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="7" name="Jabu-Jabu's Belly">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="8" name="Kakariko (Guitar)">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="9" name="Harp, Strings">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="10" name="Fire Temple">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="11" name="Dodongo's Cavern">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="12" name="Forest Temple">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="13" name="Lon Lon Ranch">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="14" name="Goron City">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="15" name="Kokiri Forest">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="16" name="Spirit Temple">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="17" name="Horse Race">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="18" name="Warp Songs">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="19" name="Legend of Hyrule">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="20" name="Minigame Shop">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="21" name="Zora's Domain">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="22" name="Shop Theme">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="23" name="Ice Cavern">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="24" name="Shadow Temple">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="25" name="Water Temple">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="26" name="??? (Unused)">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="27" name="Gerudo Valley">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="28" name="Potion Shop">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="29" name="Konami &amp; Kotaku's Theme">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="30" name="Organ">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="31" name="Inside Ganon's Castle">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="32" name="Battle 2">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="33" name="Ending Orchestra 1">
+      <instruments>
+        <item index="0" name="Malon 1" map="program" program="85" transpose="0"/>
+        <item index="1" name="Malon 2" map="program" program="54"/>
+        <item index="2" name="Clarinet" map="program" program="71"/>
+        <item index="3" name="Horn" map="program" program="60"/>
+        <item index="4" name="Oboe" map="program" program="68"/>
+        <item index="5" name="Harp" map="program" program="46"/>
+        <item index="6" name="Violin" map="program" program="40"/>
+        <item index="7" name="Glockenspiel" map="program" program="9"/>
+        <item index="8" name="Strings 1" map="program" program="48"/>
+        <item index="9" name="Strings 2" map="program" program="48"/>
+        <item index="10" name="Bell" map="program" program="14"/>
+        <item index="11" name="Harp" map="program" program="46"/>
+        <item index="12" name="Choir" map="program" program="52"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="34" name="Ending Orchestra 2">
+      <instruments>
+        <item index="0" name="Koto" map="program" program="107" transpose="0"/>
+        <item index="1" name="Ocarina" map="program" program="79"/>
+        <item index="2" name="Bassoon" map="program" program="70"/>
+        <item index="3" name="Oboe" map="program" program="68"/>
+        <item index="4" name="Choir 1" map="program" program="52"/>
+        <item index="5" name="Tambourine" map="program" program="115"/>
+        <item index="6" name="Harp" map="program" program="46"/>
+        <item index="7" name="Glockenspiel" map="program" program="9"/>
+        <item index="8" name="Malon" map="program" program="85"/>
+        <item index="9" name="Strings 1" map="program" program="48"/>
+        <item index="10" name="Strings 2" map="program" program="48"/>
+        <item index="11" name="Pizz Strings" map="program" program="45"/>
+        <item index="12" name="Horn" map="program" program="60"/>
+        <item index="13" name="Choir 2" map="program" program="52"/>
+        <item index="14" name="Cuica" map="program" program="118"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="35" name="Fanfare Orchestra">
+      <instruments>
+        <item index="0" name="Trumpet" map="program" program="56" transpose="0"/>
+        <item index="1" name="Trombone" map="program" program="57"/>
+        <item index="2" name="Tuba" map="program" program="58"/>
+        <item index="3" name="Glockenspiel" map="program" program="9"/>
+        <item index="4" name="Strings 1" map="program" program="48"/>
+        <item index="5" name="Strings 2" map="program" program="48"/>
+        <item index="6" name="Harp" map="program" program="46"/>
+      </instruments>
+      <drums>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+        <item index="14" name="[unnamed]"/>
+        <item index="15" name="[unnamed]"/>
+        <item index="16" name="[unnamed]"/>
+        <item index="17" name="[unnamed]"/>
+        <item index="18" name="[unnamed]"/>
+        <item index="19" name="[unnamed]"/>
+        <item index="20" name="[unnamed]"/>
+        <item index="21" name="[unnamed]"/>
+        <item index="22" name="[unnamed]"/>
+        <item index="23" name="[unnamed]"/>
+        <item index="24" name="[unnamed]"/>
+        <item index="25" name="[unnamed]"/>
+        <item index="26" name="[unnamed]"/>
+        <item index="27" name="[unnamed]"/>
+        <item index="28" name="[unnamed]"/>
+        <item index="29" name="[unnamed]"/>
+        <item index="30" name="[unnamed]"/>
+        <item index="31" name="[unnamed]"/>
+        <item index="32" name="[unnamed]"/>
+        <item index="33" name="[unnamed]"/>
+        <item index="34" name="[unnamed]"/>
+        <item index="35" name="[unnamed]"/>
+        <item index="36" name="[unnamed]"/>
+        <item index="37" name="[unnamed]"/>
+        <item index="38" name="[unnamed]"/>
+        <item index="39" name="[unnamed]"/>
+        <item index="40" name="[unnamed]"/>
+        <item index="41" name="[unnamed]"/>
+        <item index="42" name="[unnamed]"/>
+        <item index="43" name="[unnamed]"/>
+        <item index="44" name="[unnamed]"/>
+        <item index="45" name="[unnamed]"/>
+        <item index="46" name="[unnamed]"/>
+        <item index="47" name="[unnamed]"/>
+        <item index="48" name="[unnamed]"/>
+        <item index="49" name="[unnamed]"/>
+        <item index="50" name="[unnamed]"/>
+        <item index="51" name="[unnamed]"/>
+        <item index="52" name="[unnamed]"/>
+        <item index="53" name="[unnamed]"/>
+        <item index="54" name="[unnamed]"/>
+        <item index="55" name="[unnamed]"/>
+        <item index="56" name="[unnamed]"/>
+        <item index="57" name="[unnamed]"/>
+        <item index="58" name="[unnamed]"/>
+        <item index="59" name="[unnamed]"/>
+        <item index="60" name="[unnamed]"/>
+        <item index="61" name="[unnamed]"/>
+        <item index="62" name="[unnamed]"/>
+        <item index="63" name="[unnamed]"/>
+      </drums>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+        <item index="9" name="[unnamed]"/>
+        <item index="10" name="[unnamed]"/>
+        <item index="11" name="[unnamed]"/>
+        <item index="12" name="[unnamed]"/>
+        <item index="13" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="36" name="Do you want to hear that again?">
+      <instruments>
+        <item index="0" name="Oboe" map="program" program="68" transpose="0"/>
+        <item index="1" name="Bassoon" map="program" program="70"/>
+        <item index="2" name="Strings 1" map="program" program="48"/>
+        <item index="3" name="Strings 2" map="program" program="48"/>
+        <item index="4" name="Pizz Strings" map="program" program="45"/>
+        <item index="5" name="Harp" map="program" program="46"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+        <item index="2" name="[unnamed]"/>
+        <item index="3" name="[unnamed]"/>
+        <item index="4" name="[unnamed]"/>
+        <item index="5" name="[unnamed]"/>
+        <item index="6" name="[unnamed]"/>
+        <item index="7" name="[unnamed]"/>
+        <item index="8" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
+    <indexentry index="37" name="??? (Last)">
+      <instruments>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </instruments>
+      <patchprops>
+        <item index="0" name="[unnamed]"/>
+        <item index="1" name="[unnamed]"/>
+      </patchprops>
+      <samples>
+        <item index="0" name="[unnamed]"/>
+      </samples>
+      <aladpcmloops>
+        <item index="0" name="[unnamed]"/>
+      </aladpcmloops>
+      <aladpcmbooks>
+        <item index="0" name="[unnamed]"/>
+      </aladpcmbooks>
+    </indexentry>
   </audiobankidx>
   <audioseqidx>
     <indexentry index="104" name="End Credits II"/>

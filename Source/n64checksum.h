@@ -1,11 +1,14 @@
 /*
- * See n64checksum.cpp for header information.
+ * See n64checksum.cpp for copyright information.
  */
 
 #ifndef N64CHECKSUM_H_INCLUDED
 #define N64CHECKSUM_H_INCLUDED
 
-#include "ROM.h"
+#include "JuceHeader.h"
+#include "seq64.h"
+
+class ROM;
 
 int getNumCICs();
 int getCICName(int i);

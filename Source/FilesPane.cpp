@@ -18,9 +18,33 @@
 */
 
 //[Headers] You can add your own extra header files here...
-#include "JuceHeader.h"
-#include "AppProps.h"
+/*
+ * ============================================================================
+ *
+ * FilesPane.cpp
+ * GUI component for N64 ROM internal files screen
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
+
+#include "MainComponent.h"
 #include "BankFile.h"
+#include "SeqFile.h"
 //[/Headers]
 
 #include "FilesPane.h"
@@ -30,8 +54,8 @@
 //[/MiscUserDefs]
 
 //==============================================================================
-FilesPane::FilesPane (AppProps& props)
-    : p(props)
+FilesPane::FilesPane (SEQ64& seq64_)
+    : seq64(seq64_)
 {
     addAndMakeVisible (groupComponent = new GroupComponent ("new group",
                                                             TRANS("Master File Table")));
@@ -374,6 +398,7 @@ FilesPane::FilesPane (AppProps& props)
     abi_count = -1;
     asi_count = -1;
     ssi_count = -1;
+    seq_lastbank = -1;
 
     romDescLoaded();
     //[/Constructor]
@@ -514,7 +539,7 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
             //See if we already know about this type of file
             kfile = kfilelistnode.getChildWithProperty(Identifier("type"), type);
             if(kfile.isValid()){
-                DBG(type + " file already exists!");
+                SEQ64::say(type + " file already exists!");
                 cbxFileType->setText("Unknown");
                 return;
             }
@@ -524,9 +549,9 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
             kfile.setProperty(Identifier("from_ft"), true, nullptr);
             kfile.setProperty(Identifier("ftindex"), findex, nullptr);
             uint32 a = ftaddr + 0x10*findex;
-            uint32 file_addr = (int)p.rom.readWord(a);
+            uint32 file_addr = (int)seq64.rom.readWord(a);
             kfile.setProperty(Identifier("address"), (int)file_addr, nullptr);
-            kfile.setProperty(Identifier("length"), (int)(p.rom.readWord(a+4) - p.rom.readWord(a)), nullptr);
+            kfile.setProperty(Identifier("length"), (int)(seq64.rom.readWord(a+4) - seq64.rom.readWord(a)), nullptr);
             changedIndexAddress(type, file_addr);
             kfilelistnode.addChild(kfile, kfilelistnode.getNumChildren(), nullptr);
             fillKFiles();
@@ -555,7 +580,7 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
         if(type != "Unsupported"){
             ValueTree kfile = kfilelistnode.getChildWithProperty(Identifier("type"), type);
             if(kfile.isValid() && kfile != selkfile){
-                DBG(type + " file already exists!");
+                SEQ64::say(type + " file already exists!");
                 cbxKFileType->setText("Unsupported");
                 type = "Unsupported";
             }
@@ -582,8 +607,8 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
         int idx = cbxInstSet1->getSelectedItemIndex();
         int row = lstInstSets->getLastRowSelected();
         if(idx < 0 || row < 0) return;
-        uint16 ptr = p.rom.readHalfWord(isi_addr + (ientryidx << 1));
-        p.rom.writeByte(isi_addr + ptr + row + 1, idx & 0x000000FF);
+        uint16 ptr = seq64.rom.readHalfWord(isi_addr + (ientryidx << 1));
+        seq64.rom.writeByte(isi_addr + ptr + row + 1, idx & 0x000000FF);
         lsmInstSets->set(row, cbxInstSet1->getText());
         lstInstSets->repaintRow(row);
         //[/UserComboBoxCode_cbxInstSet1]
@@ -616,7 +641,7 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnKFileDel] -- add your button handler code here..
         if(!selkfile.isValid()) return;
         if((bool)selkfile.getProperty("from_ft", false)){
-            DBG("From file table, can't delete!");
+            SEQ64::say("From file table, can't delete!");
             return;
         }
         //Remove old index address
@@ -656,35 +681,26 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         if(ientryidx < 0) return;
         if(dataaddr < 0) return;
         if(idxlistnode.hasType("audiobankidx")){
-            //TODO debugging only
-            uint32 abientryaddr;
-            if((int)p.romdesc.getProperty("indextype", 1) == 2){
-                abientryaddr = indexaddr + (16*ientryidx) + 16;
-            }else{
-                abientryaddr = indexaddr + (8*ientryidx) + 4;
+            if(&*seq64.bank != nullptr){
+                if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                        "Overwrite?", "A bank is already loaded, overwrite it?", nullptr, nullptr)) return;
             }
-            BankFile bank(p.romdesc);
-            bank.load(p.rom, abientryaddr, dataaddr);
+            seq64.bank = new BankFile(seq64.romdesc);
+            seq64.bank->load(seq64.rom, ientryidx);
+            //TODO debug only
             File f = File::getSpecialLocation(File::userHomeDirectory).getChildFile("audiobank.log");
-            f.replaceWithText(bank.d.toXmlString());
+            f.replaceWithText(seq64.bank->d.toXmlString());
+            //^^end debug only
+            seq64.maincomponent->onBankLoaded();
         }else if(idxlistnode.hasType("audioseqidx")){
-            if(&*p.seq != nullptr){
+            if(&*seq64.seq != nullptr){
                 if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
                         "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
             }
-            uint32 seqaddr, length;
-            if((int)p.romdesc.getProperty("indextype", 1) == 2){
-                seqaddr = dataaddr + p.rom.readWord(indexaddr + (16*ientryidx) + 16);
-                length = p.rom.readWord(indexaddr + (16*ientryidx) + 20);
-            }else{
-                seqaddr = dataaddr + p.rom.readWord(indexaddr + (8*ientryidx) + 4);
-                length = p.rom.readWord(indexaddr + (8*ientryidx) + 8);
-            }
-            DBG("Loading sequence file from " + ROM::hex(seqaddr) + " length " + ROM::hex(length));
-            p.seq = new SeqFile(p.rom, p.romdesc, seqaddr, length);
-            p.seq->name = txtIEntryName->getText();
-            p.seq->parse();
-            p.maincomponent->onSeqLoaded();
+            seq64.seq = new SeqFile(seq64.romdesc);
+            seq64.seq->load(seq64.rom, ientryidx);
+            seq64.seq->name = txtIEntryName->getText();
+            seq64.maincomponent->onSeqLoaded();
         }else{
             NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Load Entry",
                     "Loading an entry from " + idxlistnode.getType().toString() + " not supported");
@@ -697,18 +713,18 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         if(!idxlistnode.isValid()) return;
         if(ientryidx < 0) return;
         if(dataaddr < 0) return;
-        if(&*p.seq == nullptr){
+        if(&*seq64.seq == nullptr){
             return;
         }
         uint32 seqaddr, length;
-        if((int)p.romdesc.getProperty("indextype", 1) == 2){
-            seqaddr = dataaddr + p.rom.readWord(indexaddr + (16*ientryidx) + 16);
-            length = p.rom.readWord(indexaddr + (16*ientryidx) + 20);
+        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+            seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (16*ientryidx) + 16);
+            length = seq64.rom.readWord(indexaddr + (16*ientryidx) + 20);
         }else{
-            seqaddr = dataaddr + p.rom.readWord(indexaddr + (8*ientryidx) + 4);
-            length = p.rom.readWord(indexaddr + (8*ientryidx) + 8);
+            seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (8*ientryidx) + 4);
+            length = seq64.rom.readWord(indexaddr + (8*ientryidx) + 8);
         }
-        uint32 loadedseqlength = p.seq->getLength();
+        uint32 loadedseqlength = seq64.seq->getLength();
         if(loadedseqlength > length){
             NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Save Entry",
                     "Currently, saving larger sequence (" + ROM::hex(loadedseqlength, 4)
@@ -719,19 +735,19 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
                     "Overwrite?", "Replace the sequence @" + ROM::hex(seqaddr) + " (" + ROM::hex(length, 4)
                     + " bytes)\nwith the currently loaded one (" + ROM::hex(loadedseqlength, 4) + " bytes)?"
                     + "\n(This does not save the ROM to disk.)", nullptr, nullptr)) return;
-        p.seq->saveToROM(p.rom, seqaddr);
+        seq64.seq->saveToROM(seq64.rom, seqaddr);
         //[/UserButtonCode_btnSaveEntry]
     }
     else if (buttonThatWasClicked == optIndexType1)
     {
         //[UserButtonCode_optIndexType1] -- add your button handler code here..
-        p.romdesc.setProperty("indextype", 1, nullptr);
+        seq64.romdesc.setProperty("indextype", 1, nullptr);
         //[/UserButtonCode_optIndexType1]
     }
     else if (buttonThatWasClicked == optIndexType2)
     {
         //[UserButtonCode_optIndexType2] -- add your button handler code here..
-        p.romdesc.setProperty("indextype", 2, nullptr);
+        seq64.romdesc.setProperty("indextype", 2, nullptr);
         //[/UserButtonCode_optIndexType2]
     }
 
@@ -769,8 +785,8 @@ void FilesPane::rowSelected(TextListModel* parent, int row){
         if(isi_addr < 0) return;
         if(abi_addr < 0) return;
         if(abi_count < 0 || abi_count >= 0x100) return;
-        uint16 ptr = p.rom.readHalfWord(isi_addr + (ientryidx << 1));
-        uint8 b = p.rom.readByte(isi_addr + ptr + row + 1);
+        uint16 ptr = seq64.rom.readHalfWord(isi_addr + (ientryidx << 1));
+        uint8 b = seq64.rom.readByte(isi_addr + ptr + row + 1);
         if(b >= abi_count){
             cbxInstSet1->setText("Error: value " + ROM::hex(b) + "!", dontSendNotification);
         }else{
@@ -785,16 +801,16 @@ void FilesPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     bool turnRed = false;
     if(&editorThatWasChanged == &*txtFTAddr){
         ftaddr = hexval;
-        if(p.rom.getSize() == 0 || p.rom.getSize() <= ftaddr + 16){
+        if(seq64.rom.getSize() == 0 || seq64.rom.getSize() <= ftaddr + 16){
             ftaddr = 0;
             turnRed = true;
-        }else if(p.rom.readWord(ftaddr + 0x20) != ftaddr){
-            DBG("Data at " + ROM::hex(ftaddr) + " is not a file table");
+        }else if(seq64.rom.readWord(ftaddr + 0x20) != ftaddr){
+            SEQ64::say("Data at " + ROM::hex(ftaddr) + " is not a file table");
             ftaddr = 0;
             turnRed = true;
         }else{
-            ftend = p.rom.readWord(ftaddr + 0x24);
-            p.romdesc.setProperty("ftaddr", (int)ftaddr, nullptr);
+            ftend = seq64.rom.readWord(ftaddr + 0x24);
+            seq64.romdesc.setProperty("ftaddr", (int)ftaddr, nullptr);
             fillFileTable();
             turnRed = false;
         }
@@ -860,8 +876,8 @@ String FilesPane::getFileDescription(uint32 a, int i){
     }else{
         desc = "?";
     }
-    desc += ": @" + ROM::hex(p.rom.readWord(a)) + " to " + ROM::hex(p.rom.readWord(a+4));
-    if(p.rom.readWord(a+12) != 0){
+    desc += ": @" + ROM::hex(seq64.rom.readWord(a)) + " to " + ROM::hex(seq64.rom.readWord(a+4));
+    if(seq64.rom.readWord(a+12) != 0){
         desc += " (*)";
     }
     return desc;
@@ -879,7 +895,7 @@ void FilesPane::fillFileTable(){
     for(a=ftaddr, i=0; a<ftend; a += 0x10, i++){
         lsmFileTable->add(getFileDescription(a, i));
         if(i > 10000){
-            DBG("More than 10,000 files, exiting!");
+            SEQ64::say("More than 10,000 files, exiting!");
             a = ftend + 1;
             break;
         }
@@ -914,19 +930,19 @@ void FilesPane::fillCodeRefs(){
 
 String FilesPane::getIEntryDescription(int i){
     if(!idxlistnode.isValid()) return "";
-    if(p.rom.getSize() == 0) return "";
+    if(seq64.rom.getSize() == 0) return "";
     ValueTree entry = idxlistnode.getChildWithProperty("index", i);
     String ret = ROM::hex((uint8)i) + " ";
     if(entry.isValid()){
         ret += entry.getProperty("name", "[Unnamed]").toString();
         ret += ": ";
     }
-    if((int)p.romdesc.getProperty("indextype", 1) == 2){
-        ret += "@" + ROM::hex(p.rom.readWord(indexaddr + (16*i) + 16), 6);
-        ret += ", len " + ROM::hex(p.rom.readWord(indexaddr + (16*i) + 20), 6);
+    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+        ret += "@" + ROM::hex(seq64.rom.readWord(indexaddr + (16*i) + 16), 6);
+        ret += ", len " + ROM::hex(seq64.rom.readWord(indexaddr + (16*i) + 20), 6);
     }else{
-        ret += "@" + ROM::hex(p.rom.readWord(indexaddr + (8*i) + 4), 6);
-        ret += ", len " + ROM::hex(p.rom.readWord(indexaddr + (8*i) + 8), 6);
+        ret += "@" + ROM::hex(seq64.rom.readWord(indexaddr + (8*i) + 4), 6);
+        ret += ", len " + ROM::hex(seq64.rom.readWord(indexaddr + (8*i) + 8), 6);
     }
     return ret;
 }
@@ -936,7 +952,7 @@ void FilesPane::fillIndex(){
     lstInstSets->updateContent();
     lsmIndex->clear();
     lstIndex->updateContent();
-    if(p.rom.getSize() == 0){
+    if(seq64.rom.getSize() == 0){
         lblIndexProps->setText("No ROM loaded", dontSendNotification);
         lstIndex->updateContent();
         return;
@@ -956,10 +972,10 @@ void FilesPane::fillIndex(){
         }
         dataaddr = (int)seldata.getProperty("address", -1);
         if(dataaddr < 0){
-            DBG("Audiobank file has no address!");
+            SEQ64::say("Audiobank file has no address!");
             return;
         }
-        idxlistnode = p.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
+        idxlistnode = seq64.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
         btnLoadEntry->setButtonText("Load Bank");
         btnSaveEntry->setButtonText("Save Bank");
     }else if(type == "Audioseq Index"){
@@ -971,15 +987,15 @@ void FilesPane::fillIndex(){
         }
         dataaddr = (int)seldata.getProperty("address", -1);
         if(dataaddr < 0){
-            DBG("Audioseq file has no address!");
+            SEQ64::say("Audioseq file has no address!");
             return;
         }
-        idxlistnode = p.romdesc.getOrCreateChildWithName("audioseqidx", nullptr);
+        idxlistnode = seq64.romdesc.getOrCreateChildWithName("audioseqidx", nullptr);
         btnLoadEntry->setButtonText("Load Sequence");
         btnSaveEntry->setButtonText("Save Sequence");
     }else if(type == "Sample Set Index"){
         //No data associated
-        idxlistnode = p.romdesc.getOrCreateChildWithName("samplesetidx", nullptr);
+        idxlistnode = seq64.romdesc.getOrCreateChildWithName("samplesetidx", nullptr);
     }else{
         lblIndexProps->setText("File selected is not an index", dontSendNotification);
         lstIndex->updateContent();
@@ -989,10 +1005,10 @@ void FilesPane::fillIndex(){
     //
     indexaddr = (int)selindex.getProperty("address", 0);
     uint16 count;
-    if((int)p.romdesc.getProperty("indextype", 1) == 2){
-        count = p.rom.readHalfWord(indexaddr);
+    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+        count = seq64.rom.readHalfWord(indexaddr);
     }else{
-        count = p.rom.readHalfWord(indexaddr+2);
+        count = seq64.rom.readHalfWord(indexaddr+2);
     }
     if(count > 1000 || count <= 0){
         lblIndexProps->setText(String(count) + " entries, probably wrong", dontSendNotification);
@@ -1005,6 +1021,9 @@ void FilesPane::fillIndex(){
     }
     lstIndex->updateContent();
     fillInstSetBoxes();
+    if(type == "Audiobank Index"){
+        seq64.maincomponent->onGotABI();
+    }
 }
 
 void FilesPane::fillIEntryParams(){
@@ -1014,14 +1033,14 @@ void FilesPane::fillIEntryParams(){
         return;
     }
     String data;
-    if((int)p.romdesc.getProperty("indextype", 1) == 2){
-        data  = "@" + ROM::hex(p.rom.readWord(indexaddr + (16*ientryidx) + 16));
-        data += ", len " + ROM::hex(p.rom.readWord(indexaddr + (16*ientryidx) + 20));
-        data += ": " + ROM::hex(p.rom.readWord(indexaddr + (16*ientryidx) + 24));
-        data += " " + ROM::hex(p.rom.readWord(indexaddr + (16*ientryidx) + 28));
+    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+        data  = "@" + ROM::hex(seq64.rom.readWord(indexaddr + (16*ientryidx) + 16));
+        data += ", len " + ROM::hex(seq64.rom.readWord(indexaddr + (16*ientryidx) + 20));
+        data += ": " + ROM::hex(seq64.rom.readWord(indexaddr + (16*ientryidx) + 24));
+        data += " " + ROM::hex(seq64.rom.readWord(indexaddr + (16*ientryidx) + 28));
     }else{
-        data  = "@" + ROM::hex(p.rom.readWord(indexaddr + (8*ientryidx) + 4));
-        data += ", len " + ROM::hex(p.rom.readWord(indexaddr + (8*ientryidx) + 8));
+        data  = "@" + ROM::hex(seq64.rom.readWord(indexaddr + (8*ientryidx) + 4));
+        data += ", len " + ROM::hex(seq64.rom.readWord(indexaddr + (8*ientryidx) + 8));
     }
     lblIEntryData->setText(data, dontSendNotification);
     ValueTree entry = idxlistnode.getChildWithProperty("index", ientryidx);
@@ -1035,20 +1054,20 @@ void FilesPane::fillIEntryParams(){
     if(isi_addr < 0) return;
     if(abi_addr < 0) return;
     if(abi_count < 0 || abi_count >= 0x100) return;
-    uint16 ptr = p.rom.readHalfWord(isi_addr + (ientryidx << 1));
+    uint16 ptr = seq64.rom.readHalfWord(isi_addr + (ientryidx << 1));
     uint32 a = isi_addr + ptr;
-    int seq_isetcount = p.rom.readByte(a);
+    int seq_isetcount = seq64.rom.readByte(a);
     a++;
     int sel_seqiset = lstInstSets->getLastRowSelected();
     //Make list
     lsmInstSets->clear();
     lstInstSets->updateContent();
     uint8 b;
-    ValueTree abk_names = p.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
+    ValueTree abk_names = seq64.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
     String desc;
     ValueTree bank;
     for(int i=0; i<seq_isetcount; i++){
-        b = p.rom.readByte(a);
+        b = seq64.rom.readByte(a);
         a++;
         desc = ROM::hex(b);
         bank = abk_names.getChildWithProperty("index", b);
@@ -1056,16 +1075,17 @@ void FilesPane::fillIEntryParams(){
             desc += ": " + bank.getProperty("name", "[Unnamed]").toString();
         }
         lsmInstSets->add(desc);
+        seq_lastbank = b;
     }
     lstInstSets->updateContent();
     lstInstSets->selectRow(sel_seqiset);
 }
 
 void FilesPane::romDescLoaded(){
-    filelistnode = p.romdesc.getOrCreateChildWithName("filelist", nullptr);
-    kfilelistnode = p.romdesc.getOrCreateChildWithName("knownfilelist", nullptr);
-    txtFTAddr->setText(ROM::hex((uint32)(int)p.romdesc.getProperty("ftaddr", 0)));
-    int indextype = (int)p.romdesc.getProperty("indextype", 1);
+    filelistnode = seq64.romdesc.getOrCreateChildWithName("filelist", nullptr);
+    kfilelistnode = seq64.romdesc.getOrCreateChildWithName("knownfilelist", nullptr);
+    txtFTAddr->setText(ROM::hex((uint32)(int)seq64.romdesc.getProperty("ftaddr", 0)));
+    int indextype = (int)seq64.romdesc.getProperty("indextype", 1);
     optIndexType1->setToggleState((indextype == 1), dontSendNotification);
     optIndexType2->setToggleState((indextype == 2), dontSendNotification);
     //Load index addresses
@@ -1094,7 +1114,7 @@ void FilesPane::romDescLoaded(){
 
 void FilesPane::fillInstSetBoxes(){
     cbxInstSet1->clear();
-    if(p.rom.getSize() == 0) return;
+    if(seq64.rom.getSize() == 0) return;
     if(!selindex.isValid()) return;
     if(selindex.getProperty("type", "Unsupported").toString() != "Audioseq Index"){
         lblInstSet->setText("Instrument sets (Audioseq Index only):", dontSendNotification);
@@ -1113,7 +1133,7 @@ void FilesPane::fillInstSetBoxes(){
         return;
     }
     lblInstSet->setText("Instrument sets:", dontSendNotification);
-    ValueTree abk_names = p.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
+    ValueTree abk_names = seq64.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
     String desc;
     ValueTree bank;
     for(int i=0; i<abi_count; i++){
@@ -1136,36 +1156,36 @@ bool FilesPane::isKnownFileType(String filetype){
 void FilesPane::changedIndexAddress(String indextype, int newaddress){
     if(indextype == "Audiobank Index"){
         abi_addr = newaddress;
-        if(newaddress < 0 || p.rom.getSize() <= abi_addr + 4){
+        if(newaddress < 0 || seq64.rom.getSize() <= abi_addr + 4){
             abi_count = -1;
             return;
         }
-        if((int)p.romdesc.getProperty("indextype", 1) == 2){
-            abi_count = p.rom.readHalfWord(abi_addr);
+        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+            abi_count = seq64.rom.readHalfWord(abi_addr);
         }else{
-            abi_count = p.rom.readHalfWord(abi_addr+2);
+            abi_count = seq64.rom.readHalfWord(abi_addr+2);
         }
     }else if(indextype == "Audioseq Index"){
         asi_addr = newaddress;
-        if(newaddress < 0 || p.rom.getSize() <= asi_addr + 4){
+        if(newaddress < 0 || seq64.rom.getSize() <= asi_addr + 4){
             asi_count = -1;
             return;
         }
-        if((int)p.romdesc.getProperty("indextype", 1) == 2){
-            asi_count = p.rom.readHalfWord(asi_addr);
+        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+            asi_count = seq64.rom.readHalfWord(asi_addr);
         }else{
-            asi_count = p.rom.readHalfWord(asi_addr+2);
+            asi_count = seq64.rom.readHalfWord(asi_addr+2);
         }
     }else if(indextype == "Sample Set Index"){
         ssi_addr = newaddress;
-        if(newaddress < 0 || p.rom.getSize() <= ssi_addr + 4){
+        if(newaddress < 0 || seq64.rom.getSize() <= ssi_addr + 4){
             ssi_count = -1;
             return;
         }
-        if((int)p.romdesc.getProperty("indextype", 1) == 2){
-            ssi_count = p.rom.readHalfWord(ssi_addr);
+        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+            ssi_count = seq64.rom.readHalfWord(ssi_addr);
         }else{
-            ssi_count = p.rom.readHalfWord(ssi_addr+2);
+            ssi_count = seq64.rom.readHalfWord(ssi_addr+2);
         }
     }else if(indextype == "Instrument Set Index"){
         isi_addr = newaddress;
@@ -1187,7 +1207,7 @@ BEGIN_JUCER_METADATA
 
 <JUCER_COMPONENT documentType="Component" className="FilesPane" componentName=""
                  parentClasses="public Component, public TextEditor::Listener, public TextListModel::Listener"
-                 constructorParams="AppProps&amp; props" variableInitialisers="p(props)"
+                 constructorParams="SEQ64&amp; seq64_" variableInitialisers="seq64(seq64_)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
                  fixedSize="0" initialWidth="600" initialHeight="400">
   <BACKGROUND backgroundColour="ffffffff"/>

@@ -18,8 +18,31 @@
 */
 
 //[Headers] You can add your own extra header files here...
+/*
+ * ============================================================================
+ *
+ * CICSetter.cpp
+ * Small component to get a CIC value from the user
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
+
 #include "n64checksum.h"
-#include "AppProps.h"
 //[/Headers]
 
 #include "CICSetter.h"
@@ -29,8 +52,8 @@
 //[/MiscUserDefs]
 
 //==============================================================================
-CICSetter::CICSetter (AppProps& props)
-    : p(props)
+CICSetter::CICSetter (SEQ64& seq64_)
+    : seq64(seq64_)
 {
     addAndMakeVisible (label = new Label ("new label",
                                           TRANS("Choose the CIC chip ID:")));
@@ -133,8 +156,8 @@ void CICSetter::buttonClicked (Button* buttonThatWasClicked)
     {
         //[UserButtonCode_btnOK] -- add your button handler code here..
         int idx = cbxCIC->getSelectedItemIndex()-1;
-        DBG("Setting CIC index to " + String(idx));
-        p.rom.cic_index = idx;
+        SEQ64::say("Setting CIC index to " + String(idx));
+        seq64.rom.cic_index = idx;
         //[/UserButtonCode_btnOK]
     }
     else if (buttonThatWasClicked == btnCancel)
@@ -167,8 +190,8 @@ void CICSetter::buttonClicked (Button* buttonThatWasClicked)
 BEGIN_JUCER_METADATA
 
 <JUCER_COMPONENT documentType="Component" className="CICSetter" componentName=""
-                 parentClasses="public Component" constructorParams="AppProps&amp; props"
-                 variableInitialisers="p(props)" snapPixels="8" snapActive="1"
+                 parentClasses="public Component" constructorParams="SEQ64&amp; seq64_"
+                 variableInitialisers="seq64(seq64_)" snapPixels="8" snapActive="1"
                  snapShown="1" overlayOpacity="0.330" fixedSize="1" initialWidth="176"
                  initialHeight="88">
   <BACKGROUND backgroundColour="ffffffff"/>

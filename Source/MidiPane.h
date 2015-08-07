@@ -21,10 +21,33 @@
 #define __JUCE_HEADER_521D5B2FDC85DAAE__
 
 //[Headers]     -- You can add your own extra header files here --
+/*
+ * ============================================================================
+ *
+ * MidiPane.h
+ * GUI component for the MIDI import/export screen
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
+
 #include "JuceHeader.h"
-#include "AppProps.h"
+#include "seq64.h"
 #include "TextListModel.h"
-#include "MainComponent.h"
 //[/Headers]
 
 
@@ -44,7 +67,7 @@ class MidiPane  : public Component,
 {
 public:
     //==============================================================================
-    MidiPane (AppProps& props);
+    MidiPane (SEQ64& seq64_);
     ~MidiPane();
 
     //==============================================================================
@@ -63,7 +86,7 @@ public:
 
 private:
     //[UserVariables]   -- You can add your own custom variables in this section.
-    AppProps& p;
+    SEQ64& seq64;
     ValueTree midioptsnode;
 
     //[/UserVariables]

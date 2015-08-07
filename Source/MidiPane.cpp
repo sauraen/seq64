@@ -18,8 +18,32 @@
 */
 
 //[Headers] You can add your own extra header files here...
-#include "../JuceLibraryCode/JuceHeader.h"
-#include "AppProps.h"
+/*
+ * ============================================================================
+ *
+ * MidiPane.cpp
+ * GUI component for the MIDI import/export screen
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
+
+#include "MainComponent.h"
+#include "SeqFile.h"
 //[/Headers]
 
 #include "MidiPane.h"
@@ -29,8 +53,8 @@
 //[/MiscUserDefs]
 
 //==============================================================================
-MidiPane::MidiPane (AppProps& props)
-    : p(props)
+MidiPane::MidiPane (SEQ64& seq64_)
+    : seq64(seq64_)
 {
     addAndMakeVisible (groupComponent8 = new GroupComponent ("new group",
                                                              TRANS("Import Settings")));
@@ -462,7 +486,7 @@ MidiPane::MidiPane (AppProps& props)
 
 
     //[Constructor] You can add your own custom stuff here..
-    midioptsnode = p.romdesc.getOrCreateChildWithName("midiopts", nullptr);
+    midioptsnode = seq64.romdesc.getOrCreateChildWithName("midiopts", nullptr);
 
     //[/Constructor]
 }
@@ -614,14 +638,13 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
     if (buttonThatWasClicked == btnMIDIExport)
     {
         //[UserButtonCode_btnMIDIExport] -- add your button handler code here..
-        if(&*p.seq == nullptr) return;
-		File dest = File::getSpecialLocation(File::userHomeDirectory);
-		dest = dest.getChildFile("haxxorz.mid");
+        if(&*seq64.seq == nullptr) return;
+		File dest = SEQ64::readFolderProperty("midifolder");
         FileChooser box("Save As", dest, "*.mid");
         if(!box.browseForFileToSave(true)) return;
         dest = box.getResult();
         if(!dest.hasWriteAccess()){
-            DBG("Cannot write to " + dest.getFullPathName() + "!");
+            SEQ64::say("Cannot write to " + dest.getFullPathName() + "!");
             return;
         }
         if(dest.getFileExtension() == ""){
@@ -630,18 +653,19 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
         if(dest.exists()){
             dest.deleteFile();
         }
+		SEQ64::writeProperty("midifolder", dest.getParentDirectory().getFullPathName());
         FileOutputStream fos(dest);
-        //Do it!!!
+        //Do it!
         ScopedPointer<MidiFile> midi;
-        midi = p.seq->toMIDIFile();
+        midi = seq64.seq->toMIDIFile();
         midi->writeTo(fos);
-        DBG("Written!!!!");
+        SEQ64::say("Written!");
         //[/UserButtonCode_btnMIDIExport]
     }
     else if (buttonThatWasClicked == btnMIDIImport)
     {
         //[UserButtonCode_btnMIDIImport] -- add your button handler code here..
-        if(p.seq != nullptr){
+        if(seq64.seq != nullptr){
             if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
                     "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
         }
@@ -650,16 +674,16 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
         if(box.browseForFileToOpen()){
             dest = box.getResult();
             if(!dest.existsAsFile()){
-                DBG("File " + dest.getFullPathName() + " does not exist!");
+                SEQ64::say("File " + dest.getFullPathName() + " does not exist!");
                 return;
             }
             ScopedPointer<MidiFile> midi;
             midi = new MidiFile();
             FileInputStream fis(dest);
             midi->readFrom(fis);
-            p.seq = new SeqFile(p.romdesc);
-            p.seq->fromMidiFile(*midi);
-            p.maincomponent->onSeqLoaded();
+            seq64.seq = new SeqFile(seq64.romdesc);
+            seq64.seq->fromMidiFile(*midi);
+            seq64.maincomponent->onSeqLoaded();
         }
         //[/UserButtonCode_btnMIDIImport]
     }
@@ -823,7 +847,7 @@ void MidiPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
 
 
 void MidiPane::refreshMIDIControls(){
-    midioptsnode = p.romdesc.getOrCreateChildWithName("midiopts", nullptr);
+    midioptsnode = seq64.romdesc.getOrCreateChildWithName("midiopts", nullptr);
     txtMIDIBend->setText(midioptsnode.getProperty("bendrange", 6).toString());
     txtMIDIPPQN->setText(midioptsnode.getProperty("ppqnmultiplier", 4).toString());
     cbxMIDIChnVol->setText(midioptsnode.getProperty("chnvol", "CC7 (Volume)").toString());
@@ -876,7 +900,7 @@ BEGIN_JUCER_METADATA
 
 <JUCER_COMPONENT documentType="Component" className="MidiPane" componentName=""
                  parentClasses="public Component, public TextEditor::Listener"
-                 constructorParams="AppProps&amp; props" variableInitialisers="p(props)"
+                 constructorParams="SEQ64&amp; seq64_" variableInitialisers="seq64(seq64_)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
                  fixedSize="0" initialWidth="1000" initialHeight="632">
   <BACKGROUND backgroundColour="ffffffff"/>

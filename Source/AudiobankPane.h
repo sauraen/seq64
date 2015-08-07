@@ -21,10 +21,33 @@
 #define __JUCE_HEADER_96A217B8C2302D5C__
 
 //[Headers]     -- You can add your own extra header files here --
+/*
+ * ============================================================================
+ *
+ * AudiobankPane.h
+ * GUI component for Audiobank editor screen
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
+
 #include "JuceHeader.h"
-#include "AppProps.h"
+#include "seq64.h"
 #include "TextListModel.h"
-#include "MainComponent.h"
 //[/Headers]
 
 
@@ -45,20 +68,31 @@ class AudiobankPane  : public Component,
 {
 public:
     //==============================================================================
-    AudiobankPane (AppProps& props);
+    AudiobankPane (SEQ64& seq64_);
     ~AudiobankPane();
 
     //==============================================================================
     //[UserMethods]     -- You can add your own custom methods in this section.
-    void rowSelected(TextListModel* parent, int row);
-    void textEditorTextChanged(TextEditor& editorThatWasChanged);
+    void rowSelected(TextListModel* parent, int row) override;
+    void rowDoubleClicked(TextListModel* parent, int row) override;
+    void textEditorTextChanged(TextEditor& editorThatWasChanged) override;
 
     void romDescLoaded();
+    void gotABI();
+    void bankLoaded();
 
     String getFieldDesc(ValueTree field);
     void fillFieldsList();
     void fillFieldParams();
     void fillMeaningsBox();
+
+    void fillLibItemsBox();
+    void fillLibItemControls();
+
+    void fillBItemsBox();
+    void fillBItemsControls();
+
+    ValueTree getBankSubList(int banknum, String sublistname);
 
     //[/UserMethods]
 
@@ -66,19 +100,41 @@ public:
     void resized();
     void comboBoxChanged (ComboBox* comboBoxThatHasChanged);
     void buttonClicked (Button* buttonThatWasClicked);
+    void visibilityChanged();
+    void broughtToFront();
+    void focusGained (FocusChangeType cause);
 
 
 
 private:
     //[UserVariables]   -- You can add your own custom variables in this section.
-    AppProps& p;
+    SEQ64& seq64;
 
     ScopedPointer<TextListModel> lsmFields;
     ScopedPointer<ListBox> lstFields;
 
+    ScopedPointer<TextListModel> lsmLibSets;
+    ScopedPointer<ListBox> lstLibSets;
+
+    ScopedPointer<TextListModel> lsmLibItems;
+    ScopedPointer<ListBox> lstLibItems;
+
+    ScopedPointer<TextListModel> lsmBItems;
+    ScopedPointer<ListBox> lstBItems;
+
     ValueTree abfstructsnode;
     ValueTree selstruct;
     ValueTree selfield;
+
+    int abiaddr, abaddr;
+
+    int libselbankidx;
+    ScopedPointer<BankFile> libselbank;
+    int libselitemidx;
+    ValueTree libselitem;
+
+    ValueTree bpath;
+    ValueTree bselnode;
 
     //[/UserVariables]
 
@@ -112,27 +168,35 @@ private:
     ScopedPointer<Label> label7;
     ScopedPointer<Label> lblStructSemicolon;
     ScopedPointer<Label> label;
-    ScopedPointer<TextEditor> textEditor;
     ScopedPointer<ComboBox> cbxLibList;
-    ScopedPointer<TextEditor> textEditor2;
-    ScopedPointer<TextButton> textButton;
+    ScopedPointer<TextButton> txtLibAdd;
     ScopedPointer<Label> label8;
     ScopedPointer<TextEditor> txtLibItemName;
-    ScopedPointer<ToggleButton> toggleButton;
-    ScopedPointer<ComboBox> cbxBItems;
-    ScopedPointer<Label> label9;
-    ScopedPointer<Label> lblBSize;
-    ScopedPointer<TextEditor> PH_lstBItems;
+    ScopedPointer<ToggleButton> chkLibMerge;
     ScopedPointer<TextButton> btnBItemAdd;
     ScopedPointer<TextButton> btnBItemDel;
     ScopedPointer<TextButton> btnBItemUp;
     ScopedPointer<TextButton> btnBItemDn;
-    ScopedPointer<Label> label11;
     ScopedPointer<Label> label12;
     ScopedPointer<TextEditor> txtBItemName;
     ScopedPointer<ComboBox> cbxAlign;
-    ScopedPointer<TextButton> btnBMergeAll;
     ScopedPointer<TextButton> btnBItemDupl;
+    ScopedPointer<ToggleButton> optMapProgram;
+    ScopedPointer<TextEditor> txtMapPNum;
+    ScopedPointer<Label> lblMapPNote;
+    ScopedPointer<TextEditor> txtMapPNote;
+    ScopedPointer<ToggleButton> optMapDrum;
+    ScopedPointer<TextEditor> txtMapDS1;
+    ScopedPointer<TextEditor> txtMapDS2;
+    ScopedPointer<TextEditor> txtMapDS3;
+    ScopedPointer<Label> lblMapSplits;
+    ScopedPointer<TextButton> btnBUp;
+    ScopedPointer<TextButton> btnBOpen;
+    ScopedPointer<Label> lblBankPath;
+    ScopedPointer<Label> lblBItemType;
+    ScopedPointer<Label> label10;
+    ScopedPointer<TextEditor> txtBItemValue;
+    ScopedPointer<Label> lblBItemValueEquiv;
 
 
     //==============================================================================

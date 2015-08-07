@@ -18,8 +18,31 @@
 */
 
 //[Headers] You can add your own extra header files here...
-#include "JuceHeader.h"
-#include "AppProps.h"
+/*
+ * ============================================================================
+ *
+ * AudiobankPane.cpp
+ * GUI component for Audiobank editor screen
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
+
+#include "BankFile.h"
 //[/Headers]
 
 #include "AudiobankPane.h"
@@ -29,8 +52,8 @@
 //[/MiscUserDefs]
 
 //==============================================================================
-AudiobankPane::AudiobankPane (AppProps& props)
-    : p(props)
+AudiobankPane::AudiobankPane (SEQ64& seq64_)
+    : seq64(seq64_)
 {
     addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
                                                              TRANS("Audiobank Library")));
@@ -260,15 +283,6 @@ AudiobankPane::AudiobankPane (AppProps& props)
     label->setColour (TextEditor::textColourId, Colours::black);
     label->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (textEditor = new TextEditor ("new text editor"));
-    textEditor->setMultiLine (false);
-    textEditor->setReturnKeyStartsNewLine (false);
-    textEditor->setReadOnly (false);
-    textEditor->setScrollbarsShown (true);
-    textEditor->setCaretVisible (true);
-    textEditor->setPopupMenuEnabled (true);
-    textEditor->setText (String::empty);
-
     addAndMakeVisible (cbxLibList = new ComboBox ("new combo box"));
     cbxLibList->setEditableText (false);
     cbxLibList->setJustificationType (Justification::centredLeft);
@@ -279,18 +293,9 @@ AudiobankPane::AudiobankPane (AppProps& props)
     cbxLibList->addItem (TRANS("Sound Effects"), 3);
     cbxLibList->addListener (this);
 
-    addAndMakeVisible (textEditor2 = new TextEditor ("new text editor"));
-    textEditor2->setMultiLine (false);
-    textEditor2->setReturnKeyStartsNewLine (false);
-    textEditor2->setReadOnly (false);
-    textEditor2->setScrollbarsShown (true);
-    textEditor2->setCaretVisible (true);
-    textEditor2->setPopupMenuEnabled (true);
-    textEditor2->setText (String::empty);
-
-    addAndMakeVisible (textButton = new TextButton ("new button"));
-    textButton->setButtonText (TRANS("Add to Loaded Inst Set"));
-    textButton->addListener (this);
+    addAndMakeVisible (txtLibAdd = new TextButton ("new button"));
+    txtLibAdd->setButtonText (TRANS("Add to Loaded Inst Set"));
+    txtLibAdd->addListener (this);
 
     addAndMakeVisible (label8 = new Label ("new label",
                                            TRANS("Name:")));
@@ -309,82 +314,30 @@ AudiobankPane::AudiobankPane (AppProps& props)
     txtLibItemName->setPopupMenuEnabled (true);
     txtLibItemName->setText (String::empty);
 
-    addAndMakeVisible (toggleButton = new ToggleButton ("new toggle button"));
-    toggleButton->setButtonText (TRANS("Merge"));
-    toggleButton->addListener (this);
-    toggleButton->setToggleState (true, dontSendNotification);
-
-    addAndMakeVisible (cbxBItems = new ComboBox ("new combo box"));
-    cbxBItems->setEditableText (false);
-    cbxBItems->setJustificationType (Justification::centredLeft);
-    cbxBItems->setTextWhenNothingSelected (String::empty);
-    cbxBItems->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
-    cbxBItems->addItem (TRANS("List of Instruments"), 1);
-    cbxBItems->addItem (TRANS("List of Drums"), 2);
-    cbxBItems->addItem (TRANS("List of SFX"), 3);
-    cbxBItems->addItem (TRANS("List of PatchProps"), 4);
-    cbxBItems->addItem (TRANS("List of Samples"), 5);
-    cbxBItems->addItem (TRANS("List of ALADPCMBooks"), 6);
-    cbxBItems->addItem (TRANS("List of ALADPCMLoops"), 7);
-    cbxBItems->addItem (TRANS("Bank\'s ABIndexEntry"), 8);
-    cbxBItems->addItem (TRANS("Bank\'s ABHeader"), 9);
-    cbxBItems->addItem (TRANS("Bank\'s ABBank"), 10);
-    cbxBItems->addItem (TRANS("Bank\'s ABDrumList"), 11);
-    cbxBItems->addItem (TRANS("Bank\'s ABSFXList"), 12);
-    cbxBItems->addListener (this);
-
-    addAndMakeVisible (label9 = new Label ("new label",
-                                           TRANS("Edit:")));
-    label9->setFont (Font (15.00f, Font::plain));
-    label9->setJustificationType (Justification::centredLeft);
-    label9->setEditable (false, false, false);
-    label9->setColour (TextEditor::textColourId, Colours::black);
-    label9->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (lblBSize = new Label ("new label",
-                                             TRANS("Size XXXX bytes")));
-    lblBSize->setFont (Font (15.00f, Font::plain));
-    lblBSize->setJustificationType (Justification::centredLeft);
-    lblBSize->setEditable (false, false, false);
-    lblBSize->setColour (TextEditor::textColourId, Colours::black);
-    lblBSize->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (PH_lstBItems = new TextEditor ("new text editor"));
-    PH_lstBItems->setMultiLine (false);
-    PH_lstBItems->setReturnKeyStartsNewLine (false);
-    PH_lstBItems->setReadOnly (false);
-    PH_lstBItems->setScrollbarsShown (true);
-    PH_lstBItems->setCaretVisible (true);
-    PH_lstBItems->setPopupMenuEnabled (true);
-    PH_lstBItems->setText (String::empty);
+    addAndMakeVisible (chkLibMerge = new ToggleButton ("new toggle button"));
+    chkLibMerge->setButtonText (TRANS("Merge"));
+    chkLibMerge->addListener (this);
+    chkLibMerge->setToggleState (true, dontSendNotification);
 
     addAndMakeVisible (btnBItemAdd = new TextButton ("new button"));
-    btnBItemAdd->setButtonText (TRANS("Add"));
-    btnBItemAdd->setConnectedEdges (Button::ConnectedOnRight);
+    btnBItemAdd->setButtonText (TRANS("New"));
+    btnBItemAdd->setConnectedEdges (Button::ConnectedOnBottom);
     btnBItemAdd->addListener (this);
 
     addAndMakeVisible (btnBItemDel = new TextButton ("new button"));
     btnBItemDel->setButtonText (TRANS("Del"));
-    btnBItemDel->setConnectedEdges (Button::ConnectedOnLeft);
+    btnBItemDel->setConnectedEdges (Button::ConnectedOnTop);
     btnBItemDel->addListener (this);
 
     addAndMakeVisible (btnBItemUp = new TextButton ("new button"));
     btnBItemUp->setButtonText (TRANS("Up"));
-    btnBItemUp->setConnectedEdges (Button::ConnectedOnRight);
+    btnBItemUp->setConnectedEdges (Button::ConnectedOnBottom);
     btnBItemUp->addListener (this);
 
     addAndMakeVisible (btnBItemDn = new TextButton ("new button"));
     btnBItemDn->setButtonText (TRANS("Dn"));
-    btnBItemDn->setConnectedEdges (Button::ConnectedOnLeft);
+    btnBItemDn->setConnectedEdges (Button::ConnectedOnTop);
     btnBItemDn->addListener (this);
-
-    addAndMakeVisible (label11 = new Label ("new label",
-                                            TRANS("Item Fields:")));
-    label11->setFont (Font (15.00f, Font::plain));
-    label11->setJustificationType (Justification::centredLeft);
-    label11->setEditable (false, false, false);
-    label11->setColour (TextEditor::textColourId, Colours::black);
-    label11->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
     addAndMakeVisible (label12 = new Label ("new label",
                                             TRANS("Name:")));
@@ -413,13 +366,131 @@ AudiobankPane::AudiobankPane (AppProps& props)
     cbxAlign->addItem (TRANS("16"), 3);
     cbxAlign->addListener (this);
 
-    addAndMakeVisible (btnBMergeAll = new TextButton ("new button"));
-    btnBMergeAll->setButtonText (TRANS("Merge All"));
-    btnBMergeAll->addListener (this);
-
     addAndMakeVisible (btnBItemDupl = new TextButton ("new button"));
     btnBItemDupl->setButtonText (TRANS("Dupl"));
+    btnBItemDupl->setConnectedEdges (Button::ConnectedOnTop | Button::ConnectedOnBottom);
     btnBItemDupl->addListener (this);
+
+    addAndMakeVisible (optMapProgram = new ToggleButton ("new toggle button"));
+    optMapProgram->setButtonText (TRANS("Program"));
+    optMapProgram->setRadioGroupId (2);
+    optMapProgram->addListener (this);
+
+    addAndMakeVisible (txtMapPNum = new TextEditor ("new text editor"));
+    txtMapPNum->setMultiLine (false);
+    txtMapPNum->setReturnKeyStartsNewLine (false);
+    txtMapPNum->setReadOnly (false);
+    txtMapPNum->setScrollbarsShown (true);
+    txtMapPNum->setCaretVisible (true);
+    txtMapPNum->setPopupMenuEnabled (true);
+    txtMapPNum->setText (String::empty);
+
+    addAndMakeVisible (lblMapPNote = new Label ("new label",
+                                                TRANS("Note")));
+    lblMapPNote->setFont (Font (15.00f, Font::plain));
+    lblMapPNote->setJustificationType (Justification::centredLeft);
+    lblMapPNote->setEditable (false, false, false);
+    lblMapPNote->setColour (TextEditor::textColourId, Colours::black);
+    lblMapPNote->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (txtMapPNote = new TextEditor ("new text editor"));
+    txtMapPNote->setMultiLine (false);
+    txtMapPNote->setReturnKeyStartsNewLine (false);
+    txtMapPNote->setReadOnly (false);
+    txtMapPNote->setScrollbarsShown (true);
+    txtMapPNote->setCaretVisible (true);
+    txtMapPNote->setPopupMenuEnabled (true);
+    txtMapPNote->setText (String::empty);
+
+    addAndMakeVisible (optMapDrum = new ToggleButton ("new toggle button"));
+    optMapDrum->setButtonText (TRANS("Drum"));
+    optMapDrum->setRadioGroupId (2);
+    optMapDrum->addListener (this);
+
+    addAndMakeVisible (txtMapDS1 = new TextEditor ("new text editor"));
+    txtMapDS1->setMultiLine (false);
+    txtMapDS1->setReturnKeyStartsNewLine (false);
+    txtMapDS1->setReadOnly (false);
+    txtMapDS1->setScrollbarsShown (true);
+    txtMapDS1->setCaretVisible (true);
+    txtMapDS1->setPopupMenuEnabled (true);
+    txtMapDS1->setText (String::empty);
+
+    addAndMakeVisible (txtMapDS2 = new TextEditor ("new text editor"));
+    txtMapDS2->setMultiLine (false);
+    txtMapDS2->setReturnKeyStartsNewLine (false);
+    txtMapDS2->setReadOnly (false);
+    txtMapDS2->setScrollbarsShown (true);
+    txtMapDS2->setCaretVisible (true);
+    txtMapDS2->setPopupMenuEnabled (true);
+    txtMapDS2->setText (String::empty);
+
+    addAndMakeVisible (txtMapDS3 = new TextEditor ("new text editor"));
+    txtMapDS3->setMultiLine (false);
+    txtMapDS3->setReturnKeyStartsNewLine (false);
+    txtMapDS3->setReadOnly (false);
+    txtMapDS3->setScrollbarsShown (true);
+    txtMapDS3->setCaretVisible (true);
+    txtMapDS3->setPopupMenuEnabled (true);
+    txtMapDS3->setText (String::empty);
+
+    addAndMakeVisible (lblMapSplits = new Label ("new label",
+                                                 TRANS("splits")));
+    lblMapSplits->setFont (Font (15.00f, Font::plain));
+    lblMapSplits->setJustificationType (Justification::centredLeft);
+    lblMapSplits->setEditable (false, false, false);
+    lblMapSplits->setColour (TextEditor::textColourId, Colours::black);
+    lblMapSplits->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (btnBUp = new TextButton ("new button"));
+    btnBUp->setButtonText (TRANS("Up"));
+    btnBUp->setConnectedEdges (Button::ConnectedOnRight);
+    btnBUp->addListener (this);
+
+    addAndMakeVisible (btnBOpen = new TextButton ("new button"));
+    btnBOpen->setButtonText (TRANS("Open"));
+    btnBOpen->addListener (this);
+
+    addAndMakeVisible (lblBankPath = new Label ("new label",
+                                                TRANS("/")));
+    lblBankPath->setFont (Font (15.00f, Font::plain));
+    lblBankPath->setJustificationType (Justification::centredLeft);
+    lblBankPath->setEditable (false, false, false);
+    lblBankPath->setColour (TextEditor::textColourId, Colours::black);
+    lblBankPath->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (lblBItemType = new Label ("new label",
+                                                 TRANS("Type:")));
+    lblBItemType->setFont (Font (15.00f, Font::plain));
+    lblBItemType->setJustificationType (Justification::centredLeft);
+    lblBItemType->setEditable (false, false, false);
+    lblBItemType->setColour (TextEditor::textColourId, Colours::black);
+    lblBItemType->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (label10 = new Label ("new label",
+                                            TRANS("Value:")));
+    label10->setFont (Font (15.00f, Font::plain));
+    label10->setJustificationType (Justification::centredLeft);
+    label10->setEditable (false, false, false);
+    label10->setColour (TextEditor::textColourId, Colours::black);
+    label10->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (txtBItemValue = new TextEditor ("new text editor"));
+    txtBItemValue->setMultiLine (false);
+    txtBItemValue->setReturnKeyStartsNewLine (false);
+    txtBItemValue->setReadOnly (false);
+    txtBItemValue->setScrollbarsShown (true);
+    txtBItemValue->setCaretVisible (true);
+    txtBItemValue->setPopupMenuEnabled (true);
+    txtBItemValue->setText (String::empty);
+
+    addAndMakeVisible (lblBItemValueEquiv = new Label ("new label",
+                                                       TRANS("()")));
+    lblBItemValueEquiv->setFont (Font (15.00f, Font::plain));
+    lblBItemValueEquiv->setJustificationType (Justification::centredLeft);
+    lblBItemValueEquiv->setEditable (false, false, false);
+    lblBItemValueEquiv->setColour (TextEditor::textColourId, Colours::black);
+    lblBItemValueEquiv->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
 
     //[UserPreSize]
@@ -431,10 +502,37 @@ AudiobankPane::AudiobankPane (AppProps& props)
     lstFields->setMultipleSelectionEnabled(false);
     lstFields->setRowHeight(16);
 
+    lsmLibSets = new TextListModel();
+    lsmLibSets->setListener(this);
+
+    addAndMakeVisible(lstLibSets = new ListBox("LibSets", lsmLibSets));
+    lstLibSets->setMultipleSelectionEnabled(false);
+    lstLibSets->setRowHeight(16);
+
+    lsmLibItems = new TextListModel();
+    lsmLibItems->setListener(this);
+
+    addAndMakeVisible(lstLibItems = new ListBox("LibItems", lsmLibItems));
+    lstLibItems->setMultipleSelectionEnabled(false);
+    lstLibItems->setRowHeight(16);
+
+    lsmBItems = new TextListModel();
+    lsmBItems->setListener(this);
+
+    addAndMakeVisible(lstBItems = new ListBox("BItems", lsmBItems));
+    lstBItems->setMultipleSelectionEnabled(false);
+    lstBItems->setRowHeight(16);
+
 
     txtFieldName->addListener(this);
     txtArrayLen->addListener(this);
     txtDefaultVal->addListener(this);
+    txtLibItemName->addListener(this);
+    txtMapPNum->addListener(this);
+    txtMapPNote->addListener(this);
+    txtMapDS1->addListener(this);
+    txtMapDS2->addListener(this);
+    txtMapDS3->addListener(this);
 
     //[/UserPreSize]
 
@@ -442,6 +540,11 @@ AudiobankPane::AudiobankPane (AppProps& props)
 
 
     //[Constructor] You can add your own custom stuff here..
+    abiaddr = abaddr = -1;
+    libselbankidx = libselitemidx = -1;
+
+    cbxLibList->setText("Instruments");
+
     romDescLoaded();
     //[/Constructor]
 }
@@ -480,30 +583,42 @@ AudiobankPane::~AudiobankPane()
     label7 = nullptr;
     lblStructSemicolon = nullptr;
     label = nullptr;
-    textEditor = nullptr;
     cbxLibList = nullptr;
-    textEditor2 = nullptr;
-    textButton = nullptr;
+    txtLibAdd = nullptr;
     label8 = nullptr;
     txtLibItemName = nullptr;
-    toggleButton = nullptr;
-    cbxBItems = nullptr;
-    label9 = nullptr;
-    lblBSize = nullptr;
-    PH_lstBItems = nullptr;
+    chkLibMerge = nullptr;
     btnBItemAdd = nullptr;
     btnBItemDel = nullptr;
     btnBItemUp = nullptr;
     btnBItemDn = nullptr;
-    label11 = nullptr;
     label12 = nullptr;
     txtBItemName = nullptr;
     cbxAlign = nullptr;
-    btnBMergeAll = nullptr;
     btnBItemDupl = nullptr;
+    optMapProgram = nullptr;
+    txtMapPNum = nullptr;
+    lblMapPNote = nullptr;
+    txtMapPNote = nullptr;
+    optMapDrum = nullptr;
+    txtMapDS1 = nullptr;
+    txtMapDS2 = nullptr;
+    txtMapDS3 = nullptr;
+    lblMapSplits = nullptr;
+    btnBUp = nullptr;
+    btnBOpen = nullptr;
+    lblBankPath = nullptr;
+    lblBItemType = nullptr;
+    label10 = nullptr;
+    txtBItemValue = nullptr;
+    lblBItemValueEquiv = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
+    lstFields = nullptr;
+    lstLibSets = nullptr;
+    lstLibItems = nullptr;
+    lstBItems = nullptr;
     //[/Destructor]
 }
 
@@ -556,29 +671,40 @@ void AudiobankPane::resized()
     label7->setBounds (8, 312, 24, 24);
     lblStructSemicolon->setBounds (192, 160, 80, 24);
     label->setBounds (456, 16, 240, 24);
-    textEditor->setBounds (456, 40, 240, 296);
     cbxLibList->setBounds (704, 16, 240, 24);
-    textEditor2->setBounds (704, 40, 240, 248);
-    textButton->setBounds (704, 312, 168, 24);
-    label8->setBounds (704, 288, 56, 24);
-    txtLibItemName->setBounds (760, 288, 182, 24);
-    toggleButton->setBounds (880, 312, 64, 24);
-    cbxBItems->setBounds (48, 384, 200, 24);
-    label9->setBounds (8, 384, 40, 24);
-    lblBSize->setBounds (8, 360, 128, 24);
-    PH_lstBItems->setBounds (8, 408, 240, 224);
-    btnBItemAdd->setBounds (8, 632, 40, 24);
-    btnBItemDel->setBounds (48, 632, 40, 24);
-    btnBItemUp->setBounds (168, 632, 40, 24);
-    btnBItemDn->setBounds (208, 632, 40, 24);
-    label11->setBounds (256, 360, 240, 24);
-    label12->setBounds (8, 656, 56, 24);
-    txtBItemName->setBounds (64, 656, 184, 24);
+    txtLibAdd->setBounds (704, 312, 168, 24);
+    label8->setBounds (704, 240, 56, 24);
+    txtLibItemName->setBounds (760, 240, 182, 24);
+    chkLibMerge->setBounds (880, 312, 64, 24);
+    btnBItemAdd->setBounds (256, 384, 48, 24);
+    btnBItemDel->setBounds (256, 432, 48, 24);
+    btnBItemUp->setBounds (256, 472, 48, 24);
+    btnBItemDn->setBounds (256, 496, 48, 24);
+    label12->setBounds (312, 384, 56, 24);
+    txtBItemName->setBounds (368, 384, 184, 24);
     cbxAlign->setBounds (304, 16, 56, 24);
-    btnBMergeAll->setBounds (144, 360, 104, 24);
-    btnBItemDupl->setBounds (104, 632, 48, 24);
+    btnBItemDupl->setBounds (256, 408, 48, 24);
+    optMapProgram->setBounds (704, 264, 80, 24);
+    txtMapPNum->setBounds (784, 264, 40, 24);
+    lblMapPNote->setBounds (824, 264, 40, 24);
+    txtMapPNote->setBounds (864, 264, 40, 24);
+    optMapDrum->setBounds (704, 288, 64, 24);
+    txtMapDS1->setBounds (784, 288, 40, 24);
+    txtMapDS2->setBounds (824, 288, 40, 24);
+    txtMapDS3->setBounds (864, 288, 40, 24);
+    lblMapSplits->setBounds (904, 288, 40, 24);
+    btnBUp->setBounds (8, 360, 40, 24);
+    btnBOpen->setBounds (256, 656, 48, 24);
+    lblBankPath->setBounds (48, 360, 896, 24);
+    lblBItemType->setBounds (312, 408, 240, 24);
+    label10->setBounds (312, 432, 56, 24);
+    txtBItemValue->setBounds (368, 432, 72, 24);
+    lblBItemValueEquiv->setBounds (368, 456, 184, 24);
     //[UserResized] Add your own custom resize handling here..
     lstFields->setBounds(8, 40, 432, 112);
+    lstLibSets->setBounds(456, 40, 240, 296);
+    lstLibItems->setBounds(704, 40, 240, 200);
+    lstBItems->setBounds(8, 384, 240, 296);
     //[/UserResized]
 }
 
@@ -646,12 +772,8 @@ void AudiobankPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     else if (comboBoxThatHasChanged == cbxLibList)
     {
         //[UserComboBoxCode_cbxLibList] -- add your combo box handling code here..
+        fillLibItemsBox();
         //[/UserComboBoxCode_cbxLibList]
-    }
-    else if (comboBoxThatHasChanged == cbxBItems)
-    {
-        //[UserComboBoxCode_cbxBItems] -- add your combo box handling code here..
-        //[/UserComboBoxCode_cbxBItems]
     }
     else if (comboBoxThatHasChanged == cbxAlign)
     {
@@ -797,15 +919,15 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         lstFields->selectRow(i);
         //[/UserButtonCode_btnFieldDn]
     }
-    else if (buttonThatWasClicked == textButton)
+    else if (buttonThatWasClicked == txtLibAdd)
     {
-        //[UserButtonCode_textButton] -- add your button handler code here..
-        //[/UserButtonCode_textButton]
+        //[UserButtonCode_txtLibAdd] -- add your button handler code here..
+        //[/UserButtonCode_txtLibAdd]
     }
-    else if (buttonThatWasClicked == toggleButton)
+    else if (buttonThatWasClicked == chkLibMerge)
     {
-        //[UserButtonCode_toggleButton] -- add your button handler code here..
-        //[/UserButtonCode_toggleButton]
+        //[UserButtonCode_chkLibMerge] -- add your button handler code here..
+        //[/UserButtonCode_chkLibMerge]
     }
     else if (buttonThatWasClicked == btnBItemAdd)
     {
@@ -827,15 +949,50 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnBItemDn] -- add your button handler code here..
         //[/UserButtonCode_btnBItemDn]
     }
-    else if (buttonThatWasClicked == btnBMergeAll)
-    {
-        //[UserButtonCode_btnBMergeAll] -- add your button handler code here..
-        //[/UserButtonCode_btnBMergeAll]
-    }
     else if (buttonThatWasClicked == btnBItemDupl)
     {
         //[UserButtonCode_btnBItemDupl] -- add your button handler code here..
         //[/UserButtonCode_btnBItemDupl]
+    }
+    else if (buttonThatWasClicked == optMapProgram)
+    {
+        //[UserButtonCode_optMapProgram] -- add your button handler code here..
+        if(!libselitem.isValid()) return;
+        if(!state) return;
+        libselitem.setProperty("map", "program", nullptr);
+        libselitem.removeProperty("drum", nullptr);
+        libselitem.removeProperty("drumsplit1", nullptr);
+        libselitem.removeProperty("drumsplit2", nullptr);
+        libselitem.removeProperty("drumsplit3", nullptr);
+        fillLibItemControls();
+        //[/UserButtonCode_optMapProgram]
+    }
+    else if (buttonThatWasClicked == optMapDrum)
+    {
+        //[UserButtonCode_optMapDrum] -- add your button handler code here..
+        if(!libselitem.isValid()) return;
+        if(!state) return;
+        libselitem.setProperty("map", "drum", nullptr);
+        libselitem.removeProperty("note", nullptr);
+        libselitem.removeProperty("transpose", nullptr);
+        fillLibItemControls();
+        //[/UserButtonCode_optMapDrum]
+    }
+    else if (buttonThatWasClicked == btnBUp)
+    {
+        //[UserButtonCode_btnBUp] -- add your button handler code here..
+        if(!bpath.getParent().isValid()) return;
+        if(bpath.getParent().getNumChildren() == 1 && bpath.getType().toString() == "struct"){
+            bpath = bpath.getParent();
+        }
+        bpath = bpath.getParent();
+        fillBItemsBox();
+        //[/UserButtonCode_btnBUp]
+    }
+    else if (buttonThatWasClicked == btnBOpen)
+    {
+        //[UserButtonCode_btnBOpen] -- add your button handler code here..
+        //[/UserButtonCode_btnBOpen]
     }
 
     //[UserbuttonClicked_Post]
@@ -847,6 +1004,30 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
     //[/UserbuttonClicked_Post]
 }
 
+void AudiobankPane::visibilityChanged()
+{
+    //[UserCode_visibilityChanged] -- Add your code here...
+    //SEQ64::say("AudiobankPane::visibilityChanged()");
+    //gotABI();
+    //[/UserCode_visibilityChanged]
+}
+
+void AudiobankPane::broughtToFront()
+{
+    //[UserCode_broughtToFront] -- Add your code here...
+    //SEQ64::say("AudiobankPane::broughtToFront()");
+    gotABI();
+    //[/UserCode_broughtToFront]
+}
+
+void AudiobankPane::focusGained (FocusChangeType cause)
+{
+    //[UserCode_focusGained] -- Add your code here...
+    //SEQ64::say("AudiobankPane::focusGained()");
+    //gotABI();
+    //[/UserCode_focusGained]
+}
+
 
 
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
@@ -856,14 +1037,55 @@ void AudiobankPane::rowSelected(TextListModel* parent, int row){
         if(!selstruct.isValid()) return;
         selfield = selstruct.getChild(row);
         fillFieldParams();
+    }else if(parent == &*lsmLibSets){
+        if(abiaddr < 0 || abaddr < 0) return;
+        libselbankidx = row;
+        libselbank = new BankFile(seq64.romdesc);
+        libselbank->load(seq64.rom, libselbankidx);
+        fillLibItemsBox();
+    }else if(parent == &*lsmLibItems){
+        ValueTree list = getBankSubList(libselbankidx, cbxLibList->getText());
+        if(list.isValid()){
+            ValueTree temp = list.getChild(row);
+            if(temp.isValid()){
+                libselitemidx = row;
+                libselitem = temp;
+                fillLibItemControls();
+                return;
+            }
+        }
+        libselitemidx = -1;
+        libselitem = ValueTree();
+    }else if(parent == &*lsmBItems){
+        if(!bpath.isValid()) return;
+        bselnode = bpath.getChild(row);
+        fillBItemsControls();
+    }
+}
+
+void AudiobankPane::rowDoubleClicked(TextListModel* parent, int row){
+    if(parent == &*lsmBItems){
+        if(!bpath.isValid()) return;
+        bselnode = bpath.getChild(row);
+        if(!bselnode.isValid()) return;
+        if(bselnode.getNumChildren() == 1 && bselnode.getChild(0).getType().toString() == "struct"){
+            bselnode = bselnode.getChild(0);
+        }
+        if(bselnode.getNumChildren() == 0) return;
+        bpath = bselnode;
+        bselnode = ValueTree();
+        fillBItemsBox();
     }
 }
 
 void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     int val;
     String text = editorThatWasChanged.getText();
-    if(      /*&editorThatWasChanged == &*txtParamAdd
-            || &editorThatWasChanged == &*txtCmdDataSize*/ false){
+    if(        &editorThatWasChanged == &*txtMapPNum
+            || &editorThatWasChanged == &*txtMapPNote
+            || &editorThatWasChanged == &*txtMapDS1
+            || &editorThatWasChanged == &*txtMapDS2
+            || &editorThatWasChanged == &*txtMapDS3 ){
         val = text.getIntValue();
     }else{
         val = text.getHexValue32();
@@ -895,6 +1117,45 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
             selfield.setProperty("defaultval", val, nullptr);
         }
         repaintFieldEntry = true;
+    }else if(&editorThatWasChanged == &*txtLibItemName){
+        if(!libselitem.isValid()) return;
+        turnRed = false;
+        libselitem.setProperty("name", text, nullptr);
+        lsmLibItems->set(libselitemidx, text);
+        lstLibItems->repaintRow(libselitemidx);
+    }else if(&editorThatWasChanged == &*txtMapPNum){
+        if(!libselitem.isValid()) return;
+        if(val >= 128) turnRed = true;
+        libselitem.setProperty("program", val, nullptr);
+    }else if(&editorThatWasChanged == &*txtMapPNote){
+        if(!libselitem.isValid()) return;
+        if(val >= 128) turnRed = true;
+        if(cbxLibList->getText() == "Instruments"){
+            libselitem.setProperty("transpose", val, nullptr);
+            turnRed = (val < -127 || val > 127);
+        }else{
+            libselitem.setProperty("note", val, nullptr);
+        }
+    }else if(&editorThatWasChanged == &*txtMapDS1){
+        if(!libselitem.isValid()) return;
+        if(val >= 128) turnRed = true;
+        if(cbxLibList->getText() == "Instruments"){
+            libselitem.setProperty("drumsplit1", val, nullptr);
+        }else{
+            libselitem.setProperty("note", val, nullptr);
+        }
+    }else if(&editorThatWasChanged == &*txtMapDS2){
+        if(!libselitem.isValid()) return;
+        if(val >= 128) turnRed = true;
+        if(cbxLibList->getText() == "Instruments"){
+            libselitem.setProperty("drumsplit2", val, nullptr);
+        }
+    }else if(&editorThatWasChanged == &*txtMapDS3){
+        if(!libselitem.isValid()) return;
+        if(val >= 128) turnRed = true;
+        if(cbxLibList->getText() == "Instruments"){
+            libselitem.setProperty("drumsplit3", val, nullptr);
+        }
     }
     if(turnRed){
         editorThatWasChanged.setColour(TextEditor::backgroundColourId, Colours::red);
@@ -908,22 +1169,6 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-void AudiobankPane::romDescLoaded(){
-    abfstructsnode = p.romdesc.getOrCreateChildWithName("abfstructs", nullptr);
-    cbxAlign->setText(abfstructsnode.getProperty("align", "16"));
-    selstruct = ValueTree();
-    selfield = ValueTree();
-}
 
 String AudiobankPane::getFieldDesc(ValueTree field){
     if(!field.isValid()) return "Error!";
@@ -1059,6 +1304,246 @@ void AudiobankPane::fillMeaningsBox(){
     cbxMeaning->setSelectedItemIndex(0, dontSendNotification);
 }
 
+ValueTree AudiobankPane::getBankSubList(int banknum, String sublistname){
+    if(libselbankidx < 0) return ValueTree();
+    ValueTree abindexnode = seq64.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
+    ValueTree temp = abindexnode.getChildWithProperty("index", banknum);
+    if(!temp.isValid()){
+        SEQ64::say("No index entry for audiobank library entry " + String(banknum) + "!");
+        return ValueTree();
+    }
+    if(sublistname == "Instruments"){
+        return temp.getOrCreateChildWithName("instruments", nullptr);
+    }else if(sublistname == "Drums"){
+        return temp.getOrCreateChildWithName("drums", nullptr);
+    }else if(sublistname == "Sound Effects"){
+        return temp.getOrCreateChildWithName("sfx", nullptr);
+    }else{
+        SEQ64::say("getBankSubList error: sublistname = " + sublistname);
+        return ValueTree();
+    }
+}
+
+void AudiobankPane::fillLibItemsBox(){
+    libselitemidx = -1;
+    libselitem = ValueTree();
+    fillLibItemControls();
+    lsmLibItems->clear();
+    lstLibItems->updateContent();
+    ValueTree list = getBankSubList(libselbankidx, cbxLibList->getText());
+    if(!list.isValid()) return;
+    int count = list.getNumChildren();
+    ValueTree temp;
+    for(int i=0; i<count; i++){
+        temp = list.getChild(i);
+        lsmLibItems->add(temp.getProperty("name", "Error").toString());
+    }
+    lstLibItems->updateContent();
+}
+
+
+void AudiobankPane::fillLibItemControls(){
+    if(libselitem.isValid()){
+        txtLibItemName->setText(libselitem.getProperty("name", "[unnamed]"), dontSendNotification);
+        String itemtype = cbxLibList->getText();
+        String maptype;
+        if(itemtype == "Instruments"){
+            maptype = libselitem.getProperty("map", "None").toString();
+            if(maptype == "None"){
+                libselitem.setProperty("map", "program", nullptr);
+                maptype = "program";
+            }
+            lblMapPNote->setText("TP", dontSendNotification);
+            optMapProgram->setEnabled(true);
+            optMapDrum->setEnabled(true);
+            if(maptype == "program"){
+                optMapDrum->setToggleState(false, dontSendNotification);
+                optMapProgram->setToggleState(true, dontSendNotification);
+                txtMapPNum->setText(libselitem.getProperty("program", "0").toString(), sendNotification);
+                txtMapPNote->setText(libselitem.getProperty("transpose", "0").toString(), sendNotification);
+                txtMapDS1->setText("", dontSendNotification);
+                txtMapDS2->setText("", dontSendNotification);
+                txtMapDS3->setText("", dontSendNotification);
+                txtMapPNum->setEnabled(true);
+                txtMapPNote->setEnabled(true);
+                lblMapPNote->setEnabled(true);
+                txtMapDS1->setEnabled(false);
+                txtMapDS2->setEnabled(false);
+                txtMapDS3->setEnabled(false);
+                lblMapSplits->setEnabled(false);
+            }else{
+                optMapProgram->setToggleState(false, dontSendNotification);
+                optMapDrum->setToggleState(true, dontSendNotification);
+                txtMapPNum->setText("", dontSendNotification);
+                txtMapPNote->setText("", dontSendNotification);
+                txtMapDS1->setText(libselitem.getProperty("drumsplit1", "38").toString(), sendNotification);
+                txtMapDS2->setText(libselitem.getProperty("drumsplit2", "39").toString(), sendNotification);
+                txtMapDS3->setText(libselitem.getProperty("drumsplit3", "40").toString(), sendNotification);
+                txtMapPNum->setEnabled(false);
+                txtMapPNote->setEnabled(false);
+                lblMapPNote->setEnabled(false);
+                txtMapDS1->setEnabled(true);
+                txtMapDS2->setEnabled(true);
+                txtMapDS3->setEnabled(true);
+                lblMapSplits->setEnabled(true);
+            }
+            return;
+        }else if(itemtype == "Drums"){
+            maptype = libselitem.getProperty("map", "None").toString();
+            if(maptype == "None"){
+                libselitem.setProperty("map", "drum", nullptr);
+                maptype = "drum";
+            }
+            lblMapPNote->setText("Note", dontSendNotification);
+            optMapProgram->setEnabled(true);
+            optMapDrum->setEnabled(true);
+            txtMapDS2->setText("", dontSendNotification);
+            txtMapDS3->setText("", dontSendNotification);
+            txtMapDS2->setEnabled(false);
+            txtMapDS3->setEnabled(false);
+            lblMapSplits->setEnabled(false);
+            if(maptype == "program"){
+                optMapDrum->setToggleState(false, dontSendNotification);
+                optMapProgram->setToggleState(true, dontSendNotification);
+                txtMapPNum->setText(libselitem.getProperty("program", "0").toString(), sendNotification);
+                txtMapPNote->setText(libselitem.getProperty("note", "60").toString(), sendNotification);
+                txtMapDS1->setText("");
+                txtMapPNum->setEnabled(true);
+                txtMapPNote->setEnabled(true);
+                lblMapPNote->setEnabled(true);
+                txtMapDS1->setEnabled(false);
+            }else{
+                optMapProgram->setToggleState(false, dontSendNotification);
+                optMapDrum->setToggleState(true, dontSendNotification);
+                txtMapPNum->setText("", dontSendNotification);
+                txtMapPNote->setText("", dontSendNotification);
+                txtMapDS1->setText(libselitem.getProperty("drum", "38").toString(), sendNotification);
+                txtMapPNum->setEnabled(false);
+                txtMapPNote->setEnabled(false);
+                lblMapPNote->setEnabled(false);
+                txtMapDS1->setEnabled(true);
+            }
+            return;
+        }
+    }
+    txtLibItemName->setText("", dontSendNotification);
+    optMapProgram->setToggleState(false, dontSendNotification);
+    optMapDrum->setToggleState(false, dontSendNotification);
+    txtMapPNum->setText("", dontSendNotification);
+    txtMapPNote->setText("", dontSendNotification);
+    txtMapDS1->setText("", dontSendNotification);
+    txtMapDS2->setText("", dontSendNotification);
+    txtMapDS3->setText("", dontSendNotification);
+    optMapProgram->setEnabled(false);
+    optMapDrum->setEnabled(false);
+    txtMapPNum->setEnabled(false);
+    txtMapPNote->setEnabled(false);
+    txtMapDS1->setEnabled(false);
+    txtMapDS2->setEnabled(false);
+    txtMapDS3->setEnabled(false);
+    lblMapPNote->setEnabled(false);
+    lblMapSplits->setEnabled(false);
+}
+
+
+void AudiobankPane::romDescLoaded(){
+    abfstructsnode = seq64.romdesc.getOrCreateChildWithName("abfstructs", nullptr);
+    cbxAlign->setText(abfstructsnode.getProperty("align", "16"));
+    selstruct = ValueTree();
+    selfield = ValueTree();
+}
+
+void AudiobankPane::gotABI(){
+    abiaddr = -1;
+    abaddr = -1;
+    lsmLibSets->clear();
+    lstLibSets->updateContent();
+    ValueTree knownfilelist = seq64.romdesc.getChildWithName("knownfilelist");
+    if(!knownfilelist.isValid()) return;
+    ValueTree abinode = knownfilelist.getChildWithProperty("type", "Audiobank Index");
+    if(!abinode.isValid()) return;
+    int abiaddress = abinode.getProperty("address", -1);
+    if(abiaddress < 0) return;
+    ValueTree abnode = knownfilelist.getChildWithProperty("type", "Audiobank");
+    if(!abnode.isValid()) return;
+    int abaddress = abnode.getProperty("address", -1);
+    if(abaddress < 0) return;
+    uint16 bankcount;
+    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+        bankcount = seq64.rom.readHalfWord(abiaddress);
+    }else{
+        bankcount = seq64.rom.readHalfWord(abiaddress+2);
+    }
+    if(bankcount > 1000 || bankcount <= 0) return;
+    ValueTree temp;
+    ValueTree abindexnode = seq64.romdesc.getChildWithName("audiobankidx");
+    if(!abindexnode.isValid()) return;
+    String bankname;
+    for(int i=0; i<bankcount; i++){
+        temp = abindexnode.getChildWithProperty("index", i);
+        if(temp.isValid()){
+            bankname = temp.getProperty("name", "Error");
+        }else{
+            bankname = "[unnamed]";
+        }
+        bankname = ROM::hex((uint8)i) + ": " + bankname;
+        lsmLibSets->add(bankname);
+    }
+    lstLibSets->updateContent();
+    abiaddr = abiaddress;
+    abaddr = abaddress;
+}
+
+void AudiobankPane::bankLoaded(){
+    if(seq64.bank == nullptr){
+        bpath = ValueTree();
+    }else{
+        bpath = seq64.bank->d;
+    }
+    fillBItemsBox();
+}
+
+
+void AudiobankPane::fillBItemsBox(){
+    lsmBItems->clear();
+    lstBItems->updateContent();
+    bselnode = ValueTree();
+    if(!bpath.isValid()) return;
+    int count = bpath.getNumChildren();
+    ValueTree temp;
+    String name;
+    for(int i=0; i<count; i++){
+        temp = bpath.getChild(i);
+        name = temp.getType().toString();
+        if(name == "struct" || name == "field" || name == "item"){
+            name = temp.getProperty("name", "[unnamed]");
+        }
+        lsmBItems->add(String(i) + ", " + name);
+    }
+    lstBItems->updateContent();
+    //Write path
+    String pathname = "/";
+    temp = bpath;
+    while(true){
+        if(!temp.getParent().isValid()) break;
+        if(temp.getParent().getNumChildren() == 1 && temp.getType().toString() == "struct"){
+            temp = temp.getParent();
+        }
+        name = temp.getType().toString();
+        if(name == "struct" || name == "field" || name == "item"){
+            name = temp.getProperty("name", "[unnamed]");
+        }
+        pathname = "/" + String(temp.getParent().indexOf(temp)) + ", " + name + pathname;
+        temp = temp.getParent();
+    }
+    lblBankPath->setText(pathname, dontSendNotification);
+}
+
+void AudiobankPane::fillBItemsControls(){
+    if(!bselnode.isValid()) return;
+    //TODO
+}
+
 
 
 //[/MiscUserCode]
@@ -1075,9 +1560,14 @@ BEGIN_JUCER_METADATA
 
 <JUCER_COMPONENT documentType="Component" className="AudiobankPane" componentName=""
                  parentClasses="public Component, public TextEditor::Listener, public TextListModel::Listener"
-                 constructorParams="AppProps&amp; props" variableInitialisers="p(props)"
+                 constructorParams="SEQ64&amp; seq64_" variableInitialisers="seq64(seq64_)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
                  fixedSize="0" initialWidth="600" initialHeight="400">
+  <METHODS>
+    <METHOD name="visibilityChanged()"/>
+    <METHOD name="broughtToFront()"/>
+    <METHOD name="focusGained (FocusChangeType cause)"/>
+  </METHODS>
   <BACKGROUND backgroundColour="ffffffff">
     <RECT pos="17 240 2 24" fill="solid: ff000000" hasStroke="0"/>
     <RECT pos="209 240 2 44" fill="solid: ff000000" hasStroke="0"/>
@@ -1193,86 +1683,118 @@ BEGIN_JUCER_METADATA
          edBkgCol="0" labelText="Instrument sets:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="af42cc8c5364c322" memberName="textEditor"
-              virtualName="" explicitFocusOrder="0" pos="456 40 240 296" initialText=""
-              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
-              caret="1" popupmenu="1"/>
   <COMBOBOX name="new combo box" id="dc4b63bcb4d73721" memberName="cbxLibList"
             virtualName="" explicitFocusOrder="0" pos="704 16 240 24" editable="0"
             layout="33" items="Instruments&#10;Drums&#10;Sound Effects" textWhenNonSelected=""
             textWhenNoItems="(no choices)"/>
-  <TEXTEDITOR name="new text editor" id="1d4c699033842e31" memberName="textEditor2"
-              virtualName="" explicitFocusOrder="0" pos="704 40 240 248" initialText=""
-              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
-              caret="1" popupmenu="1"/>
-  <TEXTBUTTON name="new button" id="cc887378f0c65b1f" memberName="textButton"
+  <TEXTBUTTON name="new button" id="cc887378f0c65b1f" memberName="txtLibAdd"
               virtualName="" explicitFocusOrder="0" pos="704 312 168 24" buttonText="Add to Loaded Inst Set"
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="7ab82fcc4f2fe341" memberName="label8" virtualName=""
-         explicitFocusOrder="0" pos="704 288 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="704 240 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="1107c1605bcdd6fe" memberName="txtLibItemName"
-              virtualName="" explicitFocusOrder="0" pos="760 288 182 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="760 240 182 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
-  <TOGGLEBUTTON name="new toggle button" id="35162d8ea694d708" memberName="toggleButton"
+  <TOGGLEBUTTON name="new toggle button" id="35162d8ea694d708" memberName="chkLibMerge"
                 virtualName="" explicitFocusOrder="0" pos="880 312 64 24" buttonText="Merge"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
-  <COMBOBOX name="new combo box" id="fdc8bf6df2be26a5" memberName="cbxBItems"
-            virtualName="" explicitFocusOrder="0" pos="48 384 200 24" editable="0"
-            layout="33" items="List of Instruments&#10;List of Drums&#10;List of SFX&#10;List of PatchProps&#10;List of Samples&#10;List of ALADPCMBooks&#10;List of ALADPCMLoops&#10;Bank's ABIndexEntry&#10;Bank's ABHeader&#10;Bank's ABBank&#10;Bank's ABDrumList&#10;Bank's ABSFXList"
-            textWhenNonSelected="" textWhenNoItems="(no choices)"/>
-  <LABEL name="new label" id="fca8e093e749e72d" memberName="label9" virtualName=""
-         explicitFocusOrder="0" pos="8 384 40 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Edit:" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="5b9ec0c75821be89" memberName="lblBSize"
-         virtualName="" explicitFocusOrder="0" pos="8 360 128 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Size XXXX bytes" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="d41cc744fa0fe0f0" memberName="PH_lstBItems"
-              virtualName="" explicitFocusOrder="0" pos="8 408 240 224" initialText=""
-              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
-              caret="1" popupmenu="1"/>
   <TEXTBUTTON name="new button" id="95b805434c056546" memberName="btnBItemAdd"
-              virtualName="" explicitFocusOrder="0" pos="8 632 40 24" buttonText="Add"
-              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="256 384 48 24" buttonText="New"
+              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="5437999e821d0f9" memberName="btnBItemDel"
-              virtualName="" explicitFocusOrder="0" pos="48 632 40 24" buttonText="Del"
-              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="256 432 48 24" buttonText="Del"
+              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="53c617d9b6236e17" memberName="btnBItemUp"
-              virtualName="" explicitFocusOrder="0" pos="168 632 40 24" buttonText="Up"
-              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="256 472 48 24" buttonText="Up"
+              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="7aa4ba34a22a9127" memberName="btnBItemDn"
-              virtualName="" explicitFocusOrder="0" pos="208 632 40 24" buttonText="Dn"
-              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
-  <LABEL name="new label" id="ede4922f8220d0ea" memberName="label11" virtualName=""
-         explicitFocusOrder="0" pos="256 360 240 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Item Fields:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
+              virtualName="" explicitFocusOrder="0" pos="256 496 48 24" buttonText="Dn"
+              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="fedcaca14cadb7e6" memberName="label12" virtualName=""
-         explicitFocusOrder="0" pos="8 656 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="312 384 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="789b2d42c36319de" memberName="txtBItemName"
-              virtualName="" explicitFocusOrder="0" pos="64 656 184 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="368 384 184 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <COMBOBOX name="new combo box" id="624a2f6acff61c45" memberName="cbxAlign"
             virtualName="" explicitFocusOrder="0" pos="304 16 56 24" editable="0"
             layout="33" items="4&#10;8&#10;16" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
-  <TEXTBUTTON name="new button" id="b2b74c8108c51241" memberName="btnBMergeAll"
-              virtualName="" explicitFocusOrder="0" pos="144 360 104 24" buttonText="Merge All"
-              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="b4f552bc87690c64" memberName="btnBItemDupl"
-              virtualName="" explicitFocusOrder="0" pos="104 632 48 24" buttonText="Dupl"
+              virtualName="" explicitFocusOrder="0" pos="256 408 48 24" buttonText="Dupl"
+              connectedEdges="12" needsCallback="1" radioGroupId="0"/>
+  <TOGGLEBUTTON name="new toggle button" id="904c1638347d6b92" memberName="optMapProgram"
+                virtualName="" explicitFocusOrder="0" pos="704 264 80 24" buttonText="Program"
+                connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
+  <TEXTEDITOR name="new text editor" id="227ca9d9d19fce14" memberName="txtMapPNum"
+              virtualName="" explicitFocusOrder="0" pos="784 264 40 24" initialText=""
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="854c1c31c216fbd4" memberName="lblMapPNote"
+         virtualName="" explicitFocusOrder="0" pos="824 264 40 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Note" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="1b089dc42c9d6221" memberName="txtMapPNote"
+              virtualName="" explicitFocusOrder="0" pos="864 264 40 24" initialText=""
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
+  <TOGGLEBUTTON name="new toggle button" id="7148b75cbf658edc" memberName="optMapDrum"
+                virtualName="" explicitFocusOrder="0" pos="704 288 64 24" buttonText="Drum"
+                connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
+  <TEXTEDITOR name="new text editor" id="aa19384ec690042a" memberName="txtMapDS1"
+              virtualName="" explicitFocusOrder="0" pos="784 288 40 24" initialText=""
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
+  <TEXTEDITOR name="new text editor" id="ba5cd49f38ff9d0a" memberName="txtMapDS2"
+              virtualName="" explicitFocusOrder="0" pos="824 288 40 24" initialText=""
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
+  <TEXTEDITOR name="new text editor" id="2428146ebfbcaaae" memberName="txtMapDS3"
+              virtualName="" explicitFocusOrder="0" pos="864 288 40 24" initialText=""
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="5cfefa37bdad5f80" memberName="lblMapSplits"
+         virtualName="" explicitFocusOrder="0" pos="904 288 40 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="splits" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
+  <TEXTBUTTON name="new button" id="79caca2ca761ed63" memberName="btnBUp" virtualName=""
+              explicitFocusOrder="0" pos="8 360 40 24" buttonText="Up" connectedEdges="2"
+              needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="5fca6cb4978a26b3" memberName="btnBOpen"
+              virtualName="" explicitFocusOrder="0" pos="256 656 48 24" buttonText="Open"
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
+  <LABEL name="new label" id="526cc3ce776cdcc3" memberName="lblBankPath"
+         virtualName="" explicitFocusOrder="0" pos="48 360 896 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="/" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
+  <LABEL name="new label" id="2a46dd8fc6577eaa" memberName="lblBItemType"
+         virtualName="" explicitFocusOrder="0" pos="312 408 240 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Type:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
+  <LABEL name="new label" id="5ea115b1228245fe" memberName="label10" virtualName=""
+         explicitFocusOrder="0" pos="312 432 56 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Value:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="7218c1b05111775d" memberName="txtBItemValue"
+              virtualName="" explicitFocusOrder="0" pos="368 432 72 24" initialText=""
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="e1fb93f0e1d42150" memberName="lblBItemValueEquiv"
+         virtualName="" explicitFocusOrder="0" pos="368 456 184 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="()" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

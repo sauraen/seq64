@@ -1,18 +1,32 @@
 /*
-  ==============================================================================
-
-    MainComponent.h
-    Created: 13 Nov 2014 9:25:30am
-    Author:  Sauraen
-
-  ==============================================================================
+ * ============================================================================
+ *
+ * MainComponent.h
+ * GUI component that holds the menus, tabs, etc. and performs menu functions
+ * 
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2015 Sauraen
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
 */
 
 #ifndef MAINCOMPONENT_H_INCLUDED
 #define MAINCOMPONENT_H_INCLUDED
 
 #include "JuceHeader.h"
-#include "AppProps.h"
+#include "seq64.h"
 #include "yaz0_yay0.h"
 
 class FilesPane;
@@ -29,7 +43,7 @@ class MainComponent    : public Component,
                          public MenuBarModel
 {
 public:
-    MainComponent(DocumentWindow& window_);
+    MainComponent(SEQ64& seq64_, DocumentWindow& window_);
     ~MainComponent();
     
     StringArray getMenuBarNames() override;
@@ -49,11 +63,11 @@ public:
     void onRomDescLoaded();
     void onSeqLoaded();
     void onBankLoaded();
+    void onGotABI();
 
 private:
+    SEQ64& seq64;
     DocumentWindow& window;
-    AppProps p;
-    File mainfolder;
     File romfile;
     File romdescfile;
     
