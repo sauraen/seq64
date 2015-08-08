@@ -102,7 +102,7 @@ void SEQ64::initialise (const String& commandLine) {
     String param;
     bool alldone = false;
     for(int i=0; i<cmdparams.size(); i++){
-        param = cmdparams[i];
+        param = cmdparams[i].unquoted();
         if(param.startsWithIgnoreCase("--rom=")){
             rompath = param.substring(6);
         }else if(param.startsWithIgnoreCase("-rom=")){
