@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="W0F67O" name="seq64" projectType="guiapp" version="1.0.0"
               bundleIdentifier="com.yourcompany.seq64" includeBinaryInAppConfig="1"
-              jucerVersion="3.1.0">
+              jucerVersion="3.2.0">
   <MAINGROUP id="wZlCL9" name="seq64">
     <GROUP id="{8B7F61C6-5972-43BB-094D-97D2AB9C966F}" name="Source">
       <FILE id="mglZ3y" name="AudiobankPane.cpp" compile="1" resource="0"
@@ -61,13 +61,15 @@
     <VS2013 targetFolder="Builds/VisualStudio2013">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug32" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="1" optimisation="1" alwaysGenerateDebugSymbols="1" targetName="seq64"/>
+                       isDebug="1" optimisation="1" alwaysGenerateDebugSymbols="1" targetName="seq64"
+                       defines="_CONSOLE=true"/>
         <CONFIGURATION name="Debug64" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                       isDebug="1" optimisation="1" alwaysGenerateDebugSymbols="1" targetName="seq64"/>
+                       isDebug="1" optimisation="1" alwaysGenerateDebugSymbols="1" targetName="seq64"
+                       defines="_CONSOLE=true"/>
         <CONFIGURATION name="Release32" winWarningLevel="4" generateManifest="0" winArchitecture="32-bit"
-                       optimisation="2" targetName="seq64"/>
+                       optimisation="2" targetName="seq64" defines="_CONSOLE=true"/>
         <CONFIGURATION name="Release64" winWarningLevel="4" generateManifest="0" winArchitecture="x64"
-                       optimisation="2" targetName="seq64"/>
+                       optimisation="2" targetName="seq64" defines="_CONSOLE=true"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_gui_extra" path="C:\Users\Public\Juce\modules\"/>
