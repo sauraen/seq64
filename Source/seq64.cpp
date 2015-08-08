@@ -29,9 +29,10 @@
 #include "n64checksum.h"
 
 void SEQ64::say(const String& text){
-    fputs(text.toRawUTF8(), stdout);
+    std::cout << text.toRawUTF8() << "\n";
+    /*fputs(text.toRawUTF8(), stdout);
     fputs("\n", stdout);
-    fflush(stdout);
+    fflush(stdout);*/
 }
 
 void SEQ64::writeProperty(Identifier name, String value){
@@ -134,8 +135,8 @@ void SEQ64::initialise (const String& commandLine) {
         return;
     }
     //Check parameters
-    File romfile = File::getCurrentWorkingDirectory().getChildFile(rompath);
-    File romdescfile = File::getCurrentWorkingDirectory().getChildFile(romdescpath);
+    romfile = File::getCurrentWorkingDirectory().getChildFile(rompath);
+    romdescfile = File::getCurrentWorkingDirectory().getChildFile(romdescpath);
     File outputfile = File::getCurrentWorkingDirectory().getChildFile(outputpath);
     if(rompath != "" && !romfile.existsAsFile()){
         say("Could not find ROM file " + rompath);
@@ -187,7 +188,7 @@ void SEQ64::initialise (const String& commandLine) {
     }
     //Load ROM and RomDesc
     if(rompath != ""){
-        if(!loadROM(romfile)){
+        if(!loadROM()){
             quit();
             return;
         }
@@ -198,7 +199,7 @@ void SEQ64::initialise (const String& commandLine) {
         }
     }
     if(romdescpath != ""){
-        if(!loadRomDesc(romdescfile)){
+        if(!loadRomDesc()){
             quit();
             return;
         }
@@ -219,7 +220,7 @@ void SEQ64::initialise (const String& commandLine) {
     mainWindow = new MainWindow(*this);
 }
 
-bool SEQ64::loadROM(File romfile){
+bool SEQ64::loadROM(){
     say("Loading 0x" + ROM::hex((uint32)romfile.getSize())
             + " bytes from " + romfile.getFullPathName());
     rom.reset();
@@ -243,7 +244,7 @@ bool SEQ64::loadROM(File romfile){
     return true;
 }
 
-bool SEQ64::loadRomDesc(File romdescfile){
+bool SEQ64::loadRomDesc(){
     say("Loading XML ROM description parameters (RomDesc)");
     ScopedPointer<XmlElement> xml;
     xml = XmlDocument::parse(romdescfile);

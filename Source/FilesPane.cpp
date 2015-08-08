@@ -7,12 +7,12 @@
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
   and re-saved.
 
-  Created with Introjucer version: 3.1.0
+  Created with Introjucer version: 3.2.0
 
   ------------------------------------------------------------------------------
 
   The Introjucer is part of the JUCE library - "Jules' Utility Class Extensions"
-  Copyright 2004-13 by Raw Material Software Ltd.
+  Copyright (c) 2015 - ROLI Ltd.
 
   ==============================================================================
 */
@@ -57,6 +57,9 @@
 FilesPane::FilesPane (SEQ64& seq64_)
     : seq64(seq64_)
 {
+    //[Constructor_pre] You can add your own custom stuff here..
+    //[/Constructor_pre]
+
     addAndMakeVisible (groupComponent = new GroupComponent ("new group",
                                                             TRANS("Master File Table")));
 
@@ -390,6 +393,8 @@ FilesPane::FilesPane (SEQ64& seq64_)
 
 
     //[Constructor] You can add your own custom stuff here..
+    ftaddr = 0;
+    ftend = 0;
     dataaddr = -1;
     abi_addr = -1;
     asi_addr = -1;
@@ -468,6 +473,9 @@ void FilesPane::paint (Graphics& g)
 
 void FilesPane::resized()
 {
+    //[UserPreResize] Add your own custom resize code here..
+    //[/UserPreResize]
+
     groupComponent->setBounds (0, 0, 336, 368);
     label->setBounds (8, 16, 72, 24);
     txtFTAddr->setBounds (80, 16, 80, 24);
@@ -885,6 +893,7 @@ String FilesPane::getFileDescription(uint32 a, int i){
 
 void FilesPane::fillFileTable(){
     lsmFileTable->clear();
+    lstFileTable->updateContent();
     if(ftaddr == 0 || ftend <= ftaddr || ftend - ftaddr >= 0x10000){
         lstFileTable->updateContent();
         return;

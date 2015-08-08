@@ -642,6 +642,9 @@ void AudiobankPane::paint (Graphics& g)
 
 void AudiobankPane::resized()
 {
+    //[UserPreResize] Add your own custom resize code here..
+    //[/UserPreResize]
+
     groupComponent2->setBounds (448, 0, 504, 344);
     groupComponent3->setBounds (0, 344, 952, 344);
     groupComponent->setBounds (0, 0, 448, 344);

@@ -115,27 +115,27 @@ PopupMenu MainComponent::getMenuForIndex(int topLevelMenuIndex, const String &me
 }
 
 void MainComponent::actuallySaveROM(){
-    if(!romfile.hasWriteAccess()) return;
+    if(!seq64.romfile.hasWriteAccess()) return;
     UpdateCRC(seq64.rom);
     SEQ64::say("Saving 0x" + ROM::hex((uint32)seq64.rom.getSize())
-            + " bytes to " + romfile.getFullPathName());
-    if(!romfile.replaceWithData(seq64.rom.getData(), (int)seq64.rom.getSize())){
-        SEQ64::say("Error: could not write file " + romfile.getFullPathName() + "!");
+            + " bytes to " + seq64.romfile.getFullPathName());
+    if(!seq64.romfile.replaceWithData(seq64.rom.getData(), (int)seq64.rom.getSize())){
+        SEQ64::say("Error: could not write file " + seq64.romfile.getFullPathName() + "!");
         return;
     }
-    SEQ64::say("Successfully saved 0x" + ROM::hex((uint32)romfile.getSize()) + " bytes");
+    SEQ64::say("Successfully saved 0x" + ROM::hex((uint32)seq64.romfile.getSize()) + " bytes");
 }
 void MainComponent::actuallySaveRomDesc(){
     SEQ64::say("Saving XML ROM description parameters");
     ScopedPointer<XmlElement> xml;
     xml = seq64.romdesc.createXml();
     if(xml != nullptr){
-        if(xml->writeToFile(romdescfile, "<!-- seq64 ROM Description File -->")){
+        if(xml->writeToFile(seq64.romdescfile, "<!-- seq64 ROM Description File -->")){
             SEQ64::say("Successfully saved");
             return;
         }
     }
-    SEQ64::say("Error: could not write file " + romdescfile.getFullPathName() + "!");
+    SEQ64::say("Error: could not write file " + seq64.romdescfile.getFullPathName() + "!");
     return;
 }
 
@@ -144,18 +144,18 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         //ROM::Load...
         FileChooser box("Select a ROM to load...", SEQ64::readFolderProperty("romfolder"), "*.z64;*.v64;*.n64");
         if(box.browseForFileToOpen()){
-            romfile = box.getResult();
-            if(!romfile.existsAsFile()){
-                SEQ64::say("File " + romfile.getFullPathName() + " does not exist!");
-                romfile = "";
+            seq64.romfile = box.getResult();
+            if(!seq64.romfile.existsAsFile()){
+                SEQ64::say("File " + seq64.romfile.getFullPathName() + " does not exist!");
+                seq64.romfile = "";
                 seq64.rom.reset();
                 return;
             }
             //Save what folder you're in
-            SEQ64::writeProperty("romfolder", romfile.getParentDirectory().getFullPathName());
+            SEQ64::writeProperty("romfolder", seq64.romfile.getParentDirectory().getFullPathName());
             //Load ROM
-            if(!seq64.loadROM(romfile)){
-                romfile = File::nonexistent;
+            if(!seq64.loadROM()){
+                seq64.romfile = File::nonexistent;
                 return;
             }
             while(FindCIC(seq64.rom) < 0){
@@ -189,11 +189,11 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
             SEQ64::say("No ROM to save!");
             return;
         }
-        if(!romfile.exists()){
+        if(!seq64.romfile.exists()){
             menuItemID = 3; //Save As instead!
         }else{
             if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
-                    "Overwrite?", "Save over " + romfile.getFileName() + "?", nullptr, nullptr)) return;
+                    "Overwrite?", "Save over " + seq64.romfile.getFileName() + "?", nullptr, nullptr)) return;
             actuallySaveROM();
             return;
         }
@@ -204,10 +204,10 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
             SEQ64::say("No ROM to save!");
             return;
         }
-        File newsavelocation = (romfile.exists() ? romfile : SEQ64::readFolderProperty("romfolder"));
+        File newsavelocation = (seq64.romfile.exists() ? seq64.romfile : SEQ64::readFolderProperty("romfolder"));
         String extension;
-        if(romfile.exists()){
-            extension = romfile.getFileExtension();
+        if(seq64.romfile.exists()){
+            extension = seq64.romfile.getFileExtension();
         }else{
             switch(seq64.rom.byteOrdering){
                 case ROM::ABCD: extension = ".z64"; break;
@@ -229,7 +229,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         }else{
             return;
         }
-        romfile = newsavelocation;
+        seq64.romfile = newsavelocation;
         actuallySaveROM();
         return;
     }else if(menuItemID == 4){
@@ -240,17 +240,17 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         //RomDesc::Load...
         FileChooser box("Select a ROM description file to load...", SEQ64::readFolderProperty("romdescfolder"), "*.xml");
         if(box.browseForFileToOpen()){
-            romdescfile = box.getResult();
-            if(!romdescfile.existsAsFile()){
-                SEQ64::say("File " + romdescfile.getFullPathName() + " does not exist!");
-                romdescfile = File::nonexistent;
+            seq64.romdescfile = box.getResult();
+            if(!seq64.romdescfile.existsAsFile()){
+                SEQ64::say("File " + seq64.romdescfile.getFullPathName() + " does not exist!");
+                seq64.romdescfile = File::nonexistent;
                 return;
             }
             //Save what folder you're in
-            SEQ64::writeProperty("romdescfolder", romdescfile.getParentDirectory().getFullPathName());
+            SEQ64::writeProperty("romdescfolder", seq64.romdescfile.getParentDirectory().getFullPathName());
             //Load XML
-            if(!seq64.loadRomDesc(romdescfile)){
-                romdescfile = File::nonexistent;
+            if(!seq64.loadRomDesc()){
+                seq64.romdescfile = File::nonexistent;
                 return;
             }
             onRomDescLoaded();
@@ -259,7 +259,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         return;
     }else if(menuItemID == 12){
         //RomDesc::Save
-        if(romdescfile.exists()){
+        if(seq64.romdescfile.exists()){
             actuallySaveRomDesc();
         }else{
             SEQ64::say("No file to save to!");
@@ -268,8 +268,8 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
     }else if(menuItemID == 13){
         //RomDesc::Save As...
         File newsavelocation = File::getSpecialLocation(File::userHomeDirectory);
-        if(romdescfile.exists()){
-            newsavelocation = romdescfile.getParentDirectory();
+        if(seq64.romdescfile.exists()){
+            newsavelocation = seq64.romdescfile.getParentDirectory();
         }
         FileChooser box("Save As", newsavelocation, "*.xml");
         if(box.browseForFileToSave(true)){
@@ -281,7 +281,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
             if(newsavelocation.getFileExtension() == ""){
                 newsavelocation = newsavelocation.withFileExtension(".xml");
             }
-            romdescfile = newsavelocation;
+            seq64.romdescfile = newsavelocation;
             actuallySaveRomDesc();
         }else{
             return;
@@ -341,7 +341,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
 }
 
 void MainComponent::queryByteOrdering(){
-    if(!romfile.exists() || seq64.rom.getSize() == 0){
+    if(!seq64.romfile.exists() || seq64.rom.getSize() == 0){
         SEQ64::say("No ROM loaded!");
         NativeMessageBox::showMessageBox (AlertWindow::InfoIcon, "Byte Ordering",
                 "No ROM loaded!");

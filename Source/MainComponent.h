@@ -68,8 +68,6 @@ public:
 private:
     SEQ64& seq64;
     DocumentWindow& window;
-    File romfile;
-    File romdescfile;
     
     StringArray menunames;
     OwnedArray<PopupMenu> menus;

@@ -41,8 +41,8 @@ public:
     
     SEQ64();
     
-    bool loadROM(File romfile);
-    bool loadRomDesc(File romdescfile);
+    bool loadROM();
+    bool loadRomDesc();
 
     const String getApplicationName() override { return ProjectInfo::projectName; }
     const String getApplicationVersion() override { return ProjectInfo::versionString; }
@@ -65,6 +65,8 @@ public:
     //Public fields
     ROM rom;
     ValueTree romdesc;
+    File romfile;
+    File romdescfile;
     ScopedPointer<SeqFile> seq;
     ScopedPointer<BankFile> bank;
     MainComponent* maincomponent;

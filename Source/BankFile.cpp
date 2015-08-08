@@ -321,6 +321,7 @@ bool BankFile::load(ROM& rom, int banknum){
     loadElementList(rom, baseaddr, bank_length, "aladpcmbooks", "ALADPCMBook");
     loadElementList(rom, baseaddr, bank_length, "aladpcmloops", "ALADPCMLoop");
     SEQ64::say("Done loading bank!");
+    return true;
 }
 bool BankFile::save(ROM& rom, int banknum){
     //TODO
