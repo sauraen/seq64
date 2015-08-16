@@ -90,33 +90,32 @@ ValueTree BankFile::getCopyOfTemplate(String name){
 }
 
 /**
- * For a list within d with the given name, check if an item exists with the
+ * For a given list within d, check if an item exists with the
  * given address. If it doesn't exist, create it. In either case, write back the
  * index within that list of the found/created item to the given node.
  */
-void BankFile::checkAddListItem(String listname, int addressval, ValueTree node){
+void BankFile::checkAddListItem(ValueTree list, int addressval, ValueTree node){
     if(addressval == 0){
         SEQ64::say("Error: trying to add nullptr list item!");
         return;
     }
-    ValueTree dstru = d.getChildWithName(listname);
-    ValueTree sub = dstru.getChildWithProperty("address", addressval);
-    int dstruindex;
+    ValueTree sub = list.getChildWithProperty("address", addressval);
+    int listindex;
     if(sub.isValid()){
-        dstruindex = dstru.indexOf(sub);
+        listindex = list.indexOf(sub);
     }else{
         sub = ValueTree("item");
         sub.setProperty("address", addressval, nullptr);
-        dstruindex = dstru.getNumChildren();
-        dstru.addChild(sub, dstruindex, nullptr);
+        listindex = list.getNumChildren();
+        list.addChild(sub, listindex, nullptr);
     }
-    node.setProperty("index", dstruindex, nullptr);
+    node.setProperty("index", listindex, nullptr);
     //Get item name from rdnamesnode
-    ValueTree nnlist = rdnamesnode.getOrCreateChildWithName(listname, nullptr);
-    ValueTree nnitem = nnlist.getChildWithProperty("index", dstruindex);
+    ValueTree nnlist = rdnamesnode.getOrCreateChildWithName(list.getType().toString(), nullptr);
+    ValueTree nnitem = nnlist.getChildWithProperty("index", listindex);
     if(!nnitem.isValid()){
         nnitem = ValueTree("item");
-        nnitem.setProperty("index", dstruindex, nullptr);
+        nnitem.setProperty("index", listindex, nullptr);
         nnitem.setProperty("name", "[unnamed]", nullptr);
         nnlist.addChild(nnitem, -1, nullptr);
     }
@@ -158,6 +157,28 @@ void BankFile::loadElementList(ROM& rom, uint32 baseaddr, int bank_length, Strin
             SEQ64::say("Reading " + elementname + " index " + String(i) + " from " + listname + " failed");
             return;
         }
+    }
+}
+
+ValueTree BankFile::getListForPointer(String pointertype){
+    if(pointertype == "ABDrumList"){
+        return d.getChildWithName("abdrumlist");
+    }else if(pointertype == "ABSFXList"){
+        return d.getChildWithName("absfxlist");
+    }else if(pointertype == "ABInstrument"){
+        return d.getChildWithName("instruments");
+    }else if(pointertype == "ABDrum"){
+        return d.getChildWithName("drums");
+    }else if(pointertype == "ABPatchProps"){
+        return d.getChildWithName("patchprops");
+    }else if(pointertype == "ABSample"){
+        return d.getChildWithName("samples");
+    }else if(pointertype == "ALADPCMBook"){
+        return d.getChildWithName("aladpcmbooks");
+    }else if(pointertype == "ALADPCMLoop"){
+        return d.getChildWithName("aladpcmloops");
+    }else{
+        return ValueTree();
     }
 }
 
@@ -208,7 +229,7 @@ bool BankFile::load(ROM& rom, int banknum){
     }
     //Init
     uint32 a, baseaddr;
-    int strsize, i, count;
+    int strsize;
     ValueTree stru, item;
     reset();
     //========================================================================
@@ -339,7 +360,6 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
     int arraylenfixed;
     uint32 a = addr;
     int val;
-    int dstruindex;
     int arraycount, arraymax;
     for(int i=0; i<count; i++){
         field = stru.getChild(i);
@@ -387,6 +407,8 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
                 if(arraycount >= arraymax) break;
                 fieldelement = ValueTree("element");
                 fieldelement.setProperty("datatype", datatype, nullptr);
+                fieldelement.setProperty("ispointer", ispointer, nullptr);
+                if(ispointer) fieldelement.setProperty("ptrto", ptrto, nullptr);
                 field.addChild(fieldelement, -1, nullptr);
             }else{
                 arrayloopflag = false;
@@ -423,31 +445,18 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
             fieldelement.setProperty("value", val, nullptr);
             //Meaning
             if(ispointer && val != 0){
-                if(ptrto == "ABHeader"){
-                    //do nothing
-                }else if(ptrto == "ABDrumList"){
-                    dstru = d.getChildWithName("abdrumlist");
-                    dstru.setProperty("address", val, nullptr);
-                }else if(ptrto == "ABSFXList"){
-                    dstru = d.getChildWithName("absfxlist");
-                    dstru.setProperty("address", val, nullptr);
-                }else if(ptrto == "ABInstrument"){
-                    checkAddListItem("instruments", val, field);
-                }else if(ptrto == "ABDrum"){
-                    checkAddListItem("drums", val, field);
-                }else if(ptrto == "ABPatchProps"){
-                    checkAddListItem("patchprops", val, field);
-                }else if(ptrto == "ABSample"){
-                    checkAddListItem("samples", val, field);
-                }else if(ptrto == "ATSample"){
-                    //do nothing
-                }else if(ptrto == "ALADPCMBook"){
-                    checkAddListItem("aladpcmbooks", val, field);
-                }else if(ptrto == "ALADPCMLoop"){
-                    checkAddListItem("aladpcmloops", val, field);
-                }else{
-                    SEQ64::say("Invalid pointer type " + ptrto + "!");
-                    return -1;
+                dstru = getListForPointer(ptrto);
+                if(dstru.isValid()){
+                    if(ptrto == "ABDrumList" || ptrto == "ABSFXList"){
+                        if(dstru.hasProperty("address")){
+                            SEQ64::say("Multiple pointers to " + ptrto + ", changing address from " 
+                                    + dstru.getProperty("address", "Error").toString() + " to "
+                                    + String(val) + "!");
+                        }
+                        dstru.setProperty("address", val, nullptr);
+                    }else{
+                        checkAddListItem(dstru, val, fieldelement);
+                    }
                 }
             }
             if(meaning == "NUM_INST" || meaning == "NUM_DRUM" || meaning == "NUM_SFX"){
@@ -480,6 +489,546 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
     }
     return len;
 }
+
+String BankFile::getFieldDesc(ValueTree field, bool cformatting){
+    if(!field.isValid()) return "Error!";
+    String desc = String();
+    if(cformatting) desc = "  ";
+    String datatype = field.getProperty("datatype", "ErrorType");
+    if((bool)field.getProperty("ispointer", false)){
+        String ptrto = field.getProperty("ptrto", "ErrorType");
+        if(datatype == "uint32" || datatype == "int32"){
+            desc += ptrto + "*";
+        }else{
+            desc += "(" + datatype + ")(" + ptrto + "*)";
+        }
+    }else{
+        desc += datatype;
+    }
+    desc += " ";
+    desc += field.getProperty("name", "").toString();
+    if((bool)field.getProperty("isarray", false)){
+        if(field.hasProperty("arraylenfixed")){
+            desc += "[0x" + ROM::hex((uint8)(int)field.getProperty("arraylenfixed", 0)) + "]";
+        }else{
+            desc += "[" + field.getProperty("arraylenvar", "Error").toString() + "]";
+        }
+    }
+    if(field.hasProperty("defaultval")){
+        desc += " = 0x" + String::toHexString((int)field.getProperty("defaultval"));
+    }
+    if(cformatting) desc += ";";
+    String meaning = field.getProperty("meaning", "None").toString();
+    if(meaning != "None"){
+        if(cformatting){
+            desc += " //" + meaning;
+        }else{
+            desc += "(" + meaning + ")";
+        }
+    }
+    return desc;
+}
+String BankFile::getNodeDesc(ValueTree node){
+    if(!node.isValid()) return "Error!";
+    String type = node.getType().toString();
+    ValueTree parent = node.getParent();
+    if(parent.isValid()){
+        if(type == "struct" && parent.getNumChildren() == 1){
+            return getNodeDesc(parent);
+        }else if(type == "item"){
+            String parenttype = parent.getType().toString();
+            if(parenttype == "instruments" || parenttype == "drums" || parenttype == "sfx" || parenttype == "patchprops"
+                    || parenttype == "samples" || parenttype == "aladpcmbooks" || parenttype == "aladpcmloops"){
+                return String(parent.indexOf(node)) + ". " + node.getProperty("name", "Error!").toString();
+            }
+        }
+    }
+    if((bool)node.getProperty("ispointer", false)){
+        NodeValueInfo ni = getNodeValueInfo(node, false);
+        if(ni.valueeditable){
+            String ret;
+            if(ni.valueequiv == "nullptr"){
+                ret = " = nullptr;";
+            }else{
+                ret = " = &" + node.getProperty("ptrto", "Error!").toString() + "[" + ni.value + "]; //" + ni.valueequiv;
+            }
+            if(type == "element"){
+                return parent.getProperty("name", "Error!").toString() + "[" + String(parent.indexOf(node)) + "]" + ret;
+            }
+            if(type == "field"){
+                return node.getProperty("name", "Error!").toString() + ret;
+            }
+        }
+    }
+    if(node.hasProperty("name")){
+        return node.getProperty("name", "Error!").toString();
+    }
+    if(type == "field" || type == "element"){
+        return getFieldDesc(node, false);
+    }else{
+        return type;
+    }
+}
+String BankFile::getNodeName(ValueTree node){
+    if(!node.isValid()) return "Error!";
+    return node.getProperty("name", "").toString();
+}
+bool BankFile::isNodeNameEditable(ValueTree node){
+    if(!node.isValid()) return false;
+    return (node.getType().toString() == "item");
+}
+bool BankFile::setNodeName(ValueTree node, String name){
+    if(!isNodeNameEditable(node)) return false;
+    if(!node.hasProperty("name")) return false;
+    node.setProperty("name", name, nullptr);
+    return true;
+}
+String BankFile::getNodeType(ValueTree node){
+    if(!node.isValid()) return "Error!";
+    String vttype = node.getType().toString();
+    String typestr = "";
+    if(vttype == "field"){
+        typestr = node.getProperty("datatype", "Error").toString();
+        if((bool)node.getProperty("ispointer", false)){
+            typestr = "Ptr (" + typestr + ") to " + node.getProperty("ptrto", "Error").toString();
+        }
+        if((bool)node.getProperty("isarray", false)){
+            typestr = "Array of " + typestr;
+            if(node.hasProperty("arraylenfixed")){
+                typestr += " (" + node.getProperty("arraylenfixed").toString() + ")";
+            }else if(node.hasProperty("arraylenvar")){
+                typestr += " (" + node.getProperty("arraylenvar").toString() + ")";
+            }else{
+                SEQ64::say("Array with no fixed or variable size!");
+            }
+        }
+    }else{
+        typestr = vttype;
+    }
+    return typestr;
+}
+bool BankFile::isMeaningDeterminedAtImport(String meaning){
+    return (   meaning == "NUM_INST"
+            || meaning == "NUM_DRUM"
+            || meaning == "NUM_SFX"
+            || meaning == "NUM_PRED"
+            || meaning == "Ptr Bank (in Audiobank)"
+            || meaning == "Bank Length"
+            || meaning == "Ptr Drum List"
+            || meaning == "Ptr SFX List");
+}
+BankFile::NodeValueInfo BankFile::getNodeValueInfo(ValueTree node, bool hex){
+    NodeValueInfo ret;
+    if(!node.isValid()) return ret;
+    String type = node.getType().toString();
+    String meaning = node.getProperty("meaning", "None");
+    if(type == "field" || type == "element"){
+        if(isMeaningDeterminedAtImport(meaning)){
+            ret.valueequiv = "Determined at import";
+        }else if((bool)node.getProperty("isarray", false)){
+            ret.valueequiv = "Open array to edit";
+        }else if(node.getNumChildren() != 0){
+            ret.valueequiv = "Open struct to edit";
+        }else{
+            ret.valueeditable = true;
+            int val = (int)node.getProperty("value", 0);
+            if((bool)node.getProperty("ispointer", false)){
+                ret.valuereference = true;
+                val = (int)node.getProperty("index", -1);
+                String ptrto = node.getProperty("ptrto", "Error");
+                ValueTree dest = getListForPointer(ptrto);
+                if(dest.isValid()){
+                    dest = dest.getChild(val);
+                    if(!dest.isValid()){
+                        ret.valueequiv = "nullptr";
+                    }else{
+                        ret.valueequiv = dest.getProperty("name", "[unnamed]");
+                    }
+                }
+            }
+            if(hex){
+                type = node.getProperty("datatype", "uint32");
+                if(type == "uint8" || type == "int8" || ret.valuereference){
+                    ret.value = ROM::hex((uint8)val);
+                }else{
+                    ret.value = ROM::hex((uint32)val);
+                }
+            }else{
+                ret.value = String(val);
+            }
+        }
+    }
+    return ret;
+}
+bool BankFile::setNodeValue(ValueTree node, String input, bool hex){
+    if(!node.isValid()) return false;
+    String type = node.getType().toString();
+    String meaning = node.getProperty("meaning", "None");
+    int val = 0;
+    if(hex) val = input.getHexValue32();
+        else val = input.getIntValue();
+    String datatype = node.getProperty("datatype", "Error");
+    if(datatype == "int8"){
+        if(val < -0x80 || val > 0x7F) return false;
+    }else if(datatype == "uint8"){
+        if(val < 0 || val > 0xFF) return false;
+    }else if(datatype == "int16"){
+        if(val < -0x8000 || val > 0x7FFF) return false;
+    }else if(datatype == "uint16"){
+        if(val < 0 || val > 0xFFFF) return false;
+    }else if(datatype != "int32" && datatype != "uint32"){
+        SEQ64::say("BankFile::setNodeValue() error: datatype == " + datatype);
+        return false;
+    }
+    if(type == "field" || type == "element"){
+        if(isMeaningDeterminedAtImport(meaning)){
+            return false;
+        }else if((bool)node.getProperty("isarray", false)){
+            return false;
+        }else if(node.getNumChildren() != 0){
+            return false;
+        }else{
+            if((bool)node.getProperty("ispointer", false)){
+                node.setProperty("index", val, nullptr);
+            }else{
+                node.setProperty("value", val, nullptr);
+            }
+            return true;
+        }
+    }
+    return false;
+}
+int BankFile::getNodeListFlags(ValueTree nodein, ValueTree nodeselected){
+    if(!nodein.isValid()) return 0;
+    String inname = nodein.getType().toString();
+    if(inname == "instruments" || inname == "drums" || inname == "sfx" || inname == "patchprops"
+            || inname == "samples" || inname == "aladpcmbooks" || inname == "aladpcmloops"){
+        if(nodeselected.isValid()){
+            return canAdd | canDupl | canDel | canMove;
+        }else{
+            return canAdd;
+        }
+    }
+    if(inname == "field"){
+        if((bool)nodein.getProperty("isarray", false) && nodein.hasProperty("arraylenvar")){
+            if(nodeselected.isValid()){
+                return canAdd | canDupl | canDel | canMove;
+            }else{
+                return canAdd;
+            }
+        }
+    }
+    if(!nodeselected.isValid()) return 0;
+    String selname = nodeselected.getType().toString();
+    if(selname == "abdrumlist" || selname == "absfxlist"){
+        if(nodeselected.getNumChildren() == 0){
+            return canAdd;
+        }else{
+            return canDel;
+        }
+    }
+    return 0;
+}
+String BankFile::getNodePath(ValueTree node){
+    if(!node.isValid()) return "Error!";
+    String pathname = "/", desc;
+    ValueTree temp = node;
+    while(true){
+        desc = getNodeDesc(temp);
+        temp = getNodeParent(temp);
+        if(!temp.isValid()) return pathname;
+        pathname = "/" + desc + pathname;
+    }
+}
+ValueTree BankFile::getNodeChild(ValueTree node, int childidx){
+    if(!node.isValid()) return ValueTree();
+    ValueTree ret = node.getChild(childidx);
+    if(!ret.isValid()) return ValueTree();
+    if(ret.getNumChildren() == 1 && ret.getChild(0).getType().toString() == "struct"){
+        ret = ret.getChild(0);
+    }
+    return ret;
+}
+ValueTree BankFile::getNodeParent(ValueTree node){
+    if(!node.isValid()) return ValueTree();
+    if(!node.getParent().isValid()) return ValueTree();
+    ValueTree ret = node;
+    if(node.getParent().getNumChildren() == 1 && node.getType().toString() == "struct"){
+        ret = ret.getParent();
+    }
+    ret = ret.getParent();
+    return ret;
+}
+bool BankFile::addNode(ValueTree parent){
+    //TODO
+    SEQ64::say("BankFile::addNode() not yet implemented! Use Dupl if you can.");
+    return false;
+}
+bool BankFile::duplicateNode(ValueTree parent, ValueTree child){
+    if(!parent.isValid()) return false;
+    if(!child.isValid()) return false;
+    int childidx = parent.indexOf(child);
+    if(childidx < 0 || childidx >= parent.getNumChildren()) return false;
+    int nodeListFlags = getNodeListFlags(parent, child);
+    if((nodeListFlags & BankFile::canDupl) == 0) return false;
+    if(child.getType().toString() == "item"){
+        ValueTree stru = child.getChild(0);
+        if(!stru.isValid()){
+            SEQ64::say("Item with no child struct!");
+            return false;
+        }
+        String ptrtype = stru.getProperty("name", "Error");
+        insertReferences(d, ptrtype, childidx+1);
+    }
+    ValueTree newChild = child.createCopy();
+    parent.addChild(newChild, childidx+1, nullptr);
+    return true;
+}
+bool BankFile::deleteNode(ValueTree parent, ValueTree child){
+    if(!parent.isValid()) return false;
+    if(!child.isValid()) return false;
+    int childidx = parent.indexOf(child);
+    if(childidx < 0 || childidx >= parent.getNumChildren()) return false;
+    int nodeListFlags = getNodeListFlags(parent, child);
+    if((nodeListFlags & BankFile::canDel) == 0) return false;
+    if(child.getType().toString() == "item"){
+        ValueTree stru = child.getChild(0);
+        if(!stru.isValid()){
+            SEQ64::say("Item with no child struct!");
+            return false;
+        }
+        String ptrtype = stru.getProperty("name", "Error");
+        deleteReferences(d, ptrtype, childidx);
+    }
+    parent.removeChild(child, nullptr);
+    return true;
+}
+bool BankFile::moveNodeUp(ValueTree parent, ValueTree child){
+    if(!parent.isValid()) return false;
+    if(!child.isValid()) return false;
+    int childidx = parent.indexOf(child);
+    if(childidx < 1 || childidx >= parent.getNumChildren()) return false;
+    int nodeListFlags = getNodeListFlags(parent, child);
+    if((nodeListFlags & BankFile::canMove) == 0) return false;
+    parent.moveChild(childidx, childidx-1, nullptr);
+    if(child.getType().toString() == "item"){
+        ValueTree stru = child.getChild(0);
+        if(!stru.isValid()){
+            SEQ64::say("Item with no child struct!");
+            return false;
+        }
+        String ptrtype = stru.getProperty("name", "Error");
+        swapReferences(d, ptrtype, childidx, childidx-1);
+    }
+    return true;
+}
+bool BankFile::moveNodeDown(ValueTree parent, ValueTree child){
+    if(!parent.isValid()) return false;
+    if(!child.isValid()) return false;
+    int childidx = parent.indexOf(child);
+    if(childidx < 0 || childidx >= parent.getNumChildren() - 1) return false;
+    int nodeListFlags = getNodeListFlags(parent, child);
+    if((nodeListFlags & BankFile::canMove) == 0) return false;
+    parent.moveChild(childidx, childidx+1, nullptr);
+    if(child.getType().toString() == "item"){
+        ValueTree stru = child.getChild(0);
+        if(!stru.isValid()){
+            SEQ64::say("Item with no child struct!");
+            return false;
+        }
+        String ptrtype = stru.getProperty("name", "Error");
+        swapReferences(d, ptrtype, childidx, childidx+1);
+    }
+    return true;
+}
+/*
+ * Recursively swap all references in parent and its children, that are pointers to
+ * type pointername, between swapFrom and swapTo. Will not swap null references (< 0) 
+ * to valid ones: i.e. swapReferences(p, "t", -1, 5) will change all 5s to -1s but 
+ * leave all -1s alone; and swapReferences(p, "t", 5, -1) will do exactly the same thing.
+ */
+void BankFile::swapReferences(ValueTree parent, String pointername, int swapFrom, int swapTo){
+    if(!parent.isValid()) return;
+    ValueTree child;
+    for(int i=0; i<parent.getNumChildren(); i++){
+        child = parent.getChild(i);
+        if((bool)child.getProperty("ispointer", false) && child.getProperty("ptrto").toString() == pointername){
+            if((int)child.getProperty("index", -1) == swapFrom && swapFrom >= 0){
+                child.setProperty("index", swapTo, nullptr);
+            }else if((int)child.getProperty("index", -1) == swapTo && swapTo >= 0){
+                child.setProperty("index", swapFrom, nullptr);
+            }
+        }
+        swapReferences(child, pointername, swapFrom, swapTo);
+    }
+}
+/*
+ * Recursively increment all references greater than or equal to index (because a new
+ * item appeared at index).
+ */
+void BankFile::insertReferences(ValueTree parent, String pointername, int index){
+    if(!parent.isValid()) return;
+    ValueTree child;
+    int childindex;
+    for(int i=0; i<parent.getNumChildren(); i++){
+        child = parent.getChild(i);
+        if((bool)child.getProperty("ispointer", false) && child.getProperty("ptrto").toString() == pointername){
+            childindex = (int)child.getProperty("index", -1);
+            if(childindex >= index){
+                child.setProperty("index", childindex+1, nullptr);
+            }
+        }
+        insertReferences(child, pointername, index);
+    }
+}
+/*
+ * Recursively decrement all references greater than index, and set all references
+ * to index to nullptr (-1).
+ */
+void BankFile::deleteReferences(ValueTree parent, String pointername, int index){
+    if(!parent.isValid()) return;
+    ValueTree child;
+    int childindex;
+    for(int i=0; i<parent.getNumChildren(); i++){
+        child = parent.getChild(i);
+        if((bool)child.getProperty("ispointer", false) && child.getProperty("ptrto").toString() == pointername){
+            childindex = (int)child.getProperty("index", -1);
+            if(childindex == index){
+                child.setProperty("index", -1, nullptr);
+            }else if(childindex > index){
+                child.setProperty("index", childindex-1, nullptr);
+            }
+        }
+        deleteReferences(child, pointername, index);
+    }
+}
+
+/*
+ * Are the two items, and all the other items they reference, equal?
+ */
+bool BankFile::deepCompareItems(String itemtype, BankFile& banka, int itemindexa, 
+        BankFile& bankb, int itemindexb){
+    ValueTree lista = banka.getListForPointer(itemtype);
+    ValueTree listb = bankb.getListForPointer(itemtype);
+    if(!lista.isValid() || !listb.isValid()){
+        SEQ64::say("deepCompareItems() invalid item type " + itemtype);
+        return false;
+    }
+    ValueTree itema = lista.getChild(itemindexa);
+    ValueTree itemb = listb.getChild(itemindexb);
+    if(!itema.isValid() || !itemb.isValid()){
+        SEQ64::say("deepCompareItems() invalid item indices");
+        return false;
+    }
+    return deepCompareNodes(banka, itema, bankb, itemb);
+}
+/*
+ * Are the two nodes, and all the items they reference, equal?
+ */
+bool BankFile::deepCompareNodes(BankFile& banka, ValueTree nodea, 
+        BankFile& bankb, ValueTree nodeb){
+    if(nodea.getType() != nodeb.getType()) return false;
+    if(nodea.getNumChildren() != nodeb.getNumChildren()) return false;
+    if(!compareProperty(nodea, nodeb, "name")) return false;
+    if(!compareProperty(nodea, nodeb, "datatype")) return false;
+    if(!compareProperty(nodea, nodeb, "ispointer")) return false;
+    if(!compareProperty(nodea, nodeb, "ptrto")) return false;
+    if(!compareProperty(nodea, nodeb, "isarray")) return false;
+    if(!compareProperty(nodea, nodeb, "arraylenvar")) return false;
+    if(!compareProperty(nodea, nodeb, "arraylenfixed")) return false;
+    if(!compareProperty(nodea, nodeb, "meaning")) return false;
+    if(!compareProperty(nodea, nodeb, "NUM_PRED")) return false;
+    if(!compareProperty(nodea, nodeb, "HAS_TAIL")) return false;
+    if(!(bool)nodea.getProperty("isarray")){
+        if((bool)nodea.getProperty("ispointer")){
+            if(!deepCompareItems(nodea.getProperty("ptrto"),
+                    banka, nodea.getProperty("index"),
+                    bankb, nodeb.getProperty("index"))) return false;
+        }else{
+            if(!compareProperty(nodea, nodeb, "value")) return false;
+        }
+    }
+    for(int i=0; i<nodea.getNumChildren(); i++){
+        if(!deepCompareNodes(banka, nodea.getChild(i),
+                             bankb, nodeb.getChild(i))) return false;
+    }
+    return true;
+}
+bool BankFile::compareProperty(ValueTree nodea, ValueTree nodeb, String name){
+    if(nodea.hasProperty(name) != nodeb.hasProperty(name)) return false;
+    if(nodea.getProperty(name, "") != nodeb.getProperty(name, "")) return false;
+    return true;
+}
+/*
+ * Import a node with the given type and index (e.g. "ABInstrument", 5) from 
+ * sourcebank into this bank. If merge, and an identical node already exists,
+ * use that node instead. Return the imported or existing node.
+ */
+ValueTree BankFile::importNode(BankFile& sourcebank, String itemtype, int itemindex, bool merge){
+    SEQ64::say("Importing node " + itemtype + " index " + String(itemindex));
+    //Get item
+    ValueTree sourcelist = sourcebank.getListForPointer(itemtype);
+    ValueTree destlist   = getListForPointer(itemtype);
+    if(!sourcelist.isValid() || !destlist.isValid()){
+        SEQ64::say("importNode() invalid item type " + itemtype);
+        return ValueTree();
+    }
+    ValueTree sourceitem = sourcelist.getChild(itemindex);
+    if(!sourceitem.isValid()){
+        SEQ64::say("importNode() invalid item index");
+        return ValueTree();
+    }
+    //Check if identical item exists
+    if(merge){
+        ValueTree noded;
+        for(int di=0; di<destlist.getNumChildren(); di++){
+            noded = destlist.getChild(di);
+            if(deepCompareNodes(*this, noded, sourcebank, sourceitem)){
+                return noded;
+            }
+        }
+    }
+    //Otherwise, import
+    return importNodeRecurse(sourcebank, merge, sourceitem, destlist);
+}
+ValueTree BankFile::importNodeRecurse(BankFile& sourcebank, bool merge, 
+        ValueTree sourcenode, ValueTree destparent){
+    //SEQ64::say("Importing sourcenode " + sourcenode.getType().toString() + " into destparent " + destparent.getType().toString());
+    //Copy type
+    ValueTree destnode = ValueTree(sourcenode.getType());
+    //Copy all properties
+    Identifier propname;
+    for(int p=0; p<sourcenode.getNumProperties(); p++){
+        propname = sourcenode.getPropertyName(p);
+        destnode.setProperty(propname, sourcenode.getProperty(propname), nullptr);
+    }
+    //Add newly created child to parent in this
+    destparent.addChild(destnode, -1, nullptr);
+    //If this is a pointer, import the node it's pointing to
+    if(!(bool)destnode.getProperty("isarray") && (bool)destnode.getProperty("ispointer")){
+        String itemtype = destnode.getProperty("ptrto", "Error").toString();
+        int itemindex = (int)destnode.getProperty("index", -1);
+        if(itemindex >= 0){
+            //SEQ64::say("Going to import new node " + itemtype + " index " + String(itemindex));
+            ValueTree reftarget = importNode(sourcebank, itemtype, itemindex, merge);
+            if(reftarget.isValid()){
+                destnode.setProperty("index", reftarget.getParent().indexOf(reftarget), nullptr);
+                destnode.setProperty("value", "1337", nullptr);
+            }else{
+                SEQ64::say("Could not import node " + itemtype + " " + String(itemindex) + "!");
+                destnode.setProperty("index", -1, nullptr);
+                destnode.setProperty("value", "6969", nullptr);
+            }
+        }
+    }
+    //Import children
+    for(int c=0; c<sourcenode.getNumChildren(); c++){
+        importNodeRecurse(sourcebank, merge, sourcenode.getChild(c), destnode);
+    }
+    return destnode;
+}
+
+/*
 int BankFile::writeStruct(ROM& rom, uint32 addr, ValueTree stru){
     //TODO
 	return -1;
@@ -517,4 +1066,4 @@ int BankFile::getLength(ValueTree stru){
         //TODO variable array lengths
     }
 }
-
+*/

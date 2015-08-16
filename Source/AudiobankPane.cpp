@@ -7,12 +7,12 @@
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
   and re-saved.
 
-  Created with Introjucer version: 3.1.0
+  Created with Introjucer version: 3.2.0
 
   ------------------------------------------------------------------------------
 
   The Introjucer is part of the JUCE library - "Jules' Utility Class Extensions"
-  Copyright 2004-13 by Raw Material Software Ltd.
+  Copyright (c) 2015 - ROLI Ltd.
 
   ==============================================================================
 */
@@ -55,6 +55,9 @@
 AudiobankPane::AudiobankPane (SEQ64& seq64_)
     : seq64(seq64_)
 {
+    //[Constructor_pre] You can add your own custom stuff here..
+    //[/Constructor_pre]
+
     addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
                                                              TRANS("Audiobank Library")));
 
@@ -125,9 +128,8 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     cbxPtrTo->addItem (TRANS("ABDrum"), 5);
     cbxPtrTo->addItem (TRANS("ABPatchProps"), 6);
     cbxPtrTo->addItem (TRANS("ABSample"), 7);
-    cbxPtrTo->addItem (TRANS("ATSample"), 8);
-    cbxPtrTo->addItem (TRANS("ALADPCMBook"), 9);
-    cbxPtrTo->addItem (TRANS("ALADPCMLoop"), 10);
+    cbxPtrTo->addItem (TRANS("ALADPCMBook"), 8);
+    cbxPtrTo->addItem (TRANS("ALADPCMLoop"), 9);
     cbxPtrTo->addListener (this);
 
     addAndMakeVisible (label3 = new Label ("new label",
@@ -293,9 +295,9 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     cbxLibList->addItem (TRANS("Sound Effects"), 3);
     cbxLibList->addListener (this);
 
-    addAndMakeVisible (txtLibAdd = new TextButton ("new button"));
-    txtLibAdd->setButtonText (TRANS("Add to Loaded Inst Set"));
-    txtLibAdd->addListener (this);
+    addAndMakeVisible (btnLibAdd = new TextButton ("new button"));
+    btnLibAdd->setButtonText (TRANS("Add to Loaded Inst Set"));
+    btnLibAdd->addListener (this);
 
     addAndMakeVisible (label8 = new Label ("new label",
                                            TRANS("Name:")));
@@ -320,9 +322,14 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     chkLibMerge->setToggleState (true, dontSendNotification);
 
     addAndMakeVisible (btnBItemAdd = new TextButton ("new button"));
-    btnBItemAdd->setButtonText (TRANS("New"));
+    btnBItemAdd->setButtonText (TRANS("Add"));
     btnBItemAdd->setConnectedEdges (Button::ConnectedOnBottom);
     btnBItemAdd->addListener (this);
+
+    addAndMakeVisible (btnBItemDupl = new TextButton ("new button"));
+    btnBItemDupl->setButtonText (TRANS("Dupl"));
+    btnBItemDupl->setConnectedEdges (Button::ConnectedOnTop | Button::ConnectedOnBottom);
+    btnBItemDupl->addListener (this);
 
     addAndMakeVisible (btnBItemDel = new TextButton ("new button"));
     btnBItemDel->setButtonText (TRANS("Del"));
@@ -365,11 +372,6 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     cbxAlign->addItem (TRANS("8"), 2);
     cbxAlign->addItem (TRANS("16"), 3);
     cbxAlign->addListener (this);
-
-    addAndMakeVisible (btnBItemDupl = new TextButton ("new button"));
-    btnBItemDupl->setButtonText (TRANS("Dupl"));
-    btnBItemDupl->setConnectedEdges (Button::ConnectedOnTop | Button::ConnectedOnBottom);
-    btnBItemDupl->addListener (this);
 
     addAndMakeVisible (optMapProgram = new ToggleButton ("new toggle button"));
     optMapProgram->setButtonText (TRANS("Program"));
@@ -467,13 +469,13 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     lblBItemType->setColour (TextEditor::textColourId, Colours::black);
     lblBItemType->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (label10 = new Label ("new label",
-                                            TRANS("Value:")));
-    label10->setFont (Font (15.00f, Font::plain));
-    label10->setJustificationType (Justification::centredLeft);
-    label10->setEditable (false, false, false);
-    label10->setColour (TextEditor::textColourId, Colours::black);
-    label10->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+    addAndMakeVisible (lblBItemValue = new Label ("new label",
+                                                  TRANS("Value:")));
+    lblBItemValue->setFont (Font (15.00f, Font::plain));
+    lblBItemValue->setJustificationType (Justification::centredLeft);
+    lblBItemValue->setEditable (false, false, false);
+    lblBItemValue->setColour (TextEditor::textColourId, Colours::black);
+    lblBItemValue->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
     addAndMakeVisible (txtBItemValue = new TextEditor ("new text editor"));
     txtBItemValue->setMultiLine (false);
@@ -491,6 +493,10 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     lblBItemValueEquiv->setEditable (false, false, false);
     lblBItemValueEquiv->setColour (TextEditor::textColourId, Colours::black);
     lblBItemValueEquiv->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (chkBItemHex = new ToggleButton ("new toggle button"));
+    chkBItemHex->setButtonText (TRANS("Hex"));
+    chkBItemHex->addListener (this);
 
 
     //[UserPreSize]
@@ -533,6 +539,8 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     txtMapDS1->addListener(this);
     txtMapDS2->addListener(this);
     txtMapDS3->addListener(this);
+    txtBItemName->addListener(this);
+    txtBItemValue->addListener(this);
 
     //[/UserPreSize]
 
@@ -584,18 +592,18 @@ AudiobankPane::~AudiobankPane()
     lblStructSemicolon = nullptr;
     label = nullptr;
     cbxLibList = nullptr;
-    txtLibAdd = nullptr;
+    btnLibAdd = nullptr;
     label8 = nullptr;
     txtLibItemName = nullptr;
     chkLibMerge = nullptr;
     btnBItemAdd = nullptr;
+    btnBItemDupl = nullptr;
     btnBItemDel = nullptr;
     btnBItemUp = nullptr;
     btnBItemDn = nullptr;
     label12 = nullptr;
     txtBItemName = nullptr;
     cbxAlign = nullptr;
-    btnBItemDupl = nullptr;
     optMapProgram = nullptr;
     txtMapPNum = nullptr;
     lblMapPNote = nullptr;
@@ -609,9 +617,10 @@ AudiobankPane::~AudiobankPane()
     btnBOpen = nullptr;
     lblBankPath = nullptr;
     lblBItemType = nullptr;
-    label10 = nullptr;
+    lblBItemValue = nullptr;
     txtBItemValue = nullptr;
     lblBItemValueEquiv = nullptr;
+    chkBItemHex = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -675,18 +684,18 @@ void AudiobankPane::resized()
     lblStructSemicolon->setBounds (192, 160, 80, 24);
     label->setBounds (456, 16, 240, 24);
     cbxLibList->setBounds (704, 16, 240, 24);
-    txtLibAdd->setBounds (704, 312, 168, 24);
+    btnLibAdd->setBounds (704, 312, 168, 24);
     label8->setBounds (704, 240, 56, 24);
     txtLibItemName->setBounds (760, 240, 182, 24);
     chkLibMerge->setBounds (880, 312, 64, 24);
-    btnBItemAdd->setBounds (256, 384, 48, 24);
-    btnBItemDel->setBounds (256, 432, 48, 24);
-    btnBItemUp->setBounds (256, 472, 48, 24);
-    btnBItemDn->setBounds (256, 496, 48, 24);
-    label12->setBounds (312, 384, 56, 24);
-    txtBItemName->setBounds (368, 384, 184, 24);
+    btnBItemAdd->setBounds (320, 384, 48, 24);
+    btnBItemDupl->setBounds (320, 408, 48, 24);
+    btnBItemDel->setBounds (320, 432, 48, 24);
+    btnBItemUp->setBounds (320, 472, 48, 24);
+    btnBItemDn->setBounds (320, 496, 48, 24);
+    label12->setBounds (376, 384, 56, 24);
+    txtBItemName->setBounds (432, 384, 184, 24);
     cbxAlign->setBounds (304, 16, 56, 24);
-    btnBItemDupl->setBounds (256, 408, 48, 24);
     optMapProgram->setBounds (704, 264, 80, 24);
     txtMapPNum->setBounds (784, 264, 40, 24);
     lblMapPNote->setBounds (824, 264, 40, 24);
@@ -697,17 +706,18 @@ void AudiobankPane::resized()
     txtMapDS3->setBounds (864, 288, 40, 24);
     lblMapSplits->setBounds (904, 288, 40, 24);
     btnBUp->setBounds (8, 360, 40, 24);
-    btnBOpen->setBounds (256, 656, 48, 24);
+    btnBOpen->setBounds (320, 656, 48, 24);
     lblBankPath->setBounds (48, 360, 896, 24);
-    lblBItemType->setBounds (312, 408, 240, 24);
-    label10->setBounds (312, 432, 56, 24);
-    txtBItemValue->setBounds (368, 432, 72, 24);
-    lblBItemValueEquiv->setBounds (368, 456, 184, 24);
+    lblBItemType->setBounds (376, 408, 240, 24);
+    lblBItemValue->setBounds (376, 432, 56, 24);
+    txtBItemValue->setBounds (432, 432, 88, 24);
+    lblBItemValueEquiv->setBounds (432, 456, 184, 24);
+    chkBItemHex->setBounds (528, 432, 56, 24);
     //[UserResized] Add your own custom resize handling here..
     lstFields->setBounds(8, 40, 432, 112);
     lstLibSets->setBounds(456, 40, 240, 296);
     lstLibItems->setBounds(704, 40, 240, 200);
-    lstBItems->setBounds(8, 384, 240, 296);
+    lstBItems->setBounds(8, 384, 304, 296);
     //[/UserResized]
 }
 
@@ -788,7 +798,7 @@ void AudiobankPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     //[UsercomboBoxChanged_Post]
     if(repaintFieldEntry){
         int row = lstFields->getLastRowSelected();
-        lsmFields->set(row, getFieldDesc(selfield));
+        lsmFields->set(row, BankFile::getFieldDesc(selfield, true));
         lstFields->repaintRow(row);
     }
     //[/UsercomboBoxChanged_Post]
@@ -922,10 +932,34 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         lstFields->selectRow(i);
         //[/UserButtonCode_btnFieldDn]
     }
-    else if (buttonThatWasClicked == txtLibAdd)
+    else if (buttonThatWasClicked == btnLibAdd)
     {
-        //[UserButtonCode_txtLibAdd] -- add your button handler code here..
-        //[/UserButtonCode_txtLibAdd]
+        //[UserButtonCode_btnLibAdd] -- add your button handler code here..
+        if(!libselitem.isValid()) return;
+        if(libselbank == nullptr) return;
+        if(seq64.bank == nullptr) return;
+        String sublistname = cbxLibList->getText(), itemtype, showlist;
+        if(sublistname == "Instruments"){
+            itemtype = "ABInstrument";
+            showlist = "instruments";
+        }else if(sublistname == "Drums"){
+            itemtype = "ABDrum";
+            showlist = "drums";
+        }else if(sublistname == "Sound Effects"){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64", "Import SFX not yet supported.");
+            return;
+        }else{
+            SEQ64::say("getBankSubList error: sublistname = " + sublistname);
+            return;
+        }
+        int itemindex = lstLibItems->getLastRowSelected();
+        ValueTree res = seq64.bank->importNode(*libselbank, itemtype, itemindex, chkLibMerge->getToggleState());
+        if(res.isValid()){
+            bpath = seq64.bank->d.getChildWithName(showlist);
+            fillBItemsBox();
+            lstBItems->selectRow(bpath.getNumChildren() - 1);
+        }
+        //[/UserButtonCode_btnLibAdd]
     }
     else if (buttonThatWasClicked == chkLibMerge)
     {
@@ -935,27 +969,64 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnBItemAdd)
     {
         //[UserButtonCode_btnBItemAdd] -- add your button handler code here..
+        if(seq64.bank == nullptr) return;
+        if(!bpath.isValid()) return;
+        bool b = seq64.bank->addNode(bpath);
+        if(b){
+            fillBItemsBox();
+            lstBItems->selectRow(bpath.getNumChildren() - 1);
+        }
         //[/UserButtonCode_btnBItemAdd]
+    }
+    else if (buttonThatWasClicked == btnBItemDupl)
+    {
+        //[UserButtonCode_btnBItemDupl] -- add your button handler code here..
+        if(seq64.bank == nullptr) return;
+        if(!bselnode.isValid()) return;
+        int row = lstBItems->getLastRowSelected();
+        bool b = seq64.bank->duplicateNode(bpath, bselnode);
+        if(b){
+            fillBItemsBox();
+            lstBItems->selectRow(row+1);
+        }
+        //[/UserButtonCode_btnBItemDupl]
     }
     else if (buttonThatWasClicked == btnBItemDel)
     {
         //[UserButtonCode_btnBItemDel] -- add your button handler code here..
+        if(seq64.bank == nullptr) return;
+        if(!bselnode.isValid()) return;
+        bool b = seq64.bank->deleteNode(bpath, bselnode);
+        if(b){
+            fillBItemsBox();
+        }
         //[/UserButtonCode_btnBItemDel]
     }
     else if (buttonThatWasClicked == btnBItemUp)
     {
         //[UserButtonCode_btnBItemUp] -- add your button handler code here..
+        if(seq64.bank == nullptr) return;
+        if(!bselnode.isValid()) return;
+        int row = lstBItems->getLastRowSelected();
+        bool b = seq64.bank->moveNodeUp(bpath, bselnode);
+        if(b){
+            fillBItemsBox();
+            lstBItems->selectRow(row-1);
+        }
         //[/UserButtonCode_btnBItemUp]
     }
     else if (buttonThatWasClicked == btnBItemDn)
     {
         //[UserButtonCode_btnBItemDn] -- add your button handler code here..
+        if(seq64.bank == nullptr) return;
+        if(!bselnode.isValid()) return;
+        int row = lstBItems->getLastRowSelected();
+        bool b = seq64.bank->moveNodeDown(bpath, bselnode);
+        if(b){
+            fillBItemsBox();
+            lstBItems->selectRow(row+1);
+        }
         //[/UserButtonCode_btnBItemDn]
-    }
-    else if (buttonThatWasClicked == btnBItemDupl)
-    {
-        //[UserButtonCode_btnBItemDupl] -- add your button handler code here..
-        //[/UserButtonCode_btnBItemDupl]
     }
     else if (buttonThatWasClicked == optMapProgram)
     {
@@ -984,24 +1055,31 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnBUp)
     {
         //[UserButtonCode_btnBUp] -- add your button handler code here..
-        if(!bpath.getParent().isValid()) return;
-        if(bpath.getParent().getNumChildren() == 1 && bpath.getType().toString() == "struct"){
-            bpath = bpath.getParent();
+        if(seq64.bank == nullptr) return;
+        ValueTree parent = seq64.bank->getNodeParent(bpath);
+        if(parent.isValid()){
+            bpath = parent;
         }
-        bpath = bpath.getParent();
         fillBItemsBox();
         //[/UserButtonCode_btnBUp]
     }
     else if (buttonThatWasClicked == btnBOpen)
     {
         //[UserButtonCode_btnBOpen] -- add your button handler code here..
+        bOpen(lstBItems->getLastRowSelected());
         //[/UserButtonCode_btnBOpen]
+    }
+    else if (buttonThatWasClicked == chkBItemHex)
+    {
+        //[UserButtonCode_chkBItemHex] -- add your button handler code here..
+        fillBItemsControls(true);
+        //[/UserButtonCode_chkBItemHex]
     }
 
     //[UserbuttonClicked_Post]
     if(repaintFieldEntry){
         int row = lstFields->getLastRowSelected();
-        lsmFields->set(row, getFieldDesc(selfield));
+        lsmFields->set(row, BankFile::getFieldDesc(selfield, true));
         lstFields->repaintRow(row);
     }
     //[/UserbuttonClicked_Post]
@@ -1062,22 +1140,13 @@ void AudiobankPane::rowSelected(TextListModel* parent, int row){
     }else if(parent == &*lsmBItems){
         if(!bpath.isValid()) return;
         bselnode = bpath.getChild(row);
-        fillBItemsControls();
+        fillBItemsControls(true);
     }
 }
 
 void AudiobankPane::rowDoubleClicked(TextListModel* parent, int row){
     if(parent == &*lsmBItems){
-        if(!bpath.isValid()) return;
-        bselnode = bpath.getChild(row);
-        if(!bselnode.isValid()) return;
-        if(bselnode.getNumChildren() == 1 && bselnode.getChild(0).getType().toString() == "struct"){
-            bselnode = bselnode.getChild(0);
-        }
-        if(bselnode.getNumChildren() == 0) return;
-        bpath = bselnode;
-        bselnode = ValueTree();
-        fillBItemsBox();
+        bOpen(row);
     }
 }
 
@@ -1095,6 +1164,7 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     }
     bool turnRed = (val <= 0);
     bool repaintFieldEntry = false;
+    bool repaintBItemEntry = false;
 
     if(&editorThatWasChanged == &*txtFieldName){
         turnRed = (text == "");
@@ -1159,6 +1229,21 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         if(cbxLibList->getText() == "Instruments"){
             libselitem.setProperty("drumsplit3", val, nullptr);
         }
+    }else if(&editorThatWasChanged == &*txtBItemName){
+        if(seq64.bank == nullptr) return;
+        if(!bselnode.isValid()) return;
+        turnRed = !seq64.bank->setNodeName(bselnode, text);
+        if(!turnRed){
+            repaintBItemEntry = true;
+        }
+    }else if(&editorThatWasChanged == &*txtBItemValue){
+        if(seq64.bank == nullptr) return;
+        if(!bselnode.isValid()) return;
+        turnRed = !seq64.bank->setNodeValue(bselnode, text, chkBItemHex->getToggleState());
+        if(!turnRed){
+            fillBItemsControls(false);
+            repaintBItemEntry = true;
+        }
     }
     if(turnRed){
         editorThatWasChanged.setColour(TextEditor::backgroundColourId, Colours::red);
@@ -1167,44 +1252,14 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     }
     if(repaintFieldEntry){
         int row = lstFields->getLastRowSelected();
-        lsmFields->set(row, getFieldDesc(selfield));
+        lsmFields->set(row, BankFile::getFieldDesc(selfield, true));
         lstFields->repaintRow(row);
     }
-}
-
-
-String AudiobankPane::getFieldDesc(ValueTree field){
-    if(!field.isValid()) return "Error!";
-    String desc = "  ";
-    String datatype = field.getProperty("datatype", "ErrorType");
-    if((bool)field.getProperty("ispointer", false)){
-        String ptrto = field.getProperty("ptrto", "ErrorType");
-        if(datatype == "uint32" || datatype == "int32"){
-            desc += ptrto + "*";
-        }else{
-            desc += "(" + datatype + ")(" + ptrto + "*)";
-        }
-    }else{
-        desc += datatype;
+    if(repaintBItemEntry){
+        int row = lstBItems->getLastRowSelected();
+        lsmBItems->set(row, seq64.bank->getNodeDesc(seq64.bank->getNodeChild(bpath, row)));
+        lstBItems->repaintRow(row);
     }
-    desc += " ";
-    desc += field.getProperty("name", "ErrorName").toString();
-    if((bool)field.getProperty("isarray", false)){
-        if(field.hasProperty("arraylenfixed")){
-            desc += "[0x" + ROM::hex((uint8)(int)field.getProperty("arraylenfixed", 0)) + "]";
-        }else{
-            desc += "[" + field.getProperty("arraylenvar", "Error").toString() + "]";
-        }
-    }
-    if(field.hasProperty("defaultval")){
-        desc += " = 0x" + String::toHexString((int)field.getProperty("defaultval"));
-    }
-    desc += ";";
-    String meaning = field.getProperty("meaning", "None").toString();
-    if(meaning != "None"){
-        desc += " //" + meaning;
-    }
-    return desc;
 }
 
 void AudiobankPane::fillFieldsList(){
@@ -1212,7 +1267,7 @@ void AudiobankPane::fillFieldsList(){
     lstFields->updateContent();
     if(!selstruct.isValid()) return;
     for(int i=0; i<selstruct.getNumChildren(); i++){
-        lsmFields->add(getFieldDesc(selstruct.getChild(i)));
+        lsmFields->add(BankFile::getFieldDesc(selstruct.getChild(i), true));
     }
     lstFields->updateContent();
 }
@@ -1504,47 +1559,71 @@ void AudiobankPane::bankLoaded(){
         bpath = seq64.bank->d;
     }
     fillBItemsBox();
+    fillBItemsControls(true);
 }
 
 
+void AudiobankPane::bOpen(int row){
+    if(seq64.bank == nullptr) return;
+    ValueTree newchild = seq64.bank->getNodeChild(bpath, row);
+    if(!newchild.isValid()) return;
+    if(newchild.getNumChildren() == 0) return;
+    bpath = newchild;
+    bselnode = ValueTree();
+    fillBItemsBox();
+}
+
+void AudiobankPane::fillBListControls(){
+    int nodeListFlags = 0;
+    if(seq64.bank != nullptr){
+        nodeListFlags = seq64.bank->getNodeListFlags(bpath, bselnode);
+    }
+    btnBItemAdd->setEnabled((nodeListFlags & BankFile::canAdd) != 0);
+    btnBItemDupl->setEnabled((nodeListFlags & BankFile::canDupl) != 0);
+    btnBItemDel->setEnabled((nodeListFlags & BankFile::canDel) != 0);
+    btnBItemUp->setEnabled((nodeListFlags & BankFile::canMove) != 0);
+    btnBItemDn->setEnabled((nodeListFlags & BankFile::canMove) != 0);
+}
+
 void AudiobankPane::fillBItemsBox(){
+    fillBListControls();
     lsmBItems->clear();
     lstBItems->updateContent();
     bselnode = ValueTree();
     if(!bpath.isValid()) return;
+    if(seq64.bank == nullptr) return;
     int count = bpath.getNumChildren();
-    ValueTree temp;
-    String name;
     for(int i=0; i<count; i++){
-        temp = bpath.getChild(i);
-        name = temp.getType().toString();
-        if(name == "struct" || name == "field" || name == "item"){
-            name = temp.getProperty("name", "[unnamed]");
-        }
-        lsmBItems->add(String(i) + ", " + name);
+        lsmBItems->add(seq64.bank->getNodeDesc(seq64.bank->getNodeChild(bpath, i)));
     }
     lstBItems->updateContent();
-    //Write path
-    String pathname = "/";
-    temp = bpath;
-    while(true){
-        if(!temp.getParent().isValid()) break;
-        if(temp.getParent().getNumChildren() == 1 && temp.getType().toString() == "struct"){
-            temp = temp.getParent();
-        }
-        name = temp.getType().toString();
-        if(name == "struct" || name == "field" || name == "item"){
-            name = temp.getProperty("name", "[unnamed]");
-        }
-        pathname = "/" + String(temp.getParent().indexOf(temp)) + ", " + name + pathname;
-        temp = temp.getParent();
-    }
-    lblBankPath->setText(pathname, dontSendNotification);
+    lblBankPath->setText(seq64.bank->getNodePath(bpath), dontSendNotification);
 }
 
-void AudiobankPane::fillBItemsControls(){
-    if(!bselnode.isValid()) return;
-    //TODO
+void AudiobankPane::fillBItemsControls(bool setTxtBItemValue){
+    fillBListControls();
+    if(!bselnode.isValid() || seq64.bank == nullptr){
+        txtBItemName->setText("", dontSendNotification);
+        txtBItemName->setEnabled(false);
+        lblBItemType->setText("", dontSendNotification);
+        txtBItemValue->setText("", dontSendNotification);
+        txtBItemValue->setEnabled(false);
+        lblBItemValue->setText("Value:", dontSendNotification);
+        lblBItemValueEquiv->setText("", dontSendNotification);
+        return;
+    }
+    //Name
+    txtBItemName->setText(seq64.bank->getNodeName(bselnode), dontSendNotification);
+    txtBItemName->setEnabled(seq64.bank->isNodeNameEditable(bselnode));
+    //Type
+    lblBItemType->setText("Type: " + seq64.bank->getNodeType(bselnode), dontSendNotification);
+    //Value and Equivalent Value
+    BankFile::NodeValueInfo ni = seq64.bank->getNodeValueInfo(bselnode, chkBItemHex->getToggleState());
+    lblBItemValue->setText(ni.valuereference ? "Index:" : "Value:", dontSendNotification);
+    txtBItemValue->setEnabled(ni.valueeditable);
+    txtBItemValue->setColour(TextEditor::backgroundColourId, Colours::white);
+    if(setTxtBItemValue) txtBItemValue->setText(ni.value, dontSendNotification);
+    lblBItemValueEquiv->setText(ni.valueequiv, dontSendNotification);
 }
 
 
@@ -1599,7 +1678,7 @@ BEGIN_JUCER_METADATA
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <COMBOBOX name="new combo box" id="13ddb6d22233c898" memberName="cbxPtrTo"
             virtualName="" explicitFocusOrder="0" pos="24 240 168 24" editable="0"
-            layout="33" items="ABHeader&#10;ABDrumList&#10;ABSFXList&#10;ABInstrument&#10;ABDrum&#10;ABPatchProps&#10;ABSample&#10;ATSample&#10;ALADPCMBook&#10;ALADPCMLoop"
+            layout="33" items="ABHeader&#10;ABDrumList&#10;ABSFXList&#10;ABInstrument&#10;ABDrum&#10;ABPatchProps&#10;ABSample&#10;ALADPCMBook&#10;ALADPCMLoop"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="e3721257fc5becec" memberName="label3" virtualName=""
          explicitFocusOrder="0" pos="8 192 56 24" edTextCol="ff000000"
@@ -1690,7 +1769,7 @@ BEGIN_JUCER_METADATA
             virtualName="" explicitFocusOrder="0" pos="704 16 240 24" editable="0"
             layout="33" items="Instruments&#10;Drums&#10;Sound Effects" textWhenNonSelected=""
             textWhenNoItems="(no choices)"/>
-  <TEXTBUTTON name="new button" id="cc887378f0c65b1f" memberName="txtLibAdd"
+  <TEXTBUTTON name="new button" id="cc887378f0c65b1f" memberName="btnLibAdd"
               virtualName="" explicitFocusOrder="0" pos="704 312 168 24" buttonText="Add to Loaded Inst Set"
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="7ab82fcc4f2fe341" memberName="label8" virtualName=""
@@ -1706,32 +1785,32 @@ BEGIN_JUCER_METADATA
                 virtualName="" explicitFocusOrder="0" pos="880 312 64 24" buttonText="Merge"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TEXTBUTTON name="new button" id="95b805434c056546" memberName="btnBItemAdd"
-              virtualName="" explicitFocusOrder="0" pos="256 384 48 24" buttonText="New"
+              virtualName="" explicitFocusOrder="0" pos="320 384 48 24" buttonText="Add"
               connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="b4f552bc87690c64" memberName="btnBItemDupl"
+              virtualName="" explicitFocusOrder="0" pos="320 408 48 24" buttonText="Dupl"
+              connectedEdges="12" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="5437999e821d0f9" memberName="btnBItemDel"
-              virtualName="" explicitFocusOrder="0" pos="256 432 48 24" buttonText="Del"
+              virtualName="" explicitFocusOrder="0" pos="320 432 48 24" buttonText="Del"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="53c617d9b6236e17" memberName="btnBItemUp"
-              virtualName="" explicitFocusOrder="0" pos="256 472 48 24" buttonText="Up"
+              virtualName="" explicitFocusOrder="0" pos="320 472 48 24" buttonText="Up"
               connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="7aa4ba34a22a9127" memberName="btnBItemDn"
-              virtualName="" explicitFocusOrder="0" pos="256 496 48 24" buttonText="Dn"
+              virtualName="" explicitFocusOrder="0" pos="320 496 48 24" buttonText="Dn"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="fedcaca14cadb7e6" memberName="label12" virtualName=""
-         explicitFocusOrder="0" pos="312 384 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="376 384 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="789b2d42c36319de" memberName="txtBItemName"
-              virtualName="" explicitFocusOrder="0" pos="368 384 184 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="432 384 184 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <COMBOBOX name="new combo box" id="624a2f6acff61c45" memberName="cbxAlign"
             virtualName="" explicitFocusOrder="0" pos="304 16 56 24" editable="0"
             layout="33" items="4&#10;8&#10;16" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
-  <TEXTBUTTON name="new button" id="b4f552bc87690c64" memberName="btnBItemDupl"
-              virtualName="" explicitFocusOrder="0" pos="256 408 48 24" buttonText="Dupl"
-              connectedEdges="12" needsCallback="1" radioGroupId="0"/>
   <TOGGLEBUTTON name="new toggle button" id="904c1638347d6b92" memberName="optMapProgram"
                 virtualName="" explicitFocusOrder="0" pos="704 264 80 24" buttonText="Program"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
@@ -1772,7 +1851,7 @@ BEGIN_JUCER_METADATA
               explicitFocusOrder="0" pos="8 360 40 24" buttonText="Up" connectedEdges="2"
               needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="5fca6cb4978a26b3" memberName="btnBOpen"
-              virtualName="" explicitFocusOrder="0" pos="256 656 48 24" buttonText="Open"
+              virtualName="" explicitFocusOrder="0" pos="320 656 48 24" buttonText="Open"
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="526cc3ce776cdcc3" memberName="lblBankPath"
          virtualName="" explicitFocusOrder="0" pos="48 360 896 24" edTextCol="ff000000"
@@ -1780,24 +1859,27 @@ BEGIN_JUCER_METADATA
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="2a46dd8fc6577eaa" memberName="lblBItemType"
-         virtualName="" explicitFocusOrder="0" pos="312 408 240 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="376 408 240 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Type:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="5ea115b1228245fe" memberName="label10" virtualName=""
-         explicitFocusOrder="0" pos="312 432 56 24" edTextCol="ff000000"
+  <LABEL name="new label" id="5ea115b1228245fe" memberName="lblBItemValue"
+         virtualName="" explicitFocusOrder="0" pos="376 432 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Value:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="7218c1b05111775d" memberName="txtBItemValue"
-              virtualName="" explicitFocusOrder="0" pos="368 432 72 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="432 432 88 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="e1fb93f0e1d42150" memberName="lblBItemValueEquiv"
-         virtualName="" explicitFocusOrder="0" pos="368 456 184 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="432 456 184 24" edTextCol="ff000000"
          edBkgCol="0" labelText="()" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
+  <TOGGLEBUTTON name="new toggle button" id="c01f6d0157eac10c" memberName="chkBItemHex"
+                virtualName="" explicitFocusOrder="0" pos="528 432 56 24" buttonText="Hex"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

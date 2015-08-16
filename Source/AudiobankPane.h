@@ -7,12 +7,12 @@
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
   and re-saved.
 
-  Created with Introjucer version: 3.1.0
+  Created with Introjucer version: 3.2.0
 
   ------------------------------------------------------------------------------
 
   The Introjucer is part of the JUCE library - "Jules' Utility Class Extensions"
-  Copyright 2004-13 by Raw Material Software Ltd.
+  Copyright (c) 2015 - ROLI Ltd.
 
   ==============================================================================
 */
@@ -81,7 +81,6 @@ public:
     void gotABI();
     void bankLoaded();
 
-    String getFieldDesc(ValueTree field);
     void fillFieldsList();
     void fillFieldParams();
     void fillMeaningsBox();
@@ -89,8 +88,10 @@ public:
     void fillLibItemsBox();
     void fillLibItemControls();
 
+    void bOpen(int row);
+    void fillBListControls();
     void fillBItemsBox();
-    void fillBItemsControls();
+    void fillBItemsControls(bool setTxtBItemValue);
 
     ValueTree getBankSubList(int banknum, String sublistname);
 
@@ -169,18 +170,18 @@ private:
     ScopedPointer<Label> lblStructSemicolon;
     ScopedPointer<Label> label;
     ScopedPointer<ComboBox> cbxLibList;
-    ScopedPointer<TextButton> txtLibAdd;
+    ScopedPointer<TextButton> btnLibAdd;
     ScopedPointer<Label> label8;
     ScopedPointer<TextEditor> txtLibItemName;
     ScopedPointer<ToggleButton> chkLibMerge;
     ScopedPointer<TextButton> btnBItemAdd;
+    ScopedPointer<TextButton> btnBItemDupl;
     ScopedPointer<TextButton> btnBItemDel;
     ScopedPointer<TextButton> btnBItemUp;
     ScopedPointer<TextButton> btnBItemDn;
     ScopedPointer<Label> label12;
     ScopedPointer<TextEditor> txtBItemName;
     ScopedPointer<ComboBox> cbxAlign;
-    ScopedPointer<TextButton> btnBItemDupl;
     ScopedPointer<ToggleButton> optMapProgram;
     ScopedPointer<TextEditor> txtMapPNum;
     ScopedPointer<Label> lblMapPNote;
@@ -194,9 +195,10 @@ private:
     ScopedPointer<TextButton> btnBOpen;
     ScopedPointer<Label> lblBankPath;
     ScopedPointer<Label> lblBItemType;
-    ScopedPointer<Label> label10;
+    ScopedPointer<Label> lblBItemValue;
     ScopedPointer<TextEditor> txtBItemValue;
     ScopedPointer<Label> lblBItemValueEquiv;
+    ScopedPointer<ToggleButton> chkBItemHex;
 
 
     //==============================================================================

@@ -39,22 +39,74 @@ class BankFile {
     
     //Returns number of bytes read/written, -1 on error
     int readStruct(ROM& rom, uint32 addr, ValueTree stru); //stru has been just copied from the template
-    int writeStruct(ROM& rom, uint32 addr, ValueTree stru);
+    /*int writeStruct(ROM& rom, uint32 addr, ValueTree stru);*/
     
     ValueTree getCopyOfTemplate(String name);
     void loadElementList(ROM& rom, uint32 baseaddr, int bank_length, String listname, String elementname);
-    void checkAddListItem(String listname, int addressval, ValueTree node);
+    void checkAddListItem(ValueTree list, int addressval, ValueTree node);
+    ValueTree getListForPointer(String pointertype);
     
     bool load(ROM& rom, int banknum);
     bool save(ROM& rom, int banknum);
     
+    //For nodes within d
+    class NodeValueInfo{
+    public:
+        String value;
+        String valueequiv;
+        bool valueeditable;
+        bool valuereference;
+        NodeValueInfo(){
+            value = valueequiv = "";
+            valueeditable = valuereference = false;
+        }
+    };
+    enum NodeListFlags{
+        canAdd = 1,
+        canDupl = 2,
+        canDel = 4,
+        canMove = 8
+    };
+    static String getFieldDesc(ValueTree field, bool cformatting);
+    String getNodeDesc(ValueTree node);
+    String getNodeName(ValueTree node);
+    bool isNodeNameEditable(ValueTree node);
+    bool setNodeName(ValueTree node, String name);
+    String getNodeType(ValueTree node);
+    NodeValueInfo getNodeValueInfo(ValueTree node, bool hex);
+    bool setNodeValue(ValueTree node, String input, bool hex);
+    int getNodeListFlags(ValueTree nodein, ValueTree nodeselected); //see NodeListInfo above
+    String getNodePath(ValueTree node);
+    ValueTree getNodeChild(ValueTree node, int childidx);
+    ValueTree getNodeParent(ValueTree node);
+    bool addNode(ValueTree parent);
+    bool duplicateNode(ValueTree parent, ValueTree child);
+    bool deleteNode(ValueTree parent, ValueTree child);
+    bool moveNodeUp(ValueTree parent, ValueTree child);
+    bool moveNodeDown(ValueTree parent, ValueTree child);
+    
+    ValueTree importNode(BankFile& sourcebank, String itemtype, int itemindex, bool merge);
+    
+    /*
     int getLength();
     int getLength(ValueTree stru);
+    */
     
     private:
     ValueTree romdesc;
     ValueTree abfstructsnode;
     ValueTree rdnamesnode;
+    
+    static bool isMeaningDeterminedAtImport(String meaning);
+    static void swapReferences(ValueTree parent, String pointername, int swapFrom, int swapTo);
+    static void insertReferences(ValueTree parent, String pointername, int index);
+    static void deleteReferences(ValueTree parent, String pointername, int index);
+    static bool deepCompareItems(String itemtype, BankFile& banka, int itemindexa, 
+            BankFile& bankb, int itemindexb);
+    static bool deepCompareNodes(BankFile& banka, ValueTree nodea, 
+            BankFile& bankb, ValueTree nodeb);
+    static bool compareProperty(ValueTree nodea, ValueTree nodeb, String name);
+    ValueTree importNodeRecurse(BankFile& sourcebank, bool merge, ValueTree sourcenode, ValueTree destparent);
     
 };
 

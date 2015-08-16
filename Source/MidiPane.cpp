@@ -7,12 +7,12 @@
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
   and re-saved.
 
-  Created with Introjucer version: 3.1.0
+  Created with Introjucer version: 3.2.0
 
   ------------------------------------------------------------------------------
 
   The Introjucer is part of the JUCE library - "Jules' Utility Class Extensions"
-  Copyright 2004-13 by Raw Material Software Ltd.
+  Copyright (c) 2015 - ROLI Ltd.
 
   ==============================================================================
 */
@@ -56,6 +56,9 @@
 MidiPane::MidiPane (SEQ64& seq64_)
     : seq64(seq64_)
 {
+    //[Constructor_pre] You can add your own custom stuff here..
+    //[/Constructor_pre]
+
     addAndMakeVisible (groupComponent8 = new GroupComponent ("new group",
                                                              TRANS("Import Settings")));
 
@@ -571,6 +574,9 @@ void MidiPane::paint (Graphics& g)
 
 void MidiPane::resized()
 {
+    //[UserPreResize] Add your own custom resize code here..
+    //[/UserPreResize]
+
     groupComponent8->setBounds (360, 8, 352, 408);
     groupComponent3->setBounds (368, 216, 336, 192);
     groupComponent7->setBounds (0, 160, 352, 48);
@@ -800,7 +806,6 @@ void MidiPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         val = text.getIntValue();
     }
     bool turnRed = (val <= 0);
-    bool redrawCmdItem = false;
 
     if(&editorThatWasChanged == &*txtMIDIBend){
         midioptsnode.setProperty("bendrange", val, nullptr);

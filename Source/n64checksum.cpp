@@ -252,6 +252,7 @@ int FindCIC(ROM& rom){
 	int ret;
     for(int cic_index = 0; cic_index < NUM_CICS; cic_index++){
         ret = CalculateCRC(rom, cic_index, &crc1, &crc2);
+        if(ret < 0) return ret;
         if(crc1 == old_crc1 && crc2 == old_crc2){
 	        SEQ64::say("CRCs match: 0x" + ROM::hex(crc1) + ", 0x" + ROM::hex(crc2) 
 	                + "-- ROM has CIC " + String(cic_name_list[cic_index]));

@@ -890,19 +890,18 @@ void SeqFile::insertCommand(int section, int cmdidx, ValueTree command){
         return;
     }
     SeqData* sec = sections[section];
-    int address_start = sec->address;
+    //int address_start = sec->address;
     ValueTree param;
     String datasrc;
-    int datalen, value, p, i;
     //Get address to insert command at
     uint32 address;
-    bool insertAtEnd = false;
+    //bool insertAtEnd = false;
     if(cmdidx < sec->cmdoffsets.size() && cmdidx >= 0){
         address = sec->cmdoffsets[cmdidx];
     }else{
         cmdidx = sec->cmdoffsets.size();
         address = sec->address_end;
-        insertAtEnd = true;
+        //insertAtEnd = true;
     }
     //Figure out how many bytes to insert
     int cmdlen = getNewCommandLength(command);
@@ -933,7 +932,6 @@ void SeqFile::deleteCommand(int section, int cmdidx){
         SEQ64::say("Invalid command " + String(section));
         return;
     }
-    int address_start = sec->address;
     uint32 address = sec->cmdoffsets[cmdidx];
     ValueTree command = getCommand(address, sec->stype);
     int cmdlen = command.getProperty(idLength, 1);
@@ -1192,7 +1190,7 @@ MidiFile* SeqFile::toMIDIFile(){
     ValueTree command, param;
     String action, meaning;
     int channel, notelayer, value, transpose, delay, note, velocity, gate;
-    bool qDelay, qVelocity, qGate;
+    //bool qDelay, qVelocity, qGate;
     uint32 address, t, a;
     int stype = 0;
     int cmdlen;
@@ -1437,7 +1435,10 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mastertrack.addEvent(msg);
         }else if(action == "Chn Reset"){
-            //TODO actually reset some CCs?
+            //Reset transposes for this channel
+            for(notelayer=0; notelayer<max_layers; notelayer++){
+                transposes.set((channel*max_layers)+notelayer, 0);
+            }
         }else if(action == "Chn Priority"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
@@ -1559,9 +1560,9 @@ MidiFile* SeqFile::toMIDIFile(){
                 if(instlist.isValid()){
                     ValueTree instlistitem = instlist.getChild(value);
                     if(instlistitem.isValid()){
-                        int addr = instlistitem.getProperty("value", -1);
-                        if(addr > 0){
-                            ValueTree instrument = bank->d.getChildWithName("instruments").getChildWithProperty("address", addr);
+                        int instindex = instlistitem.getProperty("index", -1);
+                        if(instindex >= 0){
+                            ValueTree instrument = bank->d.getChildWithName("instruments").getChild(instindex);
                             if(instrument.isValid()){
                                 if(instrument.getProperty("map", "Error").toString() == "program"){
                                     midiprogram = instrument.getProperty("program", 0);
@@ -1569,7 +1570,7 @@ MidiFile* SeqFile::toMIDIFile(){
                                     SEQ64::say("Changed instrument " + String(value) + " to program " + String(midiprogram)
                                             + ", transpose " + String(midiinsttransposes[channel]));
                                 } else SEQ64::say("Could not load MIDI instrument from bank: instrument is not mapped to program");
-                            } else SEQ64::say("Could not load MIDI instrument from bank: could not load instrument with address");
+                            } else SEQ64::say("Could not load MIDI instrument from bank: could not load instrument #" + String(instindex));
                         } else SEQ64::say("Could not load MIDI instrument from bank: instrument is nullptr");
                     } else SEQ64::say("Could not load MIDI instrument from bank: no ABBank item #" + String(value));
                 } else SEQ64::say("Could not load MIDI instrument from bank: abbank invalid");
@@ -1579,7 +1580,7 @@ MidiFile* SeqFile::toMIDIFile(){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Track Note"){
-            qDelay = qVelocity = qGate = false;
+            //qDelay = qVelocity = qGate = false;
             //Delay already taken care of
             //Note
             param = command.getChildWithProperty(idMeaning, "Note");
@@ -1604,7 +1605,7 @@ MidiFile* SeqFile::toMIDIFile(){
             param = command.getChildWithProperty(idMeaning, "Velocity");
             if(param.isValid()){
                 velocity = getAdjustedValue(param);
-                qVelocity = true;
+                //qVelocity = true;
 			}else{
 				velocity = 0x7F;
 			}
@@ -1612,7 +1613,7 @@ MidiFile* SeqFile::toMIDIFile(){
             param = command.getChildWithProperty(idMeaning, "Gate Time");
             if(param.isValid()){
                 gate = getAdjustedValue(param);
-                qGate = true;
+                //qGate = true;
             }else{
                 gate = 0;
             }
@@ -1620,7 +1621,7 @@ MidiFile* SeqFile::toMIDIFile(){
             param = command.getChildWithProperty(idMeaning, "Delay");
             if(param.isValid()){
                 delay = getAdjustedValue(param);
-                qDelay = true;
+                //qDelay = true;
             }else{
                 //SEQ64::say("@" + ROM::hex(a, 6) + ": No delay value given, using current " + ROM::hex((uint32)delay, 4));
                 //Add it so we actually do the delay!
@@ -1777,7 +1778,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
             layertracks.add(new MidiMessageSequence());
         }
     }
-    int other_channel = -1;
+    int other_channel = -1; //TODO put notes on another channel
     bool too_many_notes;
     Array<int> layerstates;
     for(layer=0; layer<max_layers; layer++){
@@ -2169,7 +2170,6 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     MidiMessage msg2, msg3;
     int timestamp2, timestamp3;
     int note, delay, transpose;
-    bool skippedDelay;
     trk = nullptr;
     for(channel=0; channel<16; channel++){
         if(channelsused[channel] < 0) continue;
@@ -2394,7 +2394,7 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2){
 }
 
 void SeqFile::optimize(){
-    int stacksize = midiopts.getProperty("stacksize", 4);
+    int stacksize = midiopts.getProperty("stacksize", 4); //TODO consider stack
     bool useCalls = midiopts.getProperty("usecalls", true);
     bool useLoops = midiopts.getProperty("useloops", true);
     if(!useCalls && !useLoops){
@@ -2706,7 +2706,7 @@ void SeqFile::optimize(){
 
 void SeqFile::reduceTrackNotes(){
     SEQ64::say("Reducing track notes to shortest types...");
-    int sec, lastdelay, delay, gate, value, cmd;
+    int sec, lastdelay, delay, gate, cmd;
     ValueTree section;
     ValueTree command, newcommand, paramd, paramg;
     String action;

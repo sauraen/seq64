@@ -804,7 +804,7 @@ void FilesPane::rowSelected(TextListModel* parent, int row){
 }
 void FilesPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     String text = editorThatWasChanged.getText();
-    int decval = text.getIntValue();
+    //int decval = text.getIntValue();
     int hexval = text.getHexValue32();
     bool turnRed = false;
     if(&editorThatWasChanged == &*txtFTAddr){

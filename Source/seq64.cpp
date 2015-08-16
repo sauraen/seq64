@@ -91,7 +91,7 @@ File SEQ64::readFolderProperty(const String& name){
 	return f;
 }
 
-SEQ64::SEQ64() : romdesc(Identifier("RomDesc")), rom(0, false) {
+SEQ64::SEQ64() : rom(0, false), romdesc(Identifier("RomDesc")) {
     //do nothing
 }
 
@@ -99,6 +99,7 @@ void SEQ64::initialise (const String& commandLine) {
     StringArray cmdparams = StringArray::fromTokens(commandLine, " \n", "\"\'");
     String rompath = String::empty, romdescpath = String::empty, outputpath = String::empty;
     int seqnumber = -1;
+    bool forceoverwrite = false;
     String param;
     bool alldone = false;
     for(int i=0; i<cmdparams.size(); i++){
@@ -119,6 +120,10 @@ void SEQ64::initialise (const String& commandLine) {
             outputpath = param.substring(9);
         }else if(param.startsWithIgnoreCase("-output=")){
             outputpath = param.substring(8);
+        }else if(param.startsWithIgnoreCase("-f")){
+            forceoverwrite = true;
+        }else if(param.startsWithIgnoreCase("--force-overwrite")){
+            forceoverwrite = true;
         }else{
             say("Unrecognized option " + param);
             alldone = true;
@@ -130,7 +135,8 @@ void SEQ64::initialise (const String& commandLine) {
         say("--romdesc=<path_to_romdesc_file>");
         say("--export_midi=<midi_number_to_export> (requires other three options)");
         say("--output=<path_to_exported_file>");
-        say("(All options may begin with 1 or 2 hyphens)");
+        say("(Above options may begin with 1 or 2 hyphens)");
+        say("-f or --force-overwrite (overwrite existing output file)");
         quit();
         return;
     }
@@ -153,15 +159,18 @@ void SEQ64::initialise (const String& commandLine) {
             outputfile = outputfile.withFileExtension(".mid");
         }
         if(outputfile.exists()){
-            say("Will not overwrite existing output file " + outputfile.getFullPathName());
-            quit();
-            return;
-        }
-        Result r = outputfile.create();
-        if(r.failed()){
-            say("Could not create output file " + outputfile.getFullPathName());
-            quit();
-            return;
+            if(!forceoverwrite){
+                say("Will not overwrite existing output file " + outputfile.getFullPathName());
+                quit();
+                return;
+            }
+        }else{
+            Result r = outputfile.create();
+            if(r.failed()){
+                say("Could not create output file " + outputfile.getFullPathName());
+                quit();
+                return;
+            }
         }
         outputfile.deleteFile();
         if(seqnumber < 0){
