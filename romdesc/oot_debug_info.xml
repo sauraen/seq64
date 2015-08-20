@@ -321,16 +321,87 @@
     <knownfile type="Audiotable" from_ft="1" ftindex="5" address="608368" length="4526992"/>
   </knownfilelist>
   <audiobankidx>
-    <indexentry index="5" name="Hylian Troupe"/>
-    <indexentry index="6" name="Title Screen"/>
-    <indexentry index="3" name="Main Orchestra"/>
-    <indexentry index="0" name="Master Instrument Set"/>
+    <indexentry index="0" name="Unknown (Master?)"/>
     <indexentry index="1" name="Actor Sounds"/>
     <indexentry index="2" name="Nature Sounds"/>
-    <indexentry index="4" name="Deku Tree"/>
-    <indexentry index="7" name="Jabu-Jabu's Belly"/>
-    <indexentry index="8" name="Kakariko (Guitar)"/>
-    <indexentry index="9" name="Harp, Strings"/>
+    <indexentry index="3" name="Main Orchestra">
+      <instruments>
+        <item index="0" name="Flute" map="program" program="72" transpose="12"/>
+        <item index="1" name="Oboe" map="program" program="68"/>
+        <item index="2" name="Clarinet" map="program" program="71"/>
+        <item index="3" name="Bassoon" map="program" program="70"/>
+        <item index="4" name="Horn" map="program" program="60"/>
+        <item index="5" name="Trumpet" map="program" program="56"/>
+        <item index="6" name="Trombone" map="program" program="57"/>
+        <item index="7" name="Tuba" map="program" program="58"/>
+        <item index="8" name="Glockenspiel" map="program" program="9" transpose="12"/>
+        <item index="9" name="Strings 1" map="program" program="48"/>
+        <item index="10" name="Strings 2" map="program" program="48"/>
+        <item index="11" name="Pizzicato" map="program" program="45" transpose="0"/>
+        <item index="12" name="Piano" map="program" program="1"/>
+        <item index="13" name="Harp" map="program" program="46"/>
+        <item index="14" name="Marimba" map="program" program="12"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="4" name="Deku Tree">
+      <instruments>
+        <item index="0" name="Pad 1" map="program" program="89" transpose="0"/>
+        <item index="1" name="Pad 2" map="program" program="89"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="5" name="Hylian Troupe">
+      <instruments>
+        <item index="0" name="Koto" map="program" program="107" transpose="0"/>
+        <item index="1" name="Ocarina" map="program" program="79" transpose="12"/>
+        <item index="2" name="Bassoon" map="program" program="70" transpose="0"/>
+        <item index="3" name="Oboe" map="program" program="68"/>
+        <item index="4" name="Pizz Strings" map="program" program="45"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="6" name="Title Screen">
+      <instruments>
+        <item index="0" name="Ocarina" map="program" program="79" transpose="12"/>
+        <item index="1" name="Strings 1" map="program" program="48" transpose="0"/>
+        <item index="2" name="Strings 2" map="program" program="48"/>
+        <item index="3" name="Piano 1" map="program" program="1"/>
+        <item index="4" name="Piano 2" map="program" program="1"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="7" name="Jabu-Jabu's Belly">
+      <instruments>
+        <item index="0" name="Wind" map="program" program="122" transpose="0"/>
+        <item index="1" name="Synth Strings" map="program" program="50"/>
+        <item index="2" name="&quot;Creeking&quot; 1" map="program" program="117"/>
+        <item index="3" name="&quot;Creeking&quot; 2" map="program" program="116"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="8" name="Kakariko (Guitar)">
+      <instruments>
+        <item index="0" name="Harmonica" map="program" program="22" transpose="0"/>
+        <item index="1" name="Guitar 1" map="program" program="24"/>
+        <item index="2" name="Guitar 2" map="program" program="24"/>
+        <item index="3" name="Ocarina" map="program" program="79" transpose="12"/>
+        <item index="4" name="Glockenspiel" map="program" program="9" transpose="12"/>
+        <item index="5" name="Accordion" map="program" program="21" transpose="0"/>
+        <item index="6" name="Accordion" map="program" program="21"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="9" name="Harp, Strings">
+      <instruments>
+        <item index="0" name="Harp 1" map="program" program="46" transpose="0"/>
+        <item index="1" name="Harp 2" map="program" program="46"/>
+        <item index="2" name="Harp 3" map="program" program="46"/>
+        <item index="3" name="Harp 4" map="program" program="46" transpose="0"/>
+        <item index="4" name="Strings" map="program" program="48" transpose="0"/>
+        <item index="5" name="Ocarina" map="program" program="79" transpose="12"/>
+        <item index="6" name="Choir" map="program" program="50"/>
+        <item index="7" name="Choir" map="program" program="50" transpose="0"/>
+        <item index="8" name="Glockenspiel" map="program" program="9" transpose="12"/>
+        <item index="9" name="Strings 1" map="program" program="48"/>
+        <item index="10" name="Strings 2" map="program" program="48"/>
+        <item index="11" name="Pizz Strings" map="program" program="45"/>
+      </instruments>
+    </indexentry>
     <indexentry index="10" name="Fire Temple"/>
     <indexentry index="11" name="Dodongo's Cavern"/>
     <indexentry index="12" name="Forest Temple"/>
@@ -347,17 +418,84 @@
     <indexentry index="23" name="Ice Cavern"/>
     <indexentry index="24" name="Shadow Temple"/>
     <indexentry index="25" name="Water Temple"/>
-    <indexentry index="26" name="??? (Unused)"/>
+    <indexentry index="26" name="Piano (Unused)"/>
     <indexentry index="27" name="Gerudo Valley"/>
     <indexentry index="28" name="Potion Shop"/>
     <indexentry index="29" name="Konami &amp; Kotaku's Theme"/>
     <indexentry index="30" name="Organ"/>
     <indexentry index="31" name="Inside Ganon's Castle"/>
-    <indexentry index="32" name="Battle 2"/>
-    <indexentry index="33" name="Ending Orchestra 1"/>
-    <indexentry index="34" name="Ending Orchestra 2"/>
-    <indexentry index="35" name="Fanfare Orchestra"/>
-    <indexentry index="36" name="Do you want to hear that again?"/>
+    <indexentry index="32" name="Battle 2">
+      <instruments>
+        <item index="0" name="Flute" map="program" program="72" transpose="12"/>
+        <item index="1" name="Choir" map="program" program="50" transpose="0"/>
+        <item index="2" name="Choir 2" map="program" program="50"/>
+        <item index="3" name="Horn" map="program" program="60"/>
+        <item index="4" name="Trumpet" map="program" program="56"/>
+        <item index="5" name="Trombone" map="program" program="57"/>
+        <item index="6" name="Tuba" map="program" program="58"/>
+        <item index="7" name="Strings 1" map="program" program="48"/>
+        <item index="8" name="Strings 2" map="program" program="48"/>
+        <item index="9" name="Piano" map="program" program="1"/>
+        <item index="10" name="Marimba" map="program" program="12"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="33" name="Ending Orchestra 1">
+      <instruments>
+        <item index="0" name="Malon 1" map="program" program="85" transpose="0"/>
+        <item index="1" name="Malon 2" map="program" program="54"/>
+        <item index="2" name="Clarinet" map="program" program="71"/>
+        <item index="3" name="Horn" map="program" program="60"/>
+        <item index="4" name="Oboe" map="program" program="68"/>
+        <item index="5" name="Harp" map="program" program="46"/>
+        <item index="6" name="Violin" map="program" program="40"/>
+        <item index="7" name="Glockenspiel" map="program" program="9"/>
+        <item index="8" name="Strings 1" map="program" program="48"/>
+        <item index="9" name="Strings 2" map="program" program="48"/>
+        <item index="10" name="Bell" map="program" program="14"/>
+        <item index="11" name="Harp" map="program" program="46"/>
+        <item index="12" name="Choir" map="program" program="52"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="34" name="Ending Orchestra 2">
+      <instruments>
+        <item index="0" name="Koto" map="program" program="107" transpose="0"/>
+        <item index="1" name="Ocarina" map="program" program="79" transpose="12"/>
+        <item index="2" name="Bassoon" map="program" program="70"/>
+        <item index="3" name="Oboe" map="program" program="68" transpose="0"/>
+        <item index="4" name="Choir 1" map="program" program="52"/>
+        <item index="5" name="Tambourine" map="program" program="115"/>
+        <item index="6" name="Harp" map="program" program="46"/>
+        <item index="7" name="Glockenspiel" map="program" program="9"/>
+        <item index="8" name="Malon" map="program" program="85"/>
+        <item index="9" name="Strings 1" map="program" program="48"/>
+        <item index="10" name="Strings 2" map="program" program="48"/>
+        <item index="11" name="Pizz Strings" map="program" program="45"/>
+        <item index="12" name="Horn" map="program" program="60"/>
+        <item index="13" name="Choir 2" map="program" program="52"/>
+        <item index="14" name="Cuica" map="program" program="118"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="35" name="Fanfare Orchestra">
+      <instruments>
+        <item index="0" name="Trumpet" map="program" program="56" transpose="0"/>
+        <item index="1" name="Trombone" map="program" program="57"/>
+        <item index="2" name="Tuba" map="program" program="58"/>
+        <item index="3" name="Glockenspiel" map="program" program="9"/>
+        <item index="4" name="Strings 1" map="program" program="48"/>
+        <item index="5" name="Strings 2" map="program" program="48"/>
+        <item index="6" name="Harp" map="program" program="46"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="36" name="Did you get all that?   -&gt;No   Yes">
+      <instruments>
+        <item index="0" name="Oboe" map="program" program="68" transpose="0"/>
+        <item index="1" name="Bassoon" map="program" program="70"/>
+        <item index="2" name="Strings 1" map="program" program="48"/>
+        <item index="3" name="Strings 2" map="program" program="48"/>
+        <item index="4" name="Pizz Strings" map="program" program="45"/>
+        <item index="5" name="Harp" map="program" program="46"/>
+      </instruments>
+    </indexentry>
     <indexentry index="37" name="??? (Last)"/>
   </audiobankidx>
   <audioseqidx>
@@ -458,7 +596,7 @@
             writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="0"
             useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
             q_pan_amp="2"/>
-  <abfstructs align="8">
+  <abfstructs align="16">
     <struct name="ABIndex">
       <field name="NUM_BANK" datatype="uint16" ispointer="0" isarray="0" meaning="NUM_BANK"/>
       <field name="zeros" datatype="uint16" ispointer="0" isarray="1" meaning="None"
@@ -545,8 +683,8 @@
       <field name="unknown2" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
       <field name="samplesize" datatype="uint16" ispointer="0" isarray="0"
              meaning="Sample Length"/>
-      <field name="data" datatype="uint32" ispointer="1" isarray="0" meaning="Sample Address (+offset)"
-             ptrto="ATSample"/>
+      <field name="sampleaddr" datatype="uint32" ispointer="0" isarray="0"
+             meaning="Sample Address (+offset)" ptrto="ATSample"/>
       <field name="loop" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMLoop"
              ptrto="ALADPCMLoop"/>
       <field name="book" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMBook"
@@ -579,3 +717,4 @@
     </struct>
   </abfstructs>
 </RomDesc>
+

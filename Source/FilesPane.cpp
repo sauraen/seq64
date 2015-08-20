@@ -721,29 +721,43 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         if(!idxlistnode.isValid()) return;
         if(ientryidx < 0) return;
         if(dataaddr < 0) return;
-        if(&*seq64.seq == nullptr){
-            return;
-        }
-        uint32 seqaddr, length;
-        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
-            seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (16*ientryidx) + 16);
-            length = seq64.rom.readWord(indexaddr + (16*ientryidx) + 20);
-        }else{
-            seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (8*ientryidx) + 4);
-            length = seq64.rom.readWord(indexaddr + (8*ientryidx) + 8);
-        }
-        uint32 loadedseqlength = seq64.seq->getLength();
-        if(loadedseqlength > length){
-            NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Save Entry",
-                    "Currently, saving larger sequence (" + ROM::hex(loadedseqlength, 4)
-                    + " bytes)\ninto smaller space (" + ROM::hex(length, 4) + " bytes) is not supported.");
-            return;
-        }
-        if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+        if(idxlistnode.hasType("audiobankidx")){
+            if(&*seq64.bank == nullptr){
+                return;
+            }
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Overwrite?", "Replace bank " + String(ientryidx) + " with the currently loaded one?"
+                    + "\n(This does not save the ROM to disk.)", nullptr, nullptr)) return;
+            seq64.bank->save(seq64.rom, ientryidx);
+            fillIndex();
+        }else if(idxlistnode.hasType("audioseqidx")){
+            if(&*seq64.seq == nullptr){
+                return;
+            }
+            uint32 seqaddr, length;
+            if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+                seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (16*ientryidx) + 16);
+                length = seq64.rom.readWord(indexaddr + (16*ientryidx) + 20);
+            }else{
+                seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (8*ientryidx) + 4);
+                length = seq64.rom.readWord(indexaddr + (8*ientryidx) + 8);
+            }
+            uint32 loadedseqlength = seq64.seq->getLength();
+            if(loadedseqlength > length){
+                NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Save Entry",
+                        "Currently, saving larger sequence (" + ROM::hex(loadedseqlength, 4)
+                        + " bytes)\ninto smaller space (" + ROM::hex(length, 4) + " bytes) is not supported.");
+                return;
+            }
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
                     "Overwrite?", "Replace the sequence @" + ROM::hex(seqaddr) + " (" + ROM::hex(length, 4)
                     + " bytes)\nwith the currently loaded one (" + ROM::hex(loadedseqlength, 4) + " bytes)?"
                     + "\n(This does not save the ROM to disk.)", nullptr, nullptr)) return;
-        seq64.seq->saveToROM(seq64.rom, seqaddr);
+            seq64.seq->saveToROM(seq64.rom, seqaddr);
+        }else{
+            NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Save Entry",
+                    "Saving an entry to " + idxlistnode.getType().toString() + " not supported");
+        }
         //[/UserButtonCode_btnSaveEntry]
     }
     else if (buttonThatWasClicked == optIndexType1)

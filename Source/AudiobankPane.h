@@ -93,7 +93,8 @@ public:
     void fillBItemsBox();
     void fillBItemsControls(bool setTxtBItemValue);
 
-    ValueTree getBankSubList(int banknum, String sublistname);
+    String getListName(String cbxLibListText);
+    ValueTree getBankSubList(int banknum, String cbxLibListText);
 
     //[/UserMethods]
 

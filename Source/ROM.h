@@ -46,7 +46,10 @@ class ROM : public MemoryBlock {
     uint8  readByte(uint32 address);
     
     void writeWord(uint32 address, uint32 data);
+    void writeHalfWord(uint32 address, uint16 data);
     void writeByte(uint32 address, uint8 data);
+    
+    uint32 getAddressOfNextData(uint32 startaddress);
     
     String getROMName();
     

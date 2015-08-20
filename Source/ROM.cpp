@@ -138,6 +138,24 @@ void ROM::writeWord(uint32 address, uint32 data){
     }
 }
 
+void ROM::writeHalfWord(uint32 address, uint16 data){
+    address = (uint32)((uint32)address & (uint32)0xFFFFFFFE); //Clear lower bit
+    if(byteOrdering == DCBA){
+        address = (uint32)((uint32)address ^ (uint32)0x00000002); //Flip bit 1
+    }
+    if(address+1 >= getSize()){jassertfalse; return;}
+    if(byteOrdering == ABCD){
+        address += 1;
+        (*this)[address] = (data & (uint16)0x00FF);
+        data >>= 8;
+        (*this)[--address] = (data & (uint16)0x00FF);
+    }else{
+        (*this)[address] = (data & (uint16)0x00FF);
+        data >>= 8;
+        (*this)[++address] = (data & (uint16)0x00FF);
+    }
+}
+
 void ROM::writeByte(uint32 address, uint8 data){
     if(address >= getSize()){jassertfalse; return;}
     if(byteOrdering != ABCD){
@@ -147,6 +165,15 @@ void ROM::writeByte(uint32 address, uint8 data){
         }
     }
     (*this)[address] = data;
+}
+
+uint32 ROM::getAddressOfNextData(uint32 startaddress){
+    if(startaddress > getSize()){ jassertfalse; return 0; } //If size < 0
+    uint32 size = getSize();
+    while(startaddress < size && (uint8)(*this)[startaddress] == 0){
+        ++startaddress;
+    }
+    return (startaddress & 0xFFFFFFF0);
 }
 
 String ROM::getROMName(){

@@ -1038,6 +1038,7 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         libselitem.removeProperty("drumsplit1", nullptr);
         libselitem.removeProperty("drumsplit2", nullptr);
         libselitem.removeProperty("drumsplit3", nullptr);
+        libselbank->copyItemPropsToRDItem(getListName(cbxLibList->getText()), libselitemidx, libselitem);
         fillLibItemControls();
         //[/UserButtonCode_optMapProgram]
     }
@@ -1049,6 +1050,7 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         libselitem.setProperty("map", "drum", nullptr);
         libselitem.removeProperty("note", nullptr);
         libselitem.removeProperty("transpose", nullptr);
+        libselbank->copyItemPropsToRDItem(getListName(cbxLibList->getText()), libselitemidx, libselitem);
         fillLibItemControls();
         //[/UserButtonCode_optMapDrum]
     }
@@ -1165,6 +1167,7 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     bool turnRed = (val <= 0);
     bool repaintFieldEntry = false;
     bool repaintBItemEntry = false;
+    bool copyItemToRD = false;
 
     if(&editorThatWasChanged == &*txtFieldName){
         turnRed = (text == "");
@@ -1196,10 +1199,12 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         libselitem.setProperty("name", text, nullptr);
         lsmLibItems->set(libselitemidx, text);
         lstLibItems->repaintRow(libselitemidx);
+        copyItemToRD = true;
     }else if(&editorThatWasChanged == &*txtMapPNum){
         if(!libselitem.isValid()) return;
         if(val >= 128) turnRed = true;
         libselitem.setProperty("program", val, nullptr);
+        copyItemToRD = true;
     }else if(&editorThatWasChanged == &*txtMapPNote){
         if(!libselitem.isValid()) return;
         if(val >= 128) turnRed = true;
@@ -1209,6 +1214,7 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         }else{
             libselitem.setProperty("note", val, nullptr);
         }
+        copyItemToRD = true;
     }else if(&editorThatWasChanged == &*txtMapDS1){
         if(!libselitem.isValid()) return;
         if(val >= 128) turnRed = true;
@@ -1217,18 +1223,21 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         }else{
             libselitem.setProperty("note", val, nullptr);
         }
+        copyItemToRD = true;
     }else if(&editorThatWasChanged == &*txtMapDS2){
         if(!libselitem.isValid()) return;
         if(val >= 128) turnRed = true;
         if(cbxLibList->getText() == "Instruments"){
             libselitem.setProperty("drumsplit2", val, nullptr);
         }
+        copyItemToRD = true;
     }else if(&editorThatWasChanged == &*txtMapDS3){
         if(!libselitem.isValid()) return;
         if(val >= 128) turnRed = true;
         if(cbxLibList->getText() == "Instruments"){
             libselitem.setProperty("drumsplit3", val, nullptr);
         }
+        copyItemToRD = true;
     }else if(&editorThatWasChanged == &*txtBItemName){
         if(seq64.bank == nullptr) return;
         if(!bselnode.isValid()) return;
@@ -1259,6 +1268,9 @@ void AudiobankPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         int row = lstBItems->getLastRowSelected();
         lsmBItems->set(row, seq64.bank->getNodeDesc(seq64.bank->getNodeChild(bpath, row)));
         lstBItems->repaintRow(row);
+    }
+    if(copyItemToRD){
+        libselbank->copyItemPropsToRDItem(getListName(cbxLibList->getText()), libselitemidx, libselitem);
     }
 }
 
@@ -1362,24 +1374,26 @@ void AudiobankPane::fillMeaningsBox(){
     cbxMeaning->setSelectedItemIndex(0, dontSendNotification);
 }
 
-ValueTree AudiobankPane::getBankSubList(int banknum, String sublistname){
-    if(libselbankidx < 0) return ValueTree();
-    ValueTree abindexnode = seq64.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
-    ValueTree temp = abindexnode.getChildWithProperty("index", banknum);
-    if(!temp.isValid()){
-        SEQ64::say("No index entry for audiobank library entry " + String(banknum) + "!");
-        return ValueTree();
-    }
-    if(sublistname == "Instruments"){
-        return temp.getOrCreateChildWithName("instruments", nullptr);
-    }else if(sublistname == "Drums"){
-        return temp.getOrCreateChildWithName("drums", nullptr);
-    }else if(sublistname == "Sound Effects"){
-        return temp.getOrCreateChildWithName("sfx", nullptr);
+String AudiobankPane::getListName(String cbxLibListText){
+    if(cbxLibListText == "Instruments"){
+        return "instruments";
+    }else if(cbxLibListText == "Drums"){
+        return "drums";
+    }else if(cbxLibListText == "Sound Effects"){
+        return "sfx";
     }else{
-        SEQ64::say("getBankSubList error: sublistname = " + sublistname);
+        return "Error";
+    }
+}
+
+ValueTree AudiobankPane::getBankSubList(int banknum, String cbxLibListText){
+    if(libselbank == nullptr) return ValueTree();
+    ValueTree ret = libselbank->d.getChildWithName(getListName(cbxLibListText));
+    if(!ret.isValid()){
+        SEQ64::say("getBankSubList error: cbxLibListText = " + cbxLibListText);
         return ValueTree();
     }
+    return ret;
 }
 
 void AudiobankPane::fillLibItemsBox(){

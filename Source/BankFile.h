@@ -31,7 +31,7 @@
 
 
 class BankFile {
-    public:
+public:
     ValueTree d; //Data
     
     BankFile(ValueTree romdesc_);
@@ -39,7 +39,8 @@ class BankFile {
     
     //Returns number of bytes read/written, -1 on error
     int readStruct(ROM& rom, uint32 addr, ValueTree stru); //stru has been just copied from the template
-    /*int writeStruct(ROM& rom, uint32 addr, ValueTree stru);*/
+    int getStructLength(ValueTree stru);
+    int writeStruct(ROM& rom, uint32 addr, ValueTree stru);
     
     ValueTree getCopyOfTemplate(String name);
     void loadElementList(ROM& rom, uint32 baseaddr, int bank_length, String listname, String elementname);
@@ -48,6 +49,11 @@ class BankFile {
     
     bool load(ROM& rom, int banknum);
     bool save(ROM& rom, int banknum);
+    
+    void loadRDNamesNode(int banknum);
+    void clearRDNamesNode();
+    void copyRDItemPropsToItem(String listname, int itemindex, ValueTree dest);
+    void copyItemPropsToRDItem(String listname, int itemindex, ValueTree source);
     
     //For nodes within d
     class NodeValueInfo{
@@ -87,15 +93,31 @@ class BankFile {
     
     ValueTree importNode(BankFile& sourcebank, String itemtype, int itemindex, bool merge);
     
-    /*
-    int getLength();
-    int getLength(ValueTree stru);
-    */
-    
-    private:
+private:
     ValueTree romdesc;
     ValueTree abfstructsnode;
     ValueTree rdnamesnode;
+    
+    //Audiobank Index Entry Properties
+    class ABIEProps{
+    public:
+        uint32 abiaddr;
+        uint32 abfaddr;
+        uint32 abientryaddr;
+        uint32 ptr_bank;
+        uint32 bank_length;
+        uint16 bank_count;
+        bool valid;
+        ValueTree abiestru;
+        ABIEProps(){
+            abiaddr = abfaddr = abientryaddr = 0;
+            ptr_bank = bank_length = 0;
+            bank_count = 0;
+            valid = false;
+            abiestru = ValueTree::invalid;
+        }
+    };
+    ABIEProps getABIEProps(ROM& rom, int banknum);
     
     static bool isMeaningDeterminedAtImport(String meaning);
     static void swapReferences(ValueTree parent, String pointername, int swapFrom, int swapTo);
@@ -107,6 +129,11 @@ class BankFile {
             BankFile& bankb, ValueTree nodeb);
     static bool compareProperty(ValueTree nodea, ValueTree nodeb, String name);
     ValueTree importNodeRecurse(BankFile& sourcebank, bool merge, ValueTree sourcenode, ValueTree destparent);
+    void getAllStructLengths(String pointertype, uint32* a, int align);
+    void setAllReferencesAddress(ValueTree parent, String pointername, int index, uint32 address);
+    void fixAllStructImportValues(ValueTree parent);
+    void writeAllItems(ROM& bank, ValueTree parent, uint32* a, int align);
+    void copyAllItemProps(String listname);
     
 };
 
