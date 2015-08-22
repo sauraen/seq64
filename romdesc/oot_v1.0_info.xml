@@ -402,13 +402,82 @@
         <item index="11" name="Pizz Strings" map="program" program="45"/>
       </instruments>
     </indexentry>
-    <indexentry index="10" name="Fire Temple"/>
-    <indexentry index="11" name="Dodongo's Cavern"/>
-    <indexentry index="12" name="Forest Temple"/>
-    <indexentry index="13" name="Lon Lon Ranch"/>
-    <indexentry index="14" name="Goron City"/>
-    <indexentry index="15" name="Kokiri Forest"/>
-    <indexentry index="16" name="Spirit Temple"/>
+    <indexentry index="10" name="Fire Temple">
+      <instruments>
+        <item index="0" name="Chant 1 &amp; 2" map="program" program="0" transpose="0"/>
+        <item index="1" name="Chant 3" map="program"/>
+        <item index="2" name="Chant 3" map="program"/>
+        <item index="3" name="Kilimba" map="program"/>
+        <item index="4" name="Wind" map="program"/>
+        <item index="5" name="Bell" map="program"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="11" name="Dodongo's Cavern">
+      <instruments>
+        <item index="0" name="Wind/Roar" map="program" program="0" transpose="0"/>
+        <item index="1" name="Wood Chime, Shine" map="program"/>
+        <item index="2" name="Noise" map="program"/>
+        <item index="3" name="Famous Dodongo's Sound" map="program"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="12" name="Forest Temple">
+      <instruments>
+        <item index="0" name="Voice Pad" map="program" program="0" transpose="0"/>
+        <item index="1" name="Multipitch Flute" map="program"/>
+        <item index="2" name="Famous Wood Chime" map="program"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="13" name="Lon Lon Ranch">
+      <instruments>
+        <item index="0" name="Malon" map="program" program="85" transpose="0"/>
+        <item index="1" name="Malon" map="program" program="85"/>
+        <item index="2" name="Jazz Guitar" map="program" program="26" transpose="0"/>
+        <item index="3" name="Jazz Guitar (high only)" map="program" program="26"
+              transpose="12"/>
+        <item index="4" name="Jazz Guitar (high only)" map="program" program="26"
+              transpose="12"/>
+        <item index="5" name="Strings" map="program" program="48"/>
+        <item index="6" name="Strings" map="program" program="48"/>
+        <item index="7" name="Fiddle" map="program" program="110"/>
+        <item index="8" name="Fiddle" map="program" program="110"/>
+        <item index="9" name="Clocktown Bell" map="program" program="14"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="14" name="Goron City">
+      <instruments>
+        <item index="0" name="Bent Drum" map="program" program="117" transpose="0"/>
+        <item index="1" name="Conga Hit/Slap" map="program" program="116"/>
+        <item index="2" name="Cuica Push/Pull" map="program" program="0"/>
+        <item index="3" name="Kilimba" map="program" program="108"/>
+        <item index="4" name="Kilimba" map="program" program="108"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="15" name="Kokiri Forest">
+      <instruments>
+        <item index="0" name="Pan Flute" map="program" program="72" transpose="12"/>
+        <item index="1" name="Oboe" map="program" program="68"/>
+        <item index="2" name="Clarinet" map="program" program="71" transpose="0"/>
+        <item index="3" name="Bassoon" map="program" program="70"/>
+        <item index="4" name="Horn" map="program" program="60"/>
+        <item index="5" name="Glockenspiel" map="program" program="9" transpose="12"/>
+        <item index="6" name="Strings" map="program" program="48" transpose="0"/>
+        <item index="7" name="Strings" map="program" program="48"/>
+        <item index="8" name="Pizz Strings" map="program" program="45"/>
+        <item index="9" name="Harpsichord" map="program" program="6" transpose="12"/>
+        <item index="10" name="Harp" map="program" program="46"/>
+        <item index="11" name="Marimba" map="program" program="12"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="16" name="Spirit Temple">
+      <instruments>
+        <item index="0" name="Voice Pad" map="program" program="54" transpose="0"/>
+        <item index="1" name="Synth Strings" map="program" program="50"/>
+        <item index="2" name="Ethnic Flute" map="program" program="111"/>
+        <item index="3" name="Conga Hit/Slap" map="program" program="117"/>
+        <item index="4" name="Synth Strings" map="program" program="50"/>
+        <item index="5" name="Ethnic Flute" map="program" program="111"/>
+      </instruments>
+    </indexentry>
     <indexentry index="17" name="Horse Race"/>
     <indexentry index="18" name="Warp Songs"/>
     <indexentry index="19" name="Legend of Hyrule"/>
