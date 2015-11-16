@@ -1311,6 +1311,10 @@ MidiFile* SeqFile::toMIDIFile(){
                 break;
             }
             a = address;
+        }else if(action == "Loop Start"){
+            SEQ64::say("MIDI export of Loop commands not yet implemented!");
+        }else if(action == "Loop End"){
+            SEQ64::say("MIDI export of Loop commands not yet implemented!");
         }else if(action == "Ptr Channel Header"){
             value = getPtrAddress(command, a);
             if(value < 0) continue;
@@ -1849,6 +1853,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
         //Update matched pairs
         for(layer=0; layer<max_layers; layer++){
             layertrk = layertracks[(max_layers*channel)+layer];
+            layertrk->sort();
             layertrk->updateMatchedPairs();
             if(layertrk->getNumEvents() & 1){
                 SEQ64::say("Chan " + String(channel) + " lyr " + String(layer) + " track has " 
@@ -2247,18 +2252,30 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                         break;
                     }
                     timestamp2 = msg2.getTimeStamp();
-                    //Get note on after that
-                    m++;
-                    if(m >= layertrk->getNumEvents()){
+                    if(timestamp2 >= endtime){
+                        //Cut off note at section break
+                        timestamp2 = endtime;
                         timestamp3 = endtime;
                         done = true;
                     }else{
-                        msg3 = layertrk->getEventPointer(m)->message;
-                        if(!msg3.isNoteOn()){
-                            SEQ64::say("Note On out of order!");
-                            break;
+                        //Get note on after that
+                        m++;
+                        if(m >= layertrk->getNumEvents()){
+                            timestamp3 = endtime;
+                            done = true;
+                        }else{
+                            msg3 = layertrk->getEventPointer(m)->message;
+                            if(!msg3.isNoteOn()){
+                                SEQ64::say("Note On out of order!");
+                                break;
+                            }
+                            timestamp3 = msg3.getTimeStamp();
                         }
-                        timestamp3 = msg3.getTimeStamp();
+                        if(timestamp3 >= endtime){
+                            //End section after this note
+                            timestamp3 = endtime;
+                            done = true;
+                        }
                     }
                     //Create note command
                     want = wantAction("Track Note", 2);
@@ -2274,12 +2291,16 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                         note = msg.getNoteNumber() - transpose - midi_basenote;
                         want2 = wantAction("Layer Transpose", 2);
                         wantProperty(want2, "Value", transpose);
-                        insertCommand(sec, cmd, createCommand(want2));
+                        section.addChild(createCommand(want2), cmd, nullptr);
                         cmd++;
                     }
                     wantProperty(want, "Note", note);
                     //Delay
                     delay = timestamp3 - timestamp;
+                    if(delay < 0){
+                        SEQ64::say("Negative delay! Note on " + String(timestamp) + ", off " 
+                            + String(timestamp2) + ", next note on " + String(timestamp3) + "!");
+                    }
                     wantProperty(want, "Delay", delay);
                     //Gate
                     if(delay == 0){
@@ -2357,16 +2378,15 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2){
         param2 = command2.getChildWithProperty(idMeaning, "Note");
         if(!param1.isValid() || !param2.isValid()) return false;
         if((int)param1.getProperty(idValue, -1234) != (int)param2.getProperty(idValue, -8971)) return false;
+        //Compare note lengths / delays
+        param1 = command1.getChildWithProperty(idMeaning, "Delay");
+        param2 = command2.getChildWithProperty(idMeaning, "Delay");
+        if(!param1.isValid() || !param2.isValid()) return false;
+        if((int)param1.getProperty(idValue, -1234) != (int)param2.getProperty(idValue, -8971)) return false;
         //Compare velocities
         int delta = midiopts.getProperty("delta_vel", 5);
         param1 = command1.getChildWithProperty(idMeaning, "Velocity");
         param2 = command2.getChildWithProperty(idMeaning, "Velocity");
-        if(!param1.isValid() || !param2.isValid()) return false;
-        if(abs((int)param1.getProperty(idValue, -1234) 
-                - (int)param2.getProperty(idValue, -8971)) > delta) return false;
-        //Compare note lengths / delays
-        param1 = command1.getChildWithProperty(idMeaning, "Delay");
-        param2 = command2.getChildWithProperty(idMeaning, "Delay");
         if(!param1.isValid() || !param2.isValid()) return false;
         if(abs((int)param1.getProperty(idValue, -1234) 
                 - (int)param2.getProperty(idValue, -8971)) > delta) return false;
@@ -2375,10 +2395,8 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2){
         delta = midiopts.getProperty("delta_gate", 3);
         param1 = command1.getChildWithProperty(idMeaning, "Gate Time");
         param2 = command2.getChildWithProperty(idMeaning, "Gate Time");
-        if(param1.isValid()){ v1 = (int)param1.getProperty(idValue, 0);
-            }else{ v1 = 0; }
-        if(param2.isValid()){ v2 = (int)param2.getProperty(idValue, 0);
-            }else{ v2 = 0; }
+        v1 = (param1.isValid()) ? ((int)param1.getProperty(idValue, 0)) : 0;
+        v2 = (param2.isValid()) ? ((int)param2.getProperty(idValue, 0)) : 0;
         if(abs(v2 - v1) > delta) return false;
         //Finally
         return true;
@@ -2719,6 +2737,9 @@ void SeqFile::reduceTrackNotes(){
         for(cmd=0; cmd<section.getNumChildren(); cmd++){
             command = section.getChild(cmd);
             action = command.getProperty(idAction, "No Action");
+            if(action == "Loop Start" || action == "Call Same Level"){
+                lastdelay = -1234;
+            }
             if(action != "Track Note") continue;
             newcommand = wantAction("Track Note", 2);
             //Note
