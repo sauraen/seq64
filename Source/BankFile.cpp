@@ -342,12 +342,35 @@ bool BankFile::load(ROM& rom, int banknum){
     a += strsize;
     baseaddr = a;
     //Read relevant data from header
+    temp = stru.getChildWithProperty("meaning", "Sample Set Index number");
+    if(temp.isValid()){
+        d.setProperty("SSIindex", temp.getProperty("value", 0), nullptr);
+    }
+    if((int)d.getProperty("SSIindex") < 0){
+        SEQ64::say("Sample Set Index number not defined in either ABIndexEntry or ABHeader (not critical)");
+    }
     temp = stru.getChildWithProperty("meaning", "NUM_INST");
     if(temp.isValid()){
         d.setProperty("NUM_INST", temp.getProperty("value", 0), nullptr);
     }
     if((int)d.getProperty("NUM_INST") < 0){
         SEQ64::say("NUM_INST not defined in either ABIndexEntry or ABHeader!");
+        return false;
+    }
+    temp = stru.getChildWithProperty("meaning", "NUM_DRUM");
+    if(temp.isValid()){
+        d.setProperty("NUM_DRUM", temp.getProperty("value", 0), nullptr);
+    }
+    if((int)d.getProperty("NUM_DRUM") < 0){
+        SEQ64::say("NUM_DRUM not defined in either ABIndexEntry or ABHeader!");
+        return false;
+    }
+    temp = stru.getChildWithProperty("meaning", "NUM_SFX");
+    if(temp.isValid()){
+        d.setProperty("NUM_SFX", temp.getProperty("value", 0), nullptr);
+    }
+    if((int)d.getProperty("NUM_SFX") < 0 && (int)romdesc.getProperty("indextype", 1) == 2){
+        SEQ64::say("NUM_SFX not defined in either ABIndexEntry or ABHeader!");
         return false;
     }
     //========================================================================
@@ -429,6 +452,14 @@ bool BankFile::save(ROM& rom, int banknum){
     temp = stru.getChildWithProperty("meaning", "NUM_INST");
     if(temp.isValid()){
         temp.setProperty("value", NUM_INST, nullptr);
+    }
+    temp = stru.getChildWithProperty("meaning", "NUM_DRUM");
+    if(temp.isValid()){
+        temp.setProperty("value", NUM_DRUM, nullptr);
+    }
+    temp = stru.getChildWithProperty("meaning", "NUM_SFX");
+    if(temp.isValid()){
+        temp.setProperty("value", NUM_SFX, nullptr);
     }
     fixAllStructImportValues(d.getChildWithName("aladpcmbooks"));
     fixAllStructImportValues(d.getChildWithName("aladpcmloops"));

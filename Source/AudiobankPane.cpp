@@ -1330,12 +1330,15 @@ void AudiobankPane::fillMeaningsBox(){
         cbxMeaning->addItem("NUM_DRUM", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_SFX", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABHeader"){
+        cbxMeaning->addItem("Sample Set Index number", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_INST", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("NUM_DRUM", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("NUM_SFX", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABBank"){
         cbxMeaning->addItem("Ptr Drum List", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Ptr SFX List", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("List of Ptrs to Insts", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Ptr Ch10 Drum", cbxMeaning->getNumItems()+1);
+        //cbxMeaning->addItem("Ptr Ch10 Drum", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABDrumList"){
         cbxMeaning->addItem("List of Ptrs to Drums", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABSFXList"){
