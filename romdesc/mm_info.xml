@@ -6,7 +6,7 @@
   <cmdlist>
     <command cmd="255" name="End of Data" action="End of Data" validinseq="1"
              validinchn="1" validintrk="1"/>
-    <command cmd="0" name="Chn Timestamp" action="Timestamp" cmdend="111"
+    <command cmd="0" name="Chn Timestamp" action="Timestamp" cmdend="15"
              validinchn="1">
       <parameter datasrc="offset" datalen="0" name="Time" meaning="Delay" add="0"
                  multiply="1"/>

@@ -460,14 +460,20 @@
       <field name="tuning" datatype="uint32" ispointer="0" isarray="0" meaning="None"/>
     </struct>
     <struct name="ABPatchProps">
-      <field name="unknown1" datatype="int16" ispointer="0" isarray="0" meaning="None"/>
-      <field name="unknown2" datatype="uint16" ispointer="0" isarray="0" meaning="None"/>
-      <field name="unknown3" datatype="int16" ispointer="0" isarray="0" meaning="None"/>
-      <field name="unknown4" datatype="uint16" ispointer="0" isarray="0" meaning="None"/>
-      <field name="unknown5" datatype="int16" ispointer="0" isarray="0" meaning="None"/>
-      <field name="unknown6" datatype="uint16" ispointer="0" isarray="0" meaning="None"/>
-      <field name="unknown7" datatype="int16" ispointer="0" isarray="0" meaning="None"/>
-      <field name="unknown8" datatype="uint16" ispointer="0" isarray="0" meaning="None"/>
+      <field name="attackRate" datatype="int16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="attackLevel" datatype="uint16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="decay1Rate" datatype="int16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="decay1Level" datatype="uint16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="decay2Rate" datatype="int16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="decay2Level" datatype="uint16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="AllFs" datatype="int16" ispointer="0" isarray="0" meaning="None"/>
+      <field name="AllZeros" datatype="uint16" ispointer="0" isarray="0" meaning="None"/>
     </struct>
     <struct name="ABSample">
       <field name="unknown1" datatype="uint32" ispointer="0" isarray="0" meaning="None"
