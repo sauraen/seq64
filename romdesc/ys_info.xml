@@ -239,6 +239,11 @@
       <parameter datasrc="fixed" datalen="1" name="Ignored" meaning="None" add="0"
                  multiply="1"/>
     </command>
+    <command cmd="251" name="Branch Abs Always" action="End of Data" validinseq="1"
+             validinchn="1" validintrk="1">
+      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
+                 add="0" multiply="1"/>
+    </command>
     <command cmd="242" name="Branch Rel if Q&lt;0" action="Jump Same Level"
              validinseq="1" validinchn="1" validintrk="1">
       <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="Relative Address"
@@ -278,11 +283,6 @@
     </command>
     <command cmd="250" name="Branch Abs if Q==0" action="Jump Same Level"
              validinseq="1" validinchn="1" validintrk="1">
-      <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
-                 add="0" multiply="1"/>
-    </command>
-    <command cmd="251" name="Branch Abs Always" action="End of Data" validinseq="1"
-             validinchn="1" validintrk="1">
       <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
                  add="0" multiply="1"/>
     </command>
