@@ -5,7 +5,7 @@
  * Class to hold/import/export a Nintendo EAD (Audioseq) format sequence file
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2015 Sauraen
+ * Copyright (C) 2014-2017 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1405,7 +1405,7 @@ MidiFile* SeqFile::toMIDIFile(){
                 sysexdata[1] = 0x7F;
                 sysexdata[2] = 0x04;
                 sysexdata[3] = 0x01;
-                sysexdata[4] = 0x7F;
+                sysexdata[4] = 0x00;
                 sysexdata[5] = value;
                 msg = MidiMessage::createSysExMessage(sysexdata, 6);
                 msg.setTimeStamp(t*ticks_multiplier);
@@ -1671,6 +1671,56 @@ MidiFile* SeqFile::toMIDIFile(){
     return ret;
 }
 
+class LayerState{
+    public:
+    LayerState(int historylen);
+    ~LayerState();
+    bool isInUse();
+    int curNote();
+    void writeNote(int newnote);
+    void clear();
+    float mse(int newnote);
+    private:
+    Array<int> data;
+    int histl;
+};
+LayerState::LayerState(int historylen){
+    histl = historylen;
+    clear();
+}
+LayerState::~LayerState() {}
+bool LayerState::isInUse(){
+    return data[0] >= 0;
+}
+int LayerState::curNote(){
+    return data[0];
+}
+void LayerState::writeNote(int newnote){
+    if(data[0] < 0){
+        data.set(0, newnote);
+    }else{
+        data.remove(data.size() - 1);
+        data.insert(0, newnote);
+    }
+}
+void LayerState::clear(){
+    data.clear();
+    for(int i=0; i<histl; ++i){
+        data.add(-1);
+    }
+}
+float LayerState::mse(int newnote){
+    if(data[0] >= 0) return 10000000000.0f;
+    float m = 0.0f;
+    int deltasq;
+    const int unusedpenalty = 40000;
+    for(int i=1; i<histl; ++i){
+        deltasq = (data[i] < 0) ? unusedpenalty : ((data[i] - newnote) * (data[i] - newnote));
+        if(deltasq == 0) return m;
+        m += (float)deltasq / (float)(i);
+    }
+    return m;
+}
 
 void SeqFile::fromMidiFile(MidiFile& mfile){
     SEQ64::say("IMPORTING MIDI FILE");
@@ -1784,68 +1834,99 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     }
     int other_channel = -1; //TODO put notes on another channel
     bool too_many_notes;
-    Array<int> layerstates;
+    OwnedArray<LayerState> ls;
+    const int ls_history = 4;
     for(layer=0; layer<max_layers; layer++){
-        layerstates.add(-1);
+        ls.add(new LayerState(ls_history));
     }
+    int sec;
+    int bestlayer;
+    float bestlayermse, thislayermse;
     for(channel=0; channel<16; channel++){
         trk = chantracks[channel];
         if(channelsused[channel] < 0) continue;
-        //Clear initial state
-        for(layer=0; layer<max_layers; layer++){
-            layerstates.set(layer, -1);
-        }
         too_many_notes = false;
-        //Assign each note on/off pair to note layer
+        sec = -1;
         for(m=0; m<trk->getNumEvents(); m++){
             msg = trk->getEventPointer(m)->message;
+            //See what section we're in, and clear LayerStates if it's a new section
+            for(i=sec; i<sectiontimes.size()-1; ++i){
+                if(sectiontimes[i+1] > msg.getTimeStamp()){
+                    //We haven't moved to that section yet
+                    break;
+                }
+            }
+            if(sec != i){
+                sec = i;
+                //Clear layer state since we're in a new section
+                for(layer=0; layer<max_layers; layer++){
+                    ls[layer]->clear();
+                }
+            }
+            //Assign each note on/off pair to note layer
             if(msg.isNoteOn()){
                 //Check for duplicate
                 for(layer=0; layer<max_layers; layer++){
-                    if(layerstates[layer] == msg.getNoteNumber()){
-                        SEQ64::say("Duplicate note on in chan " + String(channel) + ", ignoring");
+                    if(ls[layer]->curNote() == msg.getNoteNumber()){
+                        SEQ64::say("Duplicate note on in chan " + String(channel) + " t= " 
+                                + String(msg.getTimeStamp()) + ", ignoring");
                         layer = -2;
                         break;
                     }
                 }
                 if(layer < 0) continue;
-                //Check for empty spot
-                for(layer=0; layer<max_layers; layer++){
-                    if(layerstates[layer] < 0){
-                        layertracks[(max_layers*channel)+layer]->addEvent(msg);
-                        layerstates.set(layer, msg.getNoteNumber());
-                        layer = -2;
-                        break;
+                //Find best spot to put note
+                bestlayermse = 10000000000.0f;
+                bestlayer = -1;
+                for(layer=0; layer<max_layers; ++layer){
+                    if(ls[layer]->isInUse()) continue;
+                    /*
+                    bestlayer = layer; //TODO testing
+                    break;
+                    */
+                    //Calculate the weighted mean-squared error between the new note and the layer's history
+                    thislayermse = ls[layer]->mse(msg.getNoteNumber());
+                    if(thislayermse < bestlayermse){
+                        bestlayer = layer;
+                        bestlayermse = thislayermse;
                     }
                 }
-                if(layer < 0) continue;
-                if(!too_many_notes){
-                    SEQ64::say("Channel " + String(channel) + " has more than " + String(max_layers) + " notes on at a time!");
-                    SEQ64::say("Putting the extra notes on an unused channel is not yet supported.");
-                    too_many_notes = true;
+                if(bestlayer < 0){
+                    //No layer was free
+                    if(!too_many_notes){
+                        SEQ64::say("Channel " + String(channel) + " has more than " + String(max_layers) 
+                                + " notes on at a time (at t=" + String(msg.getTimeStamp()) + ")!");
+                        SEQ64::say("Putting the extra notes on an unused channel is not yet supported.");
+                        too_many_notes = true;
+                    }
+                }else{
+                    //We got a layer to assign it to
+                    layertracks[(max_layers*channel)+bestlayer]->addEvent(msg);
+                    ls[bestlayer]->writeNote(msg.getNoteNumber());
                 }
             }else if(msg.isNoteOff()){
                 //Check for existing note
                 for(layer=0; layer<max_layers; layer++){
-                    if(layerstates[layer] == msg.getNoteNumber()){
+                    if(ls[layer]->curNote() == msg.getNoteNumber()){
                         layertracks[(max_layers*channel)+layer]->addEvent(msg);
-                        layerstates.set(layer, -1);
+                        ls[layer]->writeNote(-1);
                         layer = -2;
                         break;
                     }
                 }
                 if(layer < 0) continue;
                 if(!too_many_notes){
-                    SEQ64::say("Note off received for note that is not on!");
+                    SEQ64::say("Note off (ch=" + String(channel) + " note=" + String(msg.getNoteNumber())
+                            + " time=" + String(msg.getTimeStamp()) + ") received for note that is not on!");
                     too_many_notes = true;
                 }
             }
         }
         //Check final state
         for(layer=0; layer<max_layers; layer++){
-            if(layerstates[layer] >= 0){
+            if(ls[layer]->isInUse()){
                 SEQ64::say("Chan " + String(channel) + " layer " + String(layer) + " left hanging! Fixing...");
-                msg = MidiMessage::noteOff(channel+1, layerstates[layer]);
+                msg = MidiMessage::noteOff(channel+1, ls[layer]->curNote());
                 msg.setTimeStamp(last_timestamp64);
                 layertracks[(max_layers*channel)+layer]->addEvent(msg);
             }
@@ -1857,7 +1938,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
             layertrk->updateMatchedPairs();
             if(layertrk->getNumEvents() & 1){
                 SEQ64::say("Chan " + String(channel) + " lyr " + String(layer) + " track has " 
-                        + String(layertrk->getNumEvents()) + " events!");
+                        + String(layertrk->getNumEvents()) + " (odd number of) events!");
             }
         }
     }
@@ -1870,7 +1951,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     //=======================================================================
     //Sequence header
     //=======================================================================
-    SEQ64::say("Creating sequence header...");
+    SEQ64::sayNoNewline("Creating sequence header");
     int num_tsections = sectiontimes.size();
     sectiontimes.add(last_timestamp64 + 1);
     int sectimeidx = 0;
@@ -1878,7 +1959,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     int tempolasttime = -100000, tempolastval = -100000;
     int t = 0;
     //Create section for header
-    int sec = 0, cmd = 0, value;
+    int cmd = 0, value;
     section = ValueTree("seqhdr");
     section.setProperty(idSType, 0, nullptr);
     structure.addChild(section, -1, nullptr);
@@ -1925,7 +2006,8 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
         }
         for(; (!done && (timestamp >= sectiontimes[sectimeidx])) 
               || (done && (sectimeidx < num_tsections)); sectimeidx++){
-            SEQ64::say("Section " + String(sectimeidx) + " starting at " + String(sectiontimes[sectimeidx]));
+            //SEQ64::say("Section " + String(sectimeidx) + " starting at " + String(sectiontimes[sectimeidx]));
+            SEQ64::sayNoNewline(".");
             //Get up to the time
             if(t < sectiontimes[sectimeidx]){
                 want = wantAction("Timestamp", 0);
@@ -1969,7 +2051,14 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                 wantProperty(want, "Value", (int)newtempo);
             }
         }else if(msg.isSysEx()){
-            //TODO master volume
+            if(msg.getSysExDataSize() == 6){
+                const uint8* sysexdata = msg.getSysExData();
+                if(sysexdata[2] == 0x04 && sysexdata[3] == 0x01){
+                    //Master volume
+                    want = wantAction("Master Volume", 0);
+                    wantProperty(want, "Value", sysexdata[5]);
+                }
+            }
         }
         if(want.isValid()){
             if(t < timestamp){
@@ -2013,7 +2102,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     //=======================================================================
     //Channels
     //=======================================================================
-    SEQ64::say("Creating channel headers...");
+    SEQ64::sayNoNewline("\nCreating channel headers");
     int starttime, endtime;
     int cc;
     //CC Bandwidth Reduction setup
@@ -2067,7 +2156,8 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
         for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
             starttime = sectiontimes[sectimeidx];
             endtime = sectiontimes[sectimeidx+1];
-            SEQ64::say("Chn " + String(channel) + " sec " + String(sectimeidx) + " starting at t" + String(starttime));
+            //SEQ64::say("Chn " + String(channel) + " sec " + String(sectimeidx) + " starting at t" + String(starttime));
+            SEQ64::sayNoNewline(".");
             //Find channel header
             for(sec=0; sec<structure.getNumChildren(); sec++){
                 section = structure.getChild(sec);
@@ -2171,21 +2261,23 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     //=======================================================================
     //Note Layers / Tracks
     //=======================================================================
-    SEQ64::say("Creating tracks...");
+    SEQ64::sayNoNewline("\nCreating tracks");
     MidiMessage msg2, msg3;
     int timestamp2, timestamp3;
-    int note, delay, transpose;
+    int note, delay, delay2, transpose;
     trk = nullptr;
     for(channel=0; channel<16; channel++){
         if(channelsused[channel] < 0) continue;
         for(layer=0; layer<max_layers; layer++){
             layertrk = layertracks[(max_layers*channel)+layer];
             if(layertrk->getNumEvents() == 0) continue;
-            SEQ64::say("Layer " + String(layer) + " chn " + String(channel) + " with " + String(layertrk->getNumEvents()) + " events");
+            //SEQ64::say("Layer " + String(layer) + " chn " + String(channel) + " with " + String(layertrk->getNumEvents()) + " events");
+            SEQ64::sayNoNewline(".");
             for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
                 starttime = sectiontimes[sectimeidx];
                 endtime = sectiontimes[sectimeidx+1];
-                SEQ64::say("Sec " + String(sectimeidx) + " starting at t" + String(starttime));
+                //SEQ64::say("Sec " + String(sectimeidx) + " starting at t" + String(starttime));
+                SEQ64::sayNoNewline(".");
                 //Find track
                 for(sec=0; sec<structure.getNumChildren(); sec++){
                     section = structure.getChild(sec);
@@ -2277,6 +2369,12 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                             done = true;
                         }
                     }
+                    if(timestamp2 == timestamp && timestamp3 == timestamp){
+                        //The next note is at the same time, just skip to it
+                        SEQ64::say("Zero-length note with no delay afterwards in chn " + String(channel)
+                                + " ly " + String(layer) + " at t=" + String(timestamp) + ", discarding!");
+                        continue;
+                    }
                     //Create note command
                     want = wantAction("Track Note", 2);
                     wantProperty(want, "Velocity", msg.getVelocity());
@@ -2297,21 +2395,34 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                     wantProperty(want, "Note", note);
                     //Delay
                     delay = timestamp3 - timestamp;
-                    if(delay < 0){
-                        SEQ64::say("Negative delay! Note on " + String(timestamp) + ", off " 
-                            + String(timestamp2) + ", next note on " + String(timestamp3) + "!");
-                    }
-                    wantProperty(want, "Delay", delay);
-                    //Gate
-                    if(delay == 0){
-                        value = 0;
+                    if(delay >= 48*2 && ((timestamp2 - timestamp) * 0x100 / delay) < 0x08){
+                        //Full note and then timestamp
+                        wantProperty(want, "Delay", timestamp2 - timestamp);
+                        wantProperty(want, "Gate Time", 0);
+                        section.addChild(createCommand(want), cmd, nullptr);
+                        cmd++;
+                        want = wantAction("Timestamp", 2);
+                        wantProperty(want, "Delay", timestamp3 - timestamp2);
+                        section.addChild(createCommand(want), cmd, nullptr);
+                        cmd++;
                     }else{
-                        value = (timestamp3-timestamp2) * 0x100 / delay;
+                        wantProperty(want, "Delay", delay);
+                        //Gate
+                        if(delay == 0){
+                            value = 0;
+                        }else{
+                            value = (timestamp3-timestamp2) * 0x100 / delay;
+                            if(value > 0xFF){
+                                //Zero-length note, make it a small length instead
+                                SEQ64::say("Zero-length note! Making small length instead...");
+                                value = 0xFF;
+                            }
+                        }
+                        wantProperty(want, "Gate Time", value);
+                        //Write note
+                        section.addChild(createCommand(want), cmd, nullptr);
+                        cmd++;
                     }
-                    wantProperty(want, "Gate Time", value);
-                    //Write note
-                    section.addChild(createCommand(want), cmd, nullptr);
-                    cmd++;
                     //Count time
                     t += delay;
                 }
@@ -2333,10 +2444,10 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     render();
     parse();
     //Done
-    SEQ64::say("Done!!!");
+    SEQ64::say("\n----------------------------------------------------------\nDone!!!");
 }
 
-bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2){
+bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCCMerge){
     String action = command1.getProperty(idAction, "No Action1");
     if(action != command2.getProperty(idAction, "No Action2").toString()) return false;
     ValueTree param1, param2;
@@ -2402,7 +2513,13 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2){
         return true;
     }else{
         //CCs, etc.
-        int delta = midiopts.getProperty("delta_cc", 3);
+        int delta;
+        if(action == "Chn Volume" || action == "Chn Pan" || action == "Chn Effects" || action == "Chn Pitch Bend"){
+            delta = midiopts.getProperty("delta_cc", 3);
+        }else{
+            delta = 0;
+        }
+        if(!allowCCMerge) delta = 0;
         param1 = command1.getChildWithProperty(idMeaning, "Value");
         param2 = command2.getChildWithProperty(idMeaning, "Value");
         if(!param1.isValid() || !param2.isValid()) return false;
@@ -2411,15 +2528,37 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2){
     }
 }
 
-void SeqFile::optimize(){
-    int stacksize = midiopts.getProperty("stacksize", 4); //TODO consider stack
-    bool useCalls = midiopts.getProperty("usecalls", true);
-    bool useLoops = midiopts.getProperty("useloops", true);
-    if(!useCalls && !useLoops){
-        SEQ64::say("No optimization selected.");
-        return;
+void SeqFile::deleteSection(int sectodelete){
+    ValueTree dsection = structure.getChild(sectodelete);
+    /*
+    SEQ64::say("Deleting empty section " + String(sectodelete) 
+        + " stype=" + dsection.getProperty(idSType, -1).toString()
+        + " channel=" + dsection.getProperty(idChannel, -1).toString()
+        + " layer=" + dsection.getProperty(idLayer, -1).toString()
+        + " tsection=" + dsection.getProperty(idTSection, -1).toString());
+    */
+    SEQ64::sayNoNewline("*");
+    int s, c, t;
+    ValueTree section, command;
+    for(s=0; s<structure.getNumChildren(); ++s){
+        section = structure.getChild(s);
+        for(c=0; c<section.getNumChildren(); ++c){
+            command = section.getChild(c);
+            t = command.getProperty(idTargetSection, -1);
+            if(t == sectodelete){
+                //SEQ64::say("--Removing command " + command.getProperty(idAction, "No Action").toString()
+                //    + " from section " + String(s) + " stype " + section.getProperty(idSType, -1).toString());
+                section.removeChild(command, nullptr);
+                --c;
+            }else if(t > sectodelete){
+                command.setProperty(idTargetSection, t-1, nullptr);
+            }
+        }
     }
-    //
+    structure.removeChild(sectodelete, nullptr);
+}
+
+void SeqFile::optimize(){
     int sec1, sec2;
     int stype1, stype2;
     int numcmds1, numcmds2;
@@ -2427,21 +2566,54 @@ void SeqFile::optimize(){
     int cmd1, cmd2, cmd3, cmd4;
     ValueTree command1, command2, command3, command4;
     String action1, action2, action3, action4;
+    //Delete mostly-empty sections (with no meaningful data)
+    //Empty tracks contain a Layer Transpose command and a End of Data command
+    for(sec1=0; sec1<structure.getNumChildren(); ++sec1){
+        section1 = structure.getChild(sec1);
+        if((int)section1.getProperty(idSType, -1) != 2) continue;
+        if(section1.getNumChildren() != 2) continue;
+        if(section1.getChild(0).getProperty(idAction, "No Action").toString() != "Layer Transpose") continue;
+        if(section1.getChild(1).getProperty(idAction, "No Action").toString() != "End of Data") continue;
+        //Found it, delete this section
+        deleteSection(sec1);
+        --sec1;
+    }
+    //Empty channels contain a Timestamp command and a End of Data command
+    for(sec1=0; sec1<structure.getNumChildren(); ++sec1){
+        section1 = structure.getChild(sec1);
+        if((int)section1.getProperty(idSType, -1) != 1) continue;
+        if(section1.getNumChildren() != 2) continue;
+        if(section1.getChild(0).getProperty(idAction, "No Action").toString() != "Timestamp") continue;
+        if(section1.getChild(1).getProperty(idAction, "No Action").toString() != "End of Data") continue;
+        //Found it, delete this section
+        deleteSection(sec1);
+        --sec1;
+    }
+    //Check if we want loop or call optimizations
+    int stacksize = midiopts.getProperty("stacksize", 4); //TODO consider stack
+    bool useCalls = midiopts.getProperty("usecalls", true);
+    bool useLoops = midiopts.getProperty("useloops", true);
+    if(!useCalls && !useLoops){
+        SEQ64::say("\nNo loop or call optimization selected.");
+        return;
+    }
     //
     int cmdafter;
     bool flag;
     int loopCount;
     int numCmdsDelete;
     //
-    ValueTree want, want2;
+    ValueTree want, want2, param;
     int i;
+    int cclast, ccdir, ccthis;
     if(useLoops){
-        SEQ64::say("Looking for data to loop...");
+        SEQ64::say("\nLooking for data to loop");
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){
             section1 = structure.getChild(sec1);
             stype1 = section1.getProperty(idSType, -1);
             numcmds1 = section1.getNumChildren();
-            SEQ64::say("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
+            //SEQ64::say("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
+            SEQ64::sayNoNewline(".");
             //Pick a command
             for(cmd1=0; cmd1<numcmds1-1; cmd1++){
                 command1 = section1.getChild(cmd1);
@@ -2453,10 +2625,9 @@ void SeqFile::optimize(){
                     continue;
                 }
                 //See if this command repeats later in the track, for loops
-                //Start 2 commands later (don't loop one command)
-                for(cmd2=cmd1+2; cmd2<numcmds1-1; cmd2++){
+                for(cmd2=cmd1+1; cmd2<numcmds1-1; cmd2++){
                     command2 = section1.getChild(cmd2);
-                    if(isCloseEnough(command1, command2)){
+                    if(isCloseEnough(command1, command2, true)){
                         //See if everything is the same in between
                         flag = true;
                         cmd3 = cmd1+1;
@@ -2466,7 +2637,7 @@ void SeqFile::optimize(){
                                 flag = false;
                                 break;
                             }
-                            if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4))){
+                            if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), true)){
                                 flag = false;
                                 break;
                             }
@@ -2475,7 +2646,85 @@ void SeqFile::optimize(){
                         }
                         if(!flag) continue;
                         //We have a loop!
-                        SEQ64::say("Sec " + String(sec1) + ": found loopable data from cmds " + String(cmd1) + " to " + String(cmd2));
+                        //SEQ64::say("Sec " + String(sec1) + ": found loopable data from cmds " + String(cmd1) + " to " + String(cmd2));
+                        //Check if the contents of the loop are solely timestamps and one kind of CC,
+                        //and the CC values are monotonically going in one direction
+                        flag = true;
+                        action4 = "";
+                        ccdir = 0;
+                        cclast = -1;
+                        for(cmd3=cmd1; cmd3<cmd2; ++cmd3){
+                            command3 = section1.getChild(cmd3);
+                            action3 = command3.getProperty(idAction, "No Action");
+                            if(action3 == "Timestamp"){
+                                //do nothing
+                            }else if(action3 == "Chn Volume" || action3 == "Chn Pan" 
+                                    || action3 == "Chn Effects" || action3 == "Chn Pitch Bend"){
+                                if(action4 == ""){
+                                    action4 = action3;
+                                    param = command3.getChildWithProperty(idMeaning, "Value");
+                                    if(!param.isValid()){
+                                        SEQ64::say("Error, Chn CC command without value!");
+                                        flag = false;
+                                        break;
+                                    }
+                                    cclast = param.getProperty(idValue, -1234);
+                                }else if(action3 != action4){
+                                    flag = false; //More than one type of CC detected
+                                    break;
+                                }else{
+                                    param = command3.getChildWithProperty(idMeaning, "Value");
+                                    if(!param.isValid()){
+                                        SEQ64::say("Error, Chn CC command without value!");
+                                        flag = false;
+                                        break;
+                                    }
+                                    ccthis = param.getProperty(idValue, -5678);
+                                    if(ccdir == 0){
+                                        if(ccthis < cclast) ccdir = -1;
+                                        else if(ccthis > cclast) ccdir = 1;
+                                    }else if(ccdir == 1){
+                                        if(ccthis < cclast){
+                                            //CCs were going up and now down, done
+                                            flag = false;
+                                            break;
+                                        }
+                                    }else if(ccdir == -1){
+                                        if(ccthis > cclast){
+                                            //CCs were going down and now up, done
+                                            flag = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }else{
+                                flag = false; //Something other than a CC detected (e.g. note)
+                                break;
+                            }
+                        }
+                        //If this looks like this might be a loop that would destroy the CCs, repeat
+                        //the scan but with no margin for CCs being "close enough"
+                        if(flag){
+                            flag = true;
+                            cmd3 = cmd1;
+                            cmd4 = cmd2;
+                            while(cmd3 < cmd2){
+                                if(cmd4 >= numcmds1){
+                                    flag = false;
+                                    break;
+                                }
+                                if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), false)){
+                                    flag = false;
+                                    break;
+                                }
+                                cmd3++;
+                                cmd4++;
+                            }
+                            if(!flag) continue; //With tighter restrictions, the loop wasn't valid
+                            flag = false; //Prohibit "close enough" in subsequent loop repeats
+                        }else{
+                            flag = true; //Allow "close enough" in subsequent loop repeats
+                        }
                         //See if it's repeated some more afterwards
                         loopCount = 2;
                         cmd3 = cmd1;
@@ -2486,7 +2735,7 @@ void SeqFile::optimize(){
                                 cmd3 = cmd1;
                                 cmdafter = cmd4;
                             }
-                            if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4))){
+                            if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), flag)){
                                 break;
                             }
                             cmd3++;
@@ -2494,8 +2743,9 @@ void SeqFile::optimize(){
                         }
                         //How much data to delete?
                         numCmdsDelete = cmdafter - cmd2;
-                        SEQ64::say("Loop repeats " + String(loopCount) + " times; deleting " 
-                                + String(numCmdsDelete) + " commands");
+                        //SEQ64::say("Found loop at " + String(cmd1) + ", " + String(numCmdsDelete) + " commands"
+                        //        + " long, which repeats " + String(loopCount) + " times" );
+                        SEQ64::sayNoNewline("*");
                         for(i=0; i<numCmdsDelete; i++){
                             section1.removeChild(cmd2, nullptr);
                         }
@@ -2516,18 +2766,20 @@ void SeqFile::optimize(){
         }
     }
     if(useCalls){
-        SEQ64::say("Looking for hooks...");
+        SEQ64::say("\nLooking for hooks");
         ValueTree list("list");
         ValueTree item;
         ValueTree sectionN;
         int secN;
         int i, j;
         int hooklength, drops;
+        int curdatalength, calleddatalength;
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){
             section1 = structure.getChild(sec1);
             stype1 = section1.getProperty(idSType, -1);
             numcmds1 = section1.getNumChildren();
-            SEQ64::say("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
+            //SEQ64::say("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
+            SEQ64::sayNoNewline(".");
             //Pick a command
             for(cmd1=0; cmd1<numcmds1-1; cmd1++){
                 command1 = section1.getChild(cmd1);
@@ -2558,8 +2810,8 @@ void SeqFile::optimize(){
                         command4 = section2.getChild(cmd2+1);
                         action4 = command4.getProperty(idAction, "No Action");
                         if(action4 != action3) continue;
-                        if(!isCloseEnough(command1, command2)) continue;
-                        if(!isCloseEnough(command3, command4)) continue;
+                        if(!isCloseEnough(command1, command2, true)) continue;
+                        if(!isCloseEnough(command3, command4, true)) continue;
                         item = ValueTree("item");
                         item.setProperty(idSection, sec2, nullptr);
                         item.setProperty(idCmd, cmd2, nullptr);
@@ -2568,7 +2820,7 @@ void SeqFile::optimize(){
                 }
                 //Found anything?
                 if(list.getNumChildren() == 0) continue;
-                SEQ64::say("Got hook, found elsewhere " + String(list.getNumChildren()) + " times");
+                //SEQ64::say("Got hook, found elsewhere " + String(list.getNumChildren()) + " times");
                 //Grow the hook until items start dropping too much
                 for(hooklength = 2; ; hooklength++){
                     drops = 0;
@@ -2605,7 +2857,7 @@ void SeqFile::optimize(){
                                 command4 = section2.getChild(cmd4);
                                 action4 = command4.getProperty(idAction);
                                 if(action4 == action3){
-                                    if(isCloseEnough(command3, command4)){
+                                    if(isCloseEnough(command3, command4, true)){
                                         continue;
                                     }
                                 }
@@ -2617,7 +2869,7 @@ void SeqFile::optimize(){
                     //If the number of commands lost by continuing
                     //is greater than the number of commands gained by continuing
                     if((drops * hooklength) > (list.getNumChildren() - drops)){
-                        //Stop
+                        //Sto
                         break;
                     }
                     //Drop all to be dropped
@@ -2629,7 +2881,29 @@ void SeqFile::optimize(){
                         }
                     }
                 }
-                SEQ64::say("Grew hook to " + String(hooklength) + ", now used " + String(list.getNumChildren()) + " times");
+                //SEQ64::say("Grew hook to " + String(hooklength) + ", now used " + String(list.getNumChildren()) + " times");
+                //Calculate data savings, ensure it's a savings
+                j = 0;
+                for(i=0; i<hooklength; ++i){
+                    j += getNewCommandLength(section1.getChild(cmd1+i));
+                }
+                curdatalength = j*list.getNumChildren();
+                calleddatalength = j;
+                want = wantAction("End of Data", stype1);
+                want = createCommand(want);
+                calleddatalength += getNewCommandLength(want);
+                want = wantAction("Call Same Level", stype1);
+                wantProperty(want, "Absolute Address", 1337);
+                want = createCommand(want);
+                calleddatalength += list.getNumChildren() * getNewCommandLength(want);
+                if(curdatalength <= calleddatalength){
+                    //SEQ64::say("Current data " + String(curdatalength) + " bytes, with calls " + String(calleddatalength) + " bytes, no savings, aborting call");
+                    continue;
+                }else{
+                    //SEQ64::say("Call " + String(hooklength) + " commands from " + String(list.getNumChildren())
+                    //        + " places saved " + String(curdatalength - calleddatalength) + " bytes");
+                    SEQ64::sayNoNewline("*");
+                }
                 //Create new section 
                 secN = structure.getNumChildren();
                 sectionN = ValueTree(section1.getType());
@@ -2665,7 +2939,7 @@ void SeqFile::optimize(){
             }
         }
         //Replace all 2-loops of 1-calls, 2-loops of 2-calls, or 3-loops of 1-calls with individual calls
-        SEQ64::say("Fixing short-looped calls...");
+        SEQ64::sayNoNewline("\nFixing short-looped calls...");
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){
             section1 = structure.getChild(sec1);
             stype1 = section1.getProperty(idSType, -1);
@@ -2681,7 +2955,8 @@ void SeqFile::optimize(){
                     if(command3.getProperty(idAction, "No Action").toString() != "Loop End") continue;
                     command2 = section1.getChild(cmd1+1);
                     if(command2.getProperty(idAction, "No Action").toString() != "Call Same Level") continue;
-                    SEQ64::say("----Converting 3-loop of 1-call to 3 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                    //SEQ64::say("----Converting 3-loop of 1-call to 3 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                    SEQ64::sayNoNewline("*");
                     //Remove loop start, replace with call
                     section1.removeChild(cmd1, nullptr);
                     section1.addChild(command2.createCopy(), cmd1, nullptr);
@@ -2695,7 +2970,8 @@ void SeqFile::optimize(){
                     command3 = section1.getChild(cmd1+2);
                     command4 = section1.getChild(cmd1+3);
                     if(command3.getProperty(idAction, "No Action").toString() == "Loop End"){
-                        SEQ64::say("----Converting 2-loop of 1-call to 2 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                        //SEQ64::say("----Converting 2-loop of 1-call to 2 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                        SEQ64::sayNoNewline("*");
                         //Remove loop start, replace with call
                         section1.removeChild(cmd1, nullptr);
                         section1.addChild(command2.createCopy(), cmd1, nullptr);
@@ -2705,7 +2981,8 @@ void SeqFile::optimize(){
                         cmd1--; //Go back so we hit the next command
                     }else if(command4.getProperty(idAction, "No Action").toString() == "Loop End"){
                         if(command3.getProperty(idAction, "No Action").toString() != "Call Same Level") continue;
-                        SEQ64::say("----Converting 2-loop of 2-calls to 4 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                        //SEQ64::say("----Converting 2-loop of 2-calls to 4 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                        SEQ64::sayNoNewline("*");
                         //Remove loop start
                         section1.removeChild(cmd1, nullptr);
                         //Remove loop end
@@ -2723,7 +3000,7 @@ void SeqFile::optimize(){
 }
 
 void SeqFile::reduceTrackNotes(){
-    SEQ64::say("Reducing track notes to shortest types...");
+    SEQ64::say("\nReducing track notes to shortest types...");
     int sec, lastdelay, delay, gate, cmd;
     ValueTree section;
     ValueTree command, newcommand, paramd, paramg;

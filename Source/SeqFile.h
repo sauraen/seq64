@@ -5,7 +5,7 @@
  * Class to hold/import/export a Nintendo EAD (Audioseq) format sequence file
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2015 Sauraen
+ * Copyright (C) 2014-2017 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -109,9 +109,10 @@ class SeqFile{
     void deleteCommand(int section, int cmdidx);
     
     MidiFile* toMIDIFile();
-    
+    void deleteSection(int sectodelete);
     void fromMidiFile(MidiFile& mfile);
-    bool isCloseEnough(ValueTree command1, ValueTree command2);
+    bool isCloseEnough(ValueTree command1, ValueTree command2, bool allowCCMerge);
+    
     void optimize();
     void reduceTrackNotes();
     void render();

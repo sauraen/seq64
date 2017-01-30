@@ -3,7 +3,7 @@
  * 
  * Yaz0 / Yay0 Compression/Decompression Algorithms
  * 
- * Code (C) 2015 Sauraen, released in seq64
+ * Code (C) 2017 Sauraen, released in seq64
  *     (http://code.google.com/p/seq-64/)
  * Heavily based on documentation and code (C) 2005 thakis
  *     (http://www.amnoid.de/gc/)

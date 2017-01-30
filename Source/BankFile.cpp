@@ -5,7 +5,7 @@
  * Class to hold/import/export a single instrument set (Audiobank format)
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2015 Sauraen
+ * Copyright (C) 2014-2017 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -152,6 +152,19 @@ ValueTree BankFile::getCopyOfTemplate(String name){
     return stru.createCopy();
 }
 
+/*
+void showProperties(ValueTree vt){
+    int i;
+    String s = "";
+    for(i=0; i<vt.getNumProperties(); ++i){
+        Identifier id = vt.getPropertyName(i);
+        s = s + ", " + id.toString() + "=" + vt.getProperty(id).toString();
+    }
+    s = s.substring(2);
+    SEQ64::say(s);
+}
+*/
+
 /**
  * For a given list within d, check if an item exists with the
  * given address. If it doesn't exist, create it. In either case, write back the
@@ -171,8 +184,37 @@ void BankFile::checkAddListItem(ValueTree list, int addressval, ValueTree node){
         sub.setProperty("address", addressval, nullptr);
         listindex = list.getNumChildren();
         list.addChild(sub, listindex, nullptr);
+        copyRDItemPropsToItem(list.getType().toString(), listindex, sub);
     }
-    copyRDItemPropsToItem(list.getType().toString(), listindex, sub);
+    String subname = sub.getProperty("name", "[unnamed]");
+    if(subname.startsWith("[")){
+        //Unnamed item, use parent name
+        ValueTree par = node.getParent();
+        int childidx = par.indexOf(node);
+        if(par.getParent().isValid() && par.getParent().getProperty("datatype", "none") == "ABSound"){
+            childidx = par.getParent().getParent().indexOf(par.getParent());
+            par = par.getParent().getParent();
+        }
+        if(par.getProperty("isarray", false)){
+            par = par.getParent();
+        }else{
+            childidx = -1;
+        }
+        if(par.getType().toString() == "struct" && par.getParent().isValid() && par.getParent().getNumChildren() == 1){
+            par = par.getParent();
+        }
+        String parname = getNodeDesc(par);
+        if(childidx >= 0){
+            parname = parname + ":" + String(childidx);
+        }
+        if(subname == "[unnamed]"){
+            sub.setProperty("name", "[" + parname + "]", nullptr);
+        }else{
+            if(subname.length() < 100){
+                sub.setProperty("name", subname.dropLastCharacters(1) + ", " + parname + "]", nullptr);
+            }
+        }
+    }
     node.setProperty("index", listindex, nullptr);
 }
 
@@ -182,7 +224,7 @@ void BankFile::checkAddListItem(ValueTree list, int addressval, ValueTree node){
  * and load its struct as a new child of that element.
  */
 void BankFile::loadElementList(ROM& rom, uint32 baseaddr, int bank_length, String listname, String elementname){
-    //SEQ64::say("Loading element list " + listname + "...");
+    SEQ64::say("Loading element list " + listname + "...");
     uint32 a;
     ValueTree stru = d.getChildWithName(listname);
     ValueTree temp, item;
@@ -307,7 +349,7 @@ bool BankFile::load(ROM& rom, int banknum){
     //========================================================================
     //Load index entry
     //========================================================================
-    //SEQ64::say("Reading index entry...");
+    SEQ64::say("Reading index entry...");
     ABIEProps bankprops = getABIEProps(rom, banknum);
     if(!bankprops.valid) return false;
     d.getChildWithName("abindexentry").addChild(bankprops.abiestru, -1, nullptr);
@@ -334,7 +376,7 @@ bool BankFile::load(ROM& rom, int banknum){
     //========================================================================
     //Load bank header
     //========================================================================
-    //SEQ64::say("Reading bank header...");
+    SEQ64::say("Reading bank header...");
     stru = getCopyOfTemplate("ABHeader");
     d.getChildWithName("abheader").addChild(stru, -1, nullptr);
     a = bankprops.abfaddr + bankprops.ptr_bank;
@@ -376,7 +418,7 @@ bool BankFile::load(ROM& rom, int banknum){
     //========================================================================
     //Load bank (main)
     //========================================================================
-    //SEQ64::say("Reading bank main...");
+    SEQ64::say("Reading bank main...");
     stru = getCopyOfTemplate("ABBank");
     d.getChildWithName("abbank").addChild(stru, -1, nullptr);
     strsize = readStruct(rom, a, stru);
@@ -387,22 +429,22 @@ bool BankFile::load(ROM& rom, int banknum){
     temp = d.getChildWithName("abdrumlist");
     if((int)temp.getProperty("address", -1) > 0){
         a = baseaddr + (int)temp.getProperty("address");
-        //SEQ64::say("Reading ABDrumList from @" + ROM::hex(a));
+        SEQ64::say("Reading ABDrumList from @" + ROM::hex(a));
         stru = getCopyOfTemplate("ABDrumList");
         d.getChildWithName("abdrumlist").addChild(stru, -1, nullptr);
         readStruct(rom, a, stru);
     }else{
-        //SEQ64::say("No ABDrumList found");
+        SEQ64::say("No ABDrumList found");
     }
     temp = d.getChildWithName("absfxlist");
     if((int)temp.getProperty("address", -1) > 0){
         a = baseaddr + (int)temp.getProperty("address");
-        //SEQ64::say("Reading ABSFXList from @" + ROM::hex(a));
+        SEQ64::say("Reading ABSFXList from @" + ROM::hex(a));
         stru = getCopyOfTemplate("ABSFXList");
         d.getChildWithName("absfxlist").addChild(stru, -1, nullptr);
         readStruct(rom, a, stru);
     }else{
-        //SEQ64::say("No ABSFXList found");
+        SEQ64::say("No ABSFXList found");
     }
     //========================================================================
     //Load lists of elements
@@ -718,6 +760,11 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
                     SEQ64::say("Array length using not-yet-set variable " + arraylenvar + "!");
                     return 0;
                 }
+            }
+            if(arraymax > 1000){
+                SEQ64::say("Asked to read array " + String(arraymax) + " entries long in struct " + struname 
+                    + " type " + datatype + ", which is probably wrong, reading 0 entries instead!");
+                arraymax = 0;
             }
         }
         meaning = field.getProperty("meaning", "None").toString();

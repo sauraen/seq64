@@ -5,7 +5,7 @@
  * GUI component that holds the menus, tabs, etc. and performs menu functions
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2015 Sauraen
+ * Copyright (C) 2014-2017 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -484,7 +484,7 @@ const String MainComponent::helpText3 = String(
     "see the license for details.\n"
     "\n"
     "seq64 - sequenced music editor for first-party N64 games\n"
-    "Copyright (C) 2015 Sauraen; components under other copyrights\n"
+    "Copyright (C) 2017 Sauraen; components under other copyrights\n"
     "(but all GPL licensed), see their source files for details.\n"
     "\n"
     "This program is free software: you can redistribute it and/or modify\n"

@@ -25,7 +25,7 @@
  * GUI component for the MIDI import/export screen
  *
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2015 Sauraen
+ * Copyright (C) 2014-2017 Sauraen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -305,7 +305,7 @@ MidiPane::MidiPane (SEQ64& seq64_)
     txtMergeCCs->setScrollbarsShown (true);
     txtMergeCCs->setCaretVisible (true);
     txtMergeCCs->setPopupMenuEnabled (true);
-    txtMergeCCs->setText (TRANS("3"));
+    txtMergeCCs->setText (TRANS("1"));
 
     addAndMakeVisible (label3 = new Label ("new label",
                                            TRANS("CC Bandwidth Reduction:")));
@@ -330,7 +330,7 @@ MidiPane::MidiPane (SEQ64& seq64_)
     txtQVolT->setScrollbarsShown (true);
     txtQVolT->setCaretVisible (true);
     txtQVolT->setPopupMenuEnabled (true);
-    txtQVolT->setText (TRANS("3"));
+    txtQVolT->setText (TRANS("0"));
 
     addAndMakeVisible (txtQOtherT = new TextEditor ("new text editor"));
     txtQOtherT->setMultiLine (false);
@@ -339,7 +339,7 @@ MidiPane::MidiPane (SEQ64& seq64_)
     txtQOtherT->setScrollbarsShown (true);
     txtQOtherT->setCaretVisible (true);
     txtQOtherT->setPopupMenuEnabled (true);
-    txtQOtherT->setText (TRANS("1"));
+    txtQOtherT->setText (TRANS("0"));
 
     addAndMakeVisible (txtQVolA = new TextEditor ("new text editor"));
     txtQVolA->setMultiLine (false);
@@ -414,7 +414,7 @@ MidiPane::MidiPane (SEQ64& seq64_)
     txtQPitchT->setScrollbarsShown (true);
     txtQPitchT->setCaretVisible (true);
     txtQPitchT->setPopupMenuEnabled (true);
-    txtQPitchT->setText (TRANS("1"));
+    txtQPitchT->setText (TRANS("0"));
 
     addAndMakeVisible (txtQPitchA = new TextEditor ("new text editor"));
     txtQPitchA->setMultiLine (false);
@@ -440,7 +440,7 @@ MidiPane::MidiPane (SEQ64& seq64_)
     txtQPanT->setScrollbarsShown (true);
     txtQPanT->setCaretVisible (true);
     txtQPanT->setPopupMenuEnabled (true);
-    txtQPanT->setText (TRANS("3"));
+    txtQPanT->setText (TRANS("0"));
 
     addAndMakeVisible (txtQPanA = new TextEditor ("new text editor"));
     txtQPanA->setMultiLine (false);
@@ -863,14 +863,14 @@ void MidiPane::refreshMIDIControls(){
     txtStack->setText(midioptsnode.getProperty("stacksize", 4).toString());
     txtMergeVels->setText(midioptsnode.getProperty("delta_vel", 5).toString());
     txtMergeGates->setText(midioptsnode.getProperty("delta_gate", 3).toString());
-    txtMergeCCs->setText(midioptsnode.getProperty("delta_cc", 3).toString());
-    txtQVolT->setText(midioptsnode.getProperty("q_vol_time", 3).toString());
+    txtMergeCCs->setText(midioptsnode.getProperty("delta_cc", 1).toString());
+    txtQVolT->setText(midioptsnode.getProperty("q_vol_time", 0).toString());
     txtQVolA->setText(midioptsnode.getProperty("q_vol_amp", 2).toString());
-    txtQPitchT->setText(midioptsnode.getProperty("q_pitch_time", 1).toString());
+    txtQPitchT->setText(midioptsnode.getProperty("q_pitch_time", 0).toString());
     txtQPitchA->setText(midioptsnode.getProperty("q_pitch_amp", 1).toString());
-    txtQPanT->setText(midioptsnode.getProperty("q_pan_time", 3).toString());
+    txtQPanT->setText(midioptsnode.getProperty("q_pan_time", 0).toString());
     txtQPanA->setText(midioptsnode.getProperty("q_pan_amp", 2).toString());
-    txtQOtherT->setText(midioptsnode.getProperty("q_other_time", 1).toString());
+    txtQOtherT->setText(midioptsnode.getProperty("q_other_time", 0).toString());
     txtQOtherA->setText(midioptsnode.getProperty("q_other_amp", 1).toString());
     optSeqFormat->setToggleState((bool)midioptsnode.getProperty("writeseqformat", true), dontSendNotification);
     optSeqType->setToggleState((bool)midioptsnode.getProperty("writeseqtype", true), dontSendNotification);
@@ -1039,7 +1039,7 @@ BEGIN_JUCER_METADATA
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="d3682229a2d89e65" memberName="txtMergeCCs"
-              virtualName="" explicitFocusOrder="0" pos="480 376 40 24" initialText="3"
+              virtualName="" explicitFocusOrder="0" pos="480 376 40 24" initialText="1"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="99591c70db040217" memberName="label3" virtualName=""
@@ -1053,11 +1053,11 @@ BEGIN_JUCER_METADATA
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="1c0cd46f039c823f" memberName="txtQVolT"
-              virtualName="" explicitFocusOrder="0" pos="608 280 40 24" initialText="3"
+              virtualName="" explicitFocusOrder="0" pos="608 280 40 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="edc286004a356a7" memberName="txtQOtherT"
-              virtualName="" explicitFocusOrder="0" pos="608 352 40 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="608 352 40 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="ca751fb5ec03f77b" memberName="txtQVolA"
@@ -1099,7 +1099,7 @@ BEGIN_JUCER_METADATA
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="e3e7d963da09a087" memberName="txtQPitchT"
-              virtualName="" explicitFocusOrder="0" pos="608 304 40 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="608 304 40 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="ef6d5b29efe67c05" memberName="txtQPitchA"
@@ -1112,7 +1112,7 @@ BEGIN_JUCER_METADATA
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="4bc5598877271b87" memberName="txtQPanT"
-              virtualName="" explicitFocusOrder="0" pos="608 328 40 24" initialText="3"
+              virtualName="" explicitFocusOrder="0" pos="608 328 40 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="591164d5daf46f21" memberName="txtQPanA"

@@ -5,7 +5,7 @@
  * Application initialization and command-line interface for seq64
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2015 Sauraen
+ * Copyright (C) 2014-2017 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ class BankFile;
 class SEQ64 : public JUCEApplication {
 public:
     static void say(const String& text);
+    static void sayNoNewline(const String& text);
     static void writeProperty(Identifier name, String value);
     static String readProperty(Identifier name);
     static File readFolderProperty(const String& name);

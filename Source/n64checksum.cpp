@@ -3,7 +3,7 @@
  * All known versions of this code have been released under the GPL
  * 
  * Authors/editors in reverse chronological order (AKA rabbit hole):
- * Modifications (C) 2014-2015 Sauraen, released in seq64
+ * Modifications (C) 2014-2017 Sauraen, released in seq64
  *     (https://github.com/sauraen/seq64/)
  * Modifications (C) 2005 Parasyte, released in M64ROMExtender1.3b
  *     (http://qubedstudios.rustedlogic.net/Mario64Tools.htm)
