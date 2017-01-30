@@ -394,7 +394,7 @@
         <item index="3" name="Harp 4" map="program" program="46" transpose="0"/>
         <item index="4" name="Strings" map="program" program="48" transpose="0"/>
         <item index="5" name="Ocarina" map="program" program="79" transpose="12"/>
-        <item index="6" name="Choir" map="program" program="50"/>
+        <item index="6" name="Choir" map="program" program="50" transpose="0"/>
         <item index="7" name="Choir" map="program" program="50" transpose="0"/>
         <item index="8" name="Glockenspiel" map="program" program="9" transpose="12"/>
         <item index="9" name="Strings 1" map="program" program="48"/>
@@ -422,9 +422,10 @@
     </indexentry>
     <indexentry index="12" name="Forest Temple">
       <instruments>
-        <item index="0" name="Voice Pad" map="program" program="0" transpose="0"/>
-        <item index="1" name="Multipitch Flute" map="program"/>
-        <item index="2" name="Famous Wood Chime" map="program"/>
+        <item index="0" name="Voice Pad" map="program" program="91" transpose="0"/>
+        <item index="1" name="Multipitch Flute" map="program" program="74"
+              transpose="24"/>
+        <item index="2" name="Famous Wood Chime" map="program" program="96"/>
       </instruments>
     </indexentry>
     <indexentry index="13" name="Lon Lon Ranch">
@@ -478,19 +479,65 @@
         <item index="5" name="Ethnic Flute" map="program" program="111"/>
       </instruments>
     </indexentry>
-    <indexentry index="17" name="Horse Race"/>
+    <indexentry index="17" name="Horse Race">
+      <instruments>
+        <item index="0" name="Banjo" map="program" program="105" transpose="0"/>
+        <item index="1" name="Banjo-Tooie" map="program" program="105"/>
+        <item index="2" name="Acoustic Bass" map="program" program="32"/>
+        <item index="3" name="Harmonica" map="program" program="22"/>
+        <item index="4" name="Acoustic Guitar" map="program" program="24"/>
+        <item index="5" name="Fiddle" map="program" program="110"/>
+        <item index="6" name="Fiddle 2" map="program" program="110"/>
+      </instruments>
+    </indexentry>
     <indexentry index="18" name="Warp Songs"/>
-    <indexentry index="19" name="Legend of Hyrule"/>
+    <indexentry index="19" name="Legend of Hyrule">
+      <instruments>
+        <item index="0" name="Choir" map="program" program="52" transpose="0"/>
+        <item index="1" name="Choir 2" map="program" program="52"/>
+        <item index="2" name="Harp" map="program" program="46"/>
+        <item index="3" name="Glockenspiel" map="program" program="9"/>
+      </instruments>
+    </indexentry>
     <indexentry index="20" name="Minigame Shop"/>
     <indexentry index="21" name="Zora's Domain"/>
     <indexentry index="22" name="Shop Theme"/>
     <indexentry index="23" name="Ice Cavern"/>
-    <indexentry index="24" name="Shadow Temple"/>
-    <indexentry index="25" name="Water Temple"/>
+    <indexentry index="24" name="Shadow Temple">
+      <instruments>
+        <item index="0" name="Drum" map="program" program="116" transpose="0"/>
+        <item index="1" name="Wind" map="program" program="122"/>
+        <item index="2" name="SFX" map="program" program="121"/>
+        <item index="3" name="Male Choir" map="program" program="52"/>
+        <item index="4" name="Female Choir" map="program" program="52"/>
+        <item index="5" name="Muslim Chant" map="program" program="85"/>
+        <item index="6" name="SFX 2" map="program" program="120"/>
+        <item index="7" name="Harpsichord" map="program" program="6"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="25" name="Water Temple">
+      <instruments>
+        <item index="0" name="Flute" map="program" program="72" transpose="0"/>
+        <item index="1" name="Wind Chimes" map="program" program="112"/>
+        <item index="2" name="Bell Pad" map="program" program="93"/>
+        <item index="3" name="Wood Chime" map="program" program="99"/>
+        <item index="4" name="Voice Pad" map="program" program="91"/>
+        <item index="5" name="Koto" map="program" program="107"/>
+      </instruments>
+    </indexentry>
     <indexentry index="26" name="Piano (Unused)"/>
     <indexentry index="27" name="Gerudo Valley"/>
     <indexentry index="28" name="Potion Shop"/>
-    <indexentry index="29" name="Konami &amp; Kotaku's Theme"/>
+    <indexentry index="29" name="Konami &amp; Kotaku's Theme">
+      <instruments>
+        <item index="0" name="Koto" map="program" program="107" transpose="0"/>
+        <item index="1" name="Drum" map="program" program="117"/>
+        <item index="2" name="Flute" map="program" program="72" transpose="12"/>
+        <item index="3" name="Flute 2" map="program" program="72" transpose="12"/>
+        <item index="4" name="Strings" map="program" program="48"/>
+        <item index="5" name="Strings 2" map="program" program="48"/>
+      </instruments>
+    </indexentry>
     <indexentry index="30" name="Organ"/>
     <indexentry index="31" name="Inside Ganon's Castle"/>
     <indexentry index="32" name="Battle 2">
