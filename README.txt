@@ -1,7 +1,7 @@
 seq64 - Sequenced music editor for first-party N64 games.
-Created by and Copyright (C) 2015 Sauraen, sauraen@gmail.com
+Created by and Copyright (C) 2017 Sauraen, sauraen@gmail.com
 Licensed under the GNU General Public License - see LICENSE.txt
-Made using Juce Cross-Platform C++ Library (free for GPL use) - http://www.juce.com/
+Made using Juce Cross-Platform C++ Library version 3 (free for GPL use) - http://www.juce.com/
 
 SEQ64 is a full-featured editor for sequenced music in first-party Nintendo 64 games.
 
@@ -10,30 +10,27 @@ Click the Wiki tab for more information. Program downloads are in the "bin" fold
 Features:
 
 - Full MIDI import/export of sequences in Audioseq format
-- User-editable definition of Audioseq format
 - Edit sequence data directly (e.g. to add commands not supported by MIDI)
-- Edit and tag Audiobank instrument definitions
-- User-editable definition of Audiobank format
-- Move files in ROM while maintaining system integrity
+- Create new Audiobank instrument sets from existing instruments
+- Edit and tag instrument definitions
+- Definitions of Audioseq and Audiobank formats are editable from the GUI and
+  saved in human-readable XML files, not hard-coded; thus, compatible with all
+  versions of games that use similar sequence formats
 - Seamlessly recalculates CRC/CIC upon saving ROM
-- Supports all versions of games that use similar sequence formats
-- All ROM description data saved in human-editable format
-- Supports all three ROM bytes orderings
+- Supports all three ROM byte orderings
 - Yay0/Yaz0 compressor/decompressor tool
 - Mature, comprehensible GUI
 - GPL licensed, cross-platform (Juce C++, full-speed on Windows, Mac, Linux) 
 
 Current project state:
 
-- MIDI export complete
-- MIDI import mostly complete, some bugs with call-based optimization
-- Editing which instrument set(s) are used with each sequence is complete
-- Audiobank parsing in progress 
+- All features above are complete, minus occasional bugs. If you find a bug, 
+  please contact me at the email address shown at the top of this file.
 
 Available versions:
 
-- 32-bit Windows (compiled and tested on Windows 7)
-- 64-bit Windows (compiled and tested on Windows 7)
+- 32-bit Windows 7/8 (NOT compatible with Windows 10)
+- 64-bit Windows 7/8 (NOT compatible with Windows 10)
 - 64-bit Linux (compiled and tested on Ubuntu 14.04) 
 
 Games known to use sequenced music formats compatible with SEQ64:
@@ -41,16 +38,22 @@ Games known to use sequenced music formats compatible with SEQ64:
 - Super Mario 64 (+)
 - Mario Kart 64 (+)
 - Yoshi's Story (+)
-- Legend of Zelda: Ocarina of Time: v1.0 (+)(*), Debug ROM (+)
+- Legend of Zelda: Ocarina of Time: v1.0 (+)(*), v1.2 (+), Debug ROM (+)
 - Legend of Zelda: Majora's Mask (+)(*)
 - 1080 Snowboarding
 - F-ZERO X
 - Lylat Wars
 - Pokemon Stadium
 - Pokemon Stadium 2
-- Wave Race 64
+- Wave Race 64 (+)
 
 (+: RomDesc included) (*: Relevant data is stored in compressed format; must be decompressed before use) 
+
+SEQ64 is NOT compatible with the sequenced music format in games not made by
+Nintendo EAD/SRD, including Rare games or other third-party games. With some
+modification it may be able to support their bank file format (instrument sets),
+but the sequence file format is completely different. SubDrag's n64miditool has
+limited support for these other games' sequence file format.
 
 
 Tips/How To:
