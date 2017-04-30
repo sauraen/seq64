@@ -75,6 +75,7 @@ public:
     //[UserMethods]     -- You can add your own custom methods in this section.
     void rowSelected(TextListModel* parent, int row);
     void textEditorTextChanged(TextEditor& editorThatWasChanged);
+    bool keyPressed(const KeyPress& key) override;
 
     String getCommandDesc(ValueTree cmd);
     void refreshCmdList();

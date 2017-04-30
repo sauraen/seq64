@@ -975,6 +975,48 @@ void AudioseqPane::focusGained (FocusChangeType cause)
 
 
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
+
+bool AudioseqPane::keyPressed(const KeyPress& key){
+    if(key == KeyPress(KeyPress::F11Key)){
+        int r = lstSeqCommands->getLastRowSelected();
+        if(r > 0){
+            lstSeqCommands->selectRow(r-1);
+        }
+        return true;
+    }else if(key == KeyPress(KeyPress::F12Key)){
+        int r = lstSeqCommands->getLastRowSelected();
+        if(r < lsmSeqCommands->getNumRows() - 1){
+            lstSeqCommands->selectRow(r+1);
+        }
+        return true;
+    }else if(key == KeyPress('v', ModifierKeys::altModifier, 0)){
+        if(&*seq64.seq == nullptr) return true;
+        int selsec = lstSeqSections->getLastRowSelected();
+            if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return true;
+            SeqData* section = seq64.seq->getSection(selsec);
+        int selcmd = lstSeqCommands->getLastRowSelected();
+            if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return true;
+            uint32 cmdaddr = section->cmdoffsets[selcmd];
+            ValueTree cmd = seq64.seq->getCommand(cmdaddr, section->stype);
+        ValueTree param = cmd.getChildWithProperty("meaning", "Velocity");
+        if(!param.isValid()){
+            SEQ64::say("Command has no Velocity property");
+            return true;
+        }
+        int ret = seq64.seq->editCmdParam(selsec, cmdaddr, section->stype, "Velocity", 0);
+        if(ret < 0){
+            SEQ64::say("Setting velocity to 0 failed");
+        }
+        if(ret > 0){
+            seqStructureChanged();
+        }else if(ret == 0){
+            lsmSeqCommands->set(selcmd, seq64.seq->getCommandDescription(selsec, selcmd));
+            lstSeqCommands->repaintRow(selcmd);
+        }
+    }
+    return false;
+}
+
 void AudioseqPane::rowSelected(TextListModel* parent, int row){
     if(parent == &*lsmCommands){
         ValueTree cmdlistnode = seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr);

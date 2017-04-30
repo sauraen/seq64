@@ -618,8 +618,9 @@ int SeqFile::editCmdParam(int section, uint32 address, int stype, String meaning
     int datalen = param.getProperty(idDataLen, 1);
     //int dataactuallen = param.getProperty(idDataActualLen, 1);
     if(datasrc == "offset"){
-        int cmdbegin = command.getProperty(idCmd, 0);
-        int cmdend = command.getProperty(idCmdEnd, 0);
+        ValueTree desc = getDescription(data[address], stype);
+        int cmdbegin = desc.getProperty(idCmd, 0);
+        int cmdend = desc.getProperty(idCmdEnd, cmdbegin);
         if(newvalue > (cmdend - cmdbegin) || newvalue < 0) return -1;
         data.set(a, cmdbegin + newvalue);
     }else if(datasrc == "fixed"){
@@ -2767,7 +2768,7 @@ void SeqFile::optimize(){
     }
     if(useCalls){
         SEQ64::say("\nLooking for hooks");
-        ValueTree list("list");
+        ValueTree origlist("list");
         ValueTree item;
         ValueTree sectionN;
         int secN;
@@ -2796,8 +2797,8 @@ void SeqFile::optimize(){
                         || action3 == "Ptr Channel Header" || action3 == "Ptr Track Data"){
                     continue;
                 }
-                //Find all the places, in any section of the same stype, where this string of two commands appears
-                list.removeAllChildren(nullptr);
+                //Find all the places, in any section of the same stype, where this string of two commands appears (including overlapping)
+                origlist.removeAllChildren(nullptr);
                 for(sec2=sec1; sec2<structure.getNumChildren(); sec2++){
                     section2 = structure.getChild(sec2);
                     stype2 = section2.getProperty(idSType, -1);
@@ -2815,15 +2816,17 @@ void SeqFile::optimize(){
                         item = ValueTree("item");
                         item.setProperty(idSection, sec2, nullptr);
                         item.setProperty(idCmd, cmd2, nullptr);
-                        list.addChild(item, -1, nullptr);
+                        origlist.addChild(item, -1, nullptr);
+                        cmd2++;
                     }
                 }
                 //Found anything?
-                if(list.getNumChildren() == 0) continue;
+                if(origlist.getNumChildren() == 0) continue;
                 //SEQ64::say("Got hook, found elsewhere " + String(list.getNumChildren()) + " times");
-                //Grow the hook until items start dropping too much
-                for(hooklength = 2; ; hooklength++){
-                    drops = 0;
+                //Make temporary copy of original list with no overlaps and increasingly long hooks
+                int bestscore = 0, curscore;
+                ValueTree list, bestlist;
+                for(hooklength = 1; ; hooklength++){
                     //Move cmd3 to the next one in the first section
                     cmd3 = cmd1 + hooklength;
                     if(cmd3 >= numcmds1){
@@ -2836,58 +2839,63 @@ void SeqFile::optimize(){
                         break;
                     }
                     //See if we can move all the others
+                    list = origlist.createCopy();
+                    drops = 0;
                     for(i=0; i<list.getNumChildren(); i++){
+                        flag = false;
                         item = list.getChild(i);
                         sec2 = item.getProperty(idSection);
                         cmd2 = item.getProperty(idCmd);
                         section2 = structure.getChild(sec2);
                         numcmds2 = section2.getNumChildren();
-                        cmd4 = cmd2 + hooklength;
-                        if(cmd4 < numcmds2){
-                            //Make sure it's not overlapping with any other!
-                            flag = false;
-                            for(j=i; j<list.getNumChildren(); j++){
+                        if(cmd2 + hooklength >= numcmds2) flag = true;
+                        if(!flag){
+                            //Make sure this hook isn't overlapping with any previous one
+                            for(j=0; j<i; ++j){
                                 if((int)list.getChild(j).getProperty(idSection) == sec2 
-                                        && cmd4 >= (int)list.getChild(j).getProperty(idCmd)){
+                                        && cmd2 <= (int)list.getChild(j).getProperty(idCmd) + hooklength){
                                     flag = true;
                                     break;
                                 }
                             }
-                            if(!flag){
+                        }
+                        if(!flag){
+                            //See if this is a valid copy of the original hook
+                            for(j=2; j<=hooklength; ++j){ //Already know first 2 commands match
+                                cmd3 = cmd1 + j;
+                                cmd4 = cmd2 + j;
+                                if(cmd4 >= numcmds2) break;
+                                command3 = section1.getChild(cmd3);
+                                action3 = command3.getProperty(idAction, "No Action");
                                 command4 = section2.getChild(cmd4);
-                                action4 = command4.getProperty(idAction);
-                                if(action4 == action3){
-                                    if(isCloseEnough(command3, command4, true)){
-                                        continue;
-                                    }
-                                }
+                                action4 = command4.getProperty(idAction, "No Action");
+                                if(action3 != action4) break;
+                                if(!isCloseEnough(command3, command4, true)) break;
+                            }
+                            if(j > hooklength){
+                                //Ran off end of loop, therefore it matched
+                                continue;
                             }
                         }
-                        drops++;
-                        item.setProperty(idWillDrop, true, nullptr);
+                        //Otherwise, drop the command
+                        list.removeChild(i, nullptr);
+                        --i;
                     }
-                    //If the number of commands lost by continuing
-                    //is greater than the number of commands gained by continuing
-                    if((drops * hooklength) > (list.getNumChildren() - drops)){
-                        //Sto
+                    curscore = list.getNumChildren() * (hooklength + 1); //Number of commands which will be removed with call
+                    if(hooklength > 1 && bestscore > curscore){
+                        //We were saving more commands before: stop
                         break;
                     }
-                    //Drop all to be dropped
-                    for(i=0; i<list.getNumChildren(); i++){
-                        item = list.getChild(i);
-                        if(item.hasProperty(idWillDrop)){
-                            list.removeChild(i, nullptr);
-                            i--;
-                        }
-                    }
+                    bestscore = curscore;
+                    bestlist = list.createCopy();
                 }
-                //SEQ64::say("Grew hook to " + String(hooklength) + ", now used " + String(list.getNumChildren()) + " times");
+                //SEQ64::say("Grew hook to " + String(hooklength) + ", now used " + String(bestlist.getNumChildren()) + " times");
                 //Calculate data savings, ensure it's a savings
                 j = 0;
                 for(i=0; i<hooklength; ++i){
                     j += getNewCommandLength(section1.getChild(cmd1+i));
                 }
-                curdatalength = j*list.getNumChildren();
+                curdatalength = j*bestlist.getNumChildren();
                 calleddatalength = j;
                 want = wantAction("End of Data", stype1);
                 want = createCommand(want);
@@ -2895,12 +2903,12 @@ void SeqFile::optimize(){
                 want = wantAction("Call Same Level", stype1);
                 wantProperty(want, "Absolute Address", 1337);
                 want = createCommand(want);
-                calleddatalength += list.getNumChildren() * getNewCommandLength(want);
+                calleddatalength += bestlist.getNumChildren() * getNewCommandLength(want);
                 if(curdatalength <= calleddatalength){
                     //SEQ64::say("Current data " + String(curdatalength) + " bytes, with calls " + String(calleddatalength) + " bytes, no savings, aborting call");
                     continue;
                 }else{
-                    //SEQ64::say("Call " + String(hooklength) + " commands from " + String(list.getNumChildren())
+                    //SEQ64::say("Call " + String(hooklength) + " commands from " + String(bestlist.getNumChildren())
                     //        + " places saved " + String(curdatalength - calleddatalength) + " bytes");
                     SEQ64::sayNoNewline("*");
                 }
@@ -2921,8 +2929,8 @@ void SeqFile::optimize(){
                 wantProperty(want, "Absolute Address", 1337);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, secN, nullptr);
-                for(i=list.getNumChildren() - 1; i>=0; i--){ //Go in reverse order so the cmd numbers are never changed
-                    item = list.getChild(i);
+                for(i=bestlist.getNumChildren() - 1; i>=0; i--){ //Go in reverse order so the cmd numbers are never changed
+                    item = bestlist.getChild(i);
                     sec2 = item.getProperty(idSection);
                     cmd2 = item.getProperty(idCmd);
                     section2 = structure.getChild(sec2);
