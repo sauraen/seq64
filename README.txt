@@ -29,8 +29,8 @@ Current project state:
 
 Available versions:
 
-- 32-bit Windows 7/8 (NOT compatible with Windows 10)
-- 64-bit Windows 7/8 (NOT compatible with Windows 10)
+- 32-bit Windows 7/8/10
+- 64-bit Windows 7/8/10
 - 64-bit Linux (compiled and tested on Ubuntu 14.04) 
 
 Games known to use sequenced music formats compatible with SEQ64:

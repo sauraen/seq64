@@ -727,7 +727,7 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
     int arraylenfixed;
     uint32 a = addr;
     int val;
-    int arraycount, arraymax;
+    int arraycount, arraymax = 0;
     for(int i=0; i<count; i++){
         field = stru.getChild(i);
         //Load field properties from stru
@@ -874,7 +874,7 @@ int BankFile::getStructLength(ValueTree stru){
     ValueTree field, sub, dstru, fieldelement;
     String datatype, arraylenvar;
     bool isarray, arrayloopflag;
-    int arraycount, arraymax;
+    int arraycount, arraymax = 0;
     for(int i=0; i<count; i++){
         field = stru.getChild(i);
         //Load field properties from stru
@@ -950,7 +950,7 @@ int BankFile::writeStruct(ROM& rom, uint32 addr, ValueTree stru){
     int arraylenfixed;
     uint32 a = addr;
     int val;
-    int arraycount, arraymax;
+    int arraycount, arraymax = 0;
     for(int i=0; i<count; i++){
         field = stru.getChild(i);
         //Load field properties from stru

@@ -84,6 +84,26 @@
         <MODULEPATH id="juce_audio_basics" path="C:\Users\Public\Juce\modules\"/>
       </MODULEPATHS>
     </VS2013>
+    <VS2015 targetFolder="Builds/VisualStudio2015">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Release32" winWarningLevel="4" generateManifest="0" winArchitecture="32-bit"
+                       isDebug="0" optimisation="2" targetName="seq64" defines="_CONSOLE=true"/>
+        <CONFIGURATION name="Release64" winWarningLevel="4" generateManifest="0" winArchitecture="x64"
+                       isDebug="0" optimisation="2" targetName="seq64" defines="_CONSOLE=true"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_gui_extra" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_gui_basics" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_graphics" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_events" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_data_structures" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_core" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_audio_processors" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_audio_formats" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_audio_devices" path="C:\Users\Public\Juce\modules\"/>
+        <MODULEPATH id="juce_audio_basics" path="C:\Users\Public\Juce\modules\"/>
+      </MODULEPATHS>
+    </VS2015>
   </EXPORTFORMATS>
   <MODULES>
     <MODULES id="juce_audio_basics" showAllCode="1" useLocalCopy="1"/>

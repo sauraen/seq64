@@ -949,7 +949,7 @@ void SeqFile::parse(){
             + ROM::hex(data[4]) + ROM::hex(data[5]) + ROM::hex(data[6]) + ROM::hex(data[7]));
     ValueTree command, param;
     String action, meaning;
-    int cmdlen = 1, channel, notelayer, value;
+    int cmdlen = 1, channel = -1, notelayer = -1, value;
     uint32 a = 0;
     const int stack_size = 8;
     uint32 addrstack[stack_size];
@@ -1663,12 +1663,38 @@ MidiFile* SeqFile::toMIDIFile(){
     if(!ended_naturally){
         SEQ64::say("Converting sequence ran off end! a==" + ROM::hex(a) + ", length==" + ROM::hex((uint32)data.size()));
     }
-    SEQ64::say("====== DONE ======");
+    SEQ64::say("Finishing MIDI...");
     ret->addTrack(mastertrack);
+    MidiMessage* msg1;
+    MidiMessage* msg2;
     for(channel=0; channel<16; channel++){
         mtracks[channel]->updateMatchedPairs();
-        ret->addTrack(*mtracks[channel]);
+        MidiMessageSequence newtrack;
+        //Make sure that note on events are always the last events in a group which happen at the same time
+        while(mtracks[channel]->getNumEvents() > 0){
+            msg1 = &(mtracks[channel]->getEventPointer(0)->message);
+            if(msg1->isNoteOnOrOff()){
+                //Scan forward over all events occurring at this time; if there are any
+                //non note events, add them first
+                for(int i=1; i<mtracks[channel]->getNumEvents(); ++i){
+                    msg2 = &(mtracks[channel]->getEventPointer(i)->message);
+                    if(msg1->getTimeStamp() == msg2->getTimeStamp()){
+                        if(!msg2->isNoteOnOrOff()){
+                            newtrack.addEvent(*msg2, 0.0);
+                            mtracks[channel]->deleteEvent(i, false);
+                            --i;
+                        }
+                    }else{
+                        break;
+                    }
+                }
+            }
+            newtrack.addEvent(*msg1, 0.0);
+            mtracks[channel]->deleteEvent(0, false);
+        }
+        ret->addTrack(newtrack);
     }
+    SEQ64::say("====== DONE ======");
     return ret;
 }
 
@@ -1733,7 +1759,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     MidiMessage msg;
     MidiMessage* msgptr;
     int channel, track, layer, m, i;
-    int timestamp;
+    int timestamp = 0;
     //Reorganize
     SEQ64::say("Reorganizing MIDI file into master track and tracks for each channel...");
     int master_ppqn = mfile.getTimeFormat();
@@ -2217,6 +2243,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                 //Determine command to execute
                 want = ValueTree(); //Invalidate
                 cc = -1;
+                value = 0;
                 if(msg.isController()){
                     cc = msg.getControllerNumber();
                     value = msg.getControllerValue();
@@ -2265,7 +2292,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     SEQ64::sayNoNewline("\nCreating tracks");
     MidiMessage msg2, msg3;
     int timestamp2, timestamp3;
-    int note, delay, delay2, transpose;
+    int note, delay, transpose;
     trk = nullptr;
     for(channel=0; channel<16; channel++){
         if(channelsused[channel] < 0) continue;
@@ -2305,6 +2332,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                 section.addChild(createCommand(want), cmd, nullptr);
                 cmd++;
                 //Get first note on
+                timestamp3 = 0;
                 for(m=0; m<layertrk->getNumEvents(); m++){
                     msg3 = layertrk->getEventPointer(m)->message;
                     timestamp3 = msg3.getTimeStamp();
@@ -2773,7 +2801,7 @@ void SeqFile::optimize(){
         ValueTree sectionN;
         int secN;
         int i, j;
-        int hooklength, drops;
+        int hooklength;
         int curdatalength, calleddatalength;
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){
             section1 = structure.getChild(sec1);
@@ -2840,7 +2868,6 @@ void SeqFile::optimize(){
                     }
                     //See if we can move all the others
                     list = origlist.createCopy();
-                    drops = 0;
                     for(i=0; i<list.getNumChildren(); i++){
                         flag = false;
                         item = list.getChild(i);

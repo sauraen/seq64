@@ -191,26 +191,14 @@ String ROM::getROMName(){
 
 String ROM::hex(uint32 a, int digits){
     String ret = "";
-    int hexit;
+    uint32 hexit;
     char c;
     for(int count=0; count<digits; count++){
         hexit = a & 0x0000000F;
-        (hexit >= 0xA) ? (c = hexit + 0x37) : (c = hexit + 0x30);
+        (hexit >= 0xA) ? (c = hexit - 0xA + 'A') : (c = hexit + '0');
         ret = c + ret;
         a >>= 4;
     }
     return ret;
 }
 
-String ROM::hex(uint8 a, int digits){
-    String ret = "";
-    int hexit;
-    char c;
-    for(int count=0; count<digits; count++){
-        hexit = a & 0x0000000F;
-        (hexit >= 0xA) ? (c = hexit + 0x37) : (c = hexit + 0x30);
-        ret = c + ret;
-        a >>= 4;
-    }
-    return ret;
-}

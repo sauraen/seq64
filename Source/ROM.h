@@ -54,7 +54,7 @@ class ROM : public MemoryBlock {
     String getROMName();
     
     static String hex(uint32 a, int digits = 8);
-    static String hex(uint8 a, int digits = 2);
+    static inline String hex(uint8 a, int digits = 2) {return ROM::hex((uint32)a, digits);}
 };
 
 

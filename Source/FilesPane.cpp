@@ -707,7 +707,7 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
             }
             seq64.seq = new SeqFile(seq64.romdesc);
             seq64.seq->load(seq64.rom, ientryidx);
-            seq64.seq->name = txtIEntryName->getText();
+            seq64.seq->name = ROM::hex((uint8)ientryidx) + " " + txtIEntryName->getText();
             seq64.maincomponent->onSeqLoaded();
         }else{
             NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Load Entry",

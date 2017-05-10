@@ -646,6 +646,7 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnMIDIExport] -- add your button handler code here..
         if(&*seq64.seq == nullptr) return;
 		File dest = SEQ64::readFolderProperty("midifolder");
+		dest = dest.getChildFile(seq64.seq->name + ".mid");
         FileChooser box("Save As", dest, "*.mid");
         if(!box.browseForFileToSave(true)) return;
         dest = box.getResult();

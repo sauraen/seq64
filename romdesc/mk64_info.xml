@@ -347,20 +347,121 @@
             useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
             q_pan_amp="2"/>
   <audiobankidx>
-    <indexentry index="20" name="Credits"/>
+    <indexentry index="20" name="Credits">
+      <instruments>
+        <item index="0" name="Slap Bass" map="program" program="36" transpose="0"/>
+        <item index="1" name="Dist Organ" map="program" program="18"/>
+        <item index="2" name="Dist Organ 2" map="program" program="18"/>
+        <item index="3" name="Piano" map="program" program="1"/>
+        <item index="4" name="Chime" map="program" program="98"/>
+        <item index="5" name="Overdrive Pwr Chord" map="program" program="29"/>
+        <item index="6" name="Choir" map="program" program="52"/>
+        <item index="7" name="Choir 2" map="program" program="52"/>
+        <item index="8" name="Dist Guitar" map="program" program="30"/>
+        <item index="9" name="Hi-Hats" map="program" program="117"/>
+        <item index="10" name="Shaker" map="program" program="117"/>
+        <item index="11" name="Strings Octave" map="program" program="48"/>
+        <item index="12" name="Strings Octave 2" map="program" program="48"/>
+      </instruments>
+    </indexentry>
     <indexentry index="19" name="Ending"/>
     <indexentry index="18" name="Battle"/>
     <indexentry index="17" name="Toad's Turnpike"/>
-    <indexentry index="11" name="Fanfares"/>
+    <indexentry index="11" name="Fanfares">
+      <instruments>
+        <item index="0" name="Pick Bass" map="program" program="34" transpose="0"/>
+        <item index="1" name="Rock Organ" map="program" program="18"/>
+        <item index="2" name="Tonewheel Organ" map="program" program="16"/>
+        <item index="3" name="Hi-Hats" map="program" program="117"/>
+        <item index="4" name="Cuica (Goron dog bark)" map="program" program="118"/>
+        <item index="5" name="Slap Bass" map="program" program="36"/>
+        <item index="6" name="Chime" map="program" program="98"/>
+        <item index="7" name="Brass Stab" map="program" program="61"/>
+        <item index="8" name="Brass Stab 2" map="program" program="61"/>
+      </instruments>
+    </indexentry>
     <indexentry index="12" name="Results 1"/>
     <indexentry index="14" name="Star Power"/>
-    <indexentry index="15" name="Rainbow Road"/>
+    <indexentry index="15" name="Rainbow Road">
+      <instruments>
+        <item index="0" name="Slap Bass" map="program" program="36" transpose="0"/>
+        <item index="1" name="Dist Organ" map="program" program="18"/>
+        <item index="2" name="Dist Organ 2" map="program" program="18"/>
+        <item index="3" name="Octave Strings" map="program" program="48"/>
+        <item index="4" name="Chime" map="program" program="98"/>
+        <item index="5" name="Dist Guitar" map="program" program="30"/>
+        <item index="6" name="Pan Flute" map="program" program="75"/>
+        <item index="7" name="Hi-Hats" map="program" program="117"/>
+      </instruments>
+    </indexentry>
     <indexentry index="16" name="Donkey Kong Track"/>
     <indexentry index="13" name="Results 2"/>
-    <indexentry index="0" name="Master Inst Set"/>
-    <indexentry index="1" name="Title Screen"/>
-    <indexentry index="2" name="Menu"/>
-    <indexentry index="3" name="Circuit Track"/>
+    <indexentry index="0" name="Sound Effects">
+      <instruments>
+        <item index="0" name="Boing" map="program" program="0" transpose="0"/>
+        <item index="1" name="Boom" map="program"/>
+        <item index="2" name="Motor 1" map="program"/>
+        <item index="3" name="Motor 2" map="program"/>
+        <item index="4" name="&quot;Wee-hee!&quot;" map="program"/>
+        <item index="5" name="&quot;Woo-hoo!&quot;" map="program"/>
+        <item index="6" name="&quot;Yeah! Ha ha ha!&quot;" map="program"/>
+        <item index="7" name="Mario upset" map="program"/>
+        <item index="8" name="&quot;Mama mia!&quot;" map="program"/>
+        <item index="9" name="&quot;Ow wowowowowow&quot;" map="program"/>
+        <item index="10" name="&quot;Okie dokie&quot;" map="program"/>
+        <item index="11" name="&quot;Let's a-go&quot;" map="program"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="1" name="Title Screen">
+      <instruments>
+        <item index="0" name="Slap Bass" map="program" program="36" transpose="0"/>
+        <item index="1" name="Dist Organ" map="program" program="18"/>
+        <item index="2" name="Dist Organ 2" map="program" program="18"/>
+        <item index="3" name="Drawbar Organ" map="program" program="16"/>
+        <item index="4" name="Drawbar Organ 2" map="program" program="16"/>
+        <item index="5" name="Octaves Strings" map="program" program="48"/>
+        <item index="6" name="Chime" map="program" program="10"/>
+        <item index="7" name="Piano" map="program" program="1"/>
+        <item index="8" name="Bongos" map="program" program="117"/>
+        <item index="9" name="Hi-Hats" map="program" program="117"/>
+        <item index="10" name="Shaker" map="program" program="117"/>
+      </instruments>
+      <drums>
+        <item index="0" name="Kick" map="drum" note="38"/>
+        <item index="1" name="Snare" map="drum"/>
+        <item index="2" name="Tom 1" map="drum"/>
+        <item index="3" name="Crash" map="drum"/>
+        <item index="4" name="Tom 2" map="drum"/>
+        <item index="5" name="Tambourine" map="drum"/>
+        <item index="6" name="Splash" map="drum"/>
+        <item index="7" name="Timbale Hi" map="drum"/>
+        <item index="8" name="Crash 2" map="drum"/>
+      </drums>
+    </indexentry>
+    <indexentry index="2" name="Menu">
+      <instruments>
+        <item index="0" name="Synth Bass 2" map="program" program="39" transpose="0"/>
+        <item index="1" name="Low Dist Organ" map="program" program="18"/>
+        <item index="2" name="Dist Organ" map="program" program="18"/>
+        <item index="3" name="Dist Organ" map="program" program="18"/>
+        <item index="4" name="Piano" map="program" program="1"/>
+        <item index="5" name="Choir" map="program" program="52"/>
+        <item index="6" name="Choir 2" map="program" program="52"/>
+        <item index="7" name="Hi-Hats" map="program" program="117"/>
+        <item index="8" name="Shaker" map="program" program="117"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="3" name="Circuit Track">
+      <instruments>
+        <item index="0" name="Synth Bass 1" map="program" program="0" transpose="0"/>
+        <item index="1" name="Dist Organ" map="program" program="18"/>
+        <item index="2" name="Dist Organ 2" map="program" program="18"/>
+        <item index="3" name="Tonewheel Organ" map="program" program="16"/>
+        <item index="4" name="Brass Stabs" map="program" program="61"/>
+        <item index="5" name="Brass Stabs 2" map="program" program="61"/>
+        <item index="6" name="Hi-Hats" map="program" program="0"/>
+      </instruments>
+    </indexentry>
     <indexentry index="4" name="Country Track"/>
     <indexentry index="5" name="Choco Mountain"/>
     <indexentry index="6" name="Beach"/>

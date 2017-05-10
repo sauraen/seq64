@@ -105,7 +105,7 @@ void SEQ64::initialise (const String& commandLine) {
     StringArray cmdparams = StringArray::fromTokens(commandLine, " \n", "\"\'");
     String rompath = String::empty, romdescpath = String::empty, outputpath = String::empty;
     int seqnumber = -1;
-    bool forceoverwrite = false;
+    bool forceoverwrite = false, replacename = false, numberhex = false;
     String param;
     bool alldone = false;
     for(int i=0; i<cmdparams.size(); i++){
@@ -130,6 +130,11 @@ void SEQ64::initialise (const String& commandLine) {
             forceoverwrite = true;
         }else if(param.startsWithIgnoreCase("--force-overwrite")){
             forceoverwrite = true;
+        }else if(param.startsWith("-ND")){
+            replacename = true;
+        }else if(param.startsWith("-NX")){
+            replacename = true;
+            numberhex = true;
         }else{
             say("Unrecognized option " + param);
             alldone = true;
@@ -143,47 +148,12 @@ void SEQ64::initialise (const String& commandLine) {
         say("--output=<path_to_exported_file>");
         say("(Above options may begin with 1 or 2 hyphens)");
         say("-f or --force-overwrite (overwrite existing output file)");
+        say("-ND (replace output MIDI name with sequence number (decimal) & name)");
+        say("-NX (replace output MIDI name with sequence number (hex) & name)");
         quit();
         return;
     }
     //Check parameters
-    romfile = File::getCurrentWorkingDirectory().getChildFile(rompath);
-    romdescfile = File::getCurrentWorkingDirectory().getChildFile(romdescpath);
-    File outputfile = File::getCurrentWorkingDirectory().getChildFile(outputpath);
-    if(rompath != "" && !romfile.existsAsFile()){
-        say("Could not find ROM file " + rompath);
-        quit();
-        return;
-    }
-    if(romdescpath != "" && !romdescfile.existsAsFile()){
-        say("Could not find RomDesc file " + romdescpath);
-        quit();
-        return;
-    }
-    if(outputpath != ""){
-        if(seqnumber >= 0 && outputfile.getFileExtension() == ""){
-            outputfile = outputfile.withFileExtension(".mid");
-        }
-        if(outputfile.exists()){
-            if(!forceoverwrite){
-                say("Will not overwrite existing output file " + outputfile.getFullPathName());
-                quit();
-                return;
-            }
-        }else{
-            Result r = outputfile.create();
-            if(r.failed()){
-                say("Could not create output file " + outputfile.getFullPathName());
-                quit();
-                return;
-            }
-        }
-        outputfile.deleteFile();
-        if(seqnumber < 0){
-            say("Specified output file " + outputfile.getFullPathName() + ",");
-            say("but nothing to output. Use --export_midi=<n>. Continuing...");
-        }
-    }
     if(seqnumber >= 0){
         if(rompath == ""){
             say("ROM path must be specified for command-line MIDI export!");
@@ -195,11 +165,23 @@ void SEQ64::initialise (const String& commandLine) {
             quit();
             return;
         }
-        if(outputpath == ""){
+        if(outputpath == "" && !replacename){
             say("Output file must be specified for command-line MIDI export!");
             quit();
             return;
         }
+    }
+    romfile = File::getCurrentWorkingDirectory().getChildFile(rompath);
+    romdescfile = File::getCurrentWorkingDirectory().getChildFile(romdescpath);
+    if(rompath != "" && !romfile.existsAsFile()){
+        say("Could not find ROM file " + rompath);
+        quit();
+        return;
+    }
+    if(romdescpath != "" && !romdescfile.existsAsFile()){
+        say("Could not find RomDesc file " + romdescpath);
+        quit();
+        return;
     }
     //Load ROM and RomDesc
     if(rompath != ""){
@@ -220,6 +202,51 @@ void SEQ64::initialise (const String& commandLine) {
         }
     }
     if(seqnumber >= 0){
+        //Get sequence name
+        ValueTree idxentry = romdesc.getChildWithName("audioseqidx").getChildWithProperty("index", seqnumber);
+        String seqname("Unknown");
+        if(idxentry.isValid()){
+            seqname = idxentry.getProperty("name");
+        }
+        if(numberhex){
+            seqname = ROM::hex((uint8)seqnumber) + " " + seqname;
+        }else{
+            seqname = String(seqnumber) + " " + seqname;
+        }
+        say("Sequence \"" + seqname + "\"");
+        //Get file to write to
+        File outputfile;
+        if(outputpath == ""){
+            outputfile = File::getCurrentWorkingDirectory().getChildFile(seqname + ".mid");
+        }else if(replacename){
+            outputfile = File(outputpath);
+            if(outputfile.isDirectory()){
+                outputfile = outputfile.getChildFile(seqname + ".mid");
+            }else{
+                outputfile = outputfile.getSiblingFile(seqname + ".mid");
+            }
+        }else{
+            outputfile = File::getCurrentWorkingDirectory().getChildFile(outputpath);
+            if(outputfile.getFileExtension() == ""){
+                outputfile = outputfile.withFileExtension(".mid");
+            }
+        }
+        if(outputfile.exists()){
+            if(!forceoverwrite){
+                say("Will not overwrite existing output file " + outputfile.getFullPathName());
+                quit();
+                return;
+            }
+        }else{
+            Result r = outputfile.create();
+            if(r.failed()){
+                say("Could not create output file " + outputfile.getFullPathName());
+                quit();
+                return;
+            }
+        }
+        outputfile.deleteFile();
+        //Load sequence
         seq = new SeqFile(romdesc);
         seq->load(rom, seqnumber);
         FileOutputStream fos(outputfile);
