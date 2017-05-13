@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- seq64 ROM Description File -->
-<RomDesc ftaddr="31072" abfindex="3" asfindex="4" atfindex="5" astaddr="12098256"
-         abtaddr="12097184" sstaddr="12100032" indextype="2">
+<RomDesc ftaddr="31072" abfindex="3" asfindex="4" atfindex="5" indextype="2">
   <cmdlist>
     <command cmd="255" name="End of Data" action="End of Data" validinseq="1"
              validinchn="1" validintrk="1"/>
