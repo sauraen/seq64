@@ -59,12 +59,14 @@ limited support for these other games' sequence file format.
 Tips/How To:
 
 I recommend running seq64 from a terminal, lots of useful information is 
-printed!
+printed! If you're on Windows, the program opens itself in a terminal, so don't
+worry about it.
 
-If you already have a ROM and ROM Description File (RomDesc), load each from 
-their respective menus and some of the lists should start filling in. Keep in 
-mind that some of the RomDescs provided here are for the uncompressed versions
-of the games; data may be at different places in compressed ROMs.
+If you already have a ROM and ROM Description File (RomDesc--see the RomDesc 
+folder above), load each from their respective menus and some of the lists should
+start filling in. Keep in mind that some of the RomDescs provided here are for
+the uncompressed versions of the games; data may be at different places in 
+compressed ROMs.
 
 If you don't have an existing RomDesc for the game, the first step is to find 
 the addresses of the Audioseq file (the first sequence) and of the Audioseq 
