@@ -61,9 +61,6 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
     addAndMakeVisible (groupComponent = new GroupComponent ("new group",
                                                             TRANS("Loaded Sequence")));
 
-    addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
-                                                             TRANS("Section is")));
-
     addAndMakeVisible (groupComponent3 = new GroupComponent ("new group",
                                                              TRANS("Command Editor")));
 
@@ -356,21 +353,6 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
     label4->setColour (TextEditor::textColourId, Colours::black);
     label4->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (optSecSeq = new ToggleButton ("new toggle button"));
-    optSecSeq->setButtonText (TRANS("Seq Hdr"));
-    optSecSeq->setRadioGroupId (2);
-    optSecSeq->addListener (this);
-
-    addAndMakeVisible (optSecChn = new ToggleButton ("new toggle button"));
-    optSecChn->setButtonText (TRANS("Chn Hdr"));
-    optSecChn->setRadioGroupId (2);
-    optSecChn->addListener (this);
-
-    addAndMakeVisible (optSecTrk = new ToggleButton ("new toggle button"));
-    optSecTrk->setButtonText (TRANS("Trk Data"));
-    optSecTrk->setRadioGroupId (2);
-    optSecTrk->addListener (this);
-
     addAndMakeVisible (btnSeqCmdAdd = new TextButton ("new button"));
     btnSeqCmdAdd->setButtonText (TRANS("Add"));
     btnSeqCmdAdd->setConnectedEdges (Button::ConnectedOnLeft | Button::ConnectedOnRight);
@@ -451,6 +433,16 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
     btnReParse->setButtonText (TRANS("Re-Parse"));
     btnReParse->addListener (this);
 
+    addAndMakeVisible (btnSaveRaw = new TextButton ("new button"));
+    btnSaveRaw->setButtonText (TRANS("Save Raw"));
+    btnSaveRaw->setConnectedEdges (Button::ConnectedOnRight);
+    btnSaveRaw->addListener (this);
+
+    addAndMakeVisible (btnLoadRaw = new TextButton ("new button"));
+    btnLoadRaw->setButtonText (TRANS("Load Raw"));
+    btnLoadRaw->setConnectedEdges (Button::ConnectedOnLeft);
+    btnLoadRaw->addListener (this);
+
 
     //[UserPreSize]
 
@@ -460,6 +452,8 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
     addAndMakeVisible(lstCommands = new ListBox("Commands", lsmCommands));
     lstCommands->setMultipleSelectionEnabled(false);
     lstCommands->setRowHeight(16);
+    lstCommands->setOutlineThickness(1);
+    lstCommands->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmParameters = new TextListModel();
     lsmParameters->setListener(this);
@@ -467,6 +461,8 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
     addAndMakeVisible(lstParameters = new ListBox("Parameters", lsmParameters));
     lstParameters->setMultipleSelectionEnabled(false);
     lstParameters->setRowHeight(16);
+    lstParameters->setOutlineThickness(1);
+    lstParameters->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmSeqSections = new TextListModel();
     lsmSeqSections->setListener(this);
@@ -475,6 +471,8 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
     addAndMakeVisible(lstSeqSections = new ListBox("SeqSections", lsmSeqSections));
     lstSeqSections->setMultipleSelectionEnabled(false);
     lstSeqSections->setRowHeight(16);
+    lstSeqSections->setOutlineThickness(1);
+    lstSeqSections->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmSeqCommands = new TextListModel();
     lsmSeqCommands->setListener(this);
@@ -483,6 +481,8 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
     addAndMakeVisible(lstSeqCommands = new ListBox("SeqCommands", lsmSeqCommands));
     lstSeqCommands->setMultipleSelectionEnabled(false);
     lstSeqCommands->setRowHeight(16);
+    lstSeqCommands->setOutlineThickness(1);
+    lstSeqCommands->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmSeqCmdParams = new TextListModel();
     lsmSeqCmdParams->setListener(this);
@@ -490,6 +490,8 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
     addAndMakeVisible(lstSeqCmdParams = new ListBox("SeqCmdParams", lsmSeqCmdParams));
     lstSeqCmdParams->setMultipleSelectionEnabled(false);
     lstSeqCmdParams->setRowHeight(16);
+    lstSeqCmdParams->setOutlineThickness(1);
+    lstSeqCmdParams->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
 
     txtCmdName->addListener(this);
@@ -517,7 +519,6 @@ AudioseqPane::~AudioseqPane()
     //[/Destructor_pre]
 
     groupComponent = nullptr;
-    groupComponent2 = nullptr;
     groupComponent3 = nullptr;
     groupComponent6 = nullptr;
     groupComponent5 = nullptr;
@@ -558,9 +559,6 @@ AudioseqPane::~AudioseqPane()
     btnCmdDn = nullptr;
     label3 = nullptr;
     label4 = nullptr;
-    optSecSeq = nullptr;
-    optSecChn = nullptr;
-    optSecTrk = nullptr;
     btnSeqCmdAdd = nullptr;
     btnSeqCmdDelete = nullptr;
     btnSeqCmdUp = nullptr;
@@ -573,6 +571,8 @@ AudioseqPane::~AudioseqPane()
     lblValueEquiv = nullptr;
     lblSeqCmdAction2 = nullptr;
     btnReParse = nullptr;
+    btnSaveRaw = nullptr;
+    btnLoadRaw = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -607,7 +607,6 @@ void AudioseqPane::resized()
     //[/UserPreResize]
 
     groupComponent->setBounds (408, 0, 648, 672);
-    groupComponent2->setBounds (416, 616, 272, 48);
     groupComponent3->setBounds (0, 0, 400, 672);
     groupComponent6->setBounds (152, 456, 240, 208);
     groupComponent5->setBounds (280, 352, 112, 96);
@@ -646,11 +645,8 @@ void AudioseqPane::resized()
     txtParamMult->setBounds (336, 624, 47, 24);
     btnCmdUp->setBounds (352, 296, 40, 24);
     btnCmdDn->setBounds (352, 320, 40, 24);
-    label3->setBounds (416, 88, 296, 24);
+    label3->setBounds (416, 88, 208, 24);
     label4->setBounds (696, 16, 352, 24);
-    optSecSeq->setBounds (424, 632, 80, 24);
-    optSecChn->setBounds (512, 632, 80, 24);
-    optSecTrk->setBounds (600, 632, 80, 24);
     btnSeqCmdAdd->setBounds (880, 560, 40, 24);
     btnSeqCmdDelete->setBounds (920, 560, 40, 24);
     btnSeqCmdUp->setBounds (968, 560, 40, 24);
@@ -658,16 +654,18 @@ void AudioseqPane::resized()
     cbxSeqCmdType->setBounds (696, 560, 184, 24);
     label7->setBounds (888, 616, 64, 24);
     txtSeqCmdValue->setBounds (952, 616, 88, 24);
-    lblSeqInfo->setBounds (416, 16, 272, 40);
+    lblSeqInfo->setBounds (416, 16, 272, 16);
     lblSeqCmdAction->setBounds (696, 592, 352, 24);
     lblValueEquiv->setBounds (888, 640, 152, 24);
     lblSeqCmdAction2->setBounds (416, 64, 120, 24);
-    btnReParse->setBounds (536, 64, 150, 24);
+    btnReParse->setBounds (624, 88, 64, 24);
+    btnSaveRaw->setBounds (416, 40, 136, 24);
+    btnLoadRaw->setBounds (552, 40, 136, 24);
     //[UserResized] Add your own custom resize handling here..
 
     lstCommands->setBounds (8, 16, 336, 328);
     lstParameters->setBounds (8, 480, 88, 184);
-    lstSeqSections->setBounds (416, 112, 272, 496);
+    lstSeqSections->setBounds (416, 112, 272, 552);
     lstSeqCommands->setBounds (696, 40, 352, 520);
     lstSeqCmdParams->setBounds (696, 616, 184, 48);
 
@@ -826,21 +824,6 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         }
         //[/UserButtonCode_btnCmdDn]
     }
-    else if (buttonThatWasClicked == optSecSeq)
-    {
-        //[UserButtonCode_optSecSeq] -- add your button handler code here..
-        //[/UserButtonCode_optSecSeq]
-    }
-    else if (buttonThatWasClicked == optSecChn)
-    {
-        //[UserButtonCode_optSecChn] -- add your button handler code here..
-        //[/UserButtonCode_optSecChn]
-    }
-    else if (buttonThatWasClicked == optSecTrk)
-    {
-        //[UserButtonCode_optSecTrk] -- add your button handler code here..
-        //[/UserButtonCode_optSecTrk]
-    }
     else if (buttonThatWasClicked == btnSeqCmdAdd)
     {
         //[UserButtonCode_btnSeqCmdAdd] -- add your button handler code here..
@@ -848,9 +831,9 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         int selsec = lstSeqSections->getLastRowSelected();
         if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
         SeqData* section = seq64.seq->getSection(selsec);
-        int selcmd = lstSeqCommands->getLastRowSelected();
-        if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
-        uint32 cmdaddr = section->cmdoffsets[selcmd];
+        int selcmdidx = lstSeqCommands->getLastRowSelected();
+        if(selcmdidx < 0 || selcmdidx >= section->cmdoffsets.size()) return;
+        uint32 cmdaddr = section->cmdoffsets[selcmdidx];
         //Calculate the number of bytes to add
         ValueTree cmdlistnode = seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr);
         ValueTree cmd = cmdlistnode.getChildWithProperty("name", cbxSeqCmdType->getText());
@@ -873,7 +856,7 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
             }
         }
         SEQ64::say("Adding " + String(bytesToAdd) + " bytes @" + ROM::hex(cmdaddr,4));
-        seq64.seq->insertSpaceAt(cmdaddr, bytesToAdd, (selcmd != 0));
+        seq64.seq->insertSpaceAt(cmdaddr, bytesToAdd, (selcmdidx != 0));
         seq64.seq->writeByte(cmdaddr, (int)cmd.getProperty("cmd", 0));
         seqStructureChanged();
         //[/UserButtonCode_btnSeqCmdAdd]
@@ -885,9 +868,9 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         int selsec = lstSeqSections->getLastRowSelected();
         if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
         SeqData* section = seq64.seq->getSection(selsec);
-        int selcmd = lstSeqCommands->getLastRowSelected();
-        if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
-        uint32 cmdaddr = section->cmdoffsets[selcmd];
+        int selcmdidx = lstSeqCommands->getLastRowSelected();
+        if(selcmdidx < 0 || selcmdidx >= section->cmdoffsets.size()) return;
+        uint32 cmdaddr = section->cmdoffsets[selcmdidx];
         ValueTree command = seq64.seq->getCommand(cmdaddr, section->stype);
         int len = command.getProperty("length", 1);
         SEQ64::say("Removing " + String(len) + " bytes @" + ROM::hex(cmdaddr,4));
@@ -898,11 +881,35 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnSeqCmdUp)
     {
         //[UserButtonCode_btnSeqCmdUp] -- add your button handler code here..
+        if(&*seq64.seq == nullptr) return;
+        int selsec = lstSeqSections->getLastRowSelected();
+        if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
+        SeqData* section = seq64.seq->getSection(selsec);
+        int selcmdidx = lstSeqCommands->getLastRowSelected();
+        if(selcmdidx <= 0 || selcmdidx >= section->cmdoffsets.size()) return;
+        seq64.seq->swapCommands(selsec, selcmdidx-1);
+        lsmSeqCommands->set(selcmdidx-1, seq64.seq->getCommandDescription(selsec, selcmdidx-1));
+        lstSeqCommands->repaintRow(selcmdidx-1);
+        lsmSeqCommands->set(selcmdidx, seq64.seq->getCommandDescription(selsec, selcmdidx));
+        lstSeqCommands->repaintRow(selcmdidx);
+        lstSeqCommands->selectRow(selcmdidx-1);
         //[/UserButtonCode_btnSeqCmdUp]
     }
     else if (buttonThatWasClicked == btnSeqCmdDn)
     {
         //[UserButtonCode_btnSeqCmdDn] -- add your button handler code here..
+        if(&*seq64.seq == nullptr) return;
+        int selsec = lstSeqSections->getLastRowSelected();
+        if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
+        SeqData* section = seq64.seq->getSection(selsec);
+        int selcmdidx = lstSeqCommands->getLastRowSelected();
+        if(selcmdidx < 0 || selcmdidx >= section->cmdoffsets.size() - 1) return;
+        seq64.seq->swapCommands(selsec, selcmdidx);
+        lsmSeqCommands->set(selcmdidx, seq64.seq->getCommandDescription(selsec, selcmdidx));
+        lstSeqCommands->repaintRow(selcmdidx);
+        lsmSeqCommands->set(selcmdidx+1, seq64.seq->getCommandDescription(selsec, selcmdidx+1));
+        lstSeqCommands->repaintRow(selcmdidx+1);
+        lstSeqCommands->selectRow(selcmdidx+1);
         //[/UserButtonCode_btnSeqCmdDn]
     }
     else if (buttonThatWasClicked == btnReParse)
@@ -910,6 +917,67 @@ void AudioseqPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_btnReParse] -- add your button handler code here..
         seqStructureChanged();
         //[/UserButtonCode_btnReParse]
+    }
+    else if (buttonThatWasClicked == btnSaveRaw)
+    {
+        //[UserButtonCode_btnSaveRaw] -- add your button handler code here..
+        Identifier idRawSeq = "understandrawsequence";
+        if(&*seq64.seq == nullptr) return;
+        if(seq64.readProperty(idRawSeq) != "yes"){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Are you sure you know what you're doing?",
+                    "This just saves a raw binary copy of the current\n"
+                    "sequence data below. This will be most likely incompatible\n"
+                    "with any other game, and is definitely not a MIDI.\n\n"
+                    "Are you sure you want to continue?", nullptr, nullptr)) return;
+            seq64.writeProperty(idRawSeq, "yes");
+        }
+        File savelocation = SEQ64::readFolderProperty("romfolder");
+        FileChooser box("Save Raw", savelocation, "*", SEQ64::useNativeFileChooser());
+        if(!box.browseForFileToSave(true)) return;
+        savelocation = box.getResult();
+        if(!seq64.seq->saveRaw(savelocation)){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "Oh no",
+                    "Saving failed, check the command line output for details.");
+        }
+        //[/UserButtonCode_btnSaveRaw]
+    }
+    else if (buttonThatWasClicked == btnLoadRaw)
+    {
+        //[UserButtonCode_btnLoadRaw] -- add your button handler code here..
+        Identifier idRawSeq = "understandrawsequence";
+        if(seq64.readProperty(idRawSeq) != "yes"){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Are you sure you know what you're doing?",
+                    "This just loads raw binary sequence data into the window below.\n"
+                    "The file you load must be a raw sequence saved from this game,\n"
+                    "otherwise it will almost certainly crash.\n"
+                    "(Also, this is NOT the Import MIDI button.)\n\n"
+                    "Are you sure you want to continue?", nullptr, nullptr)) return;
+            seq64.writeProperty(idRawSeq, "yes");
+        }
+        if(!seq64.romdesc.isValid() || seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr).getNumChildren() == 0){
+            NativeMessageBox::showMessageBox (AlertWindow::WarningIcon, "Guess you didn't know what you were doing after all",
+                "Load a RomDesc before trying to load a raw sequence.");
+            return;
+        }
+        if(&*seq64.seq != nullptr){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Overwrite?",
+                    "A sequence is already loaded, are you sure you want to overwrite it?", nullptr, nullptr)) return;
+        }
+        File loadlocation = SEQ64::readFolderProperty("romfolder");
+        FileChooser box("Load Raw", loadlocation, "*", SEQ64::useNativeFileChooser());
+        if(!box.browseForFileToOpen()) return;
+        loadlocation = box.getResult();
+        seq64.seq = new SeqFile(seq64.romdesc);
+        if(!seq64.seq->loadRaw(loadlocation)){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "Oh no",
+                    "Loading failed, check the command line output for details.");
+        }
+        fillSeqSections();
+        fillSeqCommands();
+        //[/UserButtonCode_btnLoadRaw]
     }
 
     //[UserbuttonClicked_Post]
@@ -994,9 +1062,9 @@ bool AudioseqPane::keyPressed(const KeyPress& key){
         int selsec = lstSeqSections->getLastRowSelected();
             if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return true;
             SeqData* section = seq64.seq->getSection(selsec);
-        int selcmd = lstSeqCommands->getLastRowSelected();
-            if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return true;
-            uint32 cmdaddr = section->cmdoffsets[selcmd];
+        int selcmdidx = lstSeqCommands->getLastRowSelected();
+            if(selcmdidx < 0 || selcmdidx >= section->cmdoffsets.size()) return true;
+            uint32 cmdaddr = section->cmdoffsets[selcmdidx];
             ValueTree cmd = seq64.seq->getCommand(cmdaddr, section->stype);
         ValueTree param = cmd.getChildWithProperty("meaning", "Velocity");
         if(!param.isValid()){
@@ -1010,8 +1078,8 @@ bool AudioseqPane::keyPressed(const KeyPress& key){
         if(ret > 0){
             seqStructureChanged();
         }else if(ret == 0){
-            lsmSeqCommands->set(selcmd, seq64.seq->getCommandDescription(selsec, selcmd));
-            lstSeqCommands->repaintRow(selcmd);
+            lsmSeqCommands->set(selcmdidx, seq64.seq->getCommandDescription(selsec, selcmdidx));
+            lstSeqCommands->repaintRow(selcmdidx);
         }
     }
     return false;
@@ -1091,20 +1159,20 @@ void AudioseqPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         int selsec = lstSeqSections->getLastRowSelected();
             if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
             SeqData* section = seq64.seq->getSection(selsec);
-        int selcmd = lstSeqCommands->getLastRowSelected();
-            if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
-            uint32 cmdaddr = section->cmdoffsets[selcmd];
+        int selcmdidx = lstSeqCommands->getLastRowSelected();
+            if(selcmdidx < 0 || selcmdidx >= section->cmdoffsets.size()) return;
+            uint32 cmdaddr = section->cmdoffsets[selcmdidx];
             ValueTree cmd = seq64.seq->getCommand(cmdaddr, section->stype);
-        int selparam = lstSeqCmdParams->getLastRowSelected();
-            if(selparam < 0 || selparam >= cmd.getNumChildren()) return;
-            ValueTree param = cmd.getChild(selparam);
+        int selparamidx = lstSeqCmdParams->getLastRowSelected();
+            if(selparamidx < 0 || selparamidx >= cmd.getNumChildren()) return;
+            ValueTree param = cmd.getChild(selparamidx);
         int ret = seq64.seq->editCmdParam(selsec, cmdaddr, section->stype, param.getProperty("meaning", "None"), val);
         turnRed = (ret < 0);
         if(ret > 0){
             seqStructureChanged();
         }else if(ret == 0){
-            lsmSeqCommands->set(selcmd, seq64.seq->getCommandDescription(selsec, selcmd));
-            lstSeqCommands->repaintRow(selcmd);
+            lsmSeqCommands->set(selcmdidx, seq64.seq->getCommandDescription(selsec, selcmdidx));
+            lstSeqCommands->repaintRow(selcmdidx);
         }
     }
     if(turnRed){
@@ -1311,7 +1379,7 @@ void AudioseqPane::fillSeqSections(){
 }
 
 void AudioseqPane::fillSeqCommands(){
-    int selcmd = lstSeqCommands->getLastRowSelected();
+    int selcmdidx = lstSeqCommands->getLastRowSelected();
     lsmSeqCommands->clear();
     lstSeqCommands->updateContent();
     if(&*seq64.seq == nullptr) return;
@@ -1322,7 +1390,7 @@ void AudioseqPane::fillSeqCommands(){
         lsmSeqCommands->add(seq64.seq->getCommandDescription(selsec, c));
     }
     lstSeqCommands->updateContent();
-    lstSeqCommands->selectRow(selcmd);
+    lstSeqCommands->selectRow(selcmdidx);
     //Fill New Command box
     cbxSeqCmdType->clear(dontSendNotification);
     int stype = seq64.seq->getSection(selsec)->stype;
@@ -1345,13 +1413,14 @@ void AudioseqPane::fillSeqCommands(){
 
 void AudioseqPane::refreshSeqCmdControls(){
     if(&*seq64.seq == nullptr) return;
-    int selparam = lstSeqCmdParams->getLastRowSelected();
+    int selparamidx = lstSeqCmdParams->getLastRowSelected();
+    if(selparamidx < 0) selparamidx = 0;
     int selsec = lstSeqSections->getLastRowSelected();
     if(selsec < 0 || selsec >= seq64.seq->getNumSections()) return;
     SeqData* section = seq64.seq->getSection(selsec);
-    int selcmd = lstSeqCommands->getLastRowSelected();
-    if(selcmd < 0 || selcmd >= section->cmdoffsets.size()) return;
-    uint32 cmdaddr = section->cmdoffsets[selcmd];
+    int selcmdidx = lstSeqCommands->getLastRowSelected();
+    if(selcmdidx < 0 || selcmdidx >= section->cmdoffsets.size()) return;
+    uint32 cmdaddr = section->cmdoffsets[selcmdidx];
     ValueTree cmd = seq64.seq->getCommand(cmdaddr, section->stype);
     lblSeqCmdAction->setText("Command Action: " + cmd.getProperty("action", "No Action").toString(), dontSendNotification);
     ValueTree param;
@@ -1363,7 +1432,7 @@ void AudioseqPane::refreshSeqCmdControls(){
         lsmSeqCmdParams->add(param.getProperty("name", "Unnamed"));
     }
     lstSeqCmdParams->updateContent();
-    lstSeqCmdParams->selectRow(selparam);
+    lstSeqCmdParams->selectRow(selparamidx);
 }
 
 void AudioseqPane::refreshSeqCmdParamControls(){
@@ -1374,19 +1443,19 @@ void AudioseqPane::refreshSeqCmdParamControls(){
             return;
         }
         SeqData* section = seq64.seq->getSection(selsec);
-    int selcmd = lstSeqCommands->getLastRowSelected();
-        if(selcmd < 0 || selcmd >= section->cmdoffsets.size()){
+    int selcmdidx = lstSeqCommands->getLastRowSelected();
+        if(selcmdidx < 0 || selcmdidx >= section->cmdoffsets.size()){
             txtSeqCmdValue->setText("", dontSendNotification);
             return;
         }
-        uint32 cmdaddr = section->cmdoffsets[selcmd];
+        uint32 cmdaddr = section->cmdoffsets[selcmdidx];
         ValueTree cmd = seq64.seq->getCommand(cmdaddr, section->stype);
-    int selparam = lstSeqCmdParams->getLastRowSelected();
-        if(selparam < 0 || selparam >= cmd.getNumChildren()){
+    int selparamidx = lstSeqCmdParams->getLastRowSelected();
+        if(selparamidx < 0 || selparamidx >= cmd.getNumChildren()){
             txtSeqCmdValue->setText("", dontSendNotification);
             return;
         }
-        ValueTree param = cmd.getChild(selparam);
+        ValueTree param = cmd.getChild(selparamidx);
     int len = (int)param.getProperty("datalen", 1) * 2;
     if(len <= 0) len = 2;
     txtSeqCmdValue->setText(ROM::hex((uint32)(int)param.getProperty("value", 0),
@@ -1396,10 +1465,13 @@ void AudioseqPane::refreshSeqCmdParamControls(){
 void AudioseqPane::seqStructureChanged(){
     if(&*seq64.seq == nullptr) return;
     int selsec = lstSeqSections->getLastRowSelected();
+    int selparamidx = lstSeqCmdParams->getLastRowSelected();
     seq64.seq->parse();
     fillSeqSections();
     lstSeqSections->selectRow(selsec);
+    lstSeqCmdParams->selectRow(selparamidx);
 }
+
 
 //[/MiscUserCode]
 
@@ -1426,8 +1498,6 @@ BEGIN_JUCER_METADATA
   <BACKGROUND backgroundColour="ffffffff"/>
   <GROUPCOMPONENT name="new group" id="b3355c52e381c7e5" memberName="groupComponent"
                   virtualName="" explicitFocusOrder="0" pos="408 0 648 672" title="Loaded Sequence"/>
-  <GROUPCOMPONENT name="new group" id="6e58ac86762caa1" memberName="groupComponent2"
-                  virtualName="" explicitFocusOrder="0" pos="416 616 272 48" title="Section is"/>
   <GROUPCOMPONENT name="new group" id="f1d4a599b3267719" memberName="groupComponent3"
                   virtualName="" explicitFocusOrder="0" pos="0 0 400 672" title="Command Editor"/>
   <GROUPCOMPONENT name="new group" id="977c50d4ba0f1784" memberName="groupComponent6"
@@ -1572,7 +1642,7 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="352 320 40 24" buttonText="Dn"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="cfb894eaf50ddd48" memberName="label3" virtualName=""
-         explicitFocusOrder="0" pos="416 88 296 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="416 88 208 24" edTextCol="ff000000"
          edBkgCol="0" labelText="@Addr: Typ Ch Ly Events" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default monospaced font"
          fontsize="14" bold="0" italic="0" justification="33"/>
@@ -1581,15 +1651,6 @@ BEGIN_JUCER_METADATA
          edBkgCol="0" labelText="@Addr: Data           Command" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default monospaced font"
          fontsize="14" bold="0" italic="0" justification="33"/>
-  <TOGGLEBUTTON name="new toggle button" id="cf47b7f68371eb95" memberName="optSecSeq"
-                virtualName="" explicitFocusOrder="0" pos="424 632 80 24" buttonText="Seq Hdr"
-                connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
-  <TOGGLEBUTTON name="new toggle button" id="a6c764d49706b110" memberName="optSecChn"
-                virtualName="" explicitFocusOrder="0" pos="512 632 80 24" buttonText="Chn Hdr"
-                connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
-  <TOGGLEBUTTON name="new toggle button" id="653c215535bfa70a" memberName="optSecTrk"
-                virtualName="" explicitFocusOrder="0" pos="600 632 80 24" buttonText="Trk Data"
-                connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
   <TEXTBUTTON name="new button" id="cf3f95690aa55b7c" memberName="btnSeqCmdAdd"
               virtualName="" explicitFocusOrder="0" pos="880 560 40 24" buttonText="Add"
               connectedEdges="3" needsCallback="1" radioGroupId="0"/>
@@ -1615,7 +1676,7 @@ BEGIN_JUCER_METADATA
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="a69b237684dc0a0d" memberName="lblSeqInfo"
-         virtualName="" explicitFocusOrder="0" pos="416 16 272 40" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="416 16 272 16" edTextCol="ff000000"
          edBkgCol="0" labelText="Sequence information" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="9"/>
@@ -1635,8 +1696,14 @@ BEGIN_JUCER_METADATA
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTBUTTON name="new button" id="45d2e07ee4fefabe" memberName="btnReParse"
-              virtualName="" explicitFocusOrder="0" pos="536 64 150 24" buttonText="Re-Parse"
+              virtualName="" explicitFocusOrder="0" pos="624 88 64 24" buttonText="Re-Parse"
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="314c7ad20af8b2a3" memberName="btnSaveRaw"
+              virtualName="" explicitFocusOrder="0" pos="416 40 136 24" buttonText="Save Raw"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="49d654ce272e9526" memberName="btnLoadRaw"
+              virtualName="" explicitFocusOrder="0" pos="552 40 136 24" buttonText="Load Raw"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

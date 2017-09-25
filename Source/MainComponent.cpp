@@ -142,7 +142,8 @@ void MainComponent::actuallySaveRomDesc(){
 void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
     if(menuItemID == 1){
         //ROM::Load...
-        FileChooser box("Select a ROM to load...", SEQ64::readFolderProperty("romfolder"), "*.z64;*.v64;*.n64");
+        FileChooser box("Select a ROM to load...", SEQ64::readFolderProperty("romfolder"), 
+                "*.z64;*.v64;*.n64", SEQ64::useNativeFileChooser());
         if(box.browseForFileToOpen()){
             seq64.romfile = box.getResult();
             if(!seq64.romfile.existsAsFile()){
@@ -216,7 +217,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
                 default: extension = ".rom"; break;
             }
         }
-        FileChooser box("Save As", newsavelocation, "*" + extension);
+        FileChooser box("Save As", newsavelocation, "*" + extension, SEQ64::useNativeFileChooser());
         if(box.browseForFileToSave(true)){
             newsavelocation = box.getResult();
             if(!newsavelocation.hasWriteAccess()){
@@ -238,7 +239,8 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         return;
     }else if(menuItemID == 11){
         //RomDesc::Load...
-        FileChooser box("Select a ROM description file to load...", SEQ64::readFolderProperty("romdescfolder"), "*.xml");
+        FileChooser box("Select a ROM description file to load...", SEQ64::readFolderProperty("romdescfolder"),
+                "*.xml", SEQ64::useNativeFileChooser());
         if(box.browseForFileToOpen()){
             seq64.romdescfile = box.getResult();
             if(!seq64.romdescfile.existsAsFile()){
@@ -271,7 +273,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
         if(seq64.romdescfile.exists()){
             newsavelocation = seq64.romdescfile.getParentDirectory();
         }
-        FileChooser box("Save As", newsavelocation, "*.xml");
+        FileChooser box("Save As", newsavelocation, "*.xml", SEQ64::useNativeFileChooser());
         if(box.browseForFileToSave(true)){
             newsavelocation = box.getResult();
             if(!newsavelocation.hasWriteAccess()){
@@ -315,7 +317,6 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
             NativeMessageBox::showMessageBox (AlertWindow::InfoIcon, "n00b", 
                 "Click Help > How do I even? for links to information about how to use seq64.");
         }else{
-            
             NativeMessageBox::showMessageBox (AlertWindow::InfoIcon, "Report a Bug", 
                 helpText2 
                 + (char)('A'-1)
@@ -395,7 +396,8 @@ void MainComponent::doCodecOperation(int operation){
     case 3: conv_desc = "uncompressed"; op_desc = "Compressing as Yaz0..."; break;
     default: SEQ64::say("Error"); return;
     };
-    FileChooser box("Choose input " + conv_desc + " file...", SEQ64::readFolderProperty("codecfolder"), "");
+    FileChooser box("Choose input " + conv_desc + " file...", 
+            SEQ64::readFolderProperty("codecfolder"), "", SEQ64::useNativeFileChooser());
     if(!box.browseForFileToOpen()) return;
     File inputfile = box.getResult();
     if(!inputfile.existsAsFile()){
@@ -447,33 +449,29 @@ const String MainComponent::helpText1 = String(
     "hacking in general.\n"
     "\n"
     "There are resources available to help you get started with seq64.\n"
-    "First is the online documentation at https://code.google.com/p/seq-64/w/list,\n"
-    "which includes a Quick Start guide and some information about the file\n"
-    "formats used in these games.\n"
-    "\n"
-    "The development thread is at http://www.romhacking.net/forum/index.php/topic,18891.0.html\n"
-    "and gives some other information.\n"
+    "Access the online documentation by going to https://github.com/sauraen/seq64\n"
+    "and clicking on the Wiki tab at the top. This includes tutorials and\n"
+    "step-by-step guides to importing and exporting MIDIs and editing banks.\n"
     "\n"
     "If seq64 gives errors when using a RomDesc, check that the RomDesc\n"
     "is for the same version of the ROM that you're using, and that your ROM\n"
-    "is decompressed (if applicable)."
+    "is decompressed (if applicable). Also, if your ROM crashes when playing\n"
+    "back the edited music, make sure you're using the most up-to-date version\n"
+    "of the RomDesc, or else file a bug report.\n"
 );
 
 const String MainComponent::helpText2 = String(
-    "Post bug reports in the development thread at\n"
-    "http://www.romhacking.net/forum/index.php/topic,18891.0.html\n"
-    "or send Sauraen a private message at that forum\n"
+    "Contact Sauraen on Twitter at @sauraen\n"
     "or send Sauraen an email at sauraen"
 );
 
 const String MainComponent::helpText2b = String(
     ".\n"
     "\n"
-    "Do NOT send or post links to ROMs, your message/post will be deleted.\n"
     "Do NOT ask me for sets of MIDIs exported from one of these games.\n"
-    "I haven't made any--if you want to do the tedious work of extracting\n"
-    "hundreds of songs one-by-one, not to mention changing the instruments\n"
-    "so they are correct, be my guest."
+    "If you want such a set, check out the SEQ64 command line options\n"
+    "(by simply running ./seq64 --help or seq64.exe --help) and then\n"
+    "write a script to repeatedly run the program and extract each song."
 );
 
 const String MainComponent::helpText3 = String(

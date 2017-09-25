@@ -78,6 +78,8 @@ class SeqFile{
     
     bool load(ROM& rom, int seqnumber);
     void saveToROM(ROM& rom, uint32 start_addr);
+    bool loadRaw(File file);
+    bool saveRaw(File file);
     
     void trim();
     void parse();
@@ -98,6 +100,7 @@ class SeqFile{
     void removeData(uint32 address, int size, int shrinkSection);
     void editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize, int addrOfChangeSection);
     int editCmdParam(int section, uint32 address, int stype, String meaning, int newvalue); //0 okay, -1 failed, 1 structure changed
+    bool swapCommands(int sectionidx, int firstcmdidx);
     
     ValueTree wantAction(String action, int stype);
     void wantProperty(ValueTree want, String meaning, int value);

@@ -193,6 +193,53 @@ void SeqFile::saveToROM(ROM& rom, uint32 start_addr){
         rom.writeByte(i+start_addr, data[i]);
     }
 }
+bool SeqFile::loadRaw(File file){
+    int len = file.getSize();
+    if(!file.existsAsFile() || len <= 0){
+        SEQ64::say("File " + file.getFullPathName() + " doesn't exist!");
+        return false;
+    }
+    if(len > 1000000){
+        SEQ64::say("File " + file.getFullPathName() + " is more than 1MB, probably not a sequence!");
+        return false;
+    }
+    FileInputStream fis(file);
+    if(fis.failedToOpen()){
+        SEQ64::say("Couldn't open file " + file.getFullPathName() + "!");
+        return false;
+    }
+    SEQ64::say("Loading " + String(len) + " bytes to sequence from " + file.getFullPathName());
+    data.clear();
+    data.ensureStorageAllocated(len);
+    for(int i=0; i<len; ++i){
+        data.add(fis.readByte());
+    }
+    name = file.getFileNameWithoutExtension();
+    bank = nullptr;
+    SEQ64::say("Successfully loaded raw sequence");
+    parse();
+    return true;
+}
+bool SeqFile::saveRaw(File file){
+    if(!file.hasWriteAccess()){
+        SEQ64::say("No write access to " + file.getFullPathName() + "!");
+        return false;
+    }
+    if(file.exists()){
+        file.deleteFile();
+    }
+    FileOutputStream fos(file);
+    if(fos.failedToOpen()){
+        SEQ64::say("Couldn't open file " + file.getFullPathName() + " for writing!");
+        return false;
+    }
+    for(int i=0; i<data.size(); ++i){
+        fos.writeByte(data[i]);
+    }
+    fos.flush();
+    SEQ64::say("Saved " + String(data.size()) + " bytes from sequence to " + file.getFullPathName());
+    return true;
+}
 
 void SeqFile::trim(){
     int lastbyte = data.size() - 1;
@@ -669,6 +716,47 @@ int SeqFile::editCmdParam(int section, uint32 address, int stype, String meaning
          return -1;
     }
     return ret;
+}
+bool SeqFile::swapCommands(int sectionidx, int firstcmdidx){
+    SeqData* section = getSection(sectionidx);
+    if(firstcmdidx <= 0 || firstcmdidx >= section->cmdoffsets.size() - 1) return false;
+    //Get commands
+    uint32 cmdaddr_1 = section->cmdoffsets[firstcmdidx];
+    uint32 cmdaddr_2 = section->cmdoffsets[firstcmdidx+1];
+    ValueTree cmd_1 = getCommand(cmdaddr_1, section->stype);
+    ValueTree cmd_2 = getCommand(cmdaddr_2, section->stype);
+    uint32 len_1 = (int)cmd_1.getProperty("length", 1);
+    uint32 len_2 = (int)cmd_2.getProperty("length", 1);
+    if(len_1 != (cmdaddr_2 - cmdaddr_1)){
+        SEQ64::say("Difference in address between commands not equal to first command's length!");
+        return false;
+    }
+    //Edit command relative addresses
+    for(int p=0; p<cmd_1.getNumChildren(); ++p){
+        ValueTree param = cmd_1.getChild(p);
+        if(param.getProperty("meaning", "None") == "Relative Address"){
+            editCmdParam(sectionidx, cmdaddr_1, section->stype, "Relative Address",
+                (int)param.getProperty("value", 0) - len_1);
+        }
+    }
+    for(int p=0; p<cmd_2.getNumChildren(); ++p){
+        ValueTree param = cmd_2.getChild(p);
+        if(param.getProperty("meaning", "None") == "Relative Address"){
+            editCmdParam(sectionidx, cmdaddr_2, section->stype, "Relative Address",
+                (int)param.getProperty("value", 0) + len_1);
+        }
+    }
+    //Swap commands
+    uint32 s, d;
+    for(s=cmdaddr_1, d=cmdaddr_2+len_2; s<cmdaddr_2; ++s, ++d){
+        data.insert(d, data[s]);
+    }
+    for(s=0; s<len_1; ++s){
+        data.remove(cmdaddr_1);
+    }
+    //Done
+    parse();
+    return true;
 }
 
 ValueTree SeqFile::wantAction(String action, int stype){
@@ -2357,7 +2445,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                     cmd++;
                     t = timestamp3;
                 }
-                bool done = false;
+                done = false;
                 while(!done){
                     msg = msg3;
                     timestamp = timestamp3;
@@ -2800,7 +2888,7 @@ void SeqFile::optimize(){
         ValueTree item;
         ValueTree sectionN;
         int secN;
-        int i, j;
+        int j;
         int hooklength;
         int curdatalength, calleddatalength;
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){

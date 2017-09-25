@@ -39,6 +39,7 @@ public:
     static void writeProperty(Identifier name, String value);
     static String readProperty(Identifier name);
     static File readFolderProperty(const String& name);
+    static bool useNativeFileChooser();
     
     SEQ64();
     

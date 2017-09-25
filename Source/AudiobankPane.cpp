@@ -507,6 +507,8 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     addAndMakeVisible(lstFields = new ListBox("Fields", lsmFields));
     lstFields->setMultipleSelectionEnabled(false);
     lstFields->setRowHeight(16);
+    lstFields->setOutlineThickness(1);
+    lstFields->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmLibSets = new TextListModel();
     lsmLibSets->setListener(this);
@@ -514,6 +516,8 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     addAndMakeVisible(lstLibSets = new ListBox("LibSets", lsmLibSets));
     lstLibSets->setMultipleSelectionEnabled(false);
     lstLibSets->setRowHeight(16);
+    lstLibSets->setOutlineThickness(1);
+    lstLibSets->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmLibItems = new TextListModel();
     lsmLibItems->setListener(this);
@@ -521,6 +525,8 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     addAndMakeVisible(lstLibItems = new ListBox("LibItems", lsmLibItems));
     lstLibItems->setMultipleSelectionEnabled(false);
     lstLibItems->setRowHeight(16);
+    lstLibItems->setOutlineThickness(1);
+    lstLibItems->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmBItems = new TextListModel();
     lsmBItems->setListener(this);
@@ -528,6 +534,8 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     addAndMakeVisible(lstBItems = new ListBox("BItems", lsmBItems));
     lstBItems->setMultipleSelectionEnabled(false);
     lstBItems->setRowHeight(16);
+    lstBItems->setOutlineThickness(1);
+    lstBItems->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
 
     txtFieldName->addListener(this);

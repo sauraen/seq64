@@ -89,6 +89,19 @@ String SEQ64::readProperty(Identifier name){
     }
     return "";
 }
+bool SEQ64::useNativeFileChooser(){
+    Identifier idNFC = "usenativefilechooser";
+    String prop = readProperty(idNFC);
+    if(prop == ""){
+#if (defined(JUCE_LINUX) || defined(JUCE_BSD))
+            prop = "no";
+#else
+            prop = "yes";
+#endif
+        writeProperty(idNFC, prop);
+    }
+    return (prop == "yes");
+}
 
 File SEQ64::readFolderProperty(const String& name){
     String fpath = SEQ64::readProperty(name);

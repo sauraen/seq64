@@ -149,9 +149,6 @@ FilesPane::FilesPane (SEQ64& seq64_)
     btnKFileDel->setConnectedEdges (Button::ConnectedOnLeft);
     btnKFileDel->addListener (this);
 
-    addAndMakeVisible (groupComponent3 = new GroupComponent ("new group",
-                                                             TRANS("Code Refs To This")));
-
     addAndMakeVisible (label5 = new Label ("new label",
                                            TRANS("Type:")));
     label5->setFont (Font (15.00f, Font::plain));
@@ -208,57 +205,6 @@ FilesPane::FilesPane (SEQ64& seq64_)
     txtKFileLength->setCaretVisible (true);
     txtKFileLength->setPopupMenuEnabled (true);
     txtKFileLength->setText (String::empty);
-
-    addAndMakeVisible (btnCodeRefAdd = new TextButton ("new button"));
-    btnCodeRefAdd->setButtonText (TRANS("Add"));
-    btnCodeRefAdd->setConnectedEdges (Button::ConnectedOnBottom);
-    btnCodeRefAdd->addListener (this);
-
-    addAndMakeVisible (btnCodeRefDel = new TextButton ("new button"));
-    btnCodeRefDel->setButtonText (TRANS("Del"));
-    btnCodeRefDel->setConnectedEdges (Button::ConnectedOnTop);
-    btnCodeRefDel->addListener (this);
-
-    addAndMakeVisible (btnCodeRefFind = new TextButton ("new button"));
-    btnCodeRefFind->setButtonText (TRANS("Find"));
-    btnCodeRefFind->addListener (this);
-
-    addAndMakeVisible (label8 = new Label ("new label",
-                                           TRANS("Move to:")));
-    label8->setFont (Font (15.00f, Font::plain));
-    label8->setJustificationType (Justification::centredLeft);
-    label8->setEditable (false, false, false);
-    label8->setColour (TextEditor::textColourId, Colours::black);
-    label8->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (txtKFileMoveAddr = new TextEditor ("new text editor"));
-    txtKFileMoveAddr->setMultiLine (false);
-    txtKFileMoveAddr->setReturnKeyStartsNewLine (false);
-    txtKFileMoveAddr->setReadOnly (false);
-    txtKFileMoveAddr->setScrollbarsShown (true);
-    txtKFileMoveAddr->setCaretVisible (true);
-    txtKFileMoveAddr->setPopupMenuEnabled (true);
-    txtKFileMoveAddr->setText (String::empty);
-
-    addAndMakeVisible (label9 = new Label ("new label",
-                                           TRANS("Free:")));
-    label9->setFont (Font (15.00f, Font::plain));
-    label9->setJustificationType (Justification::centredLeft);
-    label9->setEditable (false, false, false);
-    label9->setColour (TextEditor::textColourId, Colours::black);
-    label9->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (lblMoveFree = new Label ("new label",
-                                                String::empty));
-    lblMoveFree->setFont (Font (15.00f, Font::plain));
-    lblMoveFree->setJustificationType (Justification::centredLeft);
-    lblMoveFree->setEditable (false, false, false);
-    lblMoveFree->setColour (TextEditor::textColourId, Colours::black);
-    lblMoveFree->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
-
-    addAndMakeVisible (btnMoveKFile = new TextButton ("new button"));
-    btnMoveKFile->setButtonText (TRANS("Move"));
-    btnMoveKFile->addListener (this);
 
     addAndMakeVisible (grpIndex = new GroupComponent ("new group",
                                                       TRANS("Index")));
@@ -351,6 +297,8 @@ FilesPane::FilesPane (SEQ64& seq64_)
     addAndMakeVisible(lstFileTable = new ListBox("FileTable", lsmFileTable));
     lstFileTable->setMultipleSelectionEnabled(false);
     lstFileTable->setRowHeight(16);
+    lstFileTable->setOutlineThickness(1);
+    lstFileTable->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmKFiles = new TextListModel();
     lsmKFiles->setListener(this);
@@ -358,13 +306,8 @@ FilesPane::FilesPane (SEQ64& seq64_)
     addAndMakeVisible(lstKFiles = new ListBox("KFiles", lsmKFiles));
     lstKFiles->setMultipleSelectionEnabled(false);
     lstKFiles->setRowHeight(16);
-
-    lsmCodeRefs = new TextListModel();
-    lsmCodeRefs->setListener(this);
-
-    addAndMakeVisible(lstCodeRefs = new ListBox("CodeRefs", lsmCodeRefs));
-    lstCodeRefs->setMultipleSelectionEnabled(false);
-    lstCodeRefs->setRowHeight(16);
+    lstKFiles->setOutlineThickness(1);
+    lstKFiles->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmIndex = new TextListModel();
     lsmIndex->setListener(this);
@@ -372,6 +315,8 @@ FilesPane::FilesPane (SEQ64& seq64_)
     addAndMakeVisible(lstIndex = new ListBox("Index", lsmIndex));
     lstIndex->setMultipleSelectionEnabled(false);
     lstIndex->setRowHeight(16);
+    lstIndex->setOutlineThickness(1);
+    lstIndex->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     lsmInstSets = new TextListModel();
     lsmInstSets->setListener(this);
@@ -379,12 +324,13 @@ FilesPane::FilesPane (SEQ64& seq64_)
     addAndMakeVisible(lstInstSets = new ListBox("InstSets", lsmInstSets));
     lstInstSets->setMultipleSelectionEnabled(false);
     lstInstSets->setRowHeight(16);
+    lstInstSets->setOutlineThickness(1);
+    lstInstSets->setColour(ListBox::outlineColourId, Colours::lightgrey);
 
     txtFTAddr->addListener(this);
     txtFileName->addListener(this);
     txtKFileAddr->addListener(this);
     txtKFileLength->addListener(this);
-    txtKFileMoveAddr->addListener(this);
     txtIEntryName->addListener(this);
 
     //[/UserPreSize]
@@ -425,21 +371,12 @@ FilesPane::~FilesPane()
     groupComponent2 = nullptr;
     btnKFileAdd = nullptr;
     btnKFileDel = nullptr;
-    groupComponent3 = nullptr;
     label5 = nullptr;
     cbxKFileType = nullptr;
     label6 = nullptr;
     txtKFileAddr = nullptr;
     label7 = nullptr;
     txtKFileLength = nullptr;
-    btnCodeRefAdd = nullptr;
-    btnCodeRefDel = nullptr;
-    btnCodeRefFind = nullptr;
-    label8 = nullptr;
-    txtKFileMoveAddr = nullptr;
-    label9 = nullptr;
-    lblMoveFree = nullptr;
-    btnMoveKFile = nullptr;
     grpIndex = nullptr;
     lblIndexProps = nullptr;
     label11 = nullptr;
@@ -476,32 +413,23 @@ void FilesPane::resized()
     //[UserPreResize] Add your own custom resize code here..
     //[/UserPreResize]
 
-    groupComponent->setBounds (0, 0, 336, 368);
+    groupComponent->setBounds (0, 0, 336, 448);
     label->setBounds (8, 16, 72, 24);
     txtFTAddr->setBounds (80, 16, 80, 24);
-    label2->setBounds (8, 312, 56, 24);
-    txtFileName->setBounds (64, 312, 264, 24);
-    label3->setBounds (8, 336, 56, 24);
-    cbxFileType->setBounds (64, 336, 264, 24);
-    label4->setBounds (8, 288, 320, 24);
-    groupComponent2->setBounds (0, 368, 336, 344);
-    btnKFileAdd->setBounds (8, 544, 40, 24);
-    btnKFileDel->setBounds (48, 544, 40, 24);
-    groupComponent3->setBounds (8, 576, 160, 128);
-    label5->setBounds (96, 544, 47, 24);
-    cbxKFileType->setBounds (144, 544, 184, 24);
-    label6->setBounds (176, 576, 72, 24);
-    txtKFileAddr->setBounds (248, 576, 80, 24);
-    label7->setBounds (176, 600, 72, 24);
-    txtKFileLength->setBounds (248, 600, 80, 24);
-    btnCodeRefAdd->setBounds (120, 592, 40, 24);
-    btnCodeRefDel->setBounds (120, 616, 40, 24);
-    btnCodeRefFind->setBounds (120, 664, 40, 24);
-    label8->setBounds (176, 632, 72, 24);
-    txtKFileMoveAddr->setBounds (248, 632, 80, 24);
-    label9->setBounds (176, 656, 72, 24);
-    lblMoveFree->setBounds (248, 656, 80, 24);
-    btnMoveKFile->setBounds (176, 680, 150, 24);
+    label2->setBounds (8, 392, 56, 24);
+    txtFileName->setBounds (64, 392, 264, 24);
+    label3->setBounds (8, 416, 56, 24);
+    cbxFileType->setBounds (64, 416, 264, 24);
+    label4->setBounds (8, 368, 320, 24);
+    groupComponent2->setBounds (0, 448, 336, 264);
+    btnKFileAdd->setBounds (8, 624, 40, 24);
+    btnKFileDel->setBounds (48, 624, 40, 24);
+    label5->setBounds (96, 624, 47, 24);
+    cbxKFileType->setBounds (144, 624, 184, 24);
+    label6->setBounds (176, 656, 72, 24);
+    txtKFileAddr->setBounds (248, 656, 80, 24);
+    label7->setBounds (176, 680, 72, 24);
+    txtKFileLength->setBounds (248, 680, 80, 24);
     grpIndex->setBounds (336, 0, 424, 712);
     lblIndexProps->setBounds (344, 88, 408, 24);
     label11->setBounds (344, 472, 56, 24);
@@ -516,9 +444,8 @@ void FilesPane::resized()
     label10->setBounds (344, 680, 40, 24);
     cbxInstSet1->setBounds (384, 680, 368, 24);
     //[UserResized] Add your own custom resize handling here..
-    lstFileTable->setBounds (8, 48, 320, 240);
-    lstKFiles->setBounds (8, 384, 320, 152);
-    lstCodeRefs->setBounds (16, 592, 96, 96);
+    lstFileTable->setBounds (8, 48, 320, 320);
+    lstKFiles->setBounds (8, 464, 320, 152);
     lstIndex->setBounds (344, 120, 408, 320);
     lstInstSets->setBounds (344, 584, 408, 88);
     //[/UserResized]
@@ -661,26 +588,6 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         fillKFiles();
         lstKFiles->selectRow(-1);
         //[/UserButtonCode_btnKFileDel]
-    }
-    else if (buttonThatWasClicked == btnCodeRefAdd)
-    {
-        //[UserButtonCode_btnCodeRefAdd] -- add your button handler code here..
-        //[/UserButtonCode_btnCodeRefAdd]
-    }
-    else if (buttonThatWasClicked == btnCodeRefDel)
-    {
-        //[UserButtonCode_btnCodeRefDel] -- add your button handler code here..
-        //[/UserButtonCode_btnCodeRefDel]
-    }
-    else if (buttonThatWasClicked == btnCodeRefFind)
-    {
-        //[UserButtonCode_btnCodeRefFind] -- add your button handler code here..
-        //[/UserButtonCode_btnCodeRefFind]
-    }
-    else if (buttonThatWasClicked == btnMoveKFile)
-    {
-        //[UserButtonCode_btnMoveKFile] -- add your button handler code here..
-        //[/UserButtonCode_btnMoveKFile]
     }
     else if (buttonThatWasClicked == btnLoadEntry)
     {
@@ -944,11 +851,6 @@ void FilesPane::fillKFileParams(){
         txtKFileAddr->setText("");
         txtKFileLength->setText("");
     }
-    fillCodeRefs();
-}
-
-void FilesPane::fillCodeRefs(){
-
 }
 
 String FilesPane::getIEntryDescription(int i){
@@ -1235,7 +1137,7 @@ BEGIN_JUCER_METADATA
                  fixedSize="0" initialWidth="600" initialHeight="400">
   <BACKGROUND backgroundColour="ffffffff"/>
   <GROUPCOMPONENT name="new group" id="da1838da4937cc20" memberName="groupComponent"
-                  virtualName="" explicitFocusOrder="0" pos="0 0 336 368" title="Master File Table"/>
+                  virtualName="" explicitFocusOrder="0" pos="0 0 336 448" title="Master File Table"/>
   <LABEL name="new label" id="feac5e6d64dda05e" memberName="label" virtualName=""
          explicitFocusOrder="0" pos="8 16 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Address:" editableSingleClick="0" editableDoubleClick="0"
@@ -1246,96 +1148,63 @@ BEGIN_JUCER_METADATA
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="9d8b9b46e68c2983" memberName="label2" virtualName=""
-         explicitFocusOrder="0" pos="8 312 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 392 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="baf4f79779fe44c6" memberName="txtFileName"
-              virtualName="" explicitFocusOrder="0" pos="64 312 264 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="64 392 264 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="5e17f0c7cbf49c52" memberName="label3" virtualName=""
-         explicitFocusOrder="0" pos="8 336 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 416 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Type:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="a982a2bb18b425a6" memberName="cbxFileType"
-            virtualName="" explicitFocusOrder="0" pos="64 336 264 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="64 416 264 24" editable="0"
             layout="33" items="Unknown&#10;ROM Header&#10;Boot Code&#10;Master File Table&#10;Audiobank&#10;Audioseq&#10;Audiotable&#10;Code&#10;Texture&#10;Shared Assets&#10;Text Data&#10;Actor&#10;Object&#10;Scene&#10;Room&#10;Other"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="f2833c68aa3a69c3" memberName="label4" virtualName=""
-         explicitFocusOrder="0" pos="8 288 320 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 368 320 24" edTextCol="ff000000"
          edBkgCol="0" labelText="[Address information]" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <GROUPCOMPONENT name="new group" id="f59a75502f6f9763" memberName="groupComponent2"
-                  virtualName="" explicitFocusOrder="0" pos="0 368 336 344" title="Known Files"/>
+                  virtualName="" explicitFocusOrder="0" pos="0 448 336 264" title="Known Files"/>
   <TEXTBUTTON name="new button" id="20b0109f8e92d22a" memberName="btnKFileAdd"
-              virtualName="" explicitFocusOrder="0" pos="8 544 40 24" buttonText="Add"
+              virtualName="" explicitFocusOrder="0" pos="8 624 40 24" buttonText="Add"
               connectedEdges="2" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="5eceeff61cabc54a" memberName="btnKFileDel"
-              virtualName="" explicitFocusOrder="0" pos="48 544 40 24" buttonText="Del"
+              virtualName="" explicitFocusOrder="0" pos="48 624 40 24" buttonText="Del"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
-  <GROUPCOMPONENT name="new group" id="2b65bc9a38a5fc58" memberName="groupComponent3"
-                  virtualName="" explicitFocusOrder="0" pos="8 576 160 128" title="Code Refs To This"/>
   <LABEL name="new label" id="3b17daf4620f7036" memberName="label5" virtualName=""
-         explicitFocusOrder="0" pos="96 544 47 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="96 624 47 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Type:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="dba63b9be0a5c57" memberName="cbxKFileType"
-            virtualName="" explicitFocusOrder="0" pos="144 544 184 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="144 624 184 24" editable="0"
             layout="33" items="Unsupported&#10;Audiobank&#10;Audioseq&#10;Audiotable&#10;Audiobank Index&#10;Audioseq Index&#10;Sample Set Index&#10;Instrument Set Index"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="1756f94b14c6940f" memberName="label6" virtualName=""
-         explicitFocusOrder="0" pos="176 576 72 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="176 656 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Address:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="e1d35d2b85f2de9a" memberName="txtKFileAddr"
-              virtualName="" explicitFocusOrder="0" pos="248 576 80 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="248 656 80 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="29eda2beea4f4f73" memberName="label7" virtualName=""
-         explicitFocusOrder="0" pos="176 600 72 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="176 680 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Length:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="f3befab09a65150a" memberName="txtKFileLength"
-              virtualName="" explicitFocusOrder="0" pos="248 600 80 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="248 680 80 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
-  <TEXTBUTTON name="new button" id="b8d33d727edd70b4" memberName="btnCodeRefAdd"
-              virtualName="" explicitFocusOrder="0" pos="120 592 40 24" buttonText="Add"
-              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="a4d1ecbdaa2b8210" memberName="btnCodeRefDel"
-              virtualName="" explicitFocusOrder="0" pos="120 616 40 24" buttonText="Del"
-              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="f821b0e33c19937d" memberName="btnCodeRefFind"
-              virtualName="" explicitFocusOrder="0" pos="120 664 40 24" buttonText="Find"
-              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
-  <LABEL name="new label" id="a38c362c0f9d2101" memberName="label8" virtualName=""
-         explicitFocusOrder="0" pos="176 632 72 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Move to:" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="6486d7b44a41b1d4" memberName="txtKFileMoveAddr"
-              virtualName="" explicitFocusOrder="0" pos="248 632 80 24" initialText=""
-              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
-              caret="1" popupmenu="1"/>
-  <LABEL name="new label" id="3a0f80e0f6448bce" memberName="label9" virtualName=""
-         explicitFocusOrder="0" pos="176 656 72 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Free:" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
-  <LABEL name="new label" id="8578f1a087a8b7f6" memberName="lblMoveFree"
-         virtualName="" explicitFocusOrder="0" pos="248 656 80 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
-         bold="0" italic="0" justification="33"/>
-  <TEXTBUTTON name="new button" id="e38129c54099944b" memberName="btnMoveKFile"
-              virtualName="" explicitFocusOrder="0" pos="176 680 150 24" buttonText="Move"
-              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <GROUPCOMPONENT name="new group" id="a707e7b9cb5e40a2" memberName="grpIndex"
                   virtualName="" explicitFocusOrder="0" pos="336 0 424 712" title="Index"/>
   <LABEL name="new label" id="5c4f6c4947dd2650" memberName="lblIndexProps"

@@ -127,7 +127,6 @@ private:
 
     //==============================================================================
     ScopedPointer<GroupComponent> groupComponent;
-    ScopedPointer<GroupComponent> groupComponent2;
     ScopedPointer<GroupComponent> groupComponent3;
     ScopedPointer<GroupComponent> groupComponent6;
     ScopedPointer<GroupComponent> groupComponent5;
@@ -168,9 +167,6 @@ private:
     ScopedPointer<TextButton> btnCmdDn;
     ScopedPointer<Label> label3;
     ScopedPointer<Label> label4;
-    ScopedPointer<ToggleButton> optSecSeq;
-    ScopedPointer<ToggleButton> optSecChn;
-    ScopedPointer<ToggleButton> optSecTrk;
     ScopedPointer<TextButton> btnSeqCmdAdd;
     ScopedPointer<TextButton> btnSeqCmdDelete;
     ScopedPointer<TextButton> btnSeqCmdUp;
@@ -183,6 +179,8 @@ private:
     ScopedPointer<Label> lblValueEquiv;
     ScopedPointer<Label> lblSeqCmdAction2;
     ScopedPointer<TextButton> btnReParse;
+    ScopedPointer<TextButton> btnSaveRaw;
+    ScopedPointer<TextButton> btnLoadRaw;
 
 
     //==============================================================================

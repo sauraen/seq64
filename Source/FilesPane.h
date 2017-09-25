@@ -83,7 +83,6 @@ public:
 
     void fillKFiles();
     void fillKFileParams();
-    void fillCodeRefs();
 
     void fillIndex();
     String getIEntryDescription(int i);
@@ -130,9 +129,6 @@ private:
     ScopedPointer<TextListModel> lsmKFiles;
     ScopedPointer<ListBox> lstKFiles;
 
-    ScopedPointer<TextListModel> lsmCodeRefs;
-    ScopedPointer<ListBox> lstCodeRefs;
-
     ScopedPointer<TextListModel> lsmIndex;
     ScopedPointer<ListBox> lstIndex;
 
@@ -155,21 +151,12 @@ private:
     ScopedPointer<GroupComponent> groupComponent2;
     ScopedPointer<TextButton> btnKFileAdd;
     ScopedPointer<TextButton> btnKFileDel;
-    ScopedPointer<GroupComponent> groupComponent3;
     ScopedPointer<Label> label5;
     ScopedPointer<ComboBox> cbxKFileType;
     ScopedPointer<Label> label6;
     ScopedPointer<TextEditor> txtKFileAddr;
     ScopedPointer<Label> label7;
     ScopedPointer<TextEditor> txtKFileLength;
-    ScopedPointer<TextButton> btnCodeRefAdd;
-    ScopedPointer<TextButton> btnCodeRefDel;
-    ScopedPointer<TextButton> btnCodeRefFind;
-    ScopedPointer<Label> label8;
-    ScopedPointer<TextEditor> txtKFileMoveAddr;
-    ScopedPointer<Label> label9;
-    ScopedPointer<Label> lblMoveFree;
-    ScopedPointer<TextButton> btnMoveKFile;
     ScopedPointer<GroupComponent> grpIndex;
     ScopedPointer<Label> lblIndexProps;
     ScopedPointer<Label> label11;

@@ -115,14 +115,14 @@ private:
     ScopedPointer<ToggleButton> optLoopAll;
     ScopedPointer<ToggleButton> optHeader;
     ScopedPointer<ToggleButton> optChanReset;
-    ScopedPointer<GroupComponent> groupComponent2;
+    ScopedPointer<GroupComponent> grpPtr;
     ScopedPointer<ToggleButton> optPtrAbsolute;
     ScopedPointer<ToggleButton> optPtrShortest;
     ScopedPointer<ToggleButton> optPtrRelative;
     ScopedPointer<TextEditor> txtSeqFormat;
     ScopedPointer<TextEditor> txtSeqType;
     ScopedPointer<ToggleButton> optCalls;
-    ScopedPointer<Label> label;
+    ScopedPointer<Label> lblStack;
     ScopedPointer<TextEditor> txtStack;
     ScopedPointer<ToggleButton> optLoops;
     ScopedPointer<Label> label2;

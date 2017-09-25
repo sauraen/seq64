@@ -60,7 +60,7 @@ void Yax0Codec::threadComplete(bool userPressedCancel){
     }
     File outputfile = inputfile.getSiblingFile(
             inputfile.getFileNameWithoutExtension() + "_out" + inputfile.getFileExtension());
-    FileChooser box2("Success! Save result as...", outputfile, "");
+    FileChooser box2("Success! Save result as...", outputfile, "", SEQ64::useNativeFileChooser());
     if(!box2.browseForFileToSave(true)) return;
     outputfile = box2.getResult();
     if(!outputfile.hasWriteAccess()){

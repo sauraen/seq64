@@ -201,15 +201,14 @@ MidiPane::MidiPane (SEQ64& seq64_)
     addAndMakeVisible (optHeader = new ToggleButton ("new toggle button"));
     optHeader->setButtonText (TRANS("Create jump-to-sections header (if sections defined)"));
     optHeader->addListener (this);
-    optHeader->setToggleState (true, dontSendNotification);
 
     addAndMakeVisible (optChanReset = new ToggleButton ("new toggle button"));
     optChanReset->setButtonText (TRANS("Initially reset channels"));
     optChanReset->addListener (this);
     optChanReset->setToggleState (true, dontSendNotification);
 
-    addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
-                                                             TRANS("Pointer Type")));
+    addAndMakeVisible (grpPtr = new GroupComponent ("new group",
+                                                    TRANS("Pointer Type")));
 
     addAndMakeVisible (optPtrAbsolute = new ToggleButton ("new toggle button"));
     optPtrAbsolute->setButtonText (TRANS("Absolute"));
@@ -220,7 +219,6 @@ MidiPane::MidiPane (SEQ64& seq64_)
     optPtrShortest->setButtonText (TRANS("Shortest"));
     optPtrShortest->setRadioGroupId (1);
     optPtrShortest->addListener (this);
-    optPtrShortest->setToggleState (true, dontSendNotification);
 
     addAndMakeVisible (optPtrRelative = new ToggleButton ("new toggle button"));
     optPtrRelative->setButtonText (TRANS("Force Relative Only"));
@@ -250,13 +248,13 @@ MidiPane::MidiPane (SEQ64& seq64_)
     optCalls->addListener (this);
     optCalls->setToggleState (true, dontSendNotification);
 
-    addAndMakeVisible (label = new Label ("new label",
-                                          TRANS("Stack height:")));
-    label->setFont (Font (15.00f, Font::plain));
-    label->setJustificationType (Justification::centredLeft);
-    label->setEditable (false, false, false);
-    label->setColour (TextEditor::textColourId, Colours::black);
-    label->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+    addAndMakeVisible (lblStack = new Label ("new label",
+                                             TRANS("Stack height:")));
+    lblStack->setFont (Font (15.00f, Font::plain));
+    lblStack->setJustificationType (Justification::centredLeft);
+    lblStack->setEditable (false, false, false);
+    lblStack->setColour (TextEditor::textColourId, Colours::black);
+    lblStack->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
     addAndMakeVisible (txtStack = new TextEditor ("new text editor"));
     txtStack->setMultiLine (false);
@@ -483,6 +481,14 @@ MidiPane::MidiPane (SEQ64& seq64_)
     cbxMIDIMtrVol->setSelectedItemIndex(3, dontSendNotification);
     cbxChnPriority->setSelectedItemIndex(1, dontSendNotification);
 
+    optHeader->setEnabled(false);
+    lblStack->setEnabled(false);
+    txtStack->setEnabled(false);
+    grpPtr->setEnabled(false);
+    optPtrShortest->setEnabled(false);
+    optPtrAbsolute->setEnabled(false);
+    optPtrRelative->setEnabled(false);
+
     //[/UserPreSize]
 
     setSize (1000, 632);
@@ -522,14 +528,14 @@ MidiPane::~MidiPane()
     optLoopAll = nullptr;
     optHeader = nullptr;
     optChanReset = nullptr;
-    groupComponent2 = nullptr;
+    grpPtr = nullptr;
     optPtrAbsolute = nullptr;
     optPtrShortest = nullptr;
     optPtrRelative = nullptr;
     txtSeqFormat = nullptr;
     txtSeqType = nullptr;
     optCalls = nullptr;
-    label = nullptr;
+    lblStack = nullptr;
     txtStack = nullptr;
     optLoops = nullptr;
     label2 = nullptr;
@@ -600,14 +606,14 @@ void MidiPane::resized()
     optLoopAll->setBounds (368, 96, 336, 24);
     optHeader->setBounds (368, 120, 336, 24);
     optChanReset->setBounds (368, 144, 336, 24);
-    groupComponent2->setBounds (368, 168, 336, 48);
+    grpPtr->setBounds (368, 168, 336, 48);
     optPtrAbsolute->setBounds (464, 184, 88, 24);
     optPtrShortest->setBounds (376, 184, 80, 24);
     optPtrRelative->setBounds (552, 184, 144, 24);
     txtSeqFormat->setBounds (560, 24, 40, 24);
     txtSeqType->setBounds (560, 48, 40, 24);
     optCalls->setBounds (376, 256, 144, 24);
-    label->setBounds (376, 232, 104, 24);
+    lblStack->setBounds (376, 232, 104, 24);
     txtStack->setBounds (480, 232, 40, 24);
     optLoops->setBounds (376, 280, 144, 24);
     label2->setBounds (376, 304, 144, 24);
@@ -647,7 +653,7 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
         if(&*seq64.seq == nullptr) return;
 		File dest = SEQ64::readFolderProperty("midifolder");
 		dest = dest.getChildFile(seq64.seq->name + ".mid");
-        FileChooser box("Save As", dest, "*.mid");
+        FileChooser box("Save As", dest, "*.mid", SEQ64::useNativeFileChooser());
         if(!box.browseForFileToSave(true)) return;
         dest = box.getResult();
         if(!dest.hasWriteAccess()){
@@ -677,7 +683,7 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
                     "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
         }
         File dest = File::getSpecialLocation(File::userHomeDirectory);
-        FileChooser box("Select a MIDI to load...", dest, "*.mid;*.midi;*.rmi");
+        FileChooser box("Select a MIDI to load...", dest, "*.mid;*.midi;*.rmi", SEQ64::useNativeFileChooser());
         if(box.browseForFileToOpen()){
             dest = box.getResult();
             if(!dest.existsAsFile()){
@@ -847,8 +853,6 @@ void MidiPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     }else{
         editorThatWasChanged.setColour(TextEditor::backgroundColourId, Colours::white);
     }
-
-
 }
 
 
@@ -877,10 +881,11 @@ void MidiPane::refreshMIDIControls(){
     optSeqType->setToggleState((bool)midioptsnode.getProperty("writeseqtype", true), dontSendNotification);
     optChanBits->setToggleState((bool)midioptsnode.getProperty("writechanbits", true), dontSendNotification);
     optLoopAll->setToggleState((bool)midioptsnode.getProperty("writeloopall", true), dontSendNotification);
-    optHeader->setToggleState((bool)midioptsnode.getProperty("writeheader", true), dontSendNotification);
+    //optHeader->setToggleState((bool)midioptsnode.getProperty("writeheader", true), dontSendNotification);
     optChanReset->setToggleState((bool)midioptsnode.getProperty("writechanreset", true), dontSendNotification);
     optCalls->setToggleState((bool)midioptsnode.getProperty("usecalls", true), dontSendNotification);
     optLoops->setToggleState((bool)midioptsnode.getProperty("useloops", true), dontSendNotification);
+    /*
     String ptrtype = midioptsnode.getProperty("ptrtype", "shortest");
     if(ptrtype == "absolute"){
         optPtrAbsolute->setToggleState(true, dontSendNotification);
@@ -889,6 +894,7 @@ void MidiPane::refreshMIDIControls(){
     }else{
         optPtrShortest->setToggleState(true, dontSendNotification);
     }
+    */
 }
 
 
@@ -988,18 +994,18 @@ BEGIN_JUCER_METADATA
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TOGGLEBUTTON name="new toggle button" id="8407bc3e8b8b62f9" memberName="optHeader"
                 virtualName="" explicitFocusOrder="0" pos="368 120 336 24" buttonText="Create jump-to-sections header (if sections defined)"
-                connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="ebfe7a8ea711aadd" memberName="optChanReset"
                 virtualName="" explicitFocusOrder="0" pos="368 144 336 24" buttonText="Initially reset channels"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
-  <GROUPCOMPONENT name="new group" id="3f6e908675196841" memberName="groupComponent2"
-                  virtualName="" explicitFocusOrder="0" pos="368 168 336 48" title="Pointer Type"/>
+  <GROUPCOMPONENT name="new group" id="3f6e908675196841" memberName="grpPtr" virtualName=""
+                  explicitFocusOrder="0" pos="368 168 336 48" title="Pointer Type"/>
   <TOGGLEBUTTON name="new toggle button" id="a704eec5bbb2c46" memberName="optPtrAbsolute"
                 virtualName="" explicitFocusOrder="0" pos="464 184 88 24" buttonText="Absolute"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="1bb095294dc9c19d" memberName="optPtrShortest"
                 virtualName="" explicitFocusOrder="0" pos="376 184 80 24" buttonText="Shortest"
-                connectedEdges="0" needsCallback="1" radioGroupId="1" state="1"/>
+                connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="1f703315d74170ea" memberName="optPtrRelative"
                 virtualName="" explicitFocusOrder="0" pos="552 184 144 24" buttonText="Force Relative Only"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
@@ -1014,8 +1020,8 @@ BEGIN_JUCER_METADATA
   <TOGGLEBUTTON name="new toggle button" id="57be9c908829216a" memberName="optCalls"
                 virtualName="" explicitFocusOrder="0" pos="376 256 144 24" buttonText="Use Calls"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
-  <LABEL name="new label" id="f41f0b19ef7d8015" memberName="label" virtualName=""
-         explicitFocusOrder="0" pos="376 232 104 24" edTextCol="ff000000"
+  <LABEL name="new label" id="f41f0b19ef7d8015" memberName="lblStack"
+         virtualName="" explicitFocusOrder="0" pos="376 232 104 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Stack height:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
