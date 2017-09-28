@@ -351,7 +351,7 @@
             writeseqformat="1" writeseqtype="1" writechanbits="1" writeloopall="1"
             writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="1"
             useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
-            q_pan_amp="2"/>
+            q_pan_amp="2" addmstrvol="1" addmstrvolval="88"/>
   <audiobankidx>
     <indexentry index="34" name="Main Theme"/>
     <indexentry index="17" name="Title Theme"/>

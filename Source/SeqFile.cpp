@@ -2105,11 +2105,14 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
         section.addChild(createCommand(want), cmd, nullptr);
         cmd++;
     }
+    int addmstrvol_cmd = cmd;
+    bool hadmastervol = false;
     //Beginning of track (for pointer later)
     want = createMarker();
     int ptrBeginData = want.getProperty(idHash);
     section.addChild(want, cmd, nullptr);
     cmd++;
+    //Add events from master track
     m=0;
     bool done = false;
     while(true){
@@ -2172,6 +2175,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                     //Master volume
                     want = wantAction("Master Volume", 0);
                     wantProperty(want, "Value", sysexdata[5]);
+                    hadmastervol = true;
                 }
             }
         }
@@ -2212,6 +2216,15 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
         want = wantAction("Channel Disable", 0);
         wantProperty(want, "Bitfield", chanBitfield);
         section.addChild(createCommand(want), cmd, nullptr);
+        cmd++;
+    }
+    //Master Volume
+    if(!hadmastervol && (bool)midiopts.getProperty("addmstrvol", true)){
+        uint8 defaultval = (int)midiopts.getProperty("addmstrvolval", 0x58);
+        SEQ64::say("No Master Volume sysex command in the MIDI, adding default 0x" + ROM::hex(defaultval));
+        want = wantAction("Master Volume", 0);
+        wantProperty(want, "Value", defaultval);
+        section.addChild(createCommand(want), addmstrvol_cmd, nullptr);
         cmd++;
     }
     //=======================================================================

@@ -147,6 +147,8 @@ private:
     ScopedPointer<TextEditor> txtQPanT;
     ScopedPointer<TextEditor> txtQPanA;
     ScopedPointer<Label> label12;
+    ScopedPointer<ToggleButton> optMstrVol;
+    ScopedPointer<TextEditor> txtMstrVol;
 
 
     //==============================================================================

@@ -457,6 +457,20 @@ MidiPane::MidiPane (SEQ64& seq64_)
     label12->setColour (TextEditor::textColourId, Colours::black);
     label12->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
+    addAndMakeVisible (optMstrVol = new ToggleButton ("new toggle button"));
+    optMstrVol->setButtonText (TRANS("Add Master Volume cmd if not in MIDI: "));
+    optMstrVol->addListener (this);
+    optMstrVol->setToggleState (true, dontSendNotification);
+
+    addAndMakeVisible (txtMstrVol = new TextEditor ("new text editor"));
+    txtMstrVol->setMultiLine (false);
+    txtMstrVol->setReturnKeyStartsNewLine (false);
+    txtMstrVol->setReadOnly (false);
+    txtMstrVol->setScrollbarsShown (true);
+    txtMstrVol->setCaretVisible (true);
+    txtMstrVol->setPopupMenuEnabled (true);
+    txtMstrVol->setText (TRANS("58"));
+
 
     //[UserPreSize]
 
@@ -464,6 +478,7 @@ MidiPane::MidiPane (SEQ64& seq64_)
     txtMIDIPPQN->addListener(this);
     txtSeqFormat->addListener(this);
     txtSeqType->addListener(this);
+    txtMstrVol->addListener(this);
     txtStack->addListener(this);
     txtMergeVels->addListener(this);
     txtMergeGates->addListener(this);
@@ -560,6 +575,8 @@ MidiPane::~MidiPane()
     txtQPanT = nullptr;
     txtQPanA = nullptr;
     label12 = nullptr;
+    optMstrVol = nullptr;
+    txtMstrVol = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -583,8 +600,8 @@ void MidiPane::resized()
     //[UserPreResize] Add your own custom resize code here..
     //[/UserPreResize]
 
-    groupComponent8->setBounds (360, 8, 352, 408);
-    groupComponent3->setBounds (368, 216, 336, 192);
+    groupComponent8->setBounds (360, 8, 352, 432);
+    groupComponent3->setBounds (368, 240, 336, 192);
     groupComponent7->setBounds (0, 160, 352, 48);
     groupComponent->setBounds (0, 56, 352, 96);
     btnMIDIExport->setBounds (0, 24, 176, 24);
@@ -603,41 +620,43 @@ void MidiPane::resized()
     optSeqFormat->setBounds (368, 24, 184, 24);
     optSeqType->setBounds (368, 48, 184, 24);
     optChanBits->setBounds (368, 72, 336, 24);
-    optLoopAll->setBounds (368, 96, 336, 24);
-    optHeader->setBounds (368, 120, 336, 24);
-    optChanReset->setBounds (368, 144, 336, 24);
-    grpPtr->setBounds (368, 168, 336, 48);
-    optPtrAbsolute->setBounds (464, 184, 88, 24);
-    optPtrShortest->setBounds (376, 184, 80, 24);
-    optPtrRelative->setBounds (552, 184, 144, 24);
+    optLoopAll->setBounds (368, 120, 336, 24);
+    optHeader->setBounds (368, 144, 336, 24);
+    optChanReset->setBounds (368, 168, 336, 24);
+    grpPtr->setBounds (368, 192, 336, 48);
+    optPtrAbsolute->setBounds (464, 208, 88, 24);
+    optPtrShortest->setBounds (376, 208, 80, 24);
+    optPtrRelative->setBounds (552, 208, 144, 24);
     txtSeqFormat->setBounds (560, 24, 40, 24);
     txtSeqType->setBounds (560, 48, 40, 24);
-    optCalls->setBounds (376, 256, 144, 24);
-    lblStack->setBounds (376, 232, 104, 24);
-    txtStack->setBounds (480, 232, 40, 24);
-    optLoops->setBounds (376, 280, 144, 24);
-    label2->setBounds (376, 304, 144, 24);
-    txtMergeVels->setBounds (480, 328, 40, 24);
-    txtMergeGates->setBounds (480, 352, 40, 24);
-    txtMergeCCs->setBounds (480, 376, 40, 24);
-    label3->setBounds (528, 232, 168, 24);
-    label4->setBounds (528, 256, 168, 24);
-    txtQVolT->setBounds (608, 280, 40, 24);
-    txtQOtherT->setBounds (608, 352, 40, 24);
-    txtQVolA->setBounds (656, 280, 40, 24);
-    txtQOtherA->setBounds (656, 352, 40, 24);
+    optCalls->setBounds (376, 280, 144, 24);
+    lblStack->setBounds (376, 256, 104, 24);
+    txtStack->setBounds (480, 256, 40, 24);
+    optLoops->setBounds (376, 304, 144, 24);
+    label2->setBounds (376, 328, 144, 24);
+    txtMergeVels->setBounds (480, 352, 40, 24);
+    txtMergeGates->setBounds (480, 376, 40, 24);
+    txtMergeCCs->setBounds (480, 400, 40, 24);
+    label3->setBounds (528, 256, 168, 24);
+    label4->setBounds (528, 280, 168, 24);
+    txtQVolT->setBounds (608, 304, 40, 24);
+    txtQOtherT->setBounds (608, 376, 40, 24);
+    txtQVolA->setBounds (656, 304, 40, 24);
+    txtQOtherA->setBounds (656, 376, 40, 24);
     label5->setBounds (0, 0, 344, 24);
-    label6->setBounds (528, 280, 72, 24);
-    label7->setBounds (528, 352, 72, 24);
-    label8->setBounds (376, 328, 88, 24);
-    label9->setBounds (376, 352, 88, 24);
-    label10->setBounds (376, 376, 88, 24);
-    txtQPitchT->setBounds (608, 304, 40, 24);
-    txtQPitchA->setBounds (656, 304, 40, 24);
-    label11->setBounds (528, 304, 72, 24);
-    txtQPanT->setBounds (608, 328, 40, 24);
-    txtQPanA->setBounds (656, 328, 40, 24);
-    label12->setBounds (528, 328, 72, 24);
+    label6->setBounds (528, 304, 72, 24);
+    label7->setBounds (528, 376, 72, 24);
+    label8->setBounds (376, 352, 88, 24);
+    label9->setBounds (376, 376, 88, 24);
+    label10->setBounds (376, 400, 88, 24);
+    txtQPitchT->setBounds (608, 328, 40, 24);
+    txtQPitchA->setBounds (656, 328, 40, 24);
+    label11->setBounds (528, 328, 72, 24);
+    txtQPanT->setBounds (608, 352, 40, 24);
+    txtQPanA->setBounds (656, 352, 40, 24);
+    label12->setBounds (528, 352, 72, 24);
+    optMstrVol->setBounds (368, 96, 272, 24);
+    txtMstrVol->setBounds (640, 96, 40, 24);
     //[UserResized] Add your own custom resize handling here..
     //[/UserResized]
 }
@@ -766,6 +785,12 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
         midioptsnode.setProperty("useloops", optLoops->getToggleState(), nullptr);
         //[/UserButtonCode_optLoops]
     }
+    else if (buttonThatWasClicked == optMstrVol)
+    {
+        //[UserButtonCode_optMstrVol] -- add your button handler code here..
+        midioptsnode.setProperty("addmstrvol", optMstrVol->getToggleState(), nullptr);
+        //[/UserButtonCode_optMstrVol]
+    }
 
     //[UserbuttonClicked_Post]
     //[/UserbuttonClicked_Post]
@@ -807,7 +832,8 @@ void MidiPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     int val;
     String text = editorThatWasChanged.getText();
     if(        &editorThatWasChanged == &*txtSeqFormat
-            || &editorThatWasChanged == &*txtSeqType ){
+            || &editorThatWasChanged == &*txtSeqType
+            || &editorThatWasChanged == &*txtMstrVol ){
         val = text.getHexValue32();
     }else{
         val = text.getIntValue();
@@ -823,6 +849,8 @@ void MidiPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
         midioptsnode.setProperty("formatbytedefault", val, nullptr);
     }else if(&editorThatWasChanged == &*txtSeqType){
         midioptsnode.setProperty("typebytedefault", val, nullptr);
+    }else if(&editorThatWasChanged == &*txtMstrVol){
+        midioptsnode.setProperty("addmstrvolval", val, nullptr);
     }else if(&editorThatWasChanged == &*txtStack){
         midioptsnode.setProperty("stacksize", val, nullptr);
     }else if(&editorThatWasChanged == &*txtMergeVels){
@@ -865,6 +893,7 @@ void MidiPane::refreshMIDIControls(){
     cbxChnPriority->setText(midioptsnode.getProperty("chnpriority", "CC25 (None)").toString());
     txtSeqFormat->setText(ROM::hex((uint8)(int)midioptsnode.getProperty("formatbytedefault", 0x20)));
     txtSeqType->setText(ROM::hex((uint8)(int)midioptsnode.getProperty("typebytedefault", 0x32)));
+    txtMstrVol->setText(ROM::hex((uint8)(int)midioptsnode.getProperty("addmstrvolval", 0x58)));
     txtStack->setText(midioptsnode.getProperty("stacksize", 4).toString());
     txtMergeVels->setText(midioptsnode.getProperty("delta_vel", 5).toString());
     txtMergeGates->setText(midioptsnode.getProperty("delta_gate", 3).toString());
@@ -880,6 +909,7 @@ void MidiPane::refreshMIDIControls(){
     optSeqFormat->setToggleState((bool)midioptsnode.getProperty("writeseqformat", true), dontSendNotification);
     optSeqType->setToggleState((bool)midioptsnode.getProperty("writeseqtype", true), dontSendNotification);
     optChanBits->setToggleState((bool)midioptsnode.getProperty("writechanbits", true), dontSendNotification);
+    optMstrVol->setToggleState((bool)midioptsnode.getProperty("addmstrvol", true), dontSendNotification);
     optLoopAll->setToggleState((bool)midioptsnode.getProperty("writeloopall", true), dontSendNotification);
     //optHeader->setToggleState((bool)midioptsnode.getProperty("writeheader", true), dontSendNotification);
     optChanReset->setToggleState((bool)midioptsnode.getProperty("writechanreset", true), dontSendNotification);
@@ -917,9 +947,9 @@ BEGIN_JUCER_METADATA
                  fixedSize="0" initialWidth="1000" initialHeight="632">
   <BACKGROUND backgroundColour="ffffffff"/>
   <GROUPCOMPONENT name="new group" id="d6fd042ed5665f41" memberName="groupComponent8"
-                  virtualName="" explicitFocusOrder="0" pos="360 8 352 408" title="Import Settings"/>
+                  virtualName="" explicitFocusOrder="0" pos="360 8 352 432" title="Import Settings"/>
   <GROUPCOMPONENT name="new group" id="86dc1328c123b476" memberName="groupComponent3"
-                  virtualName="" explicitFocusOrder="0" pos="368 216 336 192" title="Optimization"/>
+                  virtualName="" explicitFocusOrder="0" pos="368 240 336 192" title="Optimization"/>
   <GROUPCOMPONENT name="new group" id="425cb4d36ac8f912" memberName="groupComponent7"
                   virtualName="" explicitFocusOrder="0" pos="0 160 352 48" title="Export Settings"/>
   <GROUPCOMPONENT name="new group" id="41c7820ff71b634e" memberName="groupComponent"
@@ -990,24 +1020,24 @@ BEGIN_JUCER_METADATA
                 virtualName="" explicitFocusOrder="0" pos="368 72 336 24" buttonText="Create Channel Enable/Disable Bitfield Cmds"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TOGGLEBUTTON name="new toggle button" id="89f530c063ebc41f" memberName="optLoopAll"
-                virtualName="" explicitFocusOrder="0" pos="368 96 336 24" buttonText="Create command to loop whole sequence"
+                virtualName="" explicitFocusOrder="0" pos="368 120 336 24" buttonText="Create command to loop whole sequence"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TOGGLEBUTTON name="new toggle button" id="8407bc3e8b8b62f9" memberName="optHeader"
-                virtualName="" explicitFocusOrder="0" pos="368 120 336 24" buttonText="Create jump-to-sections header (if sections defined)"
+                virtualName="" explicitFocusOrder="0" pos="368 144 336 24" buttonText="Create jump-to-sections header (if sections defined)"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="ebfe7a8ea711aadd" memberName="optChanReset"
-                virtualName="" explicitFocusOrder="0" pos="368 144 336 24" buttonText="Initially reset channels"
+                virtualName="" explicitFocusOrder="0" pos="368 168 336 24" buttonText="Initially reset channels"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <GROUPCOMPONENT name="new group" id="3f6e908675196841" memberName="grpPtr" virtualName=""
-                  explicitFocusOrder="0" pos="368 168 336 48" title="Pointer Type"/>
+                  explicitFocusOrder="0" pos="368 192 336 48" title="Pointer Type"/>
   <TOGGLEBUTTON name="new toggle button" id="a704eec5bbb2c46" memberName="optPtrAbsolute"
-                virtualName="" explicitFocusOrder="0" pos="464 184 88 24" buttonText="Absolute"
+                virtualName="" explicitFocusOrder="0" pos="464 208 88 24" buttonText="Absolute"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="1bb095294dc9c19d" memberName="optPtrShortest"
-                virtualName="" explicitFocusOrder="0" pos="376 184 80 24" buttonText="Shortest"
+                virtualName="" explicitFocusOrder="0" pos="376 208 80 24" buttonText="Shortest"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="1f703315d74170ea" memberName="optPtrRelative"
-                virtualName="" explicitFocusOrder="0" pos="552 184 144 24" buttonText="Force Relative Only"
+                virtualName="" explicitFocusOrder="0" pos="552 208 144 24" buttonText="Force Relative Only"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TEXTEDITOR name="new text editor" id="65923cd1adbfea89" memberName="txtSeqFormat"
               virtualName="" explicitFocusOrder="0" pos="560 24 40 24" initialText="20"
@@ -1018,61 +1048,61 @@ BEGIN_JUCER_METADATA
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TOGGLEBUTTON name="new toggle button" id="57be9c908829216a" memberName="optCalls"
-                virtualName="" explicitFocusOrder="0" pos="376 256 144 24" buttonText="Use Calls"
+                virtualName="" explicitFocusOrder="0" pos="376 280 144 24" buttonText="Use Calls"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <LABEL name="new label" id="f41f0b19ef7d8015" memberName="lblStack"
-         virtualName="" explicitFocusOrder="0" pos="376 232 104 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="376 256 104 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Stack height:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="2ab348c3ffced623" memberName="txtStack"
-              virtualName="" explicitFocusOrder="0" pos="480 232 40 24" initialText="4"
+              virtualName="" explicitFocusOrder="0" pos="480 256 40 24" initialText="4"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TOGGLEBUTTON name="new toggle button" id="82b4adcc200b6608" memberName="optLoops"
-                virtualName="" explicitFocusOrder="0" pos="376 280 144 24" buttonText="Use Loops"
+                virtualName="" explicitFocusOrder="0" pos="376 304 144 24" buttonText="Use Loops"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <LABEL name="new label" id="a0db16db13f10260" memberName="label2" virtualName=""
-         explicitFocusOrder="0" pos="376 304 144 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="376 328 144 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Merge Even If Off By:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="901a724d96e98e44" memberName="txtMergeVels"
-              virtualName="" explicitFocusOrder="0" pos="480 328 40 24" initialText="5"
+              virtualName="" explicitFocusOrder="0" pos="480 352 40 24" initialText="5"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="e9c365157ee89f96" memberName="txtMergeGates"
-              virtualName="" explicitFocusOrder="0" pos="480 352 40 24" initialText="3"
+              virtualName="" explicitFocusOrder="0" pos="480 376 40 24" initialText="3"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="d3682229a2d89e65" memberName="txtMergeCCs"
-              virtualName="" explicitFocusOrder="0" pos="480 376 40 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="480 400 40 24" initialText="1"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="99591c70db040217" memberName="label3" virtualName=""
-         explicitFocusOrder="0" pos="528 232 168 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="528 256 168 24" edTextCol="ff000000"
          edBkgCol="0" labelText="CC Bandwidth Reduction:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="879d80b64a195ec7" memberName="label4" virtualName=""
-         explicitFocusOrder="0" pos="528 256 168 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="528 280 168 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Quantize in: time    ampl" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="1c0cd46f039c823f" memberName="txtQVolT"
-              virtualName="" explicitFocusOrder="0" pos="608 280 40 24" initialText="0"
+              virtualName="" explicitFocusOrder="0" pos="608 304 40 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="edc286004a356a7" memberName="txtQOtherT"
-              virtualName="" explicitFocusOrder="0" pos="608 352 40 24" initialText="0"
+              virtualName="" explicitFocusOrder="0" pos="608 376 40 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="ca751fb5ec03f77b" memberName="txtQVolA"
-              virtualName="" explicitFocusOrder="0" pos="656 280 40 24" initialText="2"
+              virtualName="" explicitFocusOrder="0" pos="656 304 40 24" initialText="2"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="5e72039eac67ea45" memberName="txtQOtherA"
-              virtualName="" explicitFocusOrder="0" pos="656 352 40 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="656 376 40 24" initialText="1"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="f28e7ff1efaecfdf" memberName="label5" virtualName=""
@@ -1081,56 +1111,63 @@ BEGIN_JUCER_METADATA
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="38e2b8a24e2c4cf0" memberName="label6" virtualName=""
-         explicitFocusOrder="0" pos="528 280 72 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="528 304 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="- Volume" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="a46a610ebb27cfc8" memberName="label7" virtualName=""
-         explicitFocusOrder="0" pos="528 352 72 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="528 376 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="- Other" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="6743b881f0a469a8" memberName="label8" virtualName=""
-         explicitFocusOrder="0" pos="376 328 88 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="376 352 88 24" edTextCol="ff000000"
          edBkgCol="0" labelText="- Velocities" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="dc9a9cb1e539d990" memberName="label9" virtualName=""
-         explicitFocusOrder="0" pos="376 352 88 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="376 376 88 24" edTextCol="ff000000"
          edBkgCol="0" labelText="- Gate Times" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="ce10451244d07d82" memberName="label10" virtualName=""
-         explicitFocusOrder="0" pos="376 376 88 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="376 400 88 24" edTextCol="ff000000"
          edBkgCol="0" labelText="- CCs" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="e3e7d963da09a087" memberName="txtQPitchT"
-              virtualName="" explicitFocusOrder="0" pos="608 304 40 24" initialText="0"
+              virtualName="" explicitFocusOrder="0" pos="608 328 40 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="ef6d5b29efe67c05" memberName="txtQPitchA"
-              virtualName="" explicitFocusOrder="0" pos="656 304 40 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="656 328 40 24" initialText="1"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="c1807deff329fd4b" memberName="label11" virtualName=""
-         explicitFocusOrder="0" pos="528 304 72 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="528 328 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="- Pitch" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="4bc5598877271b87" memberName="txtQPanT"
-              virtualName="" explicitFocusOrder="0" pos="608 328 40 24" initialText="0"
+              virtualName="" explicitFocusOrder="0" pos="608 352 40 24" initialText="0"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="591164d5daf46f21" memberName="txtQPanA"
-              virtualName="" explicitFocusOrder="0" pos="656 328 40 24" initialText="2"
+              virtualName="" explicitFocusOrder="0" pos="656 352 40 24" initialText="2"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="7b14856ae0061bca" memberName="label12" virtualName=""
-         explicitFocusOrder="0" pos="528 328 72 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="528 352 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="- Pan/FX" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
+  <TOGGLEBUTTON name="new toggle button" id="2481ecc07a4e97d4" memberName="optMstrVol"
+                virtualName="" explicitFocusOrder="0" pos="368 96 272 24" buttonText="Add Master Volume cmd if not in MIDI: "
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
+  <TEXTEDITOR name="new text editor" id="331980c066cb2712" memberName="txtMstrVol"
+              virtualName="" explicitFocusOrder="0" pos="640 96 40 24" initialText="58"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA
