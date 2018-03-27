@@ -5,7 +5,7 @@
  * Class to hold/import/export a single instrument set (Audiobank format)
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,12 +43,14 @@ public:
     int writeStruct(ROM& rom, uint32 addr, ValueTree stru);
     
     ValueTree getCopyOfTemplate(String name);
-    void loadElementList(ROM& rom, uint32 baseaddr, int bank_length, String listname, String elementname);
+    bool loadElementList(ROM& rom, uint32 baseaddr, uint32 bank_length, String listname, String elementname);
     void checkAddListItem(ValueTree list, int addressval, ValueTree node);
     ValueTree getListForPointer(String pointertype);
     
     bool load(ROM& rom, int banknum);
-    bool save(ROM& rom, int banknum);
+    int save(ROM& rom, int banknum);
+    bool loadXML(File xmlfile);
+    bool saveXML(File xmlfile);
     
     void loadRDNamesNode(int banknum);
     void clearRDNamesNode();
@@ -91,7 +93,8 @@ public:
     bool moveNodeUp(ValueTree parent, ValueTree child);
     bool moveNodeDown(ValueTree parent, ValueTree child);
     
-    ValueTree importNode(BankFile& sourcebank, String itemtype, int itemindex, bool merge);
+    ValueTree importNode(ROM& rom, BankFile& sourcebank, String itemtype, int itemindex, 
+            bool merge, bool fixsampleaddr);
     
 private:
     ValueTree romdesc;
@@ -128,9 +131,11 @@ private:
     static bool deepCompareNodes(BankFile& banka, ValueTree nodea, 
             BankFile& bankb, ValueTree nodeb);
     static bool compareProperty(ValueTree nodea, ValueTree nodeb, String name);
-    ValueTree importNodeRecurse(BankFile& sourcebank, bool merge, ValueTree sourcenode, ValueTree destparent);
+    ValueTree importNodeRecurse(ROM& rom, BankFile& sourcebank, bool merge, bool fixsampleaddr,
+            ValueTree sourcenode, ValueTree destparent);
     void getAllStructLengths(String pointertype, uint32* a, int align);
     void setAllReferencesAddress(ValueTree parent, String pointername, int index, uint32 address);
+    bool validatePointerIndexes(ValueTree node);
     void fixAllStructImportValues(ValueTree parent);
     void writeAllItems(ROM& bank, ValueTree parent, uint32* a, int align);
     void copyAllItemProps(String listname);

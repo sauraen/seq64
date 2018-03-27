@@ -28,7 +28,7 @@
  * GUI component for N64 ROM internal files screen
  *
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -85,6 +85,7 @@ public:
     void fillKFileParams();
 
     void fillIndex();
+    void refreshIndexEntry();
     String getIEntryDescription(int i);
     void fillIEntryParams();
     void fillInstSetBoxes();
@@ -170,6 +171,7 @@ private:
     ScopedPointer<Label> lblInstSet;
     ScopedPointer<Label> label10;
     ScopedPointer<ComboBox> cbxInstSet1;
+    ScopedPointer<TextButton> btnEditIE;
 
 
     //==============================================================================

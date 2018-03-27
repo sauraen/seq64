@@ -5,7 +5,7 @@
  * GUI component that holds the menus, tabs, etc. and performs menu functions
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

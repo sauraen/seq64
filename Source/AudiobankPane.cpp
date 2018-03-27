@@ -25,7 +25,7 @@
  * GUI component for Audiobank editor screen
  *
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,6 +61,9 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
                                                              TRANS("Audiobank Library")));
 
+    addAndMakeVisible (groupComponent4 = new GroupComponent ("new group",
+                                                             TRANS("Add to Loaded Bank")));
+
     addAndMakeVisible (groupComponent3 = new GroupComponent ("new group",
                                                              TRANS("Loaded Bank")));
 
@@ -79,7 +82,7 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     cbxEditStruct->addItem (TRANS("ABSFXList"), 5);
     cbxEditStruct->addItem (TRANS("ABInstrument"), 6);
     cbxEditStruct->addItem (TRANS("ABDrum"), 7);
-    cbxEditStruct->addItem (TRANS("ABPatchProps"), 8);
+    cbxEditStruct->addItem (TRANS("ABEnvelope"), 8);
     cbxEditStruct->addItem (TRANS("ABSound"), 9);
     cbxEditStruct->addItem (TRANS("ABSample"), 10);
     cbxEditStruct->addItem (TRANS("ALADPCMBook"), 11);
@@ -111,9 +114,10 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     cbxDataType->addItem (TRANS("int8"), 4);
     cbxDataType->addItem (TRANS("int16"), 5);
     cbxDataType->addItem (TRANS("int32"), 6);
-    cbxDataType->addItem (TRANS("ABSound"), 7);
-    cbxDataType->addItem (TRANS("ALADPCMPredictor"), 8);
-    cbxDataType->addItem (TRANS("ALADPCMTail"), 9);
+    cbxDataType->addItem (TRANS("float32"), 7);
+    cbxDataType->addItem (TRANS("ABSound"), 8);
+    cbxDataType->addItem (TRANS("ALADPCMPredictor"), 9);
+    cbxDataType->addItem (TRANS("ALADPCMTail"), 10);
     cbxDataType->addListener (this);
 
     addAndMakeVisible (cbxPtrTo = new ComboBox ("new combo box"));
@@ -126,7 +130,7 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     cbxPtrTo->addItem (TRANS("ABSFXList"), 3);
     cbxPtrTo->addItem (TRANS("ABInstrument"), 4);
     cbxPtrTo->addItem (TRANS("ABDrum"), 5);
-    cbxPtrTo->addItem (TRANS("ABPatchProps"), 6);
+    cbxPtrTo->addItem (TRANS("ABEnvelope"), 6);
     cbxPtrTo->addItem (TRANS("ABSample"), 7);
     cbxPtrTo->addItem (TRANS("ALADPCMBook"), 8);
     cbxPtrTo->addItem (TRANS("ALADPCMLoop"), 9);
@@ -296,7 +300,7 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     cbxLibList->addListener (this);
 
     addAndMakeVisible (btnLibAdd = new TextButton ("new button"));
-    btnLibAdd->setButtonText (TRANS("Add to Loaded Inst Set"));
+    btnLibAdd->setButtonText (TRANS("Import"));
     btnLibAdd->addListener (this);
 
     addAndMakeVisible (label8 = new Label ("new label",
@@ -498,6 +502,21 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     chkBItemHex->setButtonText (TRANS("Hex"));
     chkBItemHex->addListener (this);
 
+    addAndMakeVisible (btnSaveXML = new TextButton ("new button"));
+    btnSaveXML->setButtonText (TRANS("Save XML"));
+    btnSaveXML->setConnectedEdges (Button::ConnectedOnRight);
+    btnSaveXML->addListener (this);
+
+    addAndMakeVisible (btnLoadXML = new TextButton ("new button"));
+    btnLoadXML->setButtonText (TRANS("Load XML"));
+    btnLoadXML->setConnectedEdges (Button::ConnectedOnLeft);
+    btnLoadXML->addListener (this);
+
+    addAndMakeVisible (chkLibFixAddr = new ToggleButton ("new toggle button"));
+    chkLibFixAddr->setButtonText (TRANS("Convert Sample Addr for Sample Set"));
+    chkLibFixAddr->addListener (this);
+    chkLibFixAddr->setToggleState (true, dontSendNotification);
+
 
     //[UserPreSize]
 
@@ -571,6 +590,7 @@ AudiobankPane::~AudiobankPane()
     //[/Destructor_pre]
 
     groupComponent2 = nullptr;
+    groupComponent4 = nullptr;
     groupComponent3 = nullptr;
     groupComponent = nullptr;
     cbxEditStruct = nullptr;
@@ -629,6 +649,9 @@ AudiobankPane::~AudiobankPane()
     txtBItemValue = nullptr;
     lblBItemValueEquiv = nullptr;
     chkBItemHex = nullptr;
+    btnSaveXML = nullptr;
+    btnLoadXML = nullptr;
+    chkLibFixAddr = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -662,8 +685,9 @@ void AudiobankPane::resized()
     //[UserPreResize] Add your own custom resize code here..
     //[/UserPreResize]
 
-    groupComponent2->setBounds (448, 0, 504, 344);
-    groupComponent3->setBounds (0, 344, 952, 344);
+    groupComponent2->setBounds (0, 344, 760, 344);
+    groupComponent4->setBounds (504, 440, 248, 96);
+    groupComponent3->setBounds (448, 0, 576, 344);
     groupComponent->setBounds (0, 0, 448, 344);
     cbxEditStruct->setBounds (28, 160, 164, 24);
     label2->setBounds (200, 192, 80, 24);
@@ -690,42 +714,45 @@ void AudiobankPane::resized()
     label6->setBounds (360, 240, 48, 24);
     label7->setBounds (8, 312, 24, 24);
     lblStructSemicolon->setBounds (192, 160, 80, 24);
-    label->setBounds (456, 16, 240, 24);
-    cbxLibList->setBounds (704, 16, 240, 24);
-    btnLibAdd->setBounds (704, 312, 168, 24);
-    label8->setBounds (704, 240, 56, 24);
-    txtLibItemName->setBounds (760, 240, 182, 24);
-    chkLibMerge->setBounds (880, 312, 64, 24);
-    btnBItemAdd->setBounds (320, 384, 48, 24);
-    btnBItemDupl->setBounds (320, 408, 48, 24);
-    btnBItemDel->setBounds (320, 432, 48, 24);
-    btnBItemUp->setBounds (320, 472, 48, 24);
-    btnBItemDn->setBounds (320, 496, 48, 24);
-    label12->setBounds (376, 384, 56, 24);
-    txtBItemName->setBounds (432, 384, 184, 24);
+    label->setBounds (8, 360, 240, 24);
+    cbxLibList->setBounds (256, 360, 240, 24);
+    btnLibAdd->setBounds (512, 504, 232, 24);
+    label8->setBounds (504, 360, 56, 24);
+    txtLibItemName->setBounds (560, 360, 182, 24);
+    chkLibMerge->setBounds (512, 456, 64, 24);
+    btnBItemAdd->setBounds (744, 48, 48, 24);
+    btnBItemDupl->setBounds (744, 72, 48, 24);
+    btnBItemDel->setBounds (744, 96, 48, 24);
+    btnBItemUp->setBounds (744, 136, 48, 24);
+    btnBItemDn->setBounds (744, 160, 48, 24);
+    label12->setBounds (800, 48, 56, 24);
+    txtBItemName->setBounds (856, 48, 160, 24);
     cbxAlign->setBounds (304, 16, 56, 24);
-    optMapProgram->setBounds (704, 264, 80, 24);
-    txtMapPNum->setBounds (784, 264, 40, 24);
-    lblMapPNote->setBounds (824, 264, 40, 24);
-    txtMapPNote->setBounds (864, 264, 40, 24);
-    optMapDrum->setBounds (704, 288, 64, 24);
-    txtMapDS1->setBounds (784, 288, 40, 24);
-    txtMapDS2->setBounds (824, 288, 40, 24);
-    txtMapDS3->setBounds (864, 288, 40, 24);
-    lblMapSplits->setBounds (904, 288, 40, 24);
-    btnBUp->setBounds (8, 360, 40, 24);
-    btnBOpen->setBounds (320, 656, 48, 24);
-    lblBankPath->setBounds (48, 360, 896, 24);
-    lblBItemType->setBounds (376, 408, 240, 24);
-    lblBItemValue->setBounds (376, 432, 56, 24);
-    txtBItemValue->setBounds (432, 432, 88, 24);
-    lblBItemValueEquiv->setBounds (432, 456, 184, 24);
-    chkBItemHex->setBounds (528, 432, 56, 24);
+    optMapProgram->setBounds (504, 384, 80, 24);
+    txtMapPNum->setBounds (584, 384, 40, 24);
+    lblMapPNote->setBounds (624, 384, 40, 24);
+    txtMapPNote->setBounds (664, 384, 40, 24);
+    optMapDrum->setBounds (504, 408, 64, 24);
+    txtMapDS1->setBounds (584, 408, 40, 24);
+    txtMapDS2->setBounds (624, 408, 40, 24);
+    txtMapDS3->setBounds (664, 408, 40, 24);
+    lblMapSplits->setBounds (704, 408, 40, 24);
+    btnBUp->setBounds (456, 16, 40, 24);
+    btnBOpen->setBounds (744, 312, 48, 24);
+    lblBankPath->setBounds (496, 16, 520, 24);
+    lblBItemType->setBounds (800, 72, 216, 24);
+    lblBItemValue->setBounds (800, 96, 56, 24);
+    txtBItemValue->setBounds (856, 96, 88, 24);
+    lblBItemValueEquiv->setBounds (856, 120, 160, 24);
+    chkBItemHex->setBounds (952, 96, 56, 24);
+    btnSaveXML->setBounds (808, 176, 104, 24);
+    btnLoadXML->setBounds (912, 176, 104, 24);
+    chkLibFixAddr->setBounds (512, 480, 232, 24);
     //[UserResized] Add your own custom resize handling here..
     lstFields->setBounds(8, 40, 432, 112);
-    lstLibSets->setBounds(456, 40, 240, 296);
-    lstLibItems->setBounds(704, 40, 240, 200);
-    lstBItems->setBounds(8, 384, 304, 296);
+    lstLibSets->setBounds(8, 392, 240, 288);
+    lstLibItems->setBounds(256, 392, 240, 288);
+    lstBItems->setBounds(456, 48, 280, 288);
     //[/UserResized]
 }
 
@@ -946,6 +973,7 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         if(!libselitem.isValid()) return;
         if(libselbank == nullptr) return;
         if(seq64.bank == nullptr) return;
+        if(seq64.rom.getSize() == 0) return;
         String sublistname = cbxLibList->getText(), itemtype, showlist;
         if(sublistname == "Instruments"){
             itemtype = "ABInstrument";
@@ -961,7 +989,8 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
             return;
         }
         int itemindex = lstLibItems->getLastRowSelected();
-        ValueTree res = seq64.bank->importNode(*libselbank, itemtype, itemindex, chkLibMerge->getToggleState());
+        ValueTree res = seq64.bank->importNode(seq64.rom, *libselbank, itemtype, itemindex,
+                chkLibMerge->getToggleState(), chkLibFixAddr->getToggleState());
         if(res.isValid()){
             bpath = seq64.bank->d.getChildWithName(showlist);
             fillBItemsBox();
@@ -1084,6 +1113,85 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_chkBItemHex] -- add your button handler code here..
         fillBItemsControls(true);
         //[/UserButtonCode_chkBItemHex]
+    }
+    else if (buttonThatWasClicked == btnSaveXML)
+    {
+        //[UserButtonCode_btnSaveXML] -- add your button handler code here..
+        if(seq64.bank == nullptr) return;
+        Identifier idXmlBank = "understandxmlbank";
+        if(seq64.readProperty(idXmlBank) != "yes"){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Are you sure you know what you're doing?",
+                    "This saves an XML file containing the entire contents of\n"
+                    "the currently loaded bank, including header/metadata and\n"
+                    "node labels (e.g. instrument names, etc.)--but not including\n"
+                    "the actual audio sample data of course. Loading it again\n"
+                    "will restore the state, but it will only be compatible with\n"
+                    "ROMs that have the same sample sets (generally, different\n"
+                    "hacks/edits of the same ROM are fine but different released\n"
+                    "ROM versions may not be). Of course it is also dependent on\n"
+                    "the Audiobank format (as defined in the RomDesc) being the\n"
+                    "same between the source and destination ROM.\n\n"
+                    "Are you sure you understand and want to continue?", nullptr, nullptr)) return;
+            seq64.writeProperty(idXmlBank, "yes");
+        }
+        File savelocation = SEQ64::readFolderProperty("romfolder");
+        FileChooser box("Save Bank as XML", savelocation, "*.xml", SEQ64::useNativeFileChooser());
+        if(!box.browseForFileToSave(true)) return;
+        savelocation = box.getResult();
+        if(!seq64.bank->saveXML(savelocation)){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "Oh no",
+                    "Saving failed, check the command line output for details.");
+        }
+        //[/UserButtonCode_btnSaveXML]
+    }
+    else if (buttonThatWasClicked == btnLoadXML)
+    {
+        //[UserButtonCode_btnLoadXML] -- add your button handler code here..
+        Identifier idXmlBank = "understandxmlbank";
+        if(seq64.readProperty(idXmlBank) != "yes"){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Are you sure you know what you're doing?",
+                    "This loads an XML file saved by the \"Save XML\" button\n"
+                    "containing the entire contents of the currently loaded bank,\n"
+                    "including header/metadata and node labels (e.g. instrument\n"
+                    "names, etc.)--but not including the actual audio sample data\n"
+                    "of course. Loading it will restore the state, but it will only\n"
+                    "be compatible with ROMs that have the same sample sets\n"
+                    "(generally, different hacks/edits of the same ROM are fine but\n"
+                    "different released ROM versions may not be). Of course it is\n"
+                    "also dependent on the Audiobank format (as defined in the\n"
+                    "RomDesc) being the same between the source and destination ROM.\n\n"
+                    "Are you sure you understand and want to continue?", nullptr, nullptr)) return;
+            seq64.writeProperty(idXmlBank, "yes");
+        }
+        if(!seq64.romdesc.isValid() || seq64.romdesc.getOrCreateChildWithName("cmdlist", nullptr).getNumChildren() == 0){
+            NativeMessageBox::showMessageBox (AlertWindow::WarningIcon, "Guess you didn't know what you were doing after all",
+                "Load a RomDesc before trying to load a raw bank.");
+            seq64.writeProperty(idXmlBank, "no");
+            return;
+        }
+        if(&*seq64.bank != nullptr){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Overwrite?",
+                    "A bank is already loaded, are you sure you want to overwrite it?", nullptr, nullptr)) return;
+        }
+        File loadlocation = SEQ64::readFolderProperty("romfolder");
+        FileChooser box("Load XML as Bank", loadlocation, "*.xml", SEQ64::useNativeFileChooser());
+        if(!box.browseForFileToOpen()) return;
+        loadlocation = box.getResult();
+        seq64.bank = new BankFile(seq64.romdesc);
+        if(!seq64.bank->loadXML(loadlocation)){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "Oh no",
+                    "Loading failed, check the command line output for details.");
+        }
+        bankLoaded();
+        //[/UserButtonCode_btnLoadXML]
+    }
+    else if (buttonThatWasClicked == chkLibFixAddr)
+    {
+        //[UserButtonCode_chkLibFixAddr] -- add your button handler code here..
+        //[/UserButtonCode_chkLibFixAddr]
     }
 
     //[UserbuttonClicked_Post]
@@ -1352,17 +1460,17 @@ void AudiobankPane::fillMeaningsBox(){
     }else if(editstruct == "ABSFXList"){
         cbxMeaning->addItem("List of Sounds", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABInstrument"){
-        cbxMeaning->addItem("Ptr Patch Props", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Ptr Envelope", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("List of 3 Sounds for Splits", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABDrum"){
         cbxMeaning->addItem("Drum Sound", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Ptr Patch Props", cbxMeaning->getNumItems()+1);
-    }else if(editstruct == "ABPatchProps"){
+        cbxMeaning->addItem("Ptr Envelope", cbxMeaning->getNumItems()+1);
+    }else if(editstruct == "ABEnvelope"){
         //none
     }else if(editstruct == "ABSound"){
         cbxMeaning->addItem("Ptr Sample", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABSample"){
-        cbxMeaning->addItem("Sample Address (+offset)", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Sample Address (in Sample Set)", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Sample Length", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Ptr ALADPCMLoop", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Ptr ALADPCMBook", cbxMeaning->getNumItems()+1);
@@ -1680,14 +1788,16 @@ BEGIN_JUCER_METADATA
     <RECT pos="209 240 2 44" fill="solid: ff000000" hasStroke="0"/>
   </BACKGROUND>
   <GROUPCOMPONENT name="new group" id="174f2978675eba2d" memberName="groupComponent2"
-                  virtualName="" explicitFocusOrder="0" pos="448 0 504 344" title="Audiobank Library"/>
+                  virtualName="" explicitFocusOrder="0" pos="0 344 760 344" title="Audiobank Library"/>
+  <GROUPCOMPONENT name="new group" id="3ff16933e59a8658" memberName="groupComponent4"
+                  virtualName="" explicitFocusOrder="0" pos="504 440 248 96" title="Add to Loaded Bank"/>
   <GROUPCOMPONENT name="new group" id="7edf637b2e2b1d8d" memberName="groupComponent3"
-                  virtualName="" explicitFocusOrder="0" pos="0 344 952 344" title="Loaded Bank"/>
+                  virtualName="" explicitFocusOrder="0" pos="448 0 576 344" title="Loaded Bank"/>
   <GROUPCOMPONENT name="new group" id="5c7a626fd18eb8e4" memberName="groupComponent"
                   virtualName="" explicitFocusOrder="0" pos="0 0 448 344" title="Audiobank File Data Structures"/>
   <COMBOBOX name="new combo box" id="d0dc297a3163ca7c" memberName="cbxEditStruct"
             virtualName="" explicitFocusOrder="0" pos="28 160 164 24" editable="0"
-            layout="33" items="ABIndexEntry&#10;ABHeader&#10;ABBank&#10;ABDrumList&#10;ABSFXList&#10;ABInstrument&#10;ABDrum&#10;ABPatchProps&#10;ABSound&#10;ABSample&#10;ALADPCMBook&#10;ALADPCMPredictor&#10;ALADPCMLoop&#10;ALADPCMTail"
+            layout="33" items="ABIndexEntry&#10;ABHeader&#10;ABBank&#10;ABDrumList&#10;ABSFXList&#10;ABInstrument&#10;ABDrum&#10;ABEnvelope&#10;ABSound&#10;ABSample&#10;ALADPCMBook&#10;ALADPCMPredictor&#10;ALADPCMLoop&#10;ALADPCMTail"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="6fa88c9721ab254d" memberName="label2" virtualName=""
          explicitFocusOrder="0" pos="200 192 80 24" edTextCol="ff000000"
@@ -1699,11 +1809,11 @@ BEGIN_JUCER_METADATA
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <COMBOBOX name="new combo box" id="dc9c4ee50f2e6d61" memberName="cbxDataType"
             virtualName="" explicitFocusOrder="0" pos="280 192 160 24" editable="0"
-            layout="33" items="uint8&#10;uint16&#10;uint32&#10;int8&#10;int16&#10;int32&#10;ABSound&#10;ALADPCMPredictor&#10;ALADPCMTail"
+            layout="33" items="uint8&#10;uint16&#10;uint32&#10;int8&#10;int16&#10;int32&#10;float32&#10;ABSound&#10;ALADPCMPredictor&#10;ALADPCMTail"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <COMBOBOX name="new combo box" id="13ddb6d22233c898" memberName="cbxPtrTo"
             virtualName="" explicitFocusOrder="0" pos="24 240 168 24" editable="0"
-            layout="33" items="ABHeader&#10;ABDrumList&#10;ABSFXList&#10;ABInstrument&#10;ABDrum&#10;ABPatchProps&#10;ABSample&#10;ALADPCMBook&#10;ALADPCMLoop"
+            layout="33" items="ABHeader&#10;ABDrumList&#10;ABSFXList&#10;ABInstrument&#10;ABDrum&#10;ABEnvelope&#10;ABSample&#10;ALADPCMBook&#10;ALADPCMLoop"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <LABEL name="new label" id="e3721257fc5becec" memberName="label3" virtualName=""
          explicitFocusOrder="0" pos="8 192 56 24" edTextCol="ff000000"
@@ -1786,125 +1896,134 @@ BEGIN_JUCER_METADATA
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="bf0f024772c31c54" memberName="label" virtualName=""
-         explicitFocusOrder="0" pos="456 16 240 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="8 360 240 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Instrument sets:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="dc4b63bcb4d73721" memberName="cbxLibList"
-            virtualName="" explicitFocusOrder="0" pos="704 16 240 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="256 360 240 24" editable="0"
             layout="33" items="Instruments&#10;Drums&#10;Sound Effects" textWhenNonSelected=""
             textWhenNoItems="(no choices)"/>
   <TEXTBUTTON name="new button" id="cc887378f0c65b1f" memberName="btnLibAdd"
-              virtualName="" explicitFocusOrder="0" pos="704 312 168 24" buttonText="Add to Loaded Inst Set"
+              virtualName="" explicitFocusOrder="0" pos="512 504 232 24" buttonText="Import"
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="7ab82fcc4f2fe341" memberName="label8" virtualName=""
-         explicitFocusOrder="0" pos="704 240 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="504 360 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="1107c1605bcdd6fe" memberName="txtLibItemName"
-              virtualName="" explicitFocusOrder="0" pos="760 240 182 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="560 360 182 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TOGGLEBUTTON name="new toggle button" id="35162d8ea694d708" memberName="chkLibMerge"
-                virtualName="" explicitFocusOrder="0" pos="880 312 64 24" buttonText="Merge"
+                virtualName="" explicitFocusOrder="0" pos="512 456 64 24" buttonText="Merge"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TEXTBUTTON name="new button" id="95b805434c056546" memberName="btnBItemAdd"
-              virtualName="" explicitFocusOrder="0" pos="320 384 48 24" buttonText="Add"
+              virtualName="" explicitFocusOrder="0" pos="744 48 48 24" buttonText="Add"
               connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="b4f552bc87690c64" memberName="btnBItemDupl"
-              virtualName="" explicitFocusOrder="0" pos="320 408 48 24" buttonText="Dupl"
+              virtualName="" explicitFocusOrder="0" pos="744 72 48 24" buttonText="Dupl"
               connectedEdges="12" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="5437999e821d0f9" memberName="btnBItemDel"
-              virtualName="" explicitFocusOrder="0" pos="320 432 48 24" buttonText="Del"
+              virtualName="" explicitFocusOrder="0" pos="744 96 48 24" buttonText="Del"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="53c617d9b6236e17" memberName="btnBItemUp"
-              virtualName="" explicitFocusOrder="0" pos="320 472 48 24" buttonText="Up"
+              virtualName="" explicitFocusOrder="0" pos="744 136 48 24" buttonText="Up"
               connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="7aa4ba34a22a9127" memberName="btnBItemDn"
-              virtualName="" explicitFocusOrder="0" pos="320 496 48 24" buttonText="Dn"
+              virtualName="" explicitFocusOrder="0" pos="744 160 48 24" buttonText="Dn"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="fedcaca14cadb7e6" memberName="label12" virtualName=""
-         explicitFocusOrder="0" pos="376 384 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="800 48 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Name:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="789b2d42c36319de" memberName="txtBItemName"
-              virtualName="" explicitFocusOrder="0" pos="432 384 184 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="856 48 160 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <COMBOBOX name="new combo box" id="624a2f6acff61c45" memberName="cbxAlign"
             virtualName="" explicitFocusOrder="0" pos="304 16 56 24" editable="0"
             layout="33" items="4&#10;8&#10;16" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="new toggle button" id="904c1638347d6b92" memberName="optMapProgram"
-                virtualName="" explicitFocusOrder="0" pos="704 264 80 24" buttonText="Program"
+                virtualName="" explicitFocusOrder="0" pos="504 384 80 24" buttonText="Program"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
   <TEXTEDITOR name="new text editor" id="227ca9d9d19fce14" memberName="txtMapPNum"
-              virtualName="" explicitFocusOrder="0" pos="784 264 40 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="584 384 40 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="854c1c31c216fbd4" memberName="lblMapPNote"
-         virtualName="" explicitFocusOrder="0" pos="824 264 40 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="624 384 40 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Note" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="1b089dc42c9d6221" memberName="txtMapPNote"
-              virtualName="" explicitFocusOrder="0" pos="864 264 40 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="664 384 40 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TOGGLEBUTTON name="new toggle button" id="7148b75cbf658edc" memberName="optMapDrum"
-                virtualName="" explicitFocusOrder="0" pos="704 288 64 24" buttonText="Drum"
+                virtualName="" explicitFocusOrder="0" pos="504 408 64 24" buttonText="Drum"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
   <TEXTEDITOR name="new text editor" id="aa19384ec690042a" memberName="txtMapDS1"
-              virtualName="" explicitFocusOrder="0" pos="784 288 40 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="584 408 40 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="ba5cd49f38ff9d0a" memberName="txtMapDS2"
-              virtualName="" explicitFocusOrder="0" pos="824 288 40 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="624 408 40 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="2428146ebfbcaaae" memberName="txtMapDS3"
-              virtualName="" explicitFocusOrder="0" pos="864 288 40 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="664 408 40 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="5cfefa37bdad5f80" memberName="lblMapSplits"
-         virtualName="" explicitFocusOrder="0" pos="904 288 40 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="704 408 40 24" edTextCol="ff000000"
          edBkgCol="0" labelText="splits" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTBUTTON name="new button" id="79caca2ca761ed63" memberName="btnBUp" virtualName=""
-              explicitFocusOrder="0" pos="8 360 40 24" buttonText="Up" connectedEdges="2"
+              explicitFocusOrder="0" pos="456 16 40 24" buttonText="Up" connectedEdges="2"
               needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="5fca6cb4978a26b3" memberName="btnBOpen"
-              virtualName="" explicitFocusOrder="0" pos="320 656 48 24" buttonText="Open"
+              virtualName="" explicitFocusOrder="0" pos="744 312 48 24" buttonText="Open"
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="526cc3ce776cdcc3" memberName="lblBankPath"
-         virtualName="" explicitFocusOrder="0" pos="48 360 896 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="496 16 520 24" edTextCol="ff000000"
          edBkgCol="0" labelText="/" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="2a46dd8fc6577eaa" memberName="lblBItemType"
-         virtualName="" explicitFocusOrder="0" pos="376 408 240 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="800 72 216 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Type:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="5ea115b1228245fe" memberName="lblBItemValue"
-         virtualName="" explicitFocusOrder="0" pos="376 432 56 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="800 96 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Value:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="7218c1b05111775d" memberName="txtBItemValue"
-              virtualName="" explicitFocusOrder="0" pos="432 432 88 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="856 96 88 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="e1fb93f0e1d42150" memberName="lblBItemValueEquiv"
-         virtualName="" explicitFocusOrder="0" pos="432 456 184 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="856 120 160 24" edTextCol="ff000000"
          edBkgCol="0" labelText="()" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15"
          bold="0" italic="0" justification="33"/>
   <TOGGLEBUTTON name="new toggle button" id="c01f6d0157eac10c" memberName="chkBItemHex"
-                virtualName="" explicitFocusOrder="0" pos="528 432 56 24" buttonText="Hex"
+                virtualName="" explicitFocusOrder="0" pos="952 96 56 24" buttonText="Hex"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
+  <TEXTBUTTON name="new button" id="983d3e97807e0cdf" memberName="btnSaveXML"
+              virtualName="" explicitFocusOrder="0" pos="808 176 104 24" buttonText="Save XML"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="953560fe7e6d707e" memberName="btnLoadXML"
+              virtualName="" explicitFocusOrder="0" pos="912 176 104 24" buttonText="Load XML"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
+  <TOGGLEBUTTON name="new toggle button" id="23b75b22565a0123" memberName="chkLibFixAddr"
+                virtualName="" explicitFocusOrder="0" pos="512 480 232 24" buttonText="Convert Sample Addr for Sample Set"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

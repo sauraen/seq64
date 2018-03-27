@@ -17,6 +17,8 @@
       <FILE id="NLWvvN" name="CICSetter.h" compile="0" resource="0" file="Source/CICSetter.h"/>
       <FILE id="WjqAob" name="FilesPane.cpp" compile="1" resource="0" file="Source/FilesPane.cpp"/>
       <FILE id="ETKRIb" name="FilesPane.h" compile="0" resource="0" file="Source/FilesPane.h"/>
+      <FILE id="G7pSb9" name="IEEditor.cpp" compile="1" resource="0" file="Source/IEEditor.cpp"/>
+      <FILE id="VzAjOc" name="IEEditor.h" compile="0" resource="0" file="Source/IEEditor.h"/>
       <FILE id="wiy2KP" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
       <FILE id="Tp4gdP" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>

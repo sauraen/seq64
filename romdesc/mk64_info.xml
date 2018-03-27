@@ -513,9 +513,9 @@
              meaning="None"/>
       <field name="splitpoint2" datatype="uint8" ispointer="0" isarray="0"
              meaning="None"/>
-      <field name="decaytime" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
-      <field name="props" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Patch Props"
-             ptrto="ABPatchProps"/>
+      <field name="releaserate" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
+      <field name="envelope" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Envelope"
+             ptrto="ABEnvelope"/>
       <field name="splits" datatype="ABSound" ispointer="0" isarray="1" meaning="List of 3 Sounds for Splits"
              arraylenfixed="3"/>
     </struct>
@@ -529,15 +529,15 @@
              defaultval="0"/>
       <field name="drumsound" datatype="ABSound" ispointer="0" isarray="0"
              meaning="Drum Sound"/>
-      <field name="props" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Patch Props"
-             ptrto="ABPatchProps"/>
+      <field name="envelope" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Envelope"
+             ptrto="ABEnvelope"/>
     </struct>
     <struct name="ABSound">
       <field name="sample" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Sample"
              ptrto="ABSample"/>
-      <field name="tuning" datatype="uint32" ispointer="0" isarray="0" meaning="None"/>
+      <field name="tuning" datatype="float32" ispointer="0" isarray="0" meaning="None"/>
     </struct>
-    <struct name="ABPatchProps">
+    <struct name="ABEnvelope">
       <field name="attackRate" datatype="int16" ispointer="0" isarray="0"
              meaning="None"/>
       <field name="attackLevel" datatype="uint16" ispointer="0" isarray="0"
@@ -557,7 +557,7 @@
       <field name="unknown1" datatype="uint32" ispointer="0" isarray="0" meaning="None"
              defaultval="0"/>
       <field name="sampleaddr" datatype="uint32" ispointer="0" isarray="0"
-             meaning="Sample Address (+offset)" ptrto="ATSample"/>
+             meaning="Sample Address (in Sample Set)" ptrto="ATSample"/>
       <field name="loop" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMLoop"
              ptrto="ALADPCMLoop"/>
       <field name="book" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMBook"

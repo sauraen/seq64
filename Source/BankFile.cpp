@@ -5,7 +5,7 @@
  * Class to hold/import/export a single instrument set (Audiobank format)
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ void BankFile::reset(){
     d.addChild(temp, -1, nullptr);
     temp = ValueTree("sfx");
     d.addChild(temp, -1, nullptr);
-    temp = ValueTree("patchprops");
+    temp = ValueTree("envelopes");
     d.addChild(temp, -1, nullptr);
     temp = ValueTree("samples");
     d.addChild(temp, -1, nullptr);
@@ -223,29 +223,37 @@ void BankFile::checkAddListItem(ValueTree list, int addressval, ValueTree node){
  * the list (with addresses already saved to them), go through each element 
  * and load its struct as a new child of that element.
  */
-void BankFile::loadElementList(ROM& rom, uint32 baseaddr, int bank_length, String listname, String elementname){
+bool BankFile::loadElementList(ROM& rom, uint32 baseaddr, uint32 bank_length, String listname, String elementname){
     SEQ64::say("Loading element list " + listname + "...");
+    bool ret = true;
     uint32 a;
     ValueTree stru = d.getChildWithName(listname);
     ValueTree temp, item;
     int count = stru.getNumChildren();
-    int ret;
     for(int i=0; i<count; i++){
         temp = stru.getChild(i);
         a = (int)temp.getProperty("address", 0);
         if(a == 0) continue;
         if(a >= bank_length){
-            SEQ64::say("In " + listname + " list, item " + String(i) + ": ptr outside bank @" + ROM::hex(a) + "!"); 
-            continue; 
+            SEQ64::say("In " + listname + " list, item " + String(i) + ": ptr outside bank @" + ROM::hex(a) + "!");
+            NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Load Bank",
+                    "Pointer to outside bank (check terminal output for details).\n"
+                    "Unless you've been editing the definition of the Audiobank format"
+                    "(in which case you probably messed something up), this means"
+                    "that what you tried to load was probably not actually bank data,"
+                    "which usually means Audiobank or Audiobank Index got corrupted"
+                    "by something (cough cough InstEd cough). The loaded bank will"
+                    "almost certainly be broken.");
+            ret = false;
         }
         item = getCopyOfTemplate(elementname);
         temp.addChild(item, -1, nullptr);
-        ret = readStruct(rom, a + baseaddr, item);
-        if(ret < 0){
+        if(readStruct(rom, a + baseaddr, item) < 0){
             SEQ64::say("Reading " + elementname + " index " + String(i) + " from " + listname + " failed");
-            return;
+            return false;
         }
     }
+    return ret;
 }
 
 ValueTree BankFile::getListForPointer(String pointertype){
@@ -257,8 +265,8 @@ ValueTree BankFile::getListForPointer(String pointertype){
         return d.getChildWithName("instruments");
     }else if(pointertype == "ABDrum"){
         return d.getChildWithName("drums");
-    }else if(pointertype == "ABPatchProps"){
-        return d.getChildWithName("patchprops");
+    }else if(pointertype == "ABEnvelope"){
+        return d.getChildWithName("envelopes");
     }else if(pointertype == "ABSample"){
         return d.getChildWithName("samples");
     }else if(pointertype == "ALADPCMBook"){
@@ -335,6 +343,7 @@ BankFile::ABIEProps BankFile::getABIEProps(ROM& rom, int banknum){
     abiep.valid = true;
     return abiep;
 }
+
 
 /**
  * Load a complete Audiobank file, given the bank number.
@@ -449,18 +458,26 @@ bool BankFile::load(ROM& rom, int banknum){
     //========================================================================
     //Load lists of elements
     //========================================================================
-    loadElementList(rom, baseaddr, bankprops.bank_length, "instruments", "ABInstrument");
-    loadElementList(rom, baseaddr, bankprops.bank_length, "drums", "ABDrum");
-    loadElementList(rom, baseaddr, bankprops.bank_length, "sfx", "ABSound");
-    loadElementList(rom, baseaddr, bankprops.bank_length, "patchprops", "ABPatchProps");
-    loadElementList(rom, baseaddr, bankprops.bank_length, "samples", "ABSample");
-    loadElementList(rom, baseaddr, bankprops.bank_length, "aladpcmbooks", "ALADPCMBook");
-    loadElementList(rom, baseaddr, bankprops.bank_length, "aladpcmloops", "ALADPCMLoop");
-    SEQ64::say("Done loading bank!");
-    return true;
+    int ret = 1;
+    ret &= (int)loadElementList(rom, baseaddr, bankprops.bank_length, "instruments", "ABInstrument");
+    ret &= (int)loadElementList(rom, baseaddr, bankprops.bank_length, "drums", "ABDrum");
+    ret &= (int)loadElementList(rom, baseaddr, bankprops.bank_length, "sfx", "ABSound");
+    ret &= (int)loadElementList(rom, baseaddr, bankprops.bank_length, "envelopes", "ABEnvelope");
+    ret &= (int)loadElementList(rom, baseaddr, bankprops.bank_length, "samples", "ABSample");
+    ret &= (int)loadElementList(rom, baseaddr, bankprops.bank_length, "aladpcmbooks", "ALADPCMBook");
+    ret &= (int)loadElementList(rom, baseaddr, bankprops.bank_length, "aladpcmloops", "ALADPCMLoop");
+    if(ret) SEQ64::say("Done loading bank!");
+    else SEQ64::say("Done loading bank...");
+    return ret == 1;
 }
 
-bool BankFile::save(ROM& rom, int banknum){
+/*
+
+    int save(ROM& rom, int banknum);
+    bool saveRaw(File rawfile);
+    int save_internal(ROM& rom, uint32 abieaddr, uint32 abbaseaddr);
+*/
+int BankFile::save(ROM& rom, int banknum){
     //========================================================================
     //Put in all info determined at import
     //========================================================================
@@ -509,7 +526,7 @@ bool BankFile::save(ROM& rom, int banknum){
     //Determine all struct lengths and addresses; write to other structs
     //========================================================================
     SEQ64::say("Determining all struct lengths and addresses...");
-    int align = romdesc.getChildWithName("abfstructs").getProperty("align", 4);
+    int align = abfstructsnode.getProperty("align", 4);
     uint32 a = 0;
     stru = d.getChildWithName("abheader").getChild(0);
     uint32 headerlen = getStructLength(stru); //Don't add to a
@@ -533,11 +550,13 @@ bool BankFile::save(ROM& rom, int banknum){
     }
     getAllStructLengths("ABInstrument", &a, align);
     getAllStructLengths("ABDrum", &a, align);
-    getAllStructLengths("ABPatchProps", &a, align);
+    getAllStructLengths("ABEnvelope", &a, align);
     getAllStructLengths("ABSample", &a, align);
     getAllStructLengths("ALADPCMBook", &a, align);
     getAllStructLengths("ALADPCMLoop", &a, align);
     uint32 totallen = headerlen + a;
+    SEQ64::say("Checking all indexed ptrs for correct contents/nullptrs...");
+    if(!validatePointerIndexes(d)) return -2;
     //========================================================================
     //Render to Audiobank format
     //========================================================================
@@ -560,14 +579,14 @@ bool BankFile::save(ROM& rom, int banknum){
     }
     writeAllItems(bank, d.getChildWithName("instruments"), &a, align);
     writeAllItems(bank, d.getChildWithName("drums"), &a, align);
-    writeAllItems(bank, d.getChildWithName("patchprops"), &a, align);
+    writeAllItems(bank, d.getChildWithName("envelopes"), &a, align);
     writeAllItems(bank, d.getChildWithName("samples"), &a, align);
     writeAllItems(bank, d.getChildWithName("aladpcmbooks"), &a, align);
     writeAllItems(bank, d.getChildWithName("aladpcmloops"), &a, align);
     if(a != totallen){
         SEQ64::say("Length mismatch, on scan pass was 0x" + ROM::hex((uint32)totallen)
                 + " but on write pass it was 0x" + ROM::hex((uint32)a) + "!");
-        return false;
+        return -1;
     }
     //========================================================================
     //Copy into ROM
@@ -575,7 +594,10 @@ bool BankFile::save(ROM& rom, int banknum){
     SEQ64::say("Copying to ROM...");
     //Get file and index properties from RomDesc
     ABIEProps origbank_props = getABIEProps(rom, banknum);
-    if(!origbank_props.valid) return false;
+    if(!origbank_props.valid){
+        SEQ64::say("Could not get bank file/index properties from RomDesc!");
+        return -1;
+    }
     //Figure out how much space we have to import
     uint32 newbank_maxsize = origbank_props.bank_length;
     uint32 newbank_startaddr = origbank_props.abfaddr + origbank_props.ptr_bank;
@@ -596,13 +618,13 @@ bool BankFile::save(ROM& rom, int banknum){
     if(totallen > newbank_maxsize){
         SEQ64::say("Cannot import bank length 0x" + ROM::hex((uint32)totallen) 
                 + " into space 0x" + ROM::hex((uint32)newbank_maxsize) + "!");
-        return false;
+        return totallen;
     }
     SEQ64::say("0x" + ROM::hex((uint32)newbank_maxsize) + " bytes available for importing");
     //Copy data
     rom.copyFrom(bank.getData(), newbank_startaddr, totallen);
     //Erase remaining data afterwards
-    for(int k=newbank_startaddr+totallen; k<newbank_startaddr+newbank_maxsize; k++){
+    for(uint32 k=newbank_startaddr+totallen; k<newbank_startaddr+newbank_maxsize; k++){
         rom.writeByte(k, 0);
     }
     //Update fields in abindexentry
@@ -610,13 +632,13 @@ bool BankFile::save(ROM& rom, int banknum){
     temp = stru.getChildWithProperty("meaning", "Ptr Bank (in Audiobank)");
     if(!temp.isValid()){
         SEQ64::say("ABIndexEntry must include a field with meaning Ptr Bank (in Audiobank)!");
-        return false;
+        return -1;
     }
     temp.setProperty("value", (int)origbank_props.ptr_bank, nullptr);
     temp = stru.getChildWithProperty("meaning", "Bank Length");
     if(!temp.isValid()){
         SEQ64::say("ABIndexEntry must include a field with meaning Bank Length!");
-        return false;
+        return -1;
     }
     temp.setProperty("value", (int)totallen, nullptr);
     //Copy abindexentry
@@ -632,21 +654,21 @@ bool BankFile::save(ROM& rom, int banknum){
     clearRDNamesNode();
     copyAllItemProps("instruments");
     copyAllItemProps("drums");
-    copyAllItemProps("patchprops");
+    copyAllItemProps("envelopes");
     copyAllItemProps("samples");
     copyAllItemProps("aladpcmbooks");
     copyAllItemProps("aladpcmloops");
     SEQ64::say("Done!!!");
-    return true;
+    return 0;
 }
 void BankFile::getAllStructLengths(String pointertype, uint32* a, int align){
     ValueTree stru = getListForPointer(pointertype);
     ValueTree temp;
     for(int i=0; i<stru.getNumChildren(); i++){
-        temp = stru.getChild(i).getChild(0);
+        temp = stru.getChild(i);
         temp.setProperty("address", (int)(*a), nullptr);
         setAllReferencesAddress(d, pointertype, i, *a);
-        *a += getStructLength(temp);
+        *a += getStructLength(temp.getChild(0));
         ALIGN(*a, align);
     }
 }
@@ -661,6 +683,44 @@ void BankFile::setAllReferencesAddress(ValueTree parent, String pointername, int
     for(int i=0; i<parent.getNumChildren(); i++){
         setAllReferencesAddress(parent.getChild(i), pointername, index, address);
     }
+}
+bool BankFile::validatePointerIndexes(ValueTree node){
+    //Validate that all pointers with an index are pointing to their reference's
+    //address, or set their value to 0 if their index is invalid
+    if(!node.isValid()) return false;
+    int ret = 1;
+    if((bool)node.getProperty("ispointer", false) && node.hasProperty("index")){
+        String ptrto = node.getProperty("ptrto", "Error").toString();
+        ValueTree list = getListForPointer(ptrto);
+        if(!list.isValid()){
+            SEQ64::say("Could not get list for pointer to " + ptrto + "!");
+            ret = 0;
+        }else{
+            int ptridx = node.getProperty("index", 10000000);
+            if(ptridx >= list.getNumChildren()){
+                SEQ64::say("Pointer index to " + String(ptridx) + " out of bounds for " 
+                    + String(list.getNumChildren()) + " " + ptrto + "s!");
+                ret = 0;
+            }else if(ptridx < 0){
+                //Set address to -1
+                SEQ64::say("Setting address to 0 for pointer to no " + ptrto + " (normal)");
+                node.setProperty("value", 0, nullptr);
+            }else{
+                ValueTree target = list.getChild(ptridx);
+                int naddr = node.getProperty("value", 1000000);
+                int taddr = target.getProperty("address", 0);
+                if(taddr != naddr){
+                    SEQ64::say("Incorrect pointer to " + ptrto + " @" + ROM::hex((uint32)naddr)
+                            + ", should be @" + ROM::hex((uint32)taddr) + "!");
+                    ret = 0;
+                }
+            }
+        }
+    }
+    for(int i=0; i<node.getNumChildren(); ++i){
+        ret &= (int)validatePointerIndexes(node.getChild(i));
+    }
+    return ret > 0;
 }
 void BankFile::fixAllStructImportValues(ValueTree parent){
     if(!parent.isValid()) return;
@@ -712,6 +772,24 @@ void BankFile::copyAllItemProps(String listname){
     }
 }
 
+bool BankFile::loadXML(File xmlfile){
+    reset();
+    ScopedPointer<XmlElement> xml(XmlDocument::parse(xmlfile));
+    if(xml == nullptr){
+        SEQ64::say("Could not parse file as XML!");
+        return false;
+    }
+    d = ValueTree::fromXml(*xml);
+    if(!d.isValid()){
+        SEQ64::say("Invalid XML/ValueTree contents!");
+        return false;
+    }
+    return true;
+}
+bool BankFile::saveXML(File xmlfile){
+    return xmlfile.replaceWithText(d.toXmlString());
+}
+
 int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
     if(!stru.isValid()) return 0;
     if(stru.getType().toString() != "struct"){
@@ -726,7 +804,7 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
     bool ispointer, isarray, arrayloopflag;
     int arraylenfixed;
     uint32 a = addr;
-    int val;
+    uint32 val;
     int arraycount, arraymax = 0;
     for(int i=0; i<count; i++){
         field = stru.getChild(i);
@@ -787,6 +865,7 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
                 fieldelement = field;
             }
             //Read actual data
+            bool dontwritevalue = false;
             if(datatype == "uint32" || datatype == "int32"){
                 val = rom.readWord(a);
                 fieldelementlen = 4;
@@ -802,6 +881,14 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
             }else if(datatype == "int8"){
                 val = (int8)rom.readByte(a);
                 fieldelementlen = 1;
+            }else if(datatype == "float32"){
+                val = rom.readWord(a);
+                fieldelementlen = 4;
+                jassert(sizeof(float) == 4);
+                float f = *(float*)&val;
+                fieldelement.setProperty("value", f, nullptr);
+                val = 0;
+                dontwritevalue = true;
             }else if(datatype == "ABSound" || datatype == "ALADPCMPredictor" || datatype == "ALADPCMTail"){
                 sub = getCopyOfTemplate(datatype);
                 fieldelement.addChild(sub, -1, nullptr);
@@ -814,7 +901,7 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
             //Length, address, data
             fieldlen += fieldelementlen;
             a += fieldelementlen;
-            fieldelement.setProperty("value", val, nullptr);
+            if(!dontwritevalue) fieldelement.setProperty("value", (int)val, nullptr);
             //Meaning
             if(ispointer && val != 0){
                 dstru = getListForPointer(ptrto);
@@ -825,7 +912,7 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
                                     + dstru.getProperty("address", "Error").toString() + " to "
                                     + String(val) + "!");
                         }
-                        dstru.setProperty("address", val, nullptr);
+                        dstru.setProperty("address", (int)val, nullptr);
                     }else{
                         checkAddListItem(dstru, val, fieldelement);
                     }
@@ -852,7 +939,7 @@ int BankFile::readStruct(ROM& rom, uint32 addr, ValueTree stru){
                         if((int)stru.getProperty(meaning) >= 0){
                             SEQ64::say("Overwriting local property " + meaning + " with value " + String(val));
                         }
-                        stru.setProperty(meaning, val, nullptr);
+                        stru.setProperty(meaning, (int)val, nullptr);
                     }
                 }
             }
@@ -915,7 +1002,7 @@ int BankFile::getStructLength(ValueTree stru){
                 fieldelement = field;
             }
             //Read actual data
-            if(datatype == "uint32" || datatype == "int32"){
+            if(datatype == "uint32" || datatype == "int32" || datatype == "float32"){
                 fieldelementlen = 4;
             }else if(datatype == "uint16" || datatype == "int16"){
                 fieldelementlen = 2;
@@ -949,7 +1036,7 @@ int BankFile::writeStruct(ROM& rom, uint32 addr, ValueTree stru){
     bool isarray, arrayloopflag;
     int arraylenfixed;
     uint32 a = addr;
-    int val;
+    uint32 val;
     int arraycount, arraymax = 0;
     for(int i=0; i<count; i++){
         field = stru.getChild(i);
@@ -979,7 +1066,7 @@ int BankFile::writeStruct(ROM& rom, uint32 addr, ValueTree stru){
                 }
             }
         }
-        //Read data from ROM
+        //Write data to ROM
         arrayloopflag = true;
         fieldlen = 0;
         arraycount = -1;
@@ -994,7 +1081,7 @@ int BankFile::writeStruct(ROM& rom, uint32 addr, ValueTree stru){
                 fieldelement = field;
             }
             //Data
-            val = fieldelement.getProperty("value", 0);
+            val = (int)fieldelement.getProperty("value", 0);
             //Write actual data
             if(datatype == "uint32" || datatype == "int32"){
                 rom.writeWord(a, val);
@@ -1011,6 +1098,11 @@ int BankFile::writeStruct(ROM& rom, uint32 addr, ValueTree stru){
             }else if(datatype == "int8"){
                 rom.writeByte(a, (int8)val);
                 fieldelementlen = 1;
+            }else if(datatype == "float32"){
+                float f = fieldelement.getProperty("value", 0.0f);
+                val = *(uint32*)&f;
+                rom.writeWord(a, val);
+                fieldelementlen = 4;
             }else if(datatype == "ABSound" || datatype == "ALADPCMPredictor" || datatype == "ALADPCMTail"){
                 fieldelementlen = writeStruct(rom, a, fieldelement.getChild(0));
             }else{
@@ -1073,7 +1165,7 @@ String BankFile::getNodeDesc(ValueTree node){
             return getNodeDesc(parent);
         }else if(type == "item"){
             String parenttype = parent.getType().toString();
-            if(parenttype == "instruments" || parenttype == "drums" || parenttype == "sfx" || parenttype == "patchprops"
+            if(parenttype == "instruments" || parenttype == "drums" || parenttype == "sfx" || parenttype == "envelopes"
                     || parenttype == "samples" || parenttype == "aladpcmbooks" || parenttype == "aladpcmloops"){
                 return String(parent.indexOf(node)) + ". " + node.getProperty("name", "Error!").toString();
             }
@@ -1167,30 +1259,36 @@ BankFile::NodeValueInfo BankFile::getNodeValueInfo(ValueTree node, bool hex){
             ret.valueequiv = "Open struct to edit";
         }else{
             ret.valueeditable = true;
-            int val = (int)node.getProperty("value", 0);
-            if((bool)node.getProperty("ispointer", false)){
-                ret.valuereference = true;
-                val = (int)node.getProperty("index", -1);
-                String ptrto = node.getProperty("ptrto", "Error");
-                ValueTree dest = getListForPointer(ptrto);
-                if(dest.isValid()){
-                    dest = dest.getChild(val);
-                    if(!dest.isValid()){
-                        ret.valueequiv = "nullptr";
-                    }else{
-                        ret.valueequiv = dest.getProperty("name", "[unnamed]");
+            type = node.getProperty("datatype", "uint32");
+            if(type == "float32"){
+                float f = node.getProperty("value", 0.0f);
+                ret.value = String(f);
+                ret.valueequiv = "0x" + ROM::hex(*(uint32*)&f);
+            }else{
+                int val = (int)node.getProperty("value", 0);
+                if((bool)node.getProperty("ispointer", false)){
+                    ret.valuereference = true;
+                    val = (int)node.getProperty("index", -1);
+                    String ptrto = node.getProperty("ptrto", "Error");
+                    ValueTree dest = getListForPointer(ptrto);
+                    if(dest.isValid()){
+                        dest = dest.getChild(val);
+                        if(!dest.isValid()){
+                            ret.valueequiv = "nullptr";
+                        }else{
+                            ret.valueequiv = dest.getProperty("name", "[unnamed]");
+                        }
                     }
                 }
-            }
-            if(hex){
-                type = node.getProperty("datatype", "uint32");
-                if(type == "uint8" || type == "int8" || ret.valuereference){
-                    ret.value = ROM::hex((uint8)val);
+                if(hex){
+                    if(type == "uint8" || type == "int8" || ret.valuereference){
+                        ret.value = ROM::hex((uint8)val);
+                    }else{
+                        ret.value = ROM::hex((uint32)val);
+                    }
                 }else{
-                    ret.value = ROM::hex((uint32)val);
+                    ret.value = String(val);
                 }
-            }else{
-                ret.value = String(val);
             }
         }
     }
@@ -1200,44 +1298,46 @@ bool BankFile::setNodeValue(ValueTree node, String input, bool hex){
     if(!node.isValid()) return false;
     String type = node.getType().toString();
     String meaning = node.getProperty("meaning", "None");
-    int val = 0;
-    if(hex) val = input.getHexValue32();
-        else val = input.getIntValue();
+    if(type != "field" && type != "element") return false;
+    if(isMeaningDeterminedAtImport(meaning)) return false;
+    if((bool)node.getProperty("isarray", false)) return false;
+    if(node.getNumChildren() != 0) return false;
+    //Get value based on datatype
     String datatype = node.getProperty("datatype", "Error");
-    if(datatype == "int8"){
-        if(val < -0x80 || val > 0x7F) return false;
-    }else if(datatype == "uint8"){
-        if(val < 0 || val > 0xFF) return false;
-    }else if(datatype == "int16"){
-        if(val < -0x8000 || val > 0x7FFF) return false;
-    }else if(datatype == "uint16"){
-        if(val < 0 || val > 0xFFFF) return false;
-    }else if(datatype != "int32" && datatype != "uint32"){
+    if(datatype == "float32"){
+        if((bool)node.getProperty("ispointer", false)) return false;
+        float f = input.getFloatValue();
+        node.setProperty("value", f, nullptr);
+        return true;
+    }else if(datatype ==  "int8" || datatype ==  "int16" || datatype ==  "int32" || 
+             datatype == "uint8" || datatype == "uint16" || datatype == "uint32"){
+        int val = 0;
+        if(hex) val = input.getHexValue32();
+            else val = input.getIntValue();
+        if(datatype == "int8"){
+            if(val < -0x80 || val > 0x7F) return false;
+        }else if(datatype == "uint8"){
+            if(val < 0 || val > 0xFF) return false;
+        }else if(datatype == "int16"){
+            if(val < -0x8000 || val > 0x7FFF) return false;
+        }else if(datatype == "uint16"){
+            if(val < 0 || val > 0xFFFF) return false;
+        }
+        if((bool)node.getProperty("ispointer", false)){
+            node.setProperty("index", val, nullptr);
+        }else{
+            node.setProperty("value", val, nullptr);
+        }
+        return true;
+    }else{
         SEQ64::say("BankFile::setNodeValue() error: datatype == " + datatype);
         return false;
     }
-    if(type == "field" || type == "element"){
-        if(isMeaningDeterminedAtImport(meaning)){
-            return false;
-        }else if((bool)node.getProperty("isarray", false)){
-            return false;
-        }else if(node.getNumChildren() != 0){
-            return false;
-        }else{
-            if((bool)node.getProperty("ispointer", false)){
-                node.setProperty("index", val, nullptr);
-            }else{
-                node.setProperty("value", val, nullptr);
-            }
-            return true;
-        }
-    }
-    return false;
 }
 int BankFile::getNodeListFlags(ValueTree nodein, ValueTree nodeselected){
     if(!nodein.isValid()) return 0;
     String inname = nodein.getType().toString();
-    if(inname == "instruments" || inname == "drums" || inname == "sfx" || inname == "patchprops"
+    if(inname == "instruments" || inname == "drums" || inname == "sfx" || inname == "envelopes"
             || inname == "samples" || inname == "aladpcmbooks" || inname == "aladpcmloops"){
         if(nodeselected.isValid()){
             return canAdd | canDupl | canDel | canMove;
@@ -1500,7 +1600,8 @@ bool BankFile::compareProperty(ValueTree nodea, ValueTree nodeb, String name){
  * sourcebank into this bank. If merge, and an identical node already exists,
  * use that node instead. Return the imported or existing node.
  */
-ValueTree BankFile::importNode(BankFile& sourcebank, String itemtype, int itemindex, bool merge){
+ValueTree BankFile::importNode(ROM& rom, BankFile& sourcebank, String itemtype, int itemindex, 
+        bool merge, bool fixsampleaddr){
     SEQ64::say("Importing node " + itemtype + " index " + String(itemindex));
     //Get item
     ValueTree sourcelist = sourcebank.getListForPointer(itemtype);
@@ -1525,9 +1626,9 @@ ValueTree BankFile::importNode(BankFile& sourcebank, String itemtype, int itemin
         }
     }
     //Otherwise, import
-    return importNodeRecurse(sourcebank, merge, sourceitem, destlist);
+    return importNodeRecurse(rom, sourcebank, merge, fixsampleaddr, sourceitem, destlist);
 }
-ValueTree BankFile::importNodeRecurse(BankFile& sourcebank, bool merge, 
+ValueTree BankFile::importNodeRecurse(ROM& rom, BankFile& sourcebank, bool merge, bool fixsampleaddr,
         ValueTree sourcenode, ValueTree destparent){
     //SEQ64::say("Importing sourcenode " + sourcenode.getType().toString() 
     //      + " into destparent " + destparent.getType().toString());
@@ -1539,6 +1640,58 @@ ValueTree BankFile::importNodeRecurse(BankFile& sourcebank, bool merge,
         propname = sourcenode.getPropertyName(p);
         destnode.setProperty(propname, sourcenode.getProperty(propname), nullptr);
     }
+    //Check for sample address to fix
+    while(fixsampleaddr && destnode.getProperty("meaning", "None").toString() 
+                == "Sample Address (in Sample Set)"){
+        uint32 origaddr = (uint32)(int)destnode.getProperty("value", 0);
+        int src_ssiindex = (int)sourcebank.d.getProperty("SSIindex", -1);
+        int dest_ssiindex = (int)d.getProperty("SSIindex", -1);
+        SEQ64::say("Trying to fix sample address: src_ssiindex=" + String(src_ssiindex) 
+                + ", dest_ssiindex=" + String(dest_ssiindex));
+        if(src_ssiindex < 0 || dest_ssiindex < 0){
+            SEQ64::say("--Source or dest bank don't have SSI index!");
+            break;
+        }
+        //Read sample set index
+        ValueTree ssinode = romdesc.getOrCreateChildWithName("knownfilelist", nullptr)
+                .getChildWithProperty("type", "Sample Set Index");
+        uint32 ssiaddr = 0x7FFFFFFF;
+        if(ssinode.isValid()){
+            ssiaddr = (uint32)(int)ssinode.getProperty("address", 0x7FFFFFFF);
+        }
+        if(ssiaddr >= rom.getSize()){
+            SEQ64::say("--Nonexistent or invalid Sample Set Index in romdesc!");
+            break;
+        }
+        uint16 count;
+        if((int)romdesc.getProperty("indextype", 1) == 2){
+            count = rom.readHalfWord(ssiaddr);
+        }else{
+            count = rom.readHalfWord(ssiaddr+2);
+        }
+        if(count > 1000 || count <= 0){
+            SEQ64::say("--" + String(count) + " entries in SSI, probably wrong!");
+            break;
+        }
+        if(src_ssiindex >= (int)count || dest_ssiindex >= (int)count){
+            SEQ64::say("--Source or dest bank have SSI index larger than SSI count!");
+            break;
+        }
+        uint32 src_ssaddr, dest_ssaddr;
+        if((int)romdesc.getProperty("indextype", 1) == 2){
+            src_ssaddr = rom.readWord(ssiaddr + (16*src_ssiindex) + 16);
+            dest_ssaddr = rom.readWord(ssiaddr + (16*dest_ssiindex) + 16);
+        }else{
+            src_ssaddr = rom.readWord(ssiaddr + (8*src_ssiindex) + 4);
+            dest_ssaddr = rom.readWord(ssiaddr + (8*dest_ssiindex) + 4);
+        }
+        SEQ64::say("--src_ssaddr=0x" + ROM::hex(src_ssaddr) 
+                + ", dest_ssaddr=0x" + ROM::hex(dest_ssaddr));
+        uint32 newaddr = origaddr + src_ssaddr - dest_ssaddr;
+        SEQ64::say("--Moving sample addr from 0x" + ROM::hex(origaddr) + " to 0x" + ROM::hex(newaddr));
+        destnode.setProperty("value", (int)newaddr, nullptr);
+        break;
+    }
     //Add newly created child to parent in this
     destparent.addChild(destnode, -1, nullptr);
     //If this is a pointer, import the node it's pointing to
@@ -1547,7 +1700,7 @@ ValueTree BankFile::importNodeRecurse(BankFile& sourcebank, bool merge,
         int itemindex = (int)destnode.getProperty("index", -1);
         if(itemindex >= 0){
             //SEQ64::say("Going to import new node " + itemtype + " index " + String(itemindex));
-            ValueTree reftarget = importNode(sourcebank, itemtype, itemindex, merge);
+            ValueTree reftarget = importNode(rom, sourcebank, itemtype, itemindex, merge, fixsampleaddr);
             if(reftarget.isValid()){
                 destnode.setProperty("index", reftarget.getParent().indexOf(reftarget), nullptr);
                 destnode.setProperty("value", "1337", nullptr);
@@ -1560,7 +1713,7 @@ ValueTree BankFile::importNodeRecurse(BankFile& sourcebank, bool merge,
     }
     //Import children
     for(int c=0; c<sourcenode.getNumChildren(); c++){
-        importNodeRecurse(sourcebank, merge, sourcenode.getChild(c), destnode);
+        importNodeRecurse(rom, sourcebank, merge, fixsampleaddr, sourcenode.getChild(c), destnode);
     }
     return destnode;
 }

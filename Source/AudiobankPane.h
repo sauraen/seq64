@@ -28,7 +28,7 @@
  * GUI component for Audiobank editor screen
  *
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -142,6 +142,7 @@ private:
 
     //==============================================================================
     ScopedPointer<GroupComponent> groupComponent2;
+    ScopedPointer<GroupComponent> groupComponent4;
     ScopedPointer<GroupComponent> groupComponent3;
     ScopedPointer<GroupComponent> groupComponent;
     ScopedPointer<ComboBox> cbxEditStruct;
@@ -200,6 +201,9 @@ private:
     ScopedPointer<TextEditor> txtBItemValue;
     ScopedPointer<Label> lblBItemValueEquiv;
     ScopedPointer<ToggleButton> chkBItemHex;
+    ScopedPointer<TextButton> btnSaveXML;
+    ScopedPointer<TextButton> btnLoadXML;
+    ScopedPointer<ToggleButton> chkLibFixAddr;
 
 
     //==============================================================================

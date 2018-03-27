@@ -5,7 +5,7 @@
  * Class to hold/import/export a Nintendo EAD (Audioseq) format sequence file
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1684,6 +1684,9 @@ MidiFile* SeqFile::toMIDIFile(){
             value = getAdjustedValue(param);
             transpose = transposes[(channel*max_layers)+notelayer];
             note = value + transpose + midi_basenote + midiinsttransposes[channel];
+            if(midiinsttransposes[channel] != 0){
+                SEQ64::say("Writing note channel " + String(channel) + " using tranpose " + String(midiinsttransposes[channel]));
+            }
             if(note < 0 || note >= 128){
                 SEQ64::say("Bad (transposed?) note @" + ROM::hex(a, 4)
                         + ": c " + String(channel) + ", l " + String(notelayer)
@@ -1753,37 +1756,46 @@ MidiFile* SeqFile::toMIDIFile(){
     }
     SEQ64::say("Finishing MIDI...");
     ret->addTrack(mastertrack);
-    MidiMessage* msg1;
-    MidiMessage* msg2;
     for(channel=0; channel<16; channel++){
-        mtracks[channel]->updateMatchedPairs();
-        MidiMessageSequence newtrack;
-        //Make sure that note on events are always the last events in a group which happen at the same time
-        while(mtracks[channel]->getNumEvents() > 0){
-            msg1 = &(mtracks[channel]->getEventPointer(0)->message);
-            if(msg1->isNoteOnOrOff()){
-                //Scan forward over all events occurring at this time; if there are any
-                //non note events, add them first
-                for(int i=1; i<mtracks[channel]->getNumEvents(); ++i){
-                    msg2 = &(mtracks[channel]->getEventPointer(i)->message);
-                    if(msg1->getTimeStamp() == msg2->getTimeStamp()){
-                        if(!msg2->isNoteOnOrOff()){
-                            newtrack.addEvent(*msg2, 0.0);
-                            mtracks[channel]->deleteEvent(i, false);
-                            --i;
-                        }
-                    }else{
-                        break;
-                    }
-                }
-            }
-            newtrack.addEvent(*msg1, 0.0);
-            mtracks[channel]->deleteEvent(0, false);
-        }
-        ret->addTrack(newtrack);
+        ScopedPointer<MidiMessageSequence> newtrack = ensureSimulMsgsInOrder(*mtracks[channel]);
+        ret->addTrack(*newtrack);
     }
     SEQ64::say("====== DONE ======");
     return ret;
+}
+MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
+    in.updateMatchedPairs();
+    in.sort();
+    MidiMessageSequence* out = new MidiMessageSequence();
+    MidiMessage* msg;
+    //In any group of commands happening at the same time, the events should be
+    //in this order: Note Offs, other messages (CCs, etc.), Note Ons
+    while(in.getNumEvents() > 0){
+        double ts = in.getEventPointer(0)->message.getTimeStamp();
+        bool addme;
+        for(int phase=0; phase<=2; ++phase){
+            for(int i=0; i<in.getNumEvents(); ++i){
+                msg = &(in.getEventPointer(i)->message);
+                if(msg->getTimeStamp() > ts) break;
+                else if(msg->getTimeStamp() < ts){
+                    SEQ64::say("Consistency error: messages out of order after sorting!");
+                    return out;
+                }
+                switch(phase){
+                    case 0: addme = msg->isNoteOff(); break;
+                    case 1: addme = !msg->isNoteOnOrOff(); break;
+                    case 2: addme = true; break;
+                    default: SEQ64::say("Bad phase in sorting!"); return out;
+                }
+                if(addme){
+                    out->addEvent(*msg, 0.0);
+                    in.deleteEvent(i, false);
+                    --i;
+                }
+            }
+        }
+    }
+    return out;
 }
 
 class LayerState{
@@ -1860,17 +1872,18 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     double ticks_multiplier = 48.0 / (double)master_ppqn;
     double last_timestamp = mfile.getLastTimestamp();
     //Put all events into master track
-    MidiMessageSequence mastertrack;
+    ScopedPointer<MidiMessageSequence> mastertrack = new MidiMessageSequence();
     for(track=0; track<mfile.getNumTracks(); track++){
-        mastertrack.addSequence(*mfile.getTrack(track), 0, 0, last_timestamp);
-        mastertrack.updateMatchedPairs();
+        mastertrack->addSequence(*mfile.getTrack(track), 0, 0, last_timestamp);
+        mastertrack->updateMatchedPairs();
     }
     //Scale all events to N64 PPQN
-    for(m=mastertrack.getNumEvents()-1; m>=0; m--){
-        msgptr = &mastertrack.getEventPointer(m)->message;
+    for(m=mastertrack->getNumEvents()-1; m>=0; m--){
+        msgptr = &mastertrack->getEventPointer(m)->message;
         msgptr->setTimeStamp(msgptr->getTimeStamp() * ticks_multiplier);
     }
-    mastertrack.sort();
+    //Ensure events are propertly in order
+    mastertrack = ensureSimulMsgsInOrder(*mastertrack);
     //Get new last timestamp
     last_timestamp *= ticks_multiplier;
     int last_timestamp64 = (int)(last_timestamp);
@@ -1880,9 +1893,9 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     OwnedArray<MidiMessageSequence> chantracks;
     for(channel=0; channel<16; channel++){
         chantracks.add(new MidiMessageSequence());
-        mastertrack.extractMidiChannelMessages(channel+1, *chantracks[channel], false);
-        mastertrack.deleteMidiChannelMessages(channel+1);
-        mastertrack.updateMatchedPairs();
+        mastertrack->extractMidiChannelMessages(channel+1, *chantracks[channel], false);
+        mastertrack->deleteMidiChannelMessages(channel+1);
+        mastertrack->updateMatchedPairs();
         chantracks[channel]->updateMatchedPairs();
     }
     //Find sections
@@ -1891,8 +1904,8 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     sectiontimes.add(0);
     String metatext; 
     int metatype;
-    for(m=0; m<mastertrack.getNumEvents(); m++){
-        msg = mastertrack.getEventPointer(m)->message;
+    for(m=0; m<mastertrack->getNumEvents(); m++){
+        msg = mastertrack->getEventPointer(m)->message;
         if(msg.isTextMetaEvent()){
             metatext = msg.getTextFromTextMetaEvent();
             metatype = msg.getMetaEventType();
@@ -1966,7 +1979,8 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
             msg = trk->getEventPointer(m)->message;
             //See what section we're in, and clear LayerStates if it's a new section
             for(i=sec; i<sectiontimes.size()-1; ++i){
-                if(sectiontimes[i+1] > msg.getTimeStamp()){
+                if(sectiontimes[i+1] > msg.getTimeStamp() ||
+                        (sectiontimes[i+1] == msg.getTimeStamp() && msg.isNoteOff())){
                     //We haven't moved to that section yet
                     break;
                 }
@@ -2068,8 +2082,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     //=======================================================================
     SEQ64::sayNoNewline("Creating sequence header");
     int num_tsections = sectiontimes.size();
-    sectiontimes.add(last_timestamp64 + 1);
-    int sectimeidx = 0;
+    sectiontimes.add(last_timestamp64);
     double newtempo;
     int tempolasttime = -100000, tempolastval = -100000;
     int t = 0;
@@ -2114,16 +2127,22 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
     cmd++;
     //Add events from master track
     m=0;
+    int sectimeidx = 0;
     bool done = false;
     while(true){
-        if(m >= mastertrack.getNumEvents()){
+        if(m >= mastertrack->getNumEvents()){
             done = true;
         }else{
-            msg = mastertrack.getEventPointer(m)->message;
+            msg = mastertrack->getEventPointer(m)->message;
             timestamp = msg.getTimeStamp();
         }
-        for(; (!done && (timestamp >= sectiontimes[sectimeidx])) 
-              || (done && (sectimeidx < num_tsections)); sectimeidx++){
+        /*
+        (!done && (     timestamp  >= sectiontimes[sectimeidx] 
+        */
+        //Insert channel pointers for each section
+        //sectimeidx is the *upcoming* section boundary, not the current section time is in
+        for(; sectimeidx < num_tsections; sectimeidx++){ //Don't execute this for the boundary at the end of the piece
+            if(!done && timestamp < sectiontimes[sectimeidx]) break; //Still more commands before section boundary
             //SEQ64::say("Section " + String(sectimeidx) + " starting at " + String(sectiontimes[sectimeidx]));
             SEQ64::sayNoNewline(".");
             //Get up to the time
@@ -2340,7 +2359,9 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                 msg = trk->getEventPointer(m)->message;
                 timestamp = msg.getTimeStamp();
                 if(timestamp < starttime) continue;
-                if(timestamp >= endtime) continue;
+                //Only discard commands after section end if there's a section
+                //after this one
+                if(timestamp >= endtime && sectimeidx < num_tsections-1) continue;
                 //Determine command to execute
                 want = ValueTree(); //Invalidate
                 cc = -1;
@@ -2437,8 +2458,8 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                 for(m=0; m<layertrk->getNumEvents(); m++){
                     msg3 = layertrk->getEventPointer(m)->message;
                     timestamp3 = msg3.getTimeStamp();
-                    if(timestamp3 < starttime) continue;
-                    if(timestamp3 >= endtime){
+                    if(timestamp3 < starttime || (timestamp3 == starttime && msg3.isNoteOff())) continue;
+                    if(timestamp3 > endtime || (timestamp3 == endtime && !msg3.isNoteOff())){
                         m = layertrk->getNumEvents() + 1;
                         break;
                     }
@@ -2470,7 +2491,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                     }
                     msg2 = layertrk->getEventPointer(m)->message;
                     if(!msg2.isNoteOff()){
-                        SEQ64::say("Note Off out of order!");
+                        SEQ64::say("Note Off out of order! Cancelling track import!");
                         break;
                     }
                     timestamp2 = msg2.getTimeStamp();
@@ -2488,7 +2509,7 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
                         }else{
                             msg3 = layertrk->getEventPointer(m)->message;
                             if(!msg3.isNoteOn()){
-                                SEQ64::say("Note On out of order!");
+                                SEQ64::say("Note On out of order! Cancelling track import!");
                                 break;
                             }
                             timestamp3 = msg3.getTimeStamp();
@@ -2908,6 +2929,7 @@ void SeqFile::optimize(){
             section1 = structure.getChild(sec1);
             stype1 = section1.getProperty(idSType, -1);
             numcmds1 = section1.getNumChildren();
+            int sec1time = getTotalSectionTime(section1);
             //SEQ64::say("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
             SEQ64::sayNoNewline(".");
             //Pick a command
@@ -2986,6 +3008,8 @@ void SeqFile::optimize(){
                                     break;
                                 }
                             }
+                            //Also make sure it's not overlapping with the original one!
+                            if(sec1 == sec2 && cmd2 <= cmd1 + hooklength) flag = true;
                         }
                         if(!flag){
                             //See if this is a valid copy of the original hook
@@ -3072,6 +3096,21 @@ void SeqFile::optimize(){
                     section1.removeChild(cmd1, nullptr);
                 }
                 section1.addChild(want.createCopy(), cmd1, nullptr);
+                //Make sure we didn't screw up
+                int sec1time_after = getTotalSectionTime(section1);
+                if(sec1time != sec1time_after){
+                    SEQ64::say("CRITICAL: Bug found when creating calls! Call data contained:");
+                    for(i=0; i<hooklength; ++i){
+                        SEQ64::say("--" + sectionN.getChild(i).getProperty(idAction).toString());
+                    }
+                    SEQ64::say("Call was found at:");
+                    SEQ64::say("--Section " + String(sec1) + " cmd " + String(cmd1));
+                    for(i=0; i<bestlist.getNumChildren(); ++i){
+                        SEQ64::say("-- Section " + bestlist.getChild(i).getProperty(idSection).toString() 
+                                       + " cmd " + bestlist.getChild(i).getProperty(idCmd).toString());
+                    }
+                    return;
+                }
             }
         }
         //Replace all 2-loops of 1-calls, 2-loops of 2-calls, or 3-loops of 1-calls with individual calls
@@ -3133,6 +3172,44 @@ void SeqFile::optimize(){
             }
         }
     }
+}
+int SeqFile::getTotalSectionTime(ValueTree section){
+    int totaltime = 0, t, loopmult = 1;
+    for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+        ValueTree command = section.getChild(cmd);
+        String action = command.getProperty(idAction, "No Action");
+        t = 0;
+        if(action == "Call Same Level"){
+            int s = command.getProperty(idTargetSection, -1);
+            if(s < 0 || s >= structure.getNumChildren()){
+                SEQ64::say("getTotalSectionTime: Call Same Level to invalid target section!");
+                continue;
+            }
+            t = getTotalSectionTime(structure.getChild(s));
+        }else if(action == "Loop Start"){
+            ValueTree param = command.getChildWithProperty(idMeaning, "Loop Count");
+            if(!param.isValid()){
+                loopmult = 0;
+            }else{
+                loopmult = param.getProperty(idValue, 0);
+            }
+            if(loopmult < 2){
+                SEQ64::say("Loop Start with count < 2!");
+            }
+        }else if(action == "Loop End"){
+            loopmult = 1;
+        }else if(action == "Timestamp"){
+            ValueTree param = command.getChildWithProperty(idMeaning, "Delay");
+            if(param.isValid()){
+                t = param.getProperty(idValue, 0);
+            }
+            if(t == 0){
+                SEQ64::say("Timestamp without delay!");
+            }
+        }
+        totaltime += t * loopmult;
+    }
+    return totaltime;
 }
 
 void SeqFile::reduceTrackNotes(){

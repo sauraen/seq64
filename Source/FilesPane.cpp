@@ -25,7 +25,7 @@
  * GUI component for N64 ROM internal files screen
  *
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,6 +45,7 @@
 #include "MainComponent.h"
 #include "BankFile.h"
 #include "SeqFile.h"
+#include "IEEditor.h"
 //[/Headers]
 
 #include "FilesPane.h"
@@ -289,6 +290,10 @@ FilesPane::FilesPane (SEQ64& seq64_)
     cbxInstSet1->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
     cbxInstSet1->addListener (this);
 
+    addAndMakeVisible (btnEditIE = new TextButton ("new button"));
+    btnEditIE->setButtonText (TRANS("Edit Index Entry (Metadata)"));
+    btnEditIE->addListener (this);
+
 
     //[UserPreSize]
     lsmFileTable = new TextListModel();
@@ -390,6 +395,7 @@ FilesPane::~FilesPane()
     lblInstSet = nullptr;
     label10 = nullptr;
     cbxInstSet1 = nullptr;
+    btnEditIE = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -443,6 +449,7 @@ void FilesPane::resized()
     lblInstSet->setBounds (344, 560, 408, 24);
     label10->setBounds (344, 680, 40, 24);
     cbxInstSet1->setBounds (384, 680, 368, 24);
+    btnEditIE->setBounds (536, 504, 214, 24);
     //[UserResized] Add your own custom resize handling here..
     lstFileTable->setBounds (8, 48, 320, 320);
     lstKFiles->setBounds (8, 464, 320, 152);
@@ -601,7 +608,11 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
                         "Overwrite?", "A bank is already loaded, overwrite it?", nullptr, nullptr)) return;
             }
             seq64.bank = new BankFile(seq64.romdesc);
-            seq64.bank->load(seq64.rom, ientryidx);
+            int ret = seq64.bank->load(seq64.rom, ientryidx);
+            if(ret < 0){
+                NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Oh no",
+                    "Error(s) encountered when loading bank, check the terminal output for details.");
+            }
             //TODO debug only
             File f = File::getSpecialLocation(File::userHomeDirectory).getChildFile("audiobank.log");
             f.replaceWithText(seq64.bank->d.toXmlString());
@@ -617,7 +628,7 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
             seq64.seq->name = ROM::hex((uint8)ientryidx) + " " + txtIEntryName->getText();
             seq64.maincomponent->onSeqLoaded();
         }else{
-            NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Load Entry",
+            NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Stop it",
                     "Loading an entry from " + idxlistnode.getType().toString() + " not supported");
         }
         //[/UserButtonCode_btnLoadEntry]
@@ -635,12 +646,17 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
             if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
                     "Overwrite?", "Replace bank " + String(ientryidx) + " with the currently loaded one?"
                     + "\n(This does not save the ROM to disk.)", nullptr, nullptr)) return;
-            seq64.bank->save(seq64.rom, ientryidx);
+            int ret = seq64.bank->save(seq64.rom, ientryidx);
+            if(ret < 0){
+                NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Oh no",
+                    "Saving bank failed. Check the terminal output for details.");
+            }else if(ret > 0){
+                NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Oh no",
+                    "Bank file is 0x" + ROM::hex((uint32)ret) + " bytes long, doesn't fit in this space!");
+            }
             fillIndex();
         }else if(idxlistnode.hasType("audioseqidx")){
-            if(&*seq64.seq == nullptr){
-                return;
-            }
+            if(&*seq64.seq == nullptr) return;
             uint32 seqaddr, length;
             if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
                 seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (16*ientryidx) + 16);
@@ -651,7 +667,7 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
             }
             uint32 loadedseqlength = seq64.seq->getLength();
             if(loadedseqlength > length){
-                NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Save Entry",
+                NativeMessageBox::showMessageBoxAsync(AlertWindow::InfoIcon, "Oh no",
                         "Currently, saving larger sequence (" + ROM::hex(loadedseqlength, 4)
                         + " bytes)\ninto smaller space (" + ROM::hex(length, 4) + " bytes) is not supported.");
                 return;
@@ -662,7 +678,7 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
                     + "\n(This does not save the ROM to disk.)", nullptr, nullptr)) return;
             seq64.seq->saveToROM(seq64.rom, seqaddr);
         }else{
-            NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Save Entry",
+            NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Stop it",
                     "Saving an entry to " + idxlistnode.getType().toString() + " not supported");
         }
         //[/UserButtonCode_btnSaveEntry]
@@ -678,6 +694,37 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_optIndexType2] -- add your button handler code here..
         seq64.romdesc.setProperty("indextype", 2, nullptr);
         //[/UserButtonCode_optIndexType2]
+    }
+    else if (buttonThatWasClicked == btnEditIE)
+    {
+        //[UserButtonCode_btnEditIE] -- add your button handler code here..
+        if(!selindex.isValid()) return;
+        Identifier idEditIE = "understandeditie";
+        if(seq64.readProperty(idEditIE) != "yes"){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Are you sure you know what you're doing?",
+                    "This allows you to edit the raw data of the index entry,\n"
+                    "including the item address and length and, if applicable,\n"
+                    "the other metadata values in the entry. Especially for\n"
+                    "Audiobank, many of these fields ARE known and either editable\n"
+                    "within the bank or determined at import. Obviously, changing\n"
+                    "the address or length incorrectly will corrupt your ROM.\n\n"
+                    "Are you sure you understand and want to continue?", nullptr, nullptr)) return;
+            seq64.writeProperty(idEditIE, "yes");
+        }
+        uint32 ieaddr;
+        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+            ieaddr = indexaddr + (16*ientryidx) + 16;
+        }else{
+            ieaddr = indexaddr + (8*ientryidx) + 4;
+        }
+        DialogWindow::LaunchOptions iebox;
+        iebox.dialogTitle = "Edit Index Entry";
+        iebox.dialogBackgroundColour = Colours::lightgrey;
+        iebox.content.setOwned(new IEEditor(seq64, *this, ieaddr));
+        iebox.resizable = false;
+        iebox.launchAsync();
+        //[/UserButtonCode_btnEditIE]
     }
 
     //[UserbuttonClicked_Post]
@@ -921,8 +968,12 @@ void FilesPane::fillIndex(){
     }else if(type == "Sample Set Index"){
         //No data associated
         idxlistnode = seq64.romdesc.getOrCreateChildWithName("samplesetidx", nullptr);
+        btnLoadEntry->setButtonText("Can't load");
+        btnSaveEntry->setButtonText("Can't save");
     }else{
         lblIndexProps->setText("File selected is not an index", dontSendNotification);
+        btnLoadEntry->setButtonText("No");
+        btnSaveEntry->setButtonText("No");
         lstIndex->updateContent();
         return;
     }
@@ -949,6 +1000,13 @@ void FilesPane::fillIndex(){
     if(type == "Audiobank Index"){
         seq64.maincomponent->onGotABI();
     }
+}
+
+void FilesPane::refreshIndexEntry(){
+    if(!selindex.isValid()) return;
+    lsmIndex->set(ientryidx, getIEntryDescription(ientryidx));
+    lstIndex->repaintRow(ientryidx);
+    fillIEntryParams();
 }
 
 void FilesPane::fillIEntryParams(){
@@ -1253,6 +1311,9 @@ BEGIN_JUCER_METADATA
   <COMBOBOX name="new combo box" id="eb9c8b0efed24a37" memberName="cbxInstSet1"
             virtualName="" explicitFocusOrder="0" pos="384 680 368 24" editable="0"
             layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
+  <TEXTBUTTON name="new button" id="d6765357ec4aae16" memberName="btnEditIE"
+              virtualName="" explicitFocusOrder="0" pos="536 504 214 24" buttonText="Edit Index Entry (Metadata)"
+              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

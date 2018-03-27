@@ -7,12 +7,12 @@
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
   and re-saved.
 
-  Created with Introjucer version: 3.1.0
+  Created with Introjucer version: 3.2.0
 
   ------------------------------------------------------------------------------
 
   The Introjucer is part of the JUCE library - "Jules' Utility Class Extensions"
-  Copyright 2004-13 by Raw Material Software Ltd.
+  Copyright (c) 2015 - ROLI Ltd.
 
   ==============================================================================
 */
@@ -25,7 +25,7 @@
  * Small component to get a CIC value from the user
  *
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2017 Sauraen
+ * Copyright (C) 2014-2018 Sauraen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,6 +55,9 @@
 CICSetter::CICSetter (SEQ64& seq64_)
     : seq64(seq64_)
 {
+    //[Constructor_pre] You can add your own custom stuff here..
+    //[/Constructor_pre]
+
     addAndMakeVisible (label = new Label ("new label",
                                           TRANS("Choose the CIC chip ID:")));
     label->setFont (Font (15.00f, Font::plain));
@@ -124,6 +127,9 @@ void CICSetter::paint (Graphics& g)
 
 void CICSetter::resized()
 {
+    //[UserPreResize] Add your own custom resize code here..
+    //[/UserPreResize]
+
     label->setBounds (0, 0, 176, 24);
     cbxCIC->setBounds (8, 24, 160, 24);
     btnOK->setBounds (8, 56, 72, 24);
