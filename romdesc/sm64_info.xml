@@ -425,7 +425,7 @@
              ptrto="ABInstrument" arraylenvar="NUM_INST"/>
     </struct>
     <struct name="ABDrumList">
-      <field name="drumlist" datatype="uint32" ispointer="1" isarray="1" meaning="None"
+      <field name="drumlist" datatype="uint32" ispointer="1" isarray="1" meaning="List of Ptrs to Drums"
              ptrto="ABDrum" arraylenvar="NUM_DRUM"/>
     </struct>
     <struct name="ABSFXList"/>
