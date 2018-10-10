@@ -1284,7 +1284,7 @@ MidiFile* SeqFile::toMIDIFile(){
     int stype = 0;
     int cmdlen;
     //Stacks
-    const int stack_size = 8;
+    const int stack_size = 16;
     uint32 addrstack[stack_size];
     uint32 timestack[stack_size];
     int stypestack[stack_size];
@@ -1378,6 +1378,14 @@ MidiFile* SeqFile::toMIDIFile(){
             }
             //Pop return address
             stackptr--;
+            while(stackptr >= 0 && stypestack[stackptr] == -4){
+                SEQ64::say("End of Data while in a loop (i.e. corrupt sequence)!");
+                stackptr--;
+            }
+            if(stackptr < 0 || stypestack[stackptr] < 0){
+                SEQ64::say("FATAL: Hopelessly corrupted sequence structure!");
+                break;
+            }
             //Restore values
             a = addrstack[stackptr];
             if(stypestack[stackptr] != stype){
@@ -1401,9 +1409,32 @@ MidiFile* SeqFile::toMIDIFile(){
             }
             a = address;
         }else if(action == "Loop Start"){
-            SEQ64::say("MIDI export of Loop commands not yet implemented!");
+            param = command.getChildWithProperty(idMeaning, "Loop Count");
+            int loopcount = getAdjustedValue(param);
+            if(loopcount < 2 || loopcount > 0xFF){
+                SEQ64::say("Likely invalid loop count = " + String(loopcount) + ", ignoring!");
+                continue;
+            }
+            addrstack[stackptr] = a;
+            timestack[stackptr] = loopcount;
+            stypestack[stackptr] = -4; //means loop stack entry
+            stackptr++;
+            if(stackptr >= stack_size){
+                SEQ64::say("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
+                break;
+            }
         }else if(action == "Loop End"){
-            SEQ64::say("MIDI export of Loop commands not yet implemented!");
+            if(stackptr <= 0 || stypestack[stackptr-1] != -4){
+                SEQ64::say("Loop End command not after Loop Start, ignoring!");
+                continue;
+            }
+            stackptr--;
+            timestack[stackptr]--; //loop count
+            if(timestack[stackptr] > 0){
+                //Still some loops left for us, go back
+                a = addrstack[stackptr];
+                stackptr++;
+            }//Otherwise just continue with the sequence
         }else if(action == "Ptr Channel Header"){
             value = getPtrAddress(command, a);
             if(value < 0) continue;

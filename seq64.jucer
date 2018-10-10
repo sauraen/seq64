@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="W0F67O" name="seq64" projectType="guiapp" version="1.0.0"
+<JUCERPROJECT id="W0F67O" name="seq64" projectType="consoleapp" version="1.0.0"
               bundleIdentifier="com.yourcompany.seq64" includeBinaryInAppConfig="1"
               jucerVersion="3.2.0">
   <MAINGROUP id="wZlCL9" name="seq64">

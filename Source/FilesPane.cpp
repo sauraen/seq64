@@ -46,6 +46,7 @@
 #include "BankFile.h"
 #include "SeqFile.h"
 #include "IEEditor.h"
+#include <cstring>
 //[/Headers]
 
 #include "FilesPane.h"
@@ -61,8 +62,14 @@ FilesPane::FilesPane (SEQ64& seq64_)
     //[Constructor_pre] You can add your own custom stuff here..
     //[/Constructor_pre]
 
-    addAndMakeVisible (groupComponent = new GroupComponent ("new group",
-                                                            TRANS("Master File Table")));
+    addAndMakeVisible (grpUtilities = new GroupComponent ("new group",
+                                                          TRANS("Utilities")));
+
+    addAndMakeVisible (grpUtilitiesContents = new GroupComponent ("new group",
+                                                                  TRANS("Contents")));
+
+    addAndMakeVisible (grpMFT = new GroupComponent ("new group",
+                                                    TRANS("Master File Table")));
 
     addAndMakeVisible (label = new Label ("new label",
                                           TRANS("Address:")));
@@ -137,8 +144,8 @@ FilesPane::FilesPane (SEQ64& seq64_)
     label4->setColour (TextEditor::textColourId, Colours::black);
     label4->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
-    addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
-                                                             TRANS("Known Files")));
+    addAndMakeVisible (grpKnownFiles = new GroupComponent ("new group",
+                                                           TRANS("Known Files")));
 
     addAndMakeVisible (btnKFileAdd = new TextButton ("new button"));
     btnKFileAdd->setButtonText (TRANS("Add"));
@@ -294,6 +301,77 @@ FilesPane::FilesPane (SEQ64& seq64_)
     btnEditIE->setButtonText (TRANS("Edit Index Entry (Metadata)"));
     btnEditIE->addListener (this);
 
+    addAndMakeVisible (btnCompact = new TextButton ("new button"));
+    btnCompact->setButtonText (TRANS("Compact"));
+    btnCompact->addListener (this);
+
+    addAndMakeVisible (btnMakeRoom = new TextButton ("new button"));
+    btnMakeRoom->setButtonText (TRANS("Make Room"));
+    btnMakeRoom->setConnectedEdges (Button::ConnectedOnLeft);
+    btnMakeRoom->addListener (this);
+
+    addAndMakeVisible (label8 = new Label ("new label",
+                                           TRANS("Make room for 0x")));
+    label8->setFont (Font (15.00f, Font::plain));
+    label8->setJustificationType (Justification::centredLeft);
+    label8->setEditable (false, false, false);
+    label8->setColour (TextEditor::textColourId, Colours::black);
+    label8->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (txtMakeRoom = new TextEditor ("new text editor"));
+    txtMakeRoom->setMultiLine (false);
+    txtMakeRoom->setReturnKeyStartsNewLine (false);
+    txtMakeRoom->setReadOnly (false);
+    txtMakeRoom->setScrollbarsShown (true);
+    txtMakeRoom->setCaretVisible (true);
+    txtMakeRoom->setPopupMenuEnabled (true);
+    txtMakeRoom->setText (TRANS("1000"));
+
+    addAndMakeVisible (btnContentsCreate = new TextButton ("new button"));
+    btnContentsCreate->setButtonText (TRANS("Create"));
+    btnContentsCreate->setConnectedEdges (Button::ConnectedOnRight);
+    btnContentsCreate->addListener (this);
+
+    addAndMakeVisible (btnContentsDestroy = new TextButton ("new button"));
+    btnContentsDestroy->setButtonText (TRANS("Destroy/Pointerize"));
+    btnContentsDestroy->setConnectedEdges (Button::ConnectedOnLeft);
+    btnContentsDestroy->addListener (this);
+
+    addAndMakeVisible (label9 = new Label ("new label",
+                                           TRANS("Pointer to entry: 0x")));
+    label9->setFont (Font (15.00f, Font::plain));
+    label9->setJustificationType (Justification::centredLeft);
+    label9->setEditable (false, false, false);
+    label9->setColour (TextEditor::textColourId, Colours::black);
+    label9->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (txtEntryPointer = new TextEditor ("new text editor"));
+    txtEntryPointer->setMultiLine (false);
+    txtEntryPointer->setReturnKeyStartsNewLine (false);
+    txtEntryPointer->setReadOnly (false);
+    txtEntryPointer->setScrollbarsShown (true);
+    txtEntryPointer->setCaretVisible (true);
+    txtEntryPointer->setPopupMenuEnabled (true);
+    txtEntryPointer->setText (TRANS("00"));
+
+    addAndMakeVisible (grpUtilitiesEntry = new GroupComponent ("new group",
+                                                               TRANS("Entry")));
+
+    addAndMakeVisible (btnEntryInsert = new TextButton ("new button"));
+    btnEntryInsert->setButtonText (TRANS("Insert"));
+    btnEntryInsert->setConnectedEdges (Button::ConnectedOnLeft | Button::ConnectedOnRight);
+    btnEntryInsert->addListener (this);
+
+    addAndMakeVisible (btnEntryAdd = new TextButton ("new button"));
+    btnEntryAdd->setButtonText (TRANS("Add"));
+    btnEntryAdd->setConnectedEdges (Button::ConnectedOnRight);
+    btnEntryAdd->addListener (this);
+
+    addAndMakeVisible (btnEntryDelete = new TextButton ("new button"));
+    btnEntryDelete->setButtonText (TRANS("Delete"));
+    btnEntryDelete->setConnectedEdges (Button::ConnectedOnLeft);
+    btnEntryDelete->addListener (this);
+
 
     //[UserPreSize]
     lsmFileTable = new TextListModel();
@@ -337,6 +415,7 @@ FilesPane::FilesPane (SEQ64& seq64_)
     txtKFileAddr->addListener(this);
     txtKFileLength->addListener(this);
     txtIEntryName->addListener(this);
+    txtEntryPointer->addListener(this);
 
     //[/UserPreSize]
 
@@ -345,7 +424,6 @@ FilesPane::FilesPane (SEQ64& seq64_)
 
     //[Constructor] You can add your own custom stuff here..
     ftaddr = 0;
-    ftend = 0;
     dataaddr = -1;
     abi_addr = -1;
     asi_addr = -1;
@@ -365,7 +443,9 @@ FilesPane::~FilesPane()
     //[Destructor_pre]. You can add your own custom destruction code here..
     //[/Destructor_pre]
 
-    groupComponent = nullptr;
+    grpUtilities = nullptr;
+    grpUtilitiesContents = nullptr;
+    grpMFT = nullptr;
     label = nullptr;
     txtFTAddr = nullptr;
     label2 = nullptr;
@@ -373,7 +453,7 @@ FilesPane::~FilesPane()
     label3 = nullptr;
     cbxFileType = nullptr;
     label4 = nullptr;
-    groupComponent2 = nullptr;
+    grpKnownFiles = nullptr;
     btnKFileAdd = nullptr;
     btnKFileDel = nullptr;
     label5 = nullptr;
@@ -396,6 +476,18 @@ FilesPane::~FilesPane()
     label10 = nullptr;
     cbxInstSet1 = nullptr;
     btnEditIE = nullptr;
+    btnCompact = nullptr;
+    btnMakeRoom = nullptr;
+    label8 = nullptr;
+    txtMakeRoom = nullptr;
+    btnContentsCreate = nullptr;
+    btnContentsDestroy = nullptr;
+    label9 = nullptr;
+    txtEntryPointer = nullptr;
+    grpUtilitiesEntry = nullptr;
+    btnEntryInsert = nullptr;
+    btnEntryAdd = nullptr;
+    btnEntryDelete = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -419,7 +511,9 @@ void FilesPane::resized()
     //[UserPreResize] Add your own custom resize code here..
     //[/UserPreResize]
 
-    groupComponent->setBounds (0, 0, 336, 448);
+    grpUtilities->setBounds (760, 0, 272, 200);
+    grpUtilitiesContents->setBounds (768, 48, 256, 96);
+    grpMFT->setBounds (0, 0, 336, 448);
     label->setBounds (8, 16, 72, 24);
     txtFTAddr->setBounds (80, 16, 80, 24);
     label2->setBounds (8, 392, 56, 24);
@@ -427,7 +521,7 @@ void FilesPane::resized()
     label3->setBounds (8, 416, 56, 24);
     cbxFileType->setBounds (64, 416, 264, 24);
     label4->setBounds (8, 368, 320, 24);
-    groupComponent2->setBounds (0, 448, 336, 264);
+    grpKnownFiles->setBounds (0, 448, 336, 264);
     btnKFileAdd->setBounds (8, 624, 40, 24);
     btnKFileDel->setBounds (48, 624, 40, 24);
     label5->setBounds (96, 624, 47, 24);
@@ -450,6 +544,18 @@ void FilesPane::resized()
     label10->setBounds (344, 680, 40, 24);
     cbxInstSet1->setBounds (384, 680, 368, 24);
     btnEditIE->setBounds (536, 504, 214, 24);
+    btnCompact->setBounds (768, 16, 256, 24);
+    btnMakeRoom->setBounds (936, 88, 80, 24);
+    label8->setBounds (776, 88, 120, 24);
+    txtMakeRoom->setBounds (896, 88, 40, 24);
+    btnContentsCreate->setBounds (776, 64, 120, 24);
+    btnContentsDestroy->setBounds (896, 64, 120, 24);
+    label9->setBounds (776, 112, 128, 24);
+    txtEntryPointer->setBounds (904, 112, 32, 24);
+    grpUtilitiesEntry->setBounds (768, 144, 256, 48);
+    btnEntryInsert->setBounds (856, 160, 80, 24);
+    btnEntryAdd->setBounds (776, 160, 80, 24);
+    btnEntryDelete->setBounds (936, 160, 80, 24);
     //[UserResized] Add your own custom resize handling here..
     lstFileTable->setBounds (8, 48, 320, 320);
     lstKFiles->setBounds (8, 464, 320, 152);
@@ -482,7 +588,7 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
             kfile = kfilelistnode.getChildWithProperty(Identifier("type"), type);
             if(kfile.isValid()){
                 SEQ64::say(type + " file already exists!");
-                cbxFileType->setText("Unknown");
+                cbxFileType->setText("Unknown", dontSendNotification);
                 return;
             }
             //Set up this known file
@@ -523,15 +629,15 @@ void FilesPane::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
             ValueTree kfile = kfilelistnode.getChildWithProperty(Identifier("type"), type);
             if(kfile.isValid() && kfile != selkfile){
                 SEQ64::say(type + " file already exists!");
-                cbxKFileType->setText("Unsupported");
+                cbxKFileType->setText("Unsupported", dontSendNotification);
                 type = "Unsupported";
             }
         }
         //Remove old index address, insert new
         String oldtype = selkfile.getProperty("type");
-        changedIndexAddress(type, -1);
+        if(oldtype.endsWith("Index")) changedIndexAddress(oldtype, -1);
         uint32 addr = (int)selkfile.getProperty("address");
-        changedIndexAddress(type, addr);
+        if(type.endsWith("Index")) changedIndexAddress(type, addr);
         selkfile.setProperty("type", type, nullptr);
         //Refresh display
         int idx = lstKFiles->getLastRowSelected();
@@ -658,18 +764,15 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         }else if(idxlistnode.hasType("audioseqidx")){
             if(&*seq64.seq == nullptr) return;
             uint32 seqaddr, length;
-            if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
-                seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (16*ientryidx) + 16);
-                length = seq64.rom.readWord(indexaddr + (16*ientryidx) + 20);
-            }else{
-                seqaddr = dataaddr + seq64.rom.readWord(indexaddr + (8*ientryidx) + 4);
-                length = seq64.rom.readWord(indexaddr + (8*ientryidx) + 8);
-            }
+            readIEAddrLen(indexaddr, ientryidx, seqaddr, length);
+            seqaddr += dataaddr;
+            uint32 availsize = getRealEntrySize(ientryidx);
             uint32 loadedseqlength = seq64.seq->getLength();
-            if(loadedseqlength > length){
-                NativeMessageBox::showMessageBoxAsync(AlertWindow::InfoIcon, "Oh no",
-                        "Currently, saving larger sequence (" + ROM::hex(loadedseqlength, 4)
-                        + " bytes)\ninto smaller space (" + ROM::hex(length, 4) + " bytes) is not supported.");
+            if(loadedseqlength > availsize){
+                NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Oh no",
+                        "Loaded sequence is 0x" + ROM::hex(loadedseqlength, 4)
+                        + " bytes, but there are only 0x" + ROM::hex((uint32)availsize, 4) + " bytes available.\n"
+                        "Try using \"Make room for\" (perhaps after \"Compact\") to make room for this sequence.");
                 return;
             }
             if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
@@ -677,6 +780,9 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
                     + " bytes)\nwith the currently loaded one (" + ROM::hex(loadedseqlength, 4) + " bytes)?"
                     + "\n(This does not save the ROM to disk.)", nullptr, nullptr)) return;
             seq64.seq->saveToROM(seq64.rom, seqaddr);
+            writeIELen(indexaddr, ientryidx, loadedseqlength);
+            setIEntryName(seq64.seq->name, true);
+            fillIEntryParams();
         }else{
             NativeMessageBox::showMessageBoxAsync (AlertWindow::InfoIcon, "Stop it",
                     "Saving an entry to " + idxlistnode.getType().toString() + " not supported");
@@ -726,6 +832,132 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
         iebox.launchAsync();
         //[/UserButtonCode_btnEditIE]
     }
+    else if (buttonThatWasClicked == btnCompact)
+    {
+        //[UserButtonCode_btnCompact] -- add your button handler code here..
+        Identifier idCompact = "understandcompact";
+        if(seq64.readProperty(idCompact) != "yes"){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Are you sure you know what you're doing?",
+                    "This will remove empty space between items (banks/sequences)\n"
+                    "by shifting all items towards the beginning of the file.\n"
+                    "It will also update their addresses and lengths in the index\n"
+                    "and update the Audiobank/Audioseq file length in the MFT.\n\n"
+                    "Are you sure you want to do this?", nullptr, nullptr)) return;
+            seq64.writeProperty(idCompact, "yes");
+        }
+        if(!compact()){
+            NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Oh no",
+                    "Error compacting, please check the terminal output for details.");
+        }else{
+            NativeMessageBox::showMessageBoxAsync(AlertWindow::InfoIcon, "seq64",
+                    "Compacting successful, please check the terminal output for further details.");
+        }
+        //[/UserButtonCode_btnCompact]
+    }
+    else if (buttonThatWasClicked == btnMakeRoom)
+    {
+        //[UserButtonCode_btnMakeRoom] -- add your button handler code here..
+        Identifier idMakeRoom = "understandmakeroom";
+        if(seq64.readProperty(idMakeRoom) != "yes"){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Are you sure you know what you're doing?",
+                    "This will attempt to make room for the selected item to be your\n"
+                    "specified size, by shifting later items down into empty space at\n"
+                    "the end of the file.\n\n"
+                    "For instance if you have a sequence that is 0x300 long and you\n"
+                    "click Make Room (0x500), it will try to shift all later sequences\n"
+                    "down by 0x200 into empty space at the end of Audioseq. If there is\n"
+                    "not 0x200 of empty space at the end of Audioseq, this will fail,\n"
+                    "even if there is more than 0x200 of empty space between later sequences.\n"
+                    "(So you might want to run Compact first for best results.)\n\n"
+                    "Are you sure you want to do this?", nullptr, nullptr)) return;
+            seq64.writeProperty(idMakeRoom, "yes");
+        }
+        int mrlen = txtMakeRoom->getText().getHexValue32();
+        if(mrlen <= 0){
+            NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Oh no",
+                    "Invalid Make Room length.");
+            return;
+        }
+        int res = makeroom(mrlen);
+        if(res < 0){
+            NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Oh no",
+                    "Error making room, please check the terminal output for details.");
+        }else if(res == 0){
+            NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Sorry",
+                    "Could not make room for 0x" + ROM::hex((uint32)mrlen, 6)
+                    + " bytes, please check the terminal output for further details.");
+        }else{
+            NativeMessageBox::showMessageBoxAsync(AlertWindow::InfoIcon, "seq64",
+                    "Successfully made room for 0x" +  ROM::hex((uint32)mrlen, 6) + " bytes.");
+        }
+        //[/UserButtonCode_btnMakeRoom]
+    }
+    else if (buttonThatWasClicked == btnContentsCreate)
+    {
+        //[UserButtonCode_btnContentsCreate] -- add your button handler code here..
+        if(!idxlistnode.isValid()) return;
+        if(ientryidx < 0) return;
+        int32 ilen, faddr;
+        String indexname, filename;
+        if(!getIndexAndFileParams(ilen, faddr, indexname, filename)) return;
+        uint32 addr, len;
+        readIEAddrLen(indexaddr, ientryidx, addr, len);
+        if(len != 0) return;
+        int lastobjectend = getLastObjectEnd(faddr);
+        int realend = getFileRealEnd(lastobjectend);
+        if(realend - lastobjectend < 0x10){
+            NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "Oh no",
+                    "There is no room at the end of " + filename + " for a new item.");
+            return;
+        }
+        memset(&((uint8*)seq64.rom.getData())[lastobjectend], 0, 0x10);
+        writeIEAddr(indexaddr, ientryidx, lastobjectend-faddr);
+        writeIELen(indexaddr, ientryidx, 0x10);
+        updateFileLength(filename, faddr, lastobjectend-faddr+0x10);
+        setIEntryName("New " + String(filename == "Audioseq" ? "Sequence" : "Bank"), true);
+        fillIEntryParams();
+        //[/UserButtonCode_btnContentsCreate]
+    }
+    else if (buttonThatWasClicked == btnContentsDestroy)
+    {
+        //[UserButtonCode_btnContentsDestroy] -- add your button handler code here..
+        if(!idxlistnode.isValid()) return;
+        if(ientryidx < 0) return;
+        int32 ilen, faddr;
+        String indexname, filename;
+        if(!getIndexAndFileParams(ilen, faddr, indexname, filename)) return;
+        uint32 addr, len;
+        readIEAddrLen(indexaddr, ientryidx, addr, len);
+        if(len == 0) return;
+        if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                "Are you sure you know what you're doing?",
+                "This will clear the contents of the selected item and nullify\n"
+                "(but not remove) its index entry.\n\n"
+                "Are you sure you want to do this?", nullptr, nullptr)) return;
+        memset(&((uint8*)seq64.rom.getData())[faddr+addr], 0, len);
+        writeIEAddr(indexaddr, ientryidx, 0);
+        writeIELen(indexaddr, ientryidx, 0);
+        setIEntryName("(Blank entry)", true);
+        fillIEntryParams();
+        //[/UserButtonCode_btnContentsDestroy]
+    }
+    else if (buttonThatWasClicked == btnEntryInsert)
+    {
+        //[UserButtonCode_btnEntryInsert] -- add your button handler code here..
+        //[/UserButtonCode_btnEntryInsert]
+    }
+    else if (buttonThatWasClicked == btnEntryAdd)
+    {
+        //[UserButtonCode_btnEntryAdd] -- add your button handler code here..
+        //[/UserButtonCode_btnEntryAdd]
+    }
+    else if (buttonThatWasClicked == btnEntryDelete)
+    {
+        //[UserButtonCode_btnEntryDelete] -- add your button handler code here..
+        //[/UserButtonCode_btnEntryDelete]
+    }
 
     //[UserbuttonClicked_Post]
     //[/UserbuttonClicked_Post]
@@ -738,11 +970,11 @@ void FilesPane::rowSelected(TextListModel* parent, int row){
     if(parent == &*lsmFileTable){
         ValueTree file = filelistnode.getChildWithProperty(Identifier("index"), row);
         if(file.isValid()){
-            txtFileName->setText(file.getProperty("name", ""));
-            cbxFileType->setText(file.getProperty("type", "Unknown"));
+            txtFileName->setText(file.getProperty("name", ""), dontSendNotification);
+            cbxFileType->setText(file.getProperty("type", "Unknown"), dontSendNotification);
         }else{
-            txtFileName->setText("");
-            cbxFileType->setText("Unknown");
+            txtFileName->setText("", dontSendNotification);
+            cbxFileType->setText("Unknown", dontSendNotification);
         }
     }else if(parent == &*lsmKFiles){
         selkfile = kfilelistnode.getChild(row);
@@ -785,7 +1017,7 @@ void FilesPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
             ftaddr = 0;
             turnRed = true;
         }else{
-            ftend = seq64.rom.readWord(ftaddr + 0x24);
+
             seq64.romdesc.setProperty("ftaddr", (int)ftaddr, nullptr);
             fillFileTable();
             turnRed = false;
@@ -826,22 +1058,51 @@ void FilesPane::textEditorTextChanged(TextEditor& editorThatWasChanged){
     }else if(&editorThatWasChanged == &*txtIEntryName){
         if(!idxlistnode.isValid()) return;
         if(ientryidx < 0) return;
-        ValueTree entry = idxlistnode.getChildWithProperty(Identifier("index"), ientryidx);
-        if(!entry.isValid()){
-            if(text == "") return;
-            entry = ValueTree(Identifier("indexentry"));
-            entry.setProperty("index", ientryidx, nullptr);
-            idxlistnode.addChild(entry, idxlistnode.getNumChildren(), nullptr);
+        setIEntryName(text, false);
+    }else if(&editorThatWasChanged == &*txtEntryPointer){
+        if(!idxlistnode.isValid()) return;
+        if(ientryidx < 0) return;
+        uint32 addr, len;
+        readIEAddrLen(indexaddr, ientryidx, addr, len);
+        if(len != 0) return;
+        writeIEAddr(indexaddr, ientryidx, hexval);
+        String newname;
+        if(hexval == 0){
+            newname = "(Blank entry)";
+        }else if(hexval < 0 || hexval >= indexcount){
+            newname = "Ptr off end of index (crash)";
+        }else if(hexval == ientryidx){
+            newname = "Recursive pointer AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH! (crash)";
+        }else{
+            ValueTree ptrentry = idxlistnode.getChildWithProperty(Identifier("index"), hexval);
+            if(!ptrentry.isValid()){
+                newname = "Ptr to unnamed entry";
+            }else{
+                newname = "Ptr to " + ptrentry.getProperty("name", "unnamed entry").toString();
+            }
         }
-        entry.setProperty("name", text, nullptr);
-        lsmIndex->set(ientryidx, getIEntryDescription(ientryidx));
-        lstIndex->repaintRow(ientryidx);
+        setIEntryName(newname, true);
     }
     if(turnRed){
         editorThatWasChanged.setColour(TextEditor::backgroundColourId, Colours::red);
     }else{
         editorThatWasChanged.setColour(TextEditor::backgroundColourId, Colours::white);
     }
+}
+
+void FilesPane::setIEntryName(String newname, bool updateNameBox){
+    if(!idxlistnode.isValid()) return;
+    ValueTree thisentry = idxlistnode.getChildWithProperty(Identifier("index"), ientryidx);
+    if(!thisentry.isValid()){
+        if(newname == "") return;
+        thisentry = ValueTree(Identifier("indexentry"));
+        thisentry.setProperty("index", ientryidx, nullptr);
+        idxlistnode.addChild(thisentry, idxlistnode.getNumChildren(), nullptr);
+    }
+    thisentry.setProperty("name", newname, nullptr);
+    lsmIndex->set(ientryidx, getIEntryDescription(ientryidx));
+    lstIndex->repaintRow(ientryidx);
+    if(updateNameBox) txtIEntryName->setText(newname, dontSendNotification);
 }
 
 String FilesPane::getFileDescription(uint32 a, int i){
@@ -862,6 +1123,7 @@ String FilesPane::getFileDescription(uint32 a, int i){
 void FilesPane::fillFileTable(){
     lsmFileTable->clear();
     lstFileTable->updateContent();
+    uint32 ftend = seq64.rom.readWord(ftaddr + 0x24);
     if(ftaddr == 0 || ftend <= ftaddr || ftend - ftaddr >= 0x10000){
         lstFileTable->updateContent();
         return;
@@ -890,31 +1152,30 @@ void FilesPane::fillKFiles(){
 
 void FilesPane::fillKFileParams(){
     if(selkfile.isValid()){
-        cbxKFileType->setText(selkfile.getProperty("type", "Unsupported"));
-        txtKFileAddr->setText(ROM::hex((uint32)(int)selkfile.getProperty("address", 0)));
-        txtKFileLength->setText(ROM::hex((uint32)(int)selkfile.getProperty("length", 0)));
+        cbxKFileType->setText(selkfile.getProperty("type", "Unsupported"), dontSendNotification);
+        txtKFileAddr->setText(ROM::hex((uint32)(int)selkfile.getProperty("address", 0)), dontSendNotification);
+        txtKFileLength->setText(ROM::hex((uint32)(int)selkfile.getProperty("length", 0)), dontSendNotification);
     }else{
-        cbxKFileType->setText("");
-        txtKFileAddr->setText("");
-        txtKFileLength->setText("");
+        cbxKFileType->setText("", dontSendNotification);
+        txtKFileAddr->setText("", dontSendNotification);
+        txtKFileLength->setText("", dontSendNotification);
     }
 }
 
 String FilesPane::getIEntryDescription(int i){
     if(!idxlistnode.isValid()) return "";
     if(seq64.rom.getSize() == 0) return "";
-    ValueTree entry = idxlistnode.getChildWithProperty("index", i);
-    String ret = ROM::hex((uint8)i) + " ";
-    if(entry.isValid()){
-        ret += entry.getProperty("name", "[Unnamed]").toString();
-        ret += ": ";
+    uint32 addr, len;
+    readIEAddrLen(indexaddr, i, addr, len);
+    String ret = ROM::hex((uint8)i) + " @" + ROM::hex(addr, 6) + " len " + ROM::hex(len, 4);
+    addr += dataaddr;
+    uint32 availsize = getRealEntrySize(i);
+    if(availsize != len){
+        ret += " (avail " + ROM::hex((uint32)availsize, 4) + ")";
     }
-    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
-        ret += "@" + ROM::hex(seq64.rom.readWord(indexaddr + (16*i) + 16), 6);
-        ret += ", len " + ROM::hex(seq64.rom.readWord(indexaddr + (16*i) + 20), 6);
-    }else{
-        ret += "@" + ROM::hex(seq64.rom.readWord(indexaddr + (8*i) + 4), 6);
-        ret += ", len " + ROM::hex(seq64.rom.readWord(indexaddr + (8*i) + 8), 6);
+    ValueTree entry = idxlistnode.getChildWithProperty("index", i);
+    if(entry.isValid()){
+        ret += ": " + entry.getProperty("name", "[Unnamed]").toString();
     }
     return ret;
 }
@@ -935,36 +1196,27 @@ void FilesPane::fillIndex(){
         return;
     }
     String type = selindex.getProperty("type", "Unsupported");
-    if(type == "Audiobank Index"){
-        seldata = kfilelistnode.getChildWithProperty("type", "Audiobank");
-        if(!seldata.isValid()){
-            lblIndexProps->setText("No Audiobank file specified", dontSendNotification);
+    if(type == "Audiobank Index" || type == "Audioseq Index"){
+        int temp = getFileForIndex(type).getProperty("address", -1);
+        if(temp == -2){
+            lblIndexProps->setText("Corresponding file not described in RomDesc", dontSendNotification);
             lstIndex->updateContent();
-            return;
         }
-        dataaddr = (int)seldata.getProperty("address", -1);
-        if(dataaddr < 0){
-            SEQ64::say("Audiobank file has no address!");
-            return;
+        if(temp < 0) return;
+        dataaddr = temp;
+        if(type == "Audiobank Index"){
+            idxlistnode = seq64.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
+            btnLoadEntry->setButtonText("Load Bank");
+            btnSaveEntry->setButtonText("Save Bank");
+            grpUtilitiesContents->setText("Bank File");
+            grpUtilitiesEntry->setText("Audiobank Index Entry");
+        }else{
+            idxlistnode = seq64.romdesc.getOrCreateChildWithName("audioseqidx", nullptr);
+            btnLoadEntry->setButtonText("Load Sequence");
+            btnSaveEntry->setButtonText("Save Sequence");
+            grpUtilitiesContents->setText("Sequence File");
+            grpUtilitiesEntry->setText("Audioseq Index Entry");
         }
-        idxlistnode = seq64.romdesc.getOrCreateChildWithName("audiobankidx", nullptr);
-        btnLoadEntry->setButtonText("Load Bank");
-        btnSaveEntry->setButtonText("Save Bank");
-    }else if(type == "Audioseq Index"){
-        seldata = kfilelistnode.getChildWithProperty("type", "Audioseq");
-        if(!seldata.isValid()){
-            lblIndexProps->setText("No Audioseq file specified", dontSendNotification);
-            lstIndex->updateContent();
-            return;
-        }
-        dataaddr = (int)seldata.getProperty("address", -1);
-        if(dataaddr < 0){
-            SEQ64::say("Audioseq file has no address!");
-            return;
-        }
-        idxlistnode = seq64.romdesc.getOrCreateChildWithName("audioseqidx", nullptr);
-        btnLoadEntry->setButtonText("Load Sequence");
-        btnSaveEntry->setButtonText("Save Sequence");
     }else if(type == "Sample Set Index"){
         //No data associated
         idxlistnode = seq64.romdesc.getOrCreateChildWithName("samplesetidx", nullptr);
@@ -980,19 +1232,14 @@ void FilesPane::fillIndex(){
     grpIndex->setText(type);
     //
     indexaddr = (int)selindex.getProperty("address", 0);
-    uint16 count;
-    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
-        count = seq64.rom.readHalfWord(indexaddr);
-    }else{
-        count = seq64.rom.readHalfWord(indexaddr+2);
-    }
-    if(count > 1000 || count <= 0){
-        lblIndexProps->setText(String(count) + " entries, probably wrong", dontSendNotification);
+    indexcount = getIndexCount(indexaddr);
+    if(indexcount > 1000 || indexcount <= 0){
+        lblIndexProps->setText(String(indexcount) + " entries, probably wrong", dontSendNotification);
         lstIndex->updateContent();
         return;
     }
-    lblIndexProps->setText(String(count) + " entries", dontSendNotification);
-    for(int i=0; i<count; i++){
+    lblIndexProps->setText(String(indexcount) + " entries", dontSendNotification);
+    for(int i=0; i<indexcount; i++){
         lsmIndex->add(getIEntryDescription(i));
     }
     lstIndex->updateContent();
@@ -1011,26 +1258,50 @@ void FilesPane::refreshIndexEntry(){
 
 void FilesPane::fillIEntryParams(){
     if(!selindex.isValid()){
-        txtIEntryName->setText("");
+        txtIEntryName->setText("", dontSendNotification);
         lblIEntryData->setText("[Entry data]", dontSendNotification);
+        btnContentsCreate->setEnabled(false);
+        btnContentsDestroy->setEnabled(false);
+        txtMakeRoom->setEnabled(false);
+        txtMakeRoom->setText("0000", dontSendNotification);
+        btnMakeRoom->setEnabled(false);
+        txtEntryPointer->setEnabled(false);
+        txtEntryPointer->setText("00", dontSendNotification);
         return;
     }
     String data;
+    uint32 addr, len;
+    readIEAddrLen(indexaddr, ientryidx, addr, len);
+    data = "@" + ROM::hex(addr) + ", len " + ROM::hex(len);
     if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
-        data  = "@" + ROM::hex(seq64.rom.readWord(indexaddr + (16*ientryidx) + 16));
-        data += ", len " + ROM::hex(seq64.rom.readWord(indexaddr + (16*ientryidx) + 20));
         data += ": " + ROM::hex(seq64.rom.readWord(indexaddr + (16*ientryidx) + 24));
         data += " " + ROM::hex(seq64.rom.readWord(indexaddr + (16*ientryidx) + 28));
-    }else{
-        data  = "@" + ROM::hex(seq64.rom.readWord(indexaddr + (8*ientryidx) + 4));
-        data += ", len " + ROM::hex(seq64.rom.readWord(indexaddr + (8*ientryidx) + 8));
     }
     lblIEntryData->setText(data, dontSendNotification);
     ValueTree entry = idxlistnode.getChildWithProperty("index", ientryidx);
     if(entry.isValid()){
-        txtIEntryName->setText(entry.getProperty("name", "[Unnamed]").toString());
+        txtIEntryName->setText(entry.getProperty("name", "[Unnamed]").toString(), dontSendNotification);
     }else{
-        txtIEntryName->setText("");
+        txtIEntryName->setText("", dontSendNotification);
+    }
+    //Utilities
+    if(len == 0){
+        //None/pointer entry
+        btnContentsCreate->setEnabled(true);
+        btnContentsDestroy->setEnabled(false);
+        txtMakeRoom->setEnabled(false);
+        txtMakeRoom->setText("0000", dontSendNotification);
+        btnMakeRoom->setEnabled(false);
+        txtEntryPointer->setEnabled(true);
+        txtEntryPointer->setText(ROM::hex((uint8)addr), dontSendNotification);
+    }else{
+        btnContentsCreate->setEnabled(false);
+        btnContentsDestroy->setEnabled(true);
+        txtMakeRoom->setEnabled(true);
+        txtMakeRoom->setText(ROM::hex(len, 4), dontSendNotification);
+        btnMakeRoom->setEnabled(true);
+        txtEntryPointer->setEnabled(false);
+        txtEntryPointer->setText("00", dontSendNotification);
     }
     //Select instrument sets
     if(selindex.getProperty("type", "Unsupported").toString() != "Audioseq Index") return;
@@ -1064,32 +1335,25 @@ void FilesPane::fillIEntryParams(){
     lstInstSets->selectRow(sel_seqiset);
 }
 
+void FilesPane::loadIndexParams(String indexname){
+    ValueTree index = kfilelistnode.getChildWithProperty("type", indexname);
+    int addr = index.isValid() ? (int)index.getProperty("address", -1) : -1;
+    changedIndexAddress(indexname, addr);
+}
+
 void FilesPane::romDescLoaded(){
     filelistnode = seq64.romdesc.getOrCreateChildWithName("filelist", nullptr);
     kfilelistnode = seq64.romdesc.getOrCreateChildWithName("knownfilelist", nullptr);
-    txtFTAddr->setText(ROM::hex((uint32)(int)seq64.romdesc.getProperty("ftaddr", 0)));
+    ftaddr = (int)seq64.romdesc.getProperty("ftaddr", 0);
+    txtFTAddr->setText(ROM::hex((uint32)ftaddr), dontSendNotification);
     int indextype = (int)seq64.romdesc.getProperty("indextype", 1);
     optIndexType1->setToggleState((indextype == 1), dontSendNotification);
     optIndexType2->setToggleState((indextype == 2), dontSendNotification);
     //Load index addresses
-    ValueTree index;
-    int addr;
-    index = kfilelistnode.getChildWithProperty("type", "Audiobank Index");
-    if(index.isValid()){ addr = index.getProperty("address", -1);
-    }else{ addr = -1; }
-    changedIndexAddress("Audiobank Index", addr);
-    index = kfilelistnode.getChildWithProperty("type", "Audioseq Index");
-    if(index.isValid()){ addr = index.getProperty("address", -1);
-    }else{ addr = -1; }
-    changedIndexAddress("Audioseq Index", addr);
-    index = kfilelistnode.getChildWithProperty("type", "Sample Set Index");
-    if(index.isValid()){ addr = index.getProperty("address", -1);
-    }else{ addr = -1; }
-    changedIndexAddress("Sample Set Index", addr);
-    index = kfilelistnode.getChildWithProperty("type", "Instrument Set Index");
-    if(index.isValid()){ addr = index.getProperty("address", -1);
-    }else{ addr = -1; }
-    changedIndexAddress("Instrument Set Index", addr);
+    loadIndexParams("Audiobank Index");
+    loadIndexParams("Audioseq Index");
+    loadIndexParams("Sample Set Index");
+    loadIndexParams("Instrument Set Index");
     //Refresh screen
     fillFileTable();
     fillKFiles();
@@ -1136,45 +1400,317 @@ bool FilesPane::isKnownFileType(String filetype){
     return false;
 }
 
-void FilesPane::changedIndexAddress(String indextype, int newaddress){
-    if(indextype == "Audiobank Index"){
-        abi_addr = newaddress;
-        if(newaddress < 0 || seq64.rom.getSize() <= abi_addr + 4){
-            abi_count = -1;
-            return;
-        }
-        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
-            abi_count = seq64.rom.readHalfWord(abi_addr);
-        }else{
-            abi_count = seq64.rom.readHalfWord(abi_addr+2);
-        }
-    }else if(indextype == "Audioseq Index"){
-        asi_addr = newaddress;
-        if(newaddress < 0 || seq64.rom.getSize() <= asi_addr + 4){
-            asi_count = -1;
-            return;
-        }
-        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
-            asi_count = seq64.rom.readHalfWord(asi_addr);
-        }else{
-            asi_count = seq64.rom.readHalfWord(asi_addr+2);
-        }
-    }else if(indextype == "Sample Set Index"){
-        ssi_addr = newaddress;
-        if(newaddress < 0 || seq64.rom.getSize() <= ssi_addr + 4){
-            ssi_count = -1;
-            return;
-        }
-        if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
-            ssi_count = seq64.rom.readHalfWord(ssi_addr);
-        }else{
-            ssi_count = seq64.rom.readHalfWord(ssi_addr+2);
-        }
-    }else if(indextype == "Instrument Set Index"){
-        isi_addr = newaddress;
+void FilesPane::changedIndexAddress(String indexname, int newaddress){
+    if(indexname == "Audiobank Index"){
+        validateIndexParams(newaddress, abi_addr, abi_count);
+    }else if(indexname == "Audioseq Index"){
+        validateIndexParams(newaddress, asi_addr, asi_count);
+    }else if(indexname == "Sample Set Index"){
+        validateIndexParams(newaddress, ssi_addr, ssi_count);
+    }else if(indexname == "Instrument Set Index"){
+        int16 dummy;
+        validateIndexParams(newaddress, isi_addr, dummy);
+    }else{
+        SEQ64::say("Internal error, asked to change unknown index " + indexname + " address");
     }
 }
 
+void FilesPane::validateIndexParams(int iaddr, int32 &addr_out, int16 &count_out){
+    addr_out = iaddr;
+    if(iaddr < 0 || seq64.rom.getSize() <= iaddr + 4){
+        count_out = -1;
+    }else{
+        count_out = getIndexCount(iaddr);
+    }
+}
+
+int16 FilesPane::getIndexCount(uint32 iaddr){
+    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+        return seq64.rom.readHalfWord(iaddr);
+    }else{
+        return seq64.rom.readHalfWord(iaddr+2);
+    }
+}
+
+ValueTree FilesPane::getFileForIndex(String indexname){
+    if(!indexname.endsWith(" Index")){
+        SEQ64::say("getFileForIndex " + indexname + " is not an index file!");
+        return ValueTree("error").setProperty("address", -1, nullptr);
+    }
+    String filetype = indexname.dropLastCharacters(6);
+    ValueTree file = kfilelistnode.getChildWithProperty("type", filetype);
+    if(!file.isValid()){
+        SEQ64::say("No " + filetype + " file described in RomDesc");
+        return ValueTree("error").setProperty("address", -2, nullptr);
+    }
+    if(!file.hasProperty("address")) file.setProperty("address", -3, nullptr);
+    return file;
+}
+
+void FilesPane::readIEAddrLen(uint32 iaddr, int entry, uint32 &address, uint32 &length){
+    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+        address = seq64.rom.readWord(iaddr + (16*entry) + 16);
+        length = seq64.rom.readWord(iaddr + (16*entry) + 20);
+    }else{
+        address = seq64.rom.readWord(iaddr + (8*entry) + 4);
+        length = seq64.rom.readWord(iaddr + (8*entry) + 8);
+    }
+}
+
+void FilesPane::writeIEAddr(uint32 iaddr, int entry, uint32 address){
+    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+        seq64.rom.writeWord(iaddr + (16*entry) + 16, address);
+    }else{
+        seq64.rom.writeWord(iaddr + (8*entry) + 4, address);
+    }
+}
+
+void FilesPane::writeIELen(uint32 iaddr, int entry, uint32 length){
+    if((int)seq64.romdesc.getProperty("indextype", 1) == 2){
+        seq64.rom.writeWord(iaddr + (16*entry) + 20, length);
+    }else{
+        seq64.rom.writeWord(iaddr + (8*entry) + 8, length);
+    }
+}
+
+bool FilesPane::getIndexAndFileParams(int32 &ilen, int32 &faddr, String &indexname, String &filename){
+    if(!selindex.isValid()){
+        SEQ64::say("Must select index file");
+        return false;
+    }
+    indexname = selindex.getProperty("type", "Unsupported").toString();
+    filename = indexname.dropLastCharacters(6);
+    if(indexname != "Audioseq Index" && indexname != "Audiobank Index"){
+        SEQ64::say("Must select Audiobank Index or Audioseq Index");
+        return false;
+    }
+    if(indexaddr < 0 || indexcount <= 0 || indexcount > 1000){
+        SEQ64::say("Invalid index properties!");
+        return false;
+    }
+    ValueTree file = getFileForIndex(indexname);
+    faddr = file.getProperty("address", -1);
+    if(faddr < 0){
+        SEQ64::say("Invalid companion file address!");
+        return false;
+    }
+    return true;
+}
+
+///Get address of first nonzero after the end of this file, with some caveats
+int FilesPane::getFileRealEnd(int knownend){
+    int realend;
+    for(realend = knownend; realend < seq64.rom.getSize(); ++realend){
+        if(seq64.rom.readByte(realend) != 0) break;
+    }
+    realend = (realend >> 4) << 4;
+    if(knownend > realend) realend = knownend;
+    return realend;
+}
+
+uint32 FilesPane::getRealEntrySize(int i){
+    uint32 iaddr, ilen, addr, len;
+    readIEAddrLen(indexaddr, i, iaddr, ilen);
+    uint32 realend = getFileRealEnd(dataaddr+iaddr+ilen) - dataaddr; //Real end within the file
+    for(int j=0; j<indexcount; ++j){
+        if(j==i) continue;
+        readIEAddrLen(indexaddr, j, addr, len);
+        if(len == 0) continue;
+        if(addr > iaddr && addr < realend){
+            realend = addr;
+        }
+    }
+    return realend-iaddr;
+}
+
+//TODO this assumes all objects are within their corresponding file!
+//(E.g. all sequences within Audioseq rather than tacked on randomly at the end
+//of the ROM)
+int FilesPane::getLastObjectEnd(int32 faddr){
+    int lastobjectend = faddr;
+    for(int i=0; i<indexcount; ++i){
+        uint32 oaddr, olen;
+        readIEAddrLen(indexaddr, i, oaddr, olen);
+        if(olen == 0) continue;
+        int dend = oaddr + olen + faddr;
+        if(dend > lastobjectend) lastobjectend = dend;
+    }
+    return lastobjectend;
+}
+
+void FilesPane::moveRestOfFile(uint32 faddr, int32 flen, int32 dstart, int32 delta){
+    uint8* fileptr = &((uint8*)seq64.rom.getData())[faddr];
+    memmove(&fileptr[dstart+delta], &fileptr[dstart], flen - dstart);
+    uint32 zstart = delta > 0 ? dstart : flen+delta;
+    memset(&fileptr[zstart], 0, abs(delta)); //Zero region moved out of
+    //Adjust later addresses in table
+    for(int i=0; i<indexcount; ++i){
+        uint32 oaddr, olen;
+        readIEAddrLen(indexaddr, i, oaddr, olen);
+        if(olen == 0) continue;
+        if(oaddr >= dstart && oaddr < flen){
+            writeIEAddr(indexaddr, i, oaddr+delta);
+        }
+    }
+}
+
+bool FilesPane::updateFileLength(String filename, int32 faddr, int32 flen){
+    ValueTree kfile = kfilelistnode.getChildWithProperty(Identifier("type"), filename);
+    if(!kfile.isValid()){
+        SEQ64::say("Internal error updating file length");
+        return false;
+    }
+    //Update file length in RomDesc
+    kfile.setProperty("length", (int)flen, nullptr);
+    if((bool)kfile.getProperty("from_ft", false)){
+        //Update file length in MFT
+        if(ftaddr <= 0 || ftaddr > seq64.rom.getSize()){
+            SEQ64::say("Invalid Master File Table");
+            return false;
+        }
+        int ftindex = kfile.getProperty("ftindex", -1);
+        if(ftindex < 0){
+            SEQ64::say("Invalid entry in Master File Table");
+            return false;
+        }
+        //Sanity check
+        if(seq64.rom.readWord(ftaddr + 0x10*ftindex) != faddr){
+            SEQ64::say("Internal error editing Master File Table");
+            return false;
+        }
+        seq64.rom.writeWord(ftaddr + 0x10*ftindex + 0x04, faddr + flen);
+        SEQ64::say("Updated file length in MFT to 0x" + ROM::hex((uint32)flen, 6));
+        fillFileTable();
+    }
+    return true;
+}
+
+bool FilesPane::compact(){
+    int possibleend, realend;
+    int32 ilen, faddr, flen;
+    String indexname, filename;
+    int itype = (int)seq64.romdesc.getProperty("indextype", 1);
+    if(!getIndexAndFileParams(ilen, faddr, indexname, filename)) return false;
+    //Minimize lengths of each bank/sequence
+    for(int i=0; i<indexcount; ++i){
+        uint32 oaddr, olen;
+        readIEAddrLen(indexaddr, i, oaddr, olen);
+        if(olen == 0) continue;
+        for(realend=oaddr+olen+faddr-1; realend>=0; --realend){
+            if(seq64.rom.readByte(realend) != 0) break;
+        }
+        ++realend; //Address after nonzero byte
+        realend = ((realend + 15) >> 4) << 4; //Round up to multiple of 16
+        if(oaddr+olen+faddr < realend){
+            //We've actually grown the object instead--make sure we didn't
+            //round up over someone else's data
+            for(int b=oaddr+olen+faddr; b<realend; ++b){
+                if(seq64.rom.readByte(b) != 0){
+                    realend = b;
+                    break;
+                }
+            }
+        }
+        if(oaddr+olen+faddr != realend){
+            SEQ64::say("Changed length of item " + String(i) + " from 0x"
+                    + ROM::hex(olen, 6) + " to 0x" + ROM::hex(realend-oaddr-faddr, 6));
+        }
+        writeIELen(indexaddr, i, realend-oaddr-faddr);
+    }
+    //Get actual lengths of both (i.e. length until later non-zero data)
+    if(itype == 2){
+        possibleend = indexaddr + 16 + (16*indexcount);
+    }else{
+        possibleend = indexaddr + 4 + (8*indexcount);
+    }
+    ilen = getFileRealEnd(possibleend) - indexaddr;
+    SEQ64::say(indexname + ": minimum len 0x" + ROM::hex((uint32)(possibleend - indexaddr))
+            + ", maximum len 0x"+ ROM::hex((uint32)ilen));
+    //
+    possibleend = getLastObjectEnd(faddr); //Find end of last bank/sequence
+    flen = getFileRealEnd(possibleend) - faddr;
+    SEQ64::say(filename + " file: minimum len 0x" + ROM::hex((uint32)(possibleend - faddr))
+            + ", maximum len 0x"+ ROM::hex((uint32)flen));
+    //Compact
+    int a = 0;
+    if(indexaddr == faddr) a = ilen; //Mario 64 format, don't clobber the index!
+    while(a < flen){
+        //Move to the next space not taken by any object
+        for(int i=0; i<indexcount; ++i){
+            uint32 oaddr, olen;
+            readIEAddrLen(indexaddr, i, oaddr, olen);
+            if(olen == 0) continue;
+            if(a >= oaddr && a < oaddr + olen){
+                a = oaddr + olen;
+                a = ((a + 15) >> 4) << 4; //round up
+                i = -1; //Restart search through objects
+            }
+        }
+        if(a >= flen) break;
+        //Compute empty space to next object
+        int nextoaddr = 1000000000;
+        for(int i=0; i<indexcount; ++i){
+            uint32 oaddr, olen;
+            readIEAddrLen(indexaddr, i, oaddr, olen);
+            if(olen == 0) continue;
+            if(oaddr >= a && oaddr < nextoaddr){
+                nextoaddr = oaddr;
+            }
+        }
+        if(nextoaddr >= flen){
+            SEQ64::say("0x" + ROM::hex((uint32)(flen - a), 6) + " bytes empty at end");
+            flen = a;
+            break;
+        }
+        int delta = nextoaddr - a;
+        if(delta <= 0){
+            SEQ64::say("Internal error when compacting");
+            return false;
+        }
+        SEQ64::say("Compacting away 0x" + ROM::hex((uint32)delta, 6) + " bytes of space");
+        //Move later part of file down
+        moveRestOfFile(faddr, flen, nextoaddr, -delta);
+    }
+    fillIndex();
+    if(!updateFileLength(filename, faddr, flen)) return false;
+    return true;
+}
+
+int FilesPane::makeroom(int mrlen){
+    int32 ilen, faddr;
+    String indexname, filename;
+    if(!getIndexAndFileParams(ilen, faddr, indexname, filename)) return -1;
+    //Get object params
+    if(ientryidx < 0){
+        SEQ64::say("No index entry selected!");
+        return -1;
+    }
+    uint32 oaddr, olen;
+    readIEAddrLen(indexaddr, ientryidx, oaddr, olen);
+    if(olen >= mrlen){
+        SEQ64::say("Asked to make room for entry " + String(ientryidx) + " to be 0x"
+                + ROM::hex((uint32)mrlen, 6) + " bytes, but it's already "
+                + ROM::hex(olen, 6) + " bytes");
+        return -1;
+    }
+    //Get file params
+    int lastobjectend = getLastObjectEnd(faddr); //Find end of last bank/sequence
+    int realend = getFileRealEnd(lastobjectend);
+    if(realend - lastobjectend < mrlen - olen){
+        SEQ64::say("Need 0x" + ROM::hex((uint32)(mrlen - olen), 6)
+                + " bytes empty space to make room, but there are only 0x"
+                + ROM::hex((uint32)(realend - lastobjectend), 6) + " bytes empty at the end of "
+                + filename + " file");
+        return 0;
+    }
+    //Move data
+    SEQ64::say("Inserting 0x" + ROM::hex((uint32)(mrlen-olen), 6) + " bytes empty space @"
+            + ROM::hex((uint32)(oaddr+olen), 6));
+    moveRestOfFile(faddr, lastobjectend-faddr, oaddr+olen, mrlen-olen);
+    if(!updateFileLength(filename, faddr, lastobjectend-faddr+mrlen-olen)) return -1;
+    fillIndex();
+    return 1;
+}
 
 //[/MiscUserCode]
 
@@ -1194,8 +1730,12 @@ BEGIN_JUCER_METADATA
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
                  fixedSize="0" initialWidth="600" initialHeight="400">
   <BACKGROUND backgroundColour="ffffffff"/>
-  <GROUPCOMPONENT name="new group" id="da1838da4937cc20" memberName="groupComponent"
-                  virtualName="" explicitFocusOrder="0" pos="0 0 336 448" title="Master File Table"/>
+  <GROUPCOMPONENT name="new group" id="cad85c65a6c70aec" memberName="grpUtilities"
+                  virtualName="" explicitFocusOrder="0" pos="760 0 272 200" title="Utilities"/>
+  <GROUPCOMPONENT name="new group" id="50f8d472e934f3ad" memberName="grpUtilitiesContents"
+                  virtualName="" explicitFocusOrder="0" pos="768 48 256 96" title="Contents"/>
+  <GROUPCOMPONENT name="new group" id="da1838da4937cc20" memberName="grpMFT" virtualName=""
+                  explicitFocusOrder="0" pos="0 0 336 448" title="Master File Table"/>
   <LABEL name="new label" id="feac5e6d64dda05e" memberName="label" virtualName=""
          explicitFocusOrder="0" pos="8 16 72 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Address:" editableSingleClick="0" editableDoubleClick="0"
@@ -1228,7 +1768,7 @@ BEGIN_JUCER_METADATA
          edBkgCol="0" labelText="[Address information]" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15" bold="0" italic="0" justification="33"/>
-  <GROUPCOMPONENT name="new group" id="f59a75502f6f9763" memberName="groupComponent2"
+  <GROUPCOMPONENT name="new group" id="f59a75502f6f9763" memberName="grpKnownFiles"
                   virtualName="" explicitFocusOrder="0" pos="0 448 336 264" title="Known Files"/>
   <TEXTBUTTON name="new button" id="20b0109f8e92d22a" memberName="btnKFileAdd"
               virtualName="" explicitFocusOrder="0" pos="8 624 40 24" buttonText="Add"
@@ -1314,6 +1854,47 @@ BEGIN_JUCER_METADATA
   <TEXTBUTTON name="new button" id="d6765357ec4aae16" memberName="btnEditIE"
               virtualName="" explicitFocusOrder="0" pos="536 504 214 24" buttonText="Edit Index Entry (Metadata)"
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="149a5c2bee6bc8fe" memberName="btnCompact"
+              virtualName="" explicitFocusOrder="0" pos="768 16 256 24" buttonText="Compact"
+              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="7a397ef5edfd6693" memberName="btnMakeRoom"
+              virtualName="" explicitFocusOrder="0" pos="936 88 80 24" buttonText="Make Room"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
+  <LABEL name="new label" id="e875322d507e6967" memberName="label8" virtualName=""
+         explicitFocusOrder="0" pos="776 88 120 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Make room for 0x" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="e3b2c158d9a94abc" memberName="txtMakeRoom"
+              virtualName="" explicitFocusOrder="0" pos="896 88 40 24" initialText="1000"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
+  <TEXTBUTTON name="new button" id="eebbc4936a2263c0" memberName="btnContentsCreate"
+              virtualName="" explicitFocusOrder="0" pos="776 64 120 24" buttonText="Create"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="f2d02ac2da1cc4fa" memberName="btnContentsDestroy"
+              virtualName="" explicitFocusOrder="0" pos="896 64 120 24" buttonText="Destroy/Pointerize"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
+  <LABEL name="new label" id="ca1b76b48fec52a9" memberName="label9" virtualName=""
+         explicitFocusOrder="0" pos="776 112 128 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Pointer to entry: 0x" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="7d6faed50a54f538" memberName="txtEntryPointer"
+              virtualName="" explicitFocusOrder="0" pos="904 112 32 24" initialText="00"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
+              caret="1" popupmenu="1"/>
+  <GROUPCOMPONENT name="new group" id="e0ed18b4290a5f40" memberName="grpUtilitiesEntry"
+                  virtualName="" explicitFocusOrder="0" pos="768 144 256 48" title="Entry"/>
+  <TEXTBUTTON name="new button" id="5b41d2756e95ddc0" memberName="btnEntryInsert"
+              virtualName="" explicitFocusOrder="0" pos="856 160 80 24" buttonText="Insert"
+              connectedEdges="3" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="35c4626e95ba90e" memberName="btnEntryAdd"
+              virtualName="" explicitFocusOrder="0" pos="776 160 80 24" buttonText="Add"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="77ead61af32390ed" memberName="btnEntryDelete"
+              virtualName="" explicitFocusOrder="0" pos="936 160 80 24" buttonText="Delete"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

@@ -76,21 +76,39 @@ public:
     void rowSelected(TextListModel* parent, int row);
     void textEditorTextChanged(TextEditor& editorThatWasChanged);
 
-    bool isKnownFileType(String filetype);
-    void changedIndexAddress(String indextype, int newaddress);
-    String getFileDescription(uint32 a, int i);
     void fillFileTable();
-
     void fillKFiles();
     void fillKFileParams();
-
     void fillIndex();
     void refreshIndexEntry();
-    String getIEntryDescription(int i);
     void fillIEntryParams();
     void fillInstSetBoxes();
 
     void romDescLoaded();
+
+    bool isKnownFileType(String filetype);
+    ValueTree getFileForIndex(String indexname);
+    String getFileDescription(uint32 a, int i);
+    String getIEntryDescription(int i);
+
+    void setIEntryName(String newname, bool updateNameBox);
+    void changedIndexAddress(String indextype, int newaddress);
+    void loadIndexParams(String indexname);
+    void validateIndexParams(int iaddr, int32 &addr_out, int16 &count_out);
+    int16 getIndexCount(uint32 iaddr);
+    void readIEAddrLen(uint32 iaddr, int entry, uint32 &address, uint32 &length);
+    void writeIEAddr(uint32 iaddr, int entry, uint32 address);
+    void writeIELen(uint32 iaddr, int entry, uint32 length);
+    bool getIndexAndFileParams(int32 &ilen, int32 &faddr, String &indexname, String &filename);
+    int getFileRealEnd(int knownend);
+    uint32 getRealEntrySize(int i);
+    int getLastObjectEnd(int32 faddr);
+    void moveRestOfFile(uint32 faddr, int32 flen, int32 dstart, int32 delta);
+    bool updateFileLength(String filename, int32 faddr, int32 flen);
+
+
+    bool compact();
+    int makeroom(int mrlen);
     //[/UserMethods]
 
     void paint (Graphics& g);
@@ -104,25 +122,26 @@ private:
     //[UserVariables]   -- You can add your own custom variables in this section.
     SEQ64& seq64;
 
-    uint32 ftaddr, ftend;
+    uint32 ftaddr;
     ValueTree filelistnode;
     ValueTree kfilelistnode;
     ValueTree idxlistnode;
     ValueTree selkfile;
-    uint32 indexaddr;
     uint32 dataaddr;
     int ientryidx;
     ValueTree selindex;
     ValueTree seldata;
 
-    int abi_addr;
-    int asi_addr;
-    int ssi_addr;
-    int isi_addr;
+    uint32 indexaddr;
+    int32 abi_addr;
+    int32 asi_addr;
+    int32 ssi_addr;
+    int32 isi_addr;
 
-    int abi_count;
-    int asi_count;
-    int ssi_count;
+    int16 indexcount;
+    int16 abi_count;
+    int16 asi_count;
+    int16 ssi_count;
 
     ScopedPointer<TextListModel> lsmFileTable;
     ScopedPointer<ListBox> lstFileTable;
@@ -141,7 +160,9 @@ private:
     //[/UserVariables]
 
     //==============================================================================
-    ScopedPointer<GroupComponent> groupComponent;
+    ScopedPointer<GroupComponent> grpUtilities;
+    ScopedPointer<GroupComponent> grpUtilitiesContents;
+    ScopedPointer<GroupComponent> grpMFT;
     ScopedPointer<Label> label;
     ScopedPointer<TextEditor> txtFTAddr;
     ScopedPointer<Label> label2;
@@ -149,7 +170,7 @@ private:
     ScopedPointer<Label> label3;
     ScopedPointer<ComboBox> cbxFileType;
     ScopedPointer<Label> label4;
-    ScopedPointer<GroupComponent> groupComponent2;
+    ScopedPointer<GroupComponent> grpKnownFiles;
     ScopedPointer<TextButton> btnKFileAdd;
     ScopedPointer<TextButton> btnKFileDel;
     ScopedPointer<Label> label5;
@@ -172,6 +193,18 @@ private:
     ScopedPointer<Label> label10;
     ScopedPointer<ComboBox> cbxInstSet1;
     ScopedPointer<TextButton> btnEditIE;
+    ScopedPointer<TextButton> btnCompact;
+    ScopedPointer<TextButton> btnMakeRoom;
+    ScopedPointer<Label> label8;
+    ScopedPointer<TextEditor> txtMakeRoom;
+    ScopedPointer<TextButton> btnContentsCreate;
+    ScopedPointer<TextButton> btnContentsDestroy;
+    ScopedPointer<Label> label9;
+    ScopedPointer<TextEditor> txtEntryPointer;
+    ScopedPointer<GroupComponent> grpUtilitiesEntry;
+    ScopedPointer<TextButton> btnEntryInsert;
+    ScopedPointer<TextButton> btnEntryAdd;
+    ScopedPointer<TextButton> btnEntryDelete;
 
 
     //==============================================================================

@@ -714,6 +714,7 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
             FileInputStream fis(dest);
             midi->readFrom(fis);
             seq64.seq = new SeqFile(seq64.romdesc);
+            seq64.seq->name = dest.getFileNameWithoutExtension();
             seq64.seq->fromMidiFile(*midi);
             seq64.maincomponent->onSeqLoaded();
         }
