@@ -348,19 +348,15 @@
     <file index="3" type="Audiobank" name="Audiobank"/>
     <file index="4" type="Audioseq" name="Audioseq"/>
     <file index="5" name="Audiotable" type="Audiotable"/>
-    <file index="6" name="" type="Unknown"/>
-    <file index="12" name="" type="Unknown"/>
-    <file index="7" type="Unknown"/>
-    <file index="11" type="Unknown"/>
   </filelist>
   <knownfilelist>
-    <knownfile type="Audiobank Index" from_ft="0" address="12097184" length="0"/>
-    <knownfile type="Audioseq Index" from_ft="0" address="12098256" length="0"/>
-    <knownfile type="Sample Set Index" from_ft="0" address="12100032" length="0"/>
+    <knownfile type="Audiobank Index" from_ft="0" address="12097184" length="624"/>
     <knownfile type="Audiobank" from_ft="1" ftindex="3" address="54160" length="117328"/>
-    <knownfile type="Audiotable" from_ft="1" ftindex="5" address="496752" length="4590288"/>
+    <knownfile type="Audioseq Index" from_ft="0" address="12098256" length="1776"/>
     <knownfile type="Audioseq" from_ft="1" ftindex="4" address="171488" length="325264"/>
-    <knownfile type="Instrument Set Index" from_ft="0" address="12097808" length="0"/>
+    <knownfile type="Audiotable Index" from_ft="0" address="12100032" length="128"/>
+    <knownfile type="Audiotable" from_ft="1" ftindex="5" address="496752" length="4590288"/>
+    <knownfile type="Sequence Banks Map" from_ft="0" address="12097808" length="448"/>
   </knownfilelist>
   <audiobankidx>
     <indexentry index="0" name="Unknown (Master?)"/>
@@ -756,7 +752,7 @@
     <indexentry index="24" name="Dodongo's Cavern"/>
     <indexentry index="92" name="Water Temple"/>
     <indexentry index="95" name="Gerudo Valley"/>
-    <indexentry index="2" name="Hyrule Field (Master Sequence)"/>
+    <indexentry index="2" name="Hyrule Field (Master)"/>
     <indexentry index="49" name="Hyrule Field (Morning, Day 1)"/>
     <indexentry index="58" name="Temple of Time"/>
     <indexentry index="63" name="Spirit Temple"/>
@@ -850,8 +846,10 @@
     <indexentry index="21" name="Hyrule Field (Sunset 2 - Pan Flute)"/>
     <indexentry index="22" name="Hyrule Field (Sunset 3 - Strings)"/>
     <indexentry index="23" name="Hyrule Field (Sunset 4 - OoT Theme)"/>
+    <indexentry index="0" name="Master Sequence - Controls actor sounds"/>
+    <indexentry index="109" name="Unknown technical seq, affects some actors' SFX"/>
   </audioseqidx>
-  <samplesetidx/>
+  <audiotableidx/>
   <midiopts ppqnmultiplier="10" mtrvol="SysEx MstrVol" chnvol="CC7 (Volume)"
             chnpriority="CC25 (None)" bendrange="6" q_other_time="1" q_vol_time="3"
             q_vol_amp="2" q_other_amp="1" stacksize="4" formatbytedefault="32"
@@ -876,8 +874,7 @@
              defaultval="2"/>
       <field name="unknownB" datatype="uint8" ispointer="0" isarray="0" meaning="None"
              defaultval="2"/>
-      <field name="samplesetidx" datatype="uint8" ispointer="0" isarray="0"
-             meaning="Sample Set Index number"/>
+      <field name="tablenum" datatype="uint8" ispointer="0" isarray="0" meaning="Sample Table number"/>
       <field name="unknownD" datatype="uint8" ispointer="0" isarray="0" meaning="None"
              defaultval="255"/>
       <field name="NUM_INST" datatype="uint8" ispointer="0" isarray="0" meaning="NUM_INST"/>
@@ -906,10 +903,11 @@
     <struct name="ABInstrument">
       <field name="unknown1" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
       <field name="splitpoint1" datatype="uint8" ispointer="0" isarray="0"
-             meaning="None"/>
+             meaning="Split Point 1"/>
       <field name="splitpoint2" datatype="uint8" ispointer="0" isarray="0"
+             meaning="Split Point 2"/>
+      <field name="releaserate" datatype="uint8" ispointer="0" isarray="0"
              meaning="None"/>
-      <field name="releaserate" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
       <field name="envelope" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Envelope"
              ptrto="ABEnvelope"/>
       <field name="splits" datatype="ABSound" ispointer="0" isarray="1" meaning="List of 3 Sounds for Splits"
@@ -954,7 +952,7 @@
       <field name="samplesize" datatype="uint16" ispointer="0" isarray="0"
              meaning="Sample Length"/>
       <field name="sampleaddr" datatype="uint32" ispointer="0" isarray="0"
-             meaning="Sample Address (in Sample Set)" ptrto="ATSample"/>
+             meaning="Sample Address (in Sample Table)" ptrto="ATSample"/>
       <field name="loop" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMLoop"
              ptrto="ALADPCMLoop"/>
       <field name="book" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMBook"

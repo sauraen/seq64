@@ -2,7 +2,7 @@
  * ============================================================================
  *
  * BankFile.h
- * Class to hold/import/export a single instrument set (Audiobank format)
+ * Class to hold/import/export a single bank (Audiobank format)
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
  * Copyright (C) 2014-2018 Sauraen
@@ -26,9 +26,8 @@
 #define BANKFILE_H_INCLUDED
 
 #include "JuceHeader.h"
-#include "seq64.h"
-#include "ROM.h"
 
+class ROM;
 
 class BankFile {
 public:

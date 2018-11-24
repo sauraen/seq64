@@ -23,8 +23,9 @@
 */
 
 #include "SeqFile.h"
-#include "BankFile.h"
 #include "ROM.h"
+#include "seq64.h"
+#include "BankFile.h"
 
 Identifier SeqFile::idName("name");
 Identifier SeqFile::idLength("length");
@@ -83,6 +84,7 @@ CCTracker::CCTracker(){
 
 SeqFile::SeqFile(ValueTree romdesc_) : romdesc(romdesc_){
     debug = false;
+    bank_num = -1;
     cmdlist = romdesc.getOrCreateChildWithName("cmdlist", nullptr);
     midiopts = romdesc.getOrCreateChildWithName("midiopts", nullptr);
     data.clearQuick();
@@ -153,35 +155,36 @@ bool SeqFile::load(ROM& rom, int seqnumber){
     SEQ64::say("Copied ROM data to sequence, size == " + ROM::hex((uint32)data.size()));
     trim();
     //Try to load bank number
-    bank = nullptr;
-    ValueTree isiinfonode = romdesc.getChildWithName("knownfilelist")
-            .getChildWithProperty("type", "Instrument Set Index");
-    if(isiinfonode.isValid()){
-        uint32 isiaddr = (int)isiinfonode.getProperty("address");
-        if(isiaddr < rom.getSize()){
-            //Read bank number
-            uint16 ptr = rom.readHalfWord(isiaddr + (seqnumber << 1));
-            uint8 seq_isetcount = rom.readByte(isiaddr + ptr);
-            if(seq_isetcount >= 1){
-                if(seq_isetcount > 1){
-                    SEQ64::say("Sequence has " + String(seq_isetcount) + " instrument sets, using first one");
-                }
-                uint8 bank_num = rom.readByte(isiaddr + ptr + 1);
-                //Look up bank info
-                ValueTree abinfonode = romdesc.getChildWithName("knownfilelist")
-                        .getChildWithProperty("type", "Audiobank");
-                if(abinfonode.isValid()){
-                    uint32 abaddr = (int)abinfonode.getProperty("address");
-                    if(abaddr < rom.getSize()){
-                        //Load bank
-                        SEQ64::say("Loading bank " + ROM::hex(bank_num));
-                        bank = new BankFile(romdesc);
-                        bank->load(rom, bank_num);
-                    }else SEQ64::say("Invalid Audiobank Index in RomDesc " + ROM::hex(abaddr) + ", cannot load bank");
-                }else SEQ64::say("No Audiobank Index defined in RomDesc, cannot load bank");
-            }else SEQ64::say("Sequence has no instrument sets, cannot load bank");
-        }else SEQ64::say("Invalid Instrument Set Index in RomDesc " + ROM::hex(isiaddr) + ", cannot load bank");
-    }else SEQ64::say("No Instrument Set Index defined in RomDesc, cannot load bank");
+    bank_num = -1;
+    ValueTree sbminfonode = romdesc.getChildWithName("knownfilelist")
+            .getChildWithProperty("type", "Sequence Banks Map");
+    do{
+        if(!sbminfonode.isValid()){
+            SEQ64::say("No Sequence Banks Map defined in RomDesc, cannot load bank");
+            break;
+        }
+        uint32 sbmaddr = (int)sbminfonode.getProperty("address");
+        if(sbmaddr >= rom.getSize()){
+            SEQ64::say("Invalid Sequence Banks Map in RomDesc " + ROM::hex(sbmaddr) + ", cannot load bank");
+            break;
+        }
+        //Read bank number
+        uint16 ptr = rom.readHalfWord(sbmaddr + (seqnumber << 1));
+        uint8 seq_isetcount = rom.readByte(sbmaddr + ptr);
+        if(seq_isetcount == 0){
+            SEQ64::say("Sequence has no banks, cannot load bank");
+            break;
+        }
+        if(seq_isetcount > 1){
+            SEQ64::say(
+                    "========================== PLEASE NOTE ============================\n"
+                    "This sequence uses more than one bank.\n"
+                    "By default the first one will be used for MIDI export--\n"
+                    "if you want to use a different one, change them in the Sequence Banks\n"
+                    "section of the Files Pane.");
+        }
+        bank_num = rom.readByte(sbmaddr + ptr + 1);
+    }while(false);
     //Before we leave
     parse();
     return true;
@@ -215,7 +218,7 @@ bool SeqFile::loadRaw(File file){
         data.add(fis.readByte());
     }
     name = file.getFileNameWithoutExtension();
-    bank = nullptr;
+    bank_num = -1;
     SEQ64::say("Successfully loaded raw sequence");
     parse();
     return true;
@@ -1275,7 +1278,7 @@ void SeqFile::parse(){
 }
 
 
-MidiFile* SeqFile::toMIDIFile(){
+MidiFile* SeqFile::toMIDIFile(ROM& rom){
     ValueTree command, param;
     String action, meaning;
     int channel, notelayer, value, transpose, delay, note, velocity, gate;
@@ -1301,8 +1304,9 @@ MidiFile* SeqFile::toMIDIFile(){
     int max_layers = 4;
 	Array<int> transposes;
 	transposes.resize(16 * max_layers);
-	Array<int> midiinsttransposes;
-	midiinsttransposes.resize(16);
+	//Program options
+	ValueTree progoptions("progoptions");
+	const int progoptionscc = 117, progoptionsnullcc = 116;
     //CC Setup
     int ticks_multiplier = midiopts.getProperty("ppqnmultiplier", 1);
     if(ticks_multiplier <= 0) ticks_multiplier = 1;
@@ -1333,18 +1337,44 @@ MidiFile* SeqFile::toMIDIFile(){
         msg = MidiMessage::controllerEvent(channel+1, 38, 0);
         msg.setTimeStamp(0);
         mtracks[channel]->addEvent(msg);
-        //also
-        midiinsttransposes.set(channel, 0);
     }
     msg = MidiMessage::textMetaEvent(0x06, "Section 0");
     msg.setTimeStamp(0);
     mastertrack.addEvent(msg);
+    //Bank setup
+    //Try to load bank number
+    ScopedPointer<BankFile> bank = nullptr;
+    do{
+        if(bank_num < 0){
+            SEQ64::say("No bank associated with this sequence at load time");
+            break;
+        }
+        //Look up bank info
+        ValueTree abinfonode = romdesc.getChildWithName("knownfilelist")
+                .getChildWithProperty("type", "Audiobank");
+        if(!abinfonode.isValid()){
+            SEQ64::say("No Audiobank Index defined in RomDesc, cannot load bank");
+            break;
+        }
+        uint32 abaddr = (int)abinfonode.getProperty("address");
+        if(abaddr >= rom.getSize()){
+            SEQ64::say("Invalid Audiobank Index in RomDesc " + ROM::hex(abaddr) + ", cannot load bank");
+            break;
+        }
+        //Load bank
+        SEQ64::say("Loading bank " + ROM::hex((uint8)bank_num));
+        bank = new BankFile(romdesc);
+        if(!bank->load(rom, bank_num)){
+            SEQ64::say("Loading bank " + String(bank_num) + " failed");
+            bank = nullptr;
+        }
+    }while(false);
     //BEGIN
     SEQ64::say("EXPORTING MIDI FILE");
     t = 0;
     a = 0;
 	channel = notelayer = 0;
-	delay = 0;
+	delay = -1;
     bool ended_naturally = false;
     while(a < data.size()){
         command = getCommand(a, stype);
@@ -1478,6 +1508,7 @@ MidiFile* SeqFile::toMIDIFile(){
             stype = 1;
             velocity = 127;
             gate = 0xFF;
+            delay = -1;
             //SEQ64::say("----T" + ROM::hex(t, 6) + ": Entering Chan " + String(channel) + " Hdr");
         }else if(action == "Ptr Track Data"){
             value = getPtrAddress(command, a);
@@ -1676,29 +1707,103 @@ MidiFile* SeqFile::toMIDIFile(){
             }
             value = getAdjustedValue(param);
             SEQ64::say("Chn Instrument " + String(value) + " channel " + String(channel));
+            //Cancel previous progoptions
+            msg = MidiMessage::controllerEvent(channel+1, progoptionsnullcc, 0);
+            msg.setTimeStamp(t*ticks_multiplier);
+            mtracks[channel]->addEvent(msg);
             //Load MIDI equivalent instrument from bank
             int midiprogram = value;
-            if(bank != nullptr){
+            do{
+                if(midiopts.getProperty("exportformat", "generalmidi").toString() == "original"){
+                    SEQ64::say("Not converting Chn Instrument because want original format export");
+                    break;
+                }
+                if(bank == nullptr){
+                    SEQ64::say("Could not load MIDI instrument from bank: no bank specified");
+                    break;
+                }
                 ValueTree instlist = bank->d.getChildWithName("abbank").getChildWithProperty("name", "ABBank")
                         .getChildWithProperty("meaning", "List of Ptrs to Insts");
-                if(instlist.isValid()){
-                    ValueTree instlistitem = instlist.getChild(value);
-                    if(instlistitem.isValid()){
-                        int instindex = instlistitem.getProperty("index", -1);
-                        if(instindex >= 0){
-                            ValueTree instrument = bank->d.getChildWithName("instruments").getChild(instindex);
-                            if(instrument.isValid()){
-                                if(instrument.getProperty("map", "Error").toString() == "program"){
-                                    midiprogram = instrument.getProperty("program", 0);
-                                    midiinsttransposes.set(channel, instrument.getProperty("transpose", 0));
-                                    SEQ64::say("Changed instrument " + String(value) + " to program " + String(midiprogram)
-                                            + ", transpose " + String(midiinsttransposes[channel]));
-                                } else SEQ64::say("Could not load MIDI instrument from bank: instrument is not mapped to program");
-                            } else SEQ64::say("Could not load MIDI instrument from bank: could not load instrument #" + String(instindex));
-                        } else SEQ64::say("Could not load MIDI instrument from bank: instrument is nullptr");
-                    } else SEQ64::say("Could not load MIDI instrument from bank: no ABBank item #" + String(value));
-                } else SEQ64::say("Could not load MIDI instrument from bank: abbank invalid");
-            } else SEQ64::say("Could not load MIDI instrument from bank: no bank specified");
+                if(!instlist.isValid()){
+                    SEQ64::say("Could not load MIDI instrument from bank: abbank invalid");
+                    break;
+                }
+                ValueTree instlistitem = instlist.getChild(value);
+                if(!instlistitem.isValid()){
+                    SEQ64::say("Could not load MIDI instrument from bank: no ABBank entry for inst #" + String(value) + " (usually means out of range)");
+                    break;
+                }
+                int instindex = instlistitem.getProperty("index", -1);
+                if(instindex < 0){
+                    SEQ64::say("Could not load MIDI instrument from bank: instrument is nullptr");
+                    break;
+                }
+                ValueTree instrument = bank->d.getChildWithName("instruments").getChild(instindex);
+                if(!instrument.isValid()){
+                    SEQ64::say("Could not load MIDI instrument from bank: could not load instrument #" + String(instindex));
+                    break;
+                }
+                String map = instrument.getProperty("map", "Error").toString();
+                if(map == "program"){
+                    midiprogram = instrument.getProperty("program", 0);
+                    int tp = instrument.getProperty("transpose", 0);
+                    if(tp != 0){
+                        msg = MidiMessage::controllerEvent(channel+1, progoptionscc, progoptions.getNumChildren());
+                        msg.setTimeStamp(t*ticks_multiplier);
+                        mtracks[channel]->addEvent(msg);
+                        ValueTree tpopt("instrument");
+                        tpopt.setProperty("tp", tp, nullptr);
+                        progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
+                    }
+                    SEQ64::say("Changed instrument " + String(value) + " to program " + String(midiprogram)
+                             + ", transpose " + String(tp));
+                }else if(map == "drum"){
+                    msg = MidiMessage::controllerEvent(channel+1, progoptionscc, progoptions.getNumChildren());
+                    msg.setTimeStamp(t*ticks_multiplier);
+                    mtracks[channel]->addEvent(msg);
+                    ValueTree tpopt("drum");
+                    tpopt.setProperty("drum1", instrument.getProperty("drumsplit1", 0), nullptr);
+                    tpopt.setProperty("drum2", instrument.getProperty("drumsplit2", 0), nullptr);
+                    tpopt.setProperty("drum3", instrument.getProperty("drumsplit3", 0), nullptr);
+                    ValueTree temp = instrument.getChildWithName("struct").getChildWithProperty("meaning", "Split Point 1");
+                    if(!temp.isValid()){
+                        SEQ64::say("Instrument has no Split Point 1 field!");
+                        tpopt.setProperty("split1", -1, nullptr);
+                    }else{
+                        tpopt.setProperty("split1", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
+                    }
+                    temp = instrument.getChildWithName("struct").getChildWithProperty("meaning", "Split Point 2");
+                    if(!temp.isValid()){
+                        SEQ64::say("Instrument has no Split Point 2 field!");
+                        tpopt.setProperty("split2", -1, nullptr);
+                    }else{
+                        tpopt.setProperty("split2", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
+                    }
+                    progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
+                    if(midiopts.getProperty("instdrum", "ch10").toString() == "multi"){
+                        //Add multi-drum-channel hacks
+                        /*
+                        //GM2 mode on
+                        uint8 gm2modeonsysex[4] = {0x7E, 0x7F, 0x09, 0x03};
+                        msg = MidiMessage::createSysExMessage(gm2modeonsysex, 4);
+                        msg.setTimeStamp(t*ticks_multiplier);
+                        mtracks[channel]->addEvent(msg);
+                        */
+                        //GM2 bank 120,0 is percussion
+                        msg = MidiMessage(0xB0 | channel, 0, 120, t*ticks_multiplier);
+                        mtracks[channel]->addEvent(msg);
+                        msg = MidiMessage(0xB0 | channel, 32, 0, t*ticks_multiplier);
+                        mtracks[channel]->addEvent(msg);
+                        //Roland GS: SysEx to turn any channel to percussion mode
+                        uint8 gssysex[9] = {0x41, 0x10, 0x42, 0x12, 0x40, 0x10 + channel, 0x15, 0x02, 0x19 - channel};
+                        msg = MidiMessage::createSysExMessage(gssysex, 9);
+                        msg.setTimeStamp(t*ticks_multiplier);
+                        mtracks[channel]->addEvent(msg);
+                        //TODO none of this is ever turned off, in case the sequence turns this back from drum mode to an instrument!
+                    }
+                    continue; //Don't add program change message
+                }
+            }while(false);
             //
             msg = MidiMessage::programChange(channel+1, midiprogram);
             msg.setTimeStamp(t*ticks_multiplier);
@@ -1714,17 +1819,13 @@ MidiFile* SeqFile::toMIDIFile(){
             }
             value = getAdjustedValue(param);
             transpose = transposes[(channel*max_layers)+notelayer];
-            note = value + transpose + midi_basenote + midiinsttransposes[channel];
-            if(midiinsttransposes[channel] != 0){
-                SEQ64::say("Writing note channel " + String(channel) + " using tranpose " + String(midiinsttransposes[channel]));
-            }
+            note = value + transpose + midi_basenote;
             if(note < 0 || note >= 128){
                 SEQ64::say("Bad (transposed?) note @" + ROM::hex(a, 4)
                         + ": c " + String(channel) + ", l " + String(notelayer)
                         + ": note " + String(value)
                         + ", transpose " + String(transpose)
                         + ", base " + String(midi_basenote)
-                        + ", inst tp " + String(midiinsttransposes[channel])
                         + ": result " + String(note));
                 continue;
             }
@@ -1750,6 +1851,10 @@ MidiFile* SeqFile::toMIDIFile(){
                 delay = getAdjustedValue(param);
                 //qDelay = true;
             }else{
+                if(delay < 0){
+                    SEQ64::say("Track Note command using previous delay, but not previously set! (Corrupted sequence / will break timings)");
+                    delay = 1;
+                }
                 //SEQ64::say("@" + ROM::hex(a, 6) + ": No delay value given, using current " + ROM::hex((uint32)delay, 4));
                 //Add it so we actually do the delay!
                 param = ValueTree("parameter");
@@ -1778,18 +1883,91 @@ MidiFile* SeqFile::toMIDIFile(){
         //Execute delay
         param = command.getChildWithProperty(idMeaning, "Delay");
         if(param.isValid()){
-            delay = getAdjustedValue(param);
-            t += delay;
+            //Don't set the variable "delay"--future notes reference the last note's delay, not just the last delay which may have occurred
+            t += getAdjustedValue(param);
         }
     }
     if(!ended_naturally){
         SEQ64::say("Converting sequence ran off end! a==" + ROM::hex(a) + ", length==" + ROM::hex((uint32)data.size()));
     }
+    //Ensure messages are in order
+    for(channel=0; channel<16; channel++){
+        mtracks.set(channel, ensureSimulMsgsInOrder(*mtracks[channel]), true);
+    }
+    //Resolve progoptions
+    SEQ64::say("Resolving progoptions...");
+    for(channel=0; channel<16; channel++){
+        int tp = 0;
+        int drummode = 0, drum1 = -1, drum2 = -1, drum3 = -1, split1 = -1, split2 = -1;
+        for(int m=0; m<mtracks[channel]->getNumEvents(); ++m){
+            MidiMessage* msgp = &(mtracks[channel]->getEventPointer(m)->message);
+            if(msgp->isController() && msgp->getControllerNumber() == progoptionsnullcc){
+                SEQ64::say("--Chn " + String(channel) + ": progoptions reset");
+                tp = 0;
+                drummode = 0;
+                mtracks[channel]->deleteEvent(m, false);
+                --m;
+            }else if(msgp->isController() && msgp->getControllerNumber() == progoptionscc){
+                ValueTree po = progoptions.getChild(msgp->getControllerValue());
+                mtracks[channel]->deleteEvent(m, false);
+                --m;
+                if(!po.isValid()){
+                    SEQ64::say("progoptions consistency error!");
+                    continue;
+                }
+                if(po.getType().toString() == "instrument"){
+                    SEQ64::say("--Chn " + String(channel) + ": new inst progoptions tp=" + String(tp));
+                    tp = po.getProperty("tp", 0);
+                }else if(po.getType().toString() == "drum"){
+                    drum1 = po.getProperty("drum1", -1);
+                    drum2 = po.getProperty("drum2", -1);
+                    drum3 = po.getProperty("drum3", -1);
+                    split1 = po.getProperty("split1", -1);
+                    split2 = po.getProperty("split2", -1);
+                    if(midiopts.getProperty("instdrum", "ch10").toString() == "multi"){
+                        SEQ64::say("--Chn " + String(channel) + ": new progoptions multi drum mode");
+                        drummode = 2;
+                    }else{
+                        SEQ64::say("--Chn " + String(channel) + ": new progoptions ch10 drum mode");
+                        drummode = 1;
+                    }
+                }else{
+                    SEQ64::say("progoptions type error!");
+                }
+            }else if(msgp->isNoteOnOrOff()){
+                if(drummode == 0){
+                    if(tp != 0){
+                        msgp->setNoteNumber(msgp->getNoteNumber() + tp);
+                    }
+                }else{
+                    int n = msgp->getNoteNumber();
+                    if(n < split1){
+                        msgp->setNoteNumber(drum1);
+                    }else if(n > split2){
+                        msgp->setNoteNumber(drum3);
+                    }else{
+                        msgp->setNoteNumber(drum2);
+                    }
+                    if(drummode == 1){
+                        //Move to Ch. 10 (0x9)
+                        msgp->setChannel(10);
+                        mtracks[0x9]->addEvent(*msgp);
+                        mtracks[channel]->deleteEvent(m, false);
+                        --m;
+                    }
+                }
+            }
+        }
+    }
     SEQ64::say("Finishing MIDI...");
+    //Ensure messages are in order (again)
+    for(channel=0; channel<16; channel++){
+        mtracks.set(channel, ensureSimulMsgsInOrder(*mtracks[channel]), true);
+    }
+    //Combine into MIDI file
     ret->addTrack(mastertrack);
     for(channel=0; channel<16; channel++){
-        ScopedPointer<MidiMessageSequence> newtrack = ensureSimulMsgsInOrder(*mtracks[channel]);
-        ret->addTrack(*newtrack);
+        ret->addTrack(*mtracks[channel]);
     }
     SEQ64::say("====== DONE ======");
     return ret;
@@ -1800,11 +1978,11 @@ MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
     MidiMessageSequence* out = new MidiMessageSequence();
     MidiMessage* msg;
     //In any group of commands happening at the same time, the events should be
-    //in this order: Note Offs, other messages (CCs, etc.), Note Ons
+    //in this order: Note Offs, other messages (CCs, etc.), program changes, Note Ons
     while(in.getNumEvents() > 0){
         double ts = in.getEventPointer(0)->message.getTimeStamp();
         bool addme;
-        for(int phase=0; phase<=2; ++phase){
+        for(int phase=0; phase<=3; ++phase){
             for(int i=0; i<in.getNumEvents(); ++i){
                 msg = &(in.getEventPointer(i)->message);
                 if(msg->getTimeStamp() > ts) break;
@@ -1814,8 +1992,9 @@ MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
                 }
                 switch(phase){
                     case 0: addme = msg->isNoteOff(); break;
-                    case 1: addme = !msg->isNoteOnOrOff(); break;
-                    case 2: addme = true; break;
+                    case 1: addme = (!msg->isNoteOnOrOff() && !msg->isProgramChange()); break;
+                    case 2: addme = msg->isProgramChange(); break;
+                    case 3: addme = true; break;
                     default: SEQ64::say("Bad phase in sorting!"); return out;
                 }
                 if(addme){
@@ -2167,9 +2346,6 @@ void SeqFile::fromMidiFile(MidiFile& mfile){
             msg = mastertrack->getEventPointer(m)->message;
             timestamp = msg.getTimeStamp();
         }
-        /*
-        (!done && (     timestamp  >= sectiontimes[sectimeidx] 
-        */
         //Insert channel pointers for each section
         //sectimeidx is the *upcoming* section boundary, not the current section time is in
         for(; sectimeidx < num_tsections; sectimeidx++){ //Don't execute this for the boundary at the end of the piece

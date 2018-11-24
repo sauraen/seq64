@@ -506,7 +506,7 @@ AudioseqPane::AudioseqPane (SEQ64& seq64_)
 
     //[/UserPreSize]
 
-    setSize (1000, 632);
+    setSize (1078, 713);
 
 
     //[Constructor] You can add your own custom stuff here..
@@ -1489,7 +1489,7 @@ BEGIN_JUCER_METADATA
                  parentClasses="public Component, public TextEditor::Listener, public TextListModel::Listener"
                  constructorParams="SEQ64&amp; seq64_" variableInitialisers="seq64(seq64_)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
-                 fixedSize="0" initialWidth="1000" initialHeight="632">
+                 fixedSize="1" initialWidth="1078" initialHeight="713">
   <METHODS>
     <METHOD name="focusGained (FocusChangeType cause)"/>
     <METHOD name="visibilityChanged()"/>

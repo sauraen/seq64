@@ -471,6 +471,39 @@ MidiPane::MidiPane (SEQ64& seq64_)
     txtMstrVol->setPopupMenuEnabled (true);
     txtMstrVol->setText (TRANS("58"));
 
+    addAndMakeVisible (groupComponent2 = new GroupComponent ("new group",
+                                                             TRANS("Export Format")));
+
+    addAndMakeVisible (optExportOrig = new ToggleButton ("new toggle button"));
+    optExportOrig->setButtonText (TRANS("Original (for edit + re-import)"));
+    optExportOrig->setRadioGroupId (2);
+    optExportOrig->addListener (this);
+
+    addAndMakeVisible (optExportGM = new ToggleButton ("new toggle button"));
+    optExportGM->setButtonText (TRANS("General MIDI (for playback)"));
+    optExportGM->setRadioGroupId (2);
+    optExportGM->addListener (this);
+    optExportGM->setToggleState (true, dontSendNotification);
+
+    addAndMakeVisible (label = new Label ("new label",
+                                          TRANS("Instrument to drums:")));
+    label->setFont (Font (15.00f, Font::plain));
+    label->setJustificationType (Justification::centredLeft);
+    label->setEditable (false, false, false);
+    label->setColour (TextEditor::textColourId, Colours::black);
+    label->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+
+    addAndMakeVisible (optInstDrumCh10 = new ToggleButton ("new toggle button"));
+    optInstDrumCh10->setButtonText (TRANS("Force Ch. 10 (more compatible, less accurate)"));
+    optInstDrumCh10->setRadioGroupId (3);
+    optInstDrumCh10->addListener (this);
+    optInstDrumCh10->setToggleState (true, dontSendNotification);
+
+    addAndMakeVisible (optInstDrumMulti = new ToggleButton ("new toggle button"));
+    optInstDrumMulti->setButtonText (TRANS("Many Drum Chns Hack (less compatible)"));
+    optInstDrumMulti->setRadioGroupId (3);
+    optInstDrumMulti->addListener (this);
+
 
     //[UserPreSize]
 
@@ -506,7 +539,7 @@ MidiPane::MidiPane (SEQ64& seq64_)
 
     //[/UserPreSize]
 
-    setSize (1000, 632);
+    setSize (1078, 713);
 
 
     //[Constructor] You can add your own custom stuff here..
@@ -577,6 +610,12 @@ MidiPane::~MidiPane()
     label12 = nullptr;
     optMstrVol = nullptr;
     txtMstrVol = nullptr;
+    groupComponent2 = nullptr;
+    optExportOrig = nullptr;
+    optExportGM = nullptr;
+    label = nullptr;
+    optInstDrumCh10 = nullptr;
+    optInstDrumMulti = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -591,6 +630,9 @@ void MidiPane::paint (Graphics& g)
 
     g.fillAll (Colours::white);
 
+    g.setColour (Colour (0xff474747));
+    g.strokePath (internalPath1, PathStrokeType (2.000f));
+
     //[UserPaint] Add your own custom painting code here..
     //[/UserPaint]
 }
@@ -602,7 +644,7 @@ void MidiPane::resized()
 
     groupComponent8->setBounds (360, 8, 352, 432);
     groupComponent3->setBounds (368, 240, 336, 192);
-    groupComponent7->setBounds (0, 160, 352, 48);
+    groupComponent7->setBounds (0, 160, 352, 192);
     groupComponent->setBounds (0, 56, 352, 96);
     btnMIDIExport->setBounds (0, 24, 176, 24);
     btnMIDIImport->setBounds (176, 24, 176, 24);
@@ -657,6 +699,17 @@ void MidiPane::resized()
     label12->setBounds (528, 352, 72, 24);
     optMstrVol->setBounds (368, 96, 272, 24);
     txtMstrVol->setBounds (640, 96, 40, 24);
+    groupComponent2->setBounds (8, 200, 336, 144);
+    optExportOrig->setBounds (16, 216, 320, 24);
+    optExportGM->setBounds (16, 240, 320, 24);
+    label->setBounds (32, 264, 304, 24);
+    optInstDrumCh10->setBounds (40, 288, 296, 24);
+    optInstDrumMulti->setBounds (40, 312, 296, 24);
+    internalPath1.clear();
+    internalPath1.startNewSubPath (32.0f, 264.0f);
+    internalPath1.lineTo (32.0f, 336.0f);
+    internalPath1.closeSubPath();
+
     //[UserResized] Add your own custom resize handling here..
     //[/UserResized]
 }
@@ -689,7 +742,7 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
         FileOutputStream fos(dest);
         //Do it!
         ScopedPointer<MidiFile> midi;
-        midi = seq64.seq->toMIDIFile();
+        midi = seq64.seq->toMIDIFile(seq64.rom);
         midi->writeTo(fos);
         SEQ64::say("Written!");
         //[/UserButtonCode_btnMIDIExport]
@@ -701,23 +754,23 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
             if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
                     "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
         }
-        File dest = File::getSpecialLocation(File::userHomeDirectory);
+        File dest = SEQ64::readFolderProperty("midiimportfolder");
         FileChooser box("Select a MIDI to load...", dest, "*.mid;*.midi;*.rmi", SEQ64::useNativeFileChooser());
-        if(box.browseForFileToOpen()){
-            dest = box.getResult();
-            if(!dest.existsAsFile()){
-                SEQ64::say("File " + dest.getFullPathName() + " does not exist!");
-                return;
-            }
-            ScopedPointer<MidiFile> midi;
-            midi = new MidiFile();
-            FileInputStream fis(dest);
-            midi->readFrom(fis);
-            seq64.seq = new SeqFile(seq64.romdesc);
-            seq64.seq->name = dest.getFileNameWithoutExtension();
-            seq64.seq->fromMidiFile(*midi);
-            seq64.maincomponent->onSeqLoaded();
+        if(!box.browseForFileToOpen()) return;
+        dest = box.getResult();
+        if(!dest.existsAsFile()){
+            SEQ64::say("File " + dest.getFullPathName() + " does not exist!");
+            return;
         }
+        SEQ64::writeProperty("midiimportfolder", dest.getParentDirectory().getFullPathName());
+        ScopedPointer<MidiFile> midi;
+        midi = new MidiFile();
+        FileInputStream fis(dest);
+        midi->readFrom(fis);
+        seq64.seq = new SeqFile(seq64.romdesc);
+        seq64.seq->name = dest.getFileNameWithoutExtension();
+        seq64.seq->fromMidiFile(*midi);
+        seq64.maincomponent->onSeqLoaded();
         //[/UserButtonCode_btnMIDIImport]
     }
     else if (buttonThatWasClicked == optSeqFormat)
@@ -791,6 +844,38 @@ void MidiPane::buttonClicked (Button* buttonThatWasClicked)
         //[UserButtonCode_optMstrVol] -- add your button handler code here..
         midioptsnode.setProperty("addmstrvol", optMstrVol->getToggleState(), nullptr);
         //[/UserButtonCode_optMstrVol]
+    }
+    else if (buttonThatWasClicked == optExportOrig)
+    {
+        //[UserButtonCode_optExportOrig] -- add your button handler code here..
+        if(optExportOrig->getToggleState()){
+            midioptsnode.setProperty("exportformat", "original", nullptr);
+            optInstDrumCh10->setEnabled(false);
+            optInstDrumMulti->setEnabled(false);
+        }
+        //[/UserButtonCode_optExportOrig]
+    }
+    else if (buttonThatWasClicked == optExportGM)
+    {
+        //[UserButtonCode_optExportGM] -- add your button handler code here..
+        if(optExportGM->getToggleState()){
+            midioptsnode.setProperty("exportformat", "generalmidi", nullptr);
+            optInstDrumCh10->setEnabled(true);
+            optInstDrumMulti->setEnabled(true);
+        }
+        //[/UserButtonCode_optExportGM]
+    }
+    else if (buttonThatWasClicked == optInstDrumCh10)
+    {
+        //[UserButtonCode_optInstDrumCh10] -- add your button handler code here..
+        if(optInstDrumCh10->getToggleState()) midioptsnode.setProperty("instdrum", "ch10", nullptr);
+        //[/UserButtonCode_optInstDrumCh10]
+    }
+    else if (buttonThatWasClicked == optInstDrumMulti)
+    {
+        //[UserButtonCode_optInstDrumMulti] -- add your button handler code here..
+        if(optInstDrumMulti->getToggleState()) midioptsnode.setProperty("instdrum", "multi", nullptr);
+        //[/UserButtonCode_optInstDrumMulti]
     }
 
     //[UserbuttonClicked_Post]
@@ -926,6 +1011,14 @@ void MidiPane::refreshMIDIControls(){
         optPtrShortest->setToggleState(true, dontSendNotification);
     }
     */
+    bool b = (midioptsnode.getProperty("exportformat", "generalmidi").toString() == "original");
+    optExportOrig->setToggleState(b, dontSendNotification);
+    optExportGM->setToggleState(!b, dontSendNotification);
+    optInstDrumCh10->setEnabled(!b);
+    optInstDrumMulti->setEnabled(!b);
+    b = (midioptsnode.getProperty("instdrum", "ch10").toString() == "ch10");
+    optInstDrumCh10->setToggleState(b, dontSendNotification);
+    optInstDrumMulti->setToggleState(!b, dontSendNotification);
 }
 
 
@@ -945,14 +1038,17 @@ BEGIN_JUCER_METADATA
                  parentClasses="public Component, public TextEditor::Listener"
                  constructorParams="SEQ64&amp; seq64_" variableInitialisers="seq64(seq64_)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
-                 fixedSize="0" initialWidth="1000" initialHeight="632">
-  <BACKGROUND backgroundColour="ffffffff"/>
+                 fixedSize="1" initialWidth="1078" initialHeight="713">
+  <BACKGROUND backgroundColour="ffffffff">
+    <PATH pos="0 0 100 100" fill="solid: 0" hasStroke="1" stroke="2, mitered, butt"
+          strokeColour="solid: ff474747" nonZeroWinding="1">s 32 264 l 32 336 x</PATH>
+  </BACKGROUND>
   <GROUPCOMPONENT name="new group" id="d6fd042ed5665f41" memberName="groupComponent8"
                   virtualName="" explicitFocusOrder="0" pos="360 8 352 432" title="Import Settings"/>
   <GROUPCOMPONENT name="new group" id="86dc1328c123b476" memberName="groupComponent3"
                   virtualName="" explicitFocusOrder="0" pos="368 240 336 192" title="Optimization"/>
   <GROUPCOMPONENT name="new group" id="425cb4d36ac8f912" memberName="groupComponent7"
-                  virtualName="" explicitFocusOrder="0" pos="0 160 352 48" title="Export Settings"/>
+                  virtualName="" explicitFocusOrder="0" pos="0 160 352 192" title="Export Settings"/>
   <GROUPCOMPONENT name="new group" id="41c7820ff71b634e" memberName="groupComponent"
                   virtualName="" explicitFocusOrder="0" pos="0 56 352 96" title="Global"/>
   <TEXTBUTTON name="new button" id="3fc9249f7191079e" memberName="btnMIDIExport"
@@ -1169,6 +1265,25 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="640 96 40 24" initialText="58"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
+  <GROUPCOMPONENT name="new group" id="5df674d8db14913d" memberName="groupComponent2"
+                  virtualName="" explicitFocusOrder="0" pos="8 200 336 144" title="Export Format"/>
+  <TOGGLEBUTTON name="new toggle button" id="bda773c823cc5c97" memberName="optExportOrig"
+                virtualName="" explicitFocusOrder="0" pos="16 216 320 24" buttonText="Original (for edit + re-import)"
+                connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
+  <TOGGLEBUTTON name="new toggle button" id="472c8df3c73c370e" memberName="optExportGM"
+                virtualName="" explicitFocusOrder="0" pos="16 240 320 24" buttonText="General MIDI (for playback)"
+                connectedEdges="0" needsCallback="1" radioGroupId="2" state="1"/>
+  <LABEL name="new label" id="a5db09094d06d038" memberName="label" virtualName=""
+         explicitFocusOrder="0" pos="32 264 304 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Instrument to drums:" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15" bold="0" italic="0" justification="33"/>
+  <TOGGLEBUTTON name="new toggle button" id="f417d14c6e503f9a" memberName="optInstDrumCh10"
+                virtualName="" explicitFocusOrder="0" pos="40 288 296 24" buttonText="Force Ch. 10 (more compatible, less accurate)"
+                connectedEdges="0" needsCallback="1" radioGroupId="3" state="1"/>
+  <TOGGLEBUTTON name="new toggle button" id="2c5743413725081d" memberName="optInstDrumMulti"
+                virtualName="" explicitFocusOrder="0" pos="40 312 296 24" buttonText="Many Drum Chns Hack (less compatible)"
+                connectedEdges="0" needsCallback="1" radioGroupId="3" state="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

@@ -26,7 +26,6 @@
 #define SEQFILE_H_INCLUDED
 
 #include "JuceHeader.h"
-#include "seq64.h"
 
 class ROM;
 class BankFile;
@@ -112,7 +111,7 @@ class SeqFile{
     void deleteCommand(int section, int cmdidx);
     
     MidiMessageSequence* ensureSimulMsgsInOrder(MidiMessageSequence &in);
-    MidiFile* toMIDIFile();
+    MidiFile* toMIDIFile(ROM& rom);
     void deleteSection(int sectodelete);
     void fromMidiFile(MidiFile& mfile);
     bool isCloseEnough(ValueTree command1, ValueTree command2, bool allowCCMerge);
@@ -132,7 +131,7 @@ class SeqFile{
     ValueTree cmdlist;
     ValueTree midiopts;
     
-    ScopedPointer<BankFile> bank;
+    int bank_num;
     
     OwnedArray<SeqData> sections;
     

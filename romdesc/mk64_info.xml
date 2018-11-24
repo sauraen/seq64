@@ -300,11 +300,11 @@
   </cmdlist>
   <filelist/>
   <knownfilelist>
-    <knownfile type="Audioseq Index" from_ft="0" address="12345184" length="0"/>
-    <knownfile type="Audioseq" from_ft="0" address="12345184" length="0"/>
-    <knownfile type="Audiobank Index" from_ft="0" address="9855584" length="0"/>
-    <knownfile type="Audiobank" from_ft="0" address="9855584" length="0"/>
-    <knownfile type="Instrument Set Index" from_ft="0" address="12488928" length="0"/>
+    <knownfile type="Audiobank Index" from_ft="0" address="9855584" length="176"/>
+    <knownfile type="Audiobank" from_ft="0" address="9855584" length="79936"/>
+    <knownfile type="Audioseq Index" from_ft="0" address="12345184" length="256"/>
+    <knownfile type="Audioseq" from_ft="0" address="12345184" length="143744"/>
+    <knownfile type="Sequence Banks Map" from_ft="0" address="12488928" length="128"/>
   </knownfilelist>
   <audioseqidx>
     <indexentry index="28" name="Staff Credits"/>
@@ -486,7 +486,7 @@
     <struct name="ABHeader">
       <field name="NUM_INST" datatype="uint32" ispointer="0" isarray="0" meaning="NUM_INST"/>
       <field name="NUM_DRUM" datatype="uint32" ispointer="0" isarray="0" meaning="NUM_DRUM"/>
-      <field name="SSIindex" datatype="uint32" ispointer="0" isarray="0" meaning="Sample Set Index number"/>
+      <field name="tablenum" datatype="uint32" ispointer="0" isarray="0" meaning="Sample Table number"/>
       <field name="unk_compile_year1" datatype="uint8" ispointer="0" isarray="0"
              meaning="None" defaultval="25"/>
       <field name="unk_compile_year2" datatype="uint8" ispointer="0" isarray="0"
@@ -503,17 +503,18 @@
              ptrto="ABInstrument" arraylenvar="NUM_INST"/>
     </struct>
     <struct name="ABDrumList">
-      <field name="drumlist" datatype="uint32" ispointer="1" isarray="1" meaning="None"
+      <field name="drumlist" datatype="uint32" ispointer="1" isarray="1" meaning="List of Ptrs to Drums"
              ptrto="ABDrum" arraylenvar="NUM_DRUM"/>
     </struct>
     <struct name="ABSFXList"/>
     <struct name="ABInstrument">
       <field name="unknown1" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
       <field name="splitpoint1" datatype="uint8" ispointer="0" isarray="0"
-             meaning="None"/>
+             meaning="Split Point 1"/>
       <field name="splitpoint2" datatype="uint8" ispointer="0" isarray="0"
+             meaning="Split Point 2"/>
+      <field name="releaserate" datatype="uint8" ispointer="0" isarray="0"
              meaning="None"/>
-      <field name="releaserate" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
       <field name="envelope" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Envelope"
              ptrto="ABEnvelope"/>
       <field name="splits" datatype="ABSound" ispointer="0" isarray="1" meaning="List of 3 Sounds for Splits"
@@ -557,7 +558,7 @@
       <field name="unknown1" datatype="uint32" ispointer="0" isarray="0" meaning="None"
              defaultval="0"/>
       <field name="sampleaddr" datatype="uint32" ispointer="0" isarray="0"
-             meaning="Sample Address (in Sample Set)" ptrto="ATSample"/>
+             meaning="Sample Address (in Sample Table)" ptrto="ATSample"/>
       <field name="loop" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMLoop"
              ptrto="ALADPCMLoop"/>
       <field name="book" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMBook"
@@ -593,4 +594,5 @@
              meaning="None" arraylenfixed="16"/>
     </struct>
   </abfstructs>
+  <audiotableidx/>
 </RomDesc>

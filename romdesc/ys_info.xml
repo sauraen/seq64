@@ -301,12 +301,12 @@
   </cmdlist>
   <filelist/>
   <knownfilelist>
-    <knownfile type="Audioseq Index" from_ft="0" address="742496" length="0"/>
-    <knownfile type="Audioseq" from_ft="0" address="5191984" length="0"/>
-    <knownfile type="Audiobank Index" from_ft="0" address="741216" length="0"/>
-    <knownfile type="Instrument Set Index" from_ft="0" address="742224" length="0"/>
-    <knownfile type="Sample Set Index" from_ft="0" address="743552" length="0"/>
-    <knownfile type="Audiobank" from_ft="0" address="743600" length="0"/>
+    <knownfile type="Audiobank Index" from_ft="0" address="741216" length="1008"/>
+    <knownfile type="Audiobank" from_ft="0" address="743600" length="180768"/>
+    <knownfile type="Audioseq Index" from_ft="0" address="742496" length="1056"/>
+    <knownfile type="Audioseq" from_ft="0" address="5191984" length="210320"/>
+    <knownfile type="Audiotable Index" from_ft="0" address="743552" length="-743552"/>
+    <knownfile type="Sequence Banks Map" from_ft="0" address="742224" length="272"/>
   </knownfilelist>
   <audioseqidx>
     <indexentry index="24" name="World 7 - Ending (Unused)"/>
@@ -374,6 +374,137 @@
             writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="1"
             useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
             q_pan_amp="2"/>
-  <audiobankidx/>
-  <samplesetidx/>
+  <audiobankidx>
+    <indexentry index="0" name="[unnamed]"/>
+    <indexentry index="61" name="[unnamed]"/>
+    <indexentry index="56" name="[unnamed]"/>
+    <indexentry index="60" name="[unnamed]"/>
+  </audiobankidx>
+  <audiotableidx/>
+  <abfstructs align="16">
+    <struct name="ABIndex">
+      <field name="NUM_BANK" datatype="uint16" ispointer="0" isarray="0" meaning="NUM_BANK"/>
+      <field name="zeros" datatype="uint16" ispointer="0" isarray="1" meaning="None"
+             arraylenfixed="7" defaultval="0"/>
+      <field name="unnamed" datatype="ABIndexEntry" ispointer="0" isarray="1"
+             meaning="List of Banks" arraylenvar="NUM_BANK"/>
+    </struct>
+    <struct name="ABIndexEntry">
+      <field name="addr" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Bank (in Audiobank)"
+             ptrto="ABHeader"/>
+      <field name="len" datatype="uint32" ispointer="0" isarray="0" meaning="Bank Length"/>
+      <field name="unknownA" datatype="uint8" ispointer="0" isarray="0" meaning="None"
+             defaultval="2"/>
+      <field name="unknownB" datatype="uint8" ispointer="0" isarray="0" meaning="None"
+             defaultval="2"/>
+      <field name="tablenum" datatype="uint8" ispointer="0" isarray="0" meaning="Sample Table number"/>
+      <field name="unknownD" datatype="uint8" ispointer="0" isarray="0" meaning="None"
+             defaultval="255"/>
+      <field name="NUM_INST" datatype="uint8" ispointer="0" isarray="0" meaning="NUM_INST"/>
+      <field name="NUM_DRUM" datatype="uint8" ispointer="0" isarray="0" meaning="NUM_DRUM"/>
+      <field name="unknownG" datatype="uint8" ispointer="0" isarray="0" meaning="None"
+             defaultval="0"/>
+      <field name="NUM_SFX" datatype="uint8" ispointer="0" isarray="0" meaning="NUM_SFX"/>
+    </struct>
+    <struct name="ABHeader"/>
+    <struct name="ABBank">
+      <field name="drumptr" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Drum List"
+             ptrto="ABDrumList"/>
+      <field name="sfxptr" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr SFX List"
+             ptrto="ABSFXList"/>
+      <field name="instlist" datatype="uint32" ispointer="1" isarray="1" meaning="List of Ptrs to Insts"
+             ptrto="ABInstrument" arraylenvar="NUM_INST"/>
+    </struct>
+    <struct name="ABDrumList">
+      <field name="drumlist" datatype="uint32" ispointer="1" isarray="1" meaning="List of Ptrs to Drums"
+             ptrto="ABDrum" arraylenvar="NUM_DRUM"/>
+    </struct>
+    <struct name="ABSFXList">
+      <field name="sfxlist" datatype="ABSound" ispointer="0" isarray="1" meaning="List of Sounds"
+             arraylenvar="NUM_SFX"/>
+    </struct>
+    <struct name="ABInstrument">
+      <field name="unknown1" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
+      <field name="splitpoint1" datatype="uint8" ispointer="0" isarray="0"
+             meaning="Split Point 1"/>
+      <field name="splitpoint2" datatype="uint8" ispointer="0" isarray="0"
+             meaning="Split Point 2"/>
+      <field name="releaserate" datatype="uint8" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="envelope" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Envelope"
+             ptrto="ABEnvelope"/>
+      <field name="splits" datatype="ABSound" ispointer="0" isarray="1" meaning="List of 3 Sounds for Splits"
+             arraylenfixed="3"/>
+    </struct>
+    <struct name="ABDrum">
+      <field name="unknown1" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
+      <field name="unknown2" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
+      <field name="unknown3" datatype="uint8" ispointer="0" isarray="0" meaning="None"
+             defaultval="0"/>
+      <field name="unknown4" datatype="uint8" ispointer="0" isarray="0" meaning="None"
+             defaultval="0"/>
+      <field name="drumsound" datatype="ABSound" ispointer="0" isarray="0"
+             meaning="Drum Sound"/>
+      <field name="envelope" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Envelope"
+             ptrto="ABEnvelope"/>
+    </struct>
+    <struct name="ABSound">
+      <field name="sample" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Sample"
+             ptrto="ABSample"/>
+      <field name="tuning" datatype="float32" ispointer="0" isarray="0" meaning="None"/>
+    </struct>
+    <struct name="ABEnvelope">
+      <field name="attackRate" datatype="int16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="attackLevel" datatype="uint16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="decay1Rate" datatype="int16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="decay1Level" datatype="uint16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="decay2Rate" datatype="int16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="decay2Level" datatype="uint16" ispointer="0" isarray="0"
+             meaning="None"/>
+      <field name="AllFs" datatype="int16" ispointer="0" isarray="0" meaning="None"/>
+      <field name="AllZeros" datatype="uint16" ispointer="0" isarray="0" meaning="None"/>
+    </struct>
+    <struct name="ABSample">
+      <field name="unknown1" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
+      <field name="unknown2" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
+      <field name="samplesize" datatype="uint16" ispointer="0" isarray="0"
+             meaning="Sample Length"/>
+      <field name="sampleaddr" datatype="uint32" ispointer="0" isarray="0"
+             meaning="Sample Address (in Sample Table)" ptrto="ATSample"/>
+      <field name="loop" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMLoop"
+             ptrto="ALADPCMLoop"/>
+      <field name="book" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMBook"
+             ptrto="ALADPCMBook"/>
+    </struct>
+    <struct name="ALADPCMBook" NUM_PRED="-1">
+      <field name="order" datatype="int32" ispointer="0" isarray="0" meaning="None"/>
+      <field name="npredictors" datatype="int32" ispointer="0" isarray="0"
+             meaning="NUM_PRED"/>
+      <field name="book" datatype="ALADPCMPredictor" ispointer="0" isarray="1"
+             meaning="Array of Predictors" arraylenvar="NUM_PRED"/>
+    </struct>
+    <struct name="ALADPCMPredictor">
+      <field name="data" datatype="int16" ispointer="0" isarray="1" meaning="None"
+             arraylenfixed="16"/>
+    </struct>
+    <struct name="ALADPCMLoop" HAS_TAIL="-1">
+      <field name="start" datatype="uint32" ispointer="0" isarray="0" meaning="Loop Start"/>
+      <field name="end" datatype="uint32" ispointer="0" isarray="0" meaning="Loop End"/>
+      <field name="count" datatype="uint32" ispointer="0" isarray="0" meaning="Loop Count"
+             defaultval="-1"/>
+      <field name="adpcm_state" datatype="uint32" ispointer="0" isarray="0"
+             meaning="None" defaultval="0"/>
+      <field name="tail" datatype="ALADPCMTail" ispointer="0" isarray="1"
+             meaning="Tail Data (if Loop Start != 0)" arraylenvar="HAS_TAIL"/>
+    </struct>
+    <struct name="ALADPCMTail">
+      <field name="some_adpcm_data" datatype="int16" ispointer="0" isarray="1"
+             meaning="None" arraylenfixed="16"/>
+    </struct>
+  </abfstructs>
 </RomDesc>

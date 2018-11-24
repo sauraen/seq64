@@ -5,11 +5,6 @@
   <cmdlist>
     <command cmd="255" name="End of Data" action="End of Data" validinseq="1"
              validinchn="1" validintrk="1"/>
-    <command cmd="0" name="Chn Timestamp" action="Timestamp" cmdend="111"
-             validinchn="1">
-      <parameter datasrc="offset" datalen="0" name="Time" meaning="Delay" add="0"
-                 multiply="1"/>
-    </command>
     <command cmd="120" name="Relative Trk Ptr" action="Ptr Track Data" cmdend="123"
              validinchn="1">
       <parameter datasrc="offset" datalen="0" name="Layer" meaning="Note Layer"
@@ -23,6 +18,11 @@
                  add="0" multiply="1"/>
       <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"
                  add="0" multiply="1"/>
+    </command>
+    <command cmd="96" name="Unknown (Volume 2nd byte?)" action="No Action"
+             cmdend="111" validinchn="1">
+      <parameter datasrc="offset" datalen="0" name="Value" meaning="None" add="0"
+                 multiply="1"/>
     </command>
     <command cmd="193" name="Instrument" action="Chn Instrument" validinchn="1">
       <parameter datasrc="fixed" datalen="1" name="Instrument" meaning="Value"
@@ -301,48 +301,48 @@
   </cmdlist>
   <filelist/>
   <knownfilelist>
-    <knownfile type="Audioseq Index" from_ft="0" address="8063072" length="0"/>
-    <knownfile type="Audioseq" from_ft="0" address="8063072" length="0"/>
-    <knownfile type="Audiobank Index" from_ft="0" address="5748512" length="0"/>
-    <knownfile type="Audiobank" from_ft="0" address="5748512" length="0"/>
-    <knownfile type="Instrument Set Index" from_ft="0" address="8177184" length="0"/>
+    <knownfile type="Audiobank Index" from_ft="0" address="4240112" length="336"/>
+    <knownfile type="Audiobank" from_ft="0" address="4240112" length="120576"/>
+    <knownfile type="Audioseq Index" from_ft="0" address="8054384" length="272"/>
+    <knownfile type="Audioseq" from_ft="0" address="8054384" length="90816"/>
+    <knownfile type="Audiotable Index" from_ft="0" address="4360688" length="336"/>
+    <knownfile type="Audiotable" from_ft="0" address="4360688" length="3693696"/>
+    <knownfile type="Sequence Banks Map" from_ft="0" address="8145200" length="160"/>
   </knownfilelist>
   <audioseqidx>
-    <indexentry index="1" name="Star Fanfare"/>
-    <indexentry index="2" name="Game Over, Title Theme"/>
-    <indexentry index="3" name="Bob-omb Battlefield (Main Theme)"/>
-    <indexentry index="4" name="Inside the Castle"/>
-    <indexentry index="5" name="Water Theme (all parts)"/>
-    <indexentry index="6" name="Lava/Sand Levels"/>
-    <indexentry index="0" name="Master Sequence"/>
-    <indexentry index="7" name="Bowser's Theme"/>
-    <indexentry index="8" name="Snow Levels"/>
-    <indexentry index="9" name="Slider Theme"/>
-    <indexentry index="10" name="Big Boo's Haunt"/>
-    <indexentry index="11" name="Piranha Plant's Lullaby"/>
-    <indexentry index="12" name="Hazy Maze Cave"/>
-    <indexentry index="13" name="Course Start"/>
-    <indexentry index="14" name="Powerful Mario (Caps)"/>
-    <indexentry index="15" name="Metal Cap"/>
-    <indexentry index="16" name="Bowser's Message"/>
-    <indexentry index="17" name="Bowser's Road of Devestation"/>
-    <indexentry index="18" name="High Score Fanfare"/>
-    <indexentry index="19" name="Merry-Go-Round"/>
-    <indexentry index="20" name="Koopa-the-Quick"/>
-    <indexentry index="21" name="Star Appears"/>
-    <indexentry index="22" name="Level Boss Theme"/>
-    <indexentry index="23" name="Collect Key Fanfare"/>
-    <indexentry index="24" name="Endless Stairs"/>
-    <indexentry index="25" name="Ultimate Bowser"/>
-    <indexentry index="27" name="Puzzle Solved"/>
-    <indexentry index="28" name="Toad's Theme"/>
-    <indexentry index="29" name="Peach's Letter"/>
-    <indexentry index="30" name="Opening Cutscene"/>
-    <indexentry index="31" name="Ultimate Bowser Clear"/>
-    <indexentry index="32" name="Ending Cutscene"/>
-    <indexentry index="26" name="Staff Credits"/>
-    <indexentry index="33" name="File Select Screen"/>
-    <indexentry index="34" name="Latiku's Theme"/>
+    <indexentry index="0" name="Unknown"/>
+    <indexentry index="1" name="Unknown"/>
+    <indexentry index="2" name="Unknown"/>
+    <indexentry index="3" name="Title Theme"/>
+    <indexentry index="4" name="Watercraft Select"/>
+    <indexentry index="5" name="Map Demo"/>
+    <indexentry index="6" name="Dolphin Park"/>
+    <indexentry index="7" name="Sunny/Sandy Beach"/>
+    <indexentry index="8" name="Sunset Bay"/>
+    <indexentry index="9" name="Marine Fortress"/>
+    <indexentry index="10" name="Drake/Milky Lake"/>
+    <indexentry index="11" name="Port Blue/Pirates"/>
+    <indexentry index="12" name="Twilight City"/>
+    <indexentry index="13" name="Southern Island"/>
+    <indexentry index="14" name="Glacier Coast"/>
+    <indexentry index="15" name="1st Goal"/>
+    <indexentry index="16" name="2nd Goal"/>
+    <indexentry index="17" name="3rd Goal"/>
+    <indexentry index="18" name="4th Goal"/>
+    <indexentry index="19" name="Retire"/>
+    <indexentry index="20" name="Time Attack Score"/>
+    <indexentry index="21" name="VS Mode Score"/>
+    <indexentry index="22" name="Score"/>
+    <indexentry index="23" name="Game Over"/>
+    <indexentry index="24" name="Options"/>
+    <indexentry index="25" name="Tournament Opening"/>
+    <indexentry index="26" name="Final Lap"/>
+    <indexentry index="27" name="Dame Goal"/>
+    <indexentry index="28" name="Ending"/>
+    <indexentry index="29" name="1st Prize"/>
+    <indexentry index="30" name="2nd Prize"/>
+    <indexentry index="31" name="3rd Prize"/>
+    <indexentry index="32" name="4th Prize"/>
   </audioseqidx>
   <midiopts ppqnmultiplier="10" mtrvol="SysEx MstrVol" chnvol="CC7 (Volume)"
             chnpriority="CC25 (None)" bendrange="6" q_other_time="1" q_vol_time="3"
@@ -351,46 +351,72 @@
             writeseqformat="1" writeseqtype="1" writechanbits="1" writeloopall="1"
             writeheader="1" writechanreset="1" ptrtype="shortest" usecalls="1"
             useloops="1" q_pitch_time="1" q_pitch_amp="1" q_pan_time="3"
-            q_pan_amp="2"/>
+            q_pan_amp="2" addmstrvol="1" addmstrvolval="88" exportformat="generalmidi"
+            instdrum="ch10"/>
   <audiobankidx>
-    <indexentry index="34" name="Main Theme"/>
-    <indexentry index="17" name="Title Theme"/>
-    <indexentry index="14" name="Peach's Strings"/>
-    <indexentry index="19" name="The Eel's DX7"/>
-    <indexentry index="15" name="Middle Eastern"/>
-    <indexentry index="18" name="Bowser's Band"/>
-    <indexentry index="11" name="Snowman's Accordion"/>
-    <indexentry index="13" name="Bluegrass Ensemble"/>
-    <indexentry index="16" name="Big Boo's Haunt Ambience"/>
-    <indexentry index="33" name="Merry-Go-Round"/>
-    <indexentry index="20" name="Piranha's Music Box"/>
-    <indexentry index="21" name="Mazy Haze Cave"/>
-    <indexentry index="37" name="Credits Band"/>
-    <indexentry index="36" name="File Select Theme"/>
-    <indexentry index="35" name="Ending Band"/>
-    <indexentry index="27" name="Opening Band"/>
-    <indexentry index="31" name="Brass Ensemble"/>
-    <indexentry index="29" name="Bowser's Organ of Doom"/>
-    <indexentry index="25" name="Koopa's Road"/>
-    <indexentry index="22" name="Course Start"/>
-    <indexentry index="23" name="Wings Theme"/>
-    <indexentry index="24" name="Metal Theme"/>
-    <indexentry index="26" name="Koopa-the-Quick"/>
-    <indexentry index="28" name="Endless Stairs"/>
-    <indexentry index="32" name="Toad's Theme"/>
-    <indexentry index="30" name="Peach's Letter"/>
-    <indexentry index="0" name="Master 0"/>
-    <indexentry index="1" name="Master 1"/>
-    <indexentry index="2" name="Master 2"/>
-    <indexentry index="3" name="Master 3"/>
-    <indexentry index="4" name="Master 4"/>
-    <indexentry index="5" name="Master 5"/>
-    <indexentry index="6" name="Master 6"/>
-    <indexentry index="7" name="Master 7"/>
-    <indexentry index="8" name="Master 8"/>
-    <indexentry index="9" name="Master 9"/>
-    <indexentry index="10" name="Master 10"/>
-    <indexentry index="12" name="Unused- Acoustic Guitar"/>
+    <indexentry index="7" name="Master 7?"/>
+    <indexentry index="4" name="Master 4?"/>
+    <indexentry index="11" name="(Title Theme)">
+      <instruments>
+        <item index="0" name="Bass/Snare Drum" map="drum" program="0" transpose="0"
+              drumsplit1="35" drumsplit2="38" drumsplit3="0"/>
+        <item index="1" name="Hi-Hat Longer" map="drum" program="0" transpose="0"
+              drumsplit1="0" drumsplit2="46" drumsplit3="0"/>
+        <item index="2" name="Finger Bass" map="program" program="33" transpose="0"/>
+        <item index="3" name="Crystal" map="program" program="98" transpose="12"/>
+        <item index="4" name="Distortion Guitar" map="program" program="30"/>
+        <item index="5" name="Saw Lead" map="program" program="81"/>
+        <item index="6" name="Distortion Guitar (2)" map="program" program="30"/>
+        <item index="7" name="Hi-Hat" map="drum" program="0" transpose="0"
+              drumsplit1="44" drumsplit2="42" drumsplit3="42"/>
+        <item index="8" name="Strings" map="program" program="48" transpose="0"/>
+        <item index="9" name="Strings (2)" map="program" program="48" transpose="0"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="20" name="(Watercraft Select)"/>
+    <indexentry index="10" name="(Map Demo)">
+      <instruments>
+        <item index="0" name="Piano" map="program" program="0" transpose="0"/>
+        <item index="1" name="DX7 E Piano" map="program" program="5" transpose="0"/>
+        <item index="2" name="Pad" map="program" program="94"/>
+        <item index="3" name="Pad (2)" map="program" program="94"/>
+      </instruments>
+    </indexentry>
+    <indexentry index="21" name="(Dolphin Park)"/>
+    <indexentry index="22" name="(Sunny/Sandy Beach)"/>
+    <indexentry index="23" name="(Sunset Bay)"/>
+    <indexentry index="24" name="(Marine Fortress)"/>
+    <indexentry index="25" name="(Drake/Milky Lake)"/>
+    <indexentry index="26" name="(Port Blue/Pirates)"/>
+    <indexentry index="27" name="(Twilight City)"/>
+    <indexentry index="28" name="(Southern Island)"/>
+    <indexentry index="29" name="(Glacier Coast)"/>
+    <indexentry index="12" name="(1st Goal)"/>
+    <indexentry index="13" name="(2nd Goal)"/>
+    <indexentry index="14" name="(3rd Goal)"/>
+    <indexentry index="15" name="(4th Goal)"/>
+    <indexentry index="16" name="(Retire)"/>
+    <indexentry index="17" name="(Time Attack Score)"/>
+    <indexentry index="18" name="(Vs Mode Score)"/>
+    <indexentry index="33" name="(Score)"/>
+    <indexentry index="19" name="(Game Over)"/>
+    <indexentry index="30" name="(Options)"/>
+    <indexentry index="31" name="(Tournament Opening)"/>
+    <indexentry index="32" name="(Final Lap)"/>
+    <indexentry index="34" name="(Dame Goal)"/>
+    <indexentry index="35" name="(Ending)"/>
+    <indexentry index="36" name="(1st Prize)"/>
+    <indexentry index="37" name="(2nd Prize)"/>
+    <indexentry index="38" name="(3rd Prize)"/>
+    <indexentry index="39" name="(4th Prize)"/>
+    <indexentry index="0" name="Master 0?"/>
+    <indexentry index="1" name="Master 1?"/>
+    <indexentry index="2" name="Master 2?"/>
+    <indexentry index="3" name="Master 3?"/>
+    <indexentry index="5" name="Master 5?"/>
+    <indexentry index="6" name="Master 6?"/>
+    <indexentry index="8" name="Master 8?"/>
+    <indexentry index="9" name="Master 9?"/>
   </audiobankidx>
   <abfstructs align="16">
     <struct name="ABIndex">
@@ -408,7 +434,7 @@
     <struct name="ABHeader">
       <field name="NUM_INST" datatype="uint32" ispointer="0" isarray="0" meaning="NUM_INST"/>
       <field name="NUM_DRUM" datatype="uint32" ispointer="0" isarray="0" meaning="NUM_DRUM"/>
-      <field name="SSIindex" datatype="uint32" ispointer="0" isarray="0" meaning="Sample Set Index number"/>
+      <field name="tablenum" datatype="uint32" ispointer="0" isarray="0" meaning="Sample Table number"/>
       <field name="unk_compile_year1" datatype="uint8" ispointer="0" isarray="0"
              meaning="None" defaultval="25"/>
       <field name="unk_compile_year2" datatype="uint8" ispointer="0" isarray="0"
@@ -425,17 +451,18 @@
              ptrto="ABInstrument" arraylenvar="NUM_INST"/>
     </struct>
     <struct name="ABDrumList">
-      <field name="drumlist" datatype="uint32" ispointer="1" isarray="1" meaning="None"
+      <field name="drumlist" datatype="uint32" ispointer="1" isarray="1" meaning="List of Ptrs to Drums"
              ptrto="ABDrum" arraylenvar="NUM_DRUM"/>
     </struct>
     <struct name="ABSFXList"/>
     <struct name="ABInstrument">
       <field name="unknown1" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
       <field name="splitpoint1" datatype="uint8" ispointer="0" isarray="0"
-             meaning="None"/>
+             meaning="Split Point 1"/>
       <field name="splitpoint2" datatype="uint8" ispointer="0" isarray="0"
+             meaning="Split Point 2"/>
+      <field name="releaserate" datatype="uint8" ispointer="0" isarray="0"
              meaning="None"/>
-      <field name="releaserate" datatype="uint8" ispointer="0" isarray="0" meaning="None"/>
       <field name="envelope" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr Envelope"
              ptrto="ABEnvelope"/>
       <field name="splits" datatype="ABSound" ispointer="0" isarray="1" meaning="List of 3 Sounds for Splits"
@@ -479,7 +506,7 @@
       <field name="unknown1" datatype="uint32" ispointer="0" isarray="0" meaning="None"
              defaultval="0"/>
       <field name="sampleaddr" datatype="uint32" ispointer="0" isarray="0"
-             meaning="Sample Address (in Sample Set)" ptrto="ATSample"/>
+             meaning="Sample Address (in Sample Table)" ptrto="ATSample"/>
       <field name="loop" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMLoop"
              ptrto="ALADPCMLoop"/>
       <field name="book" datatype="uint32" ispointer="1" isarray="0" meaning="Ptr ALADPCMBook"
@@ -515,4 +542,5 @@
              meaning="None" arraylenfixed="16"/>
     </struct>
   </abfstructs>
+  <audiotableidx/>
 </RomDesc>

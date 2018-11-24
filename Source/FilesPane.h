@@ -48,6 +48,8 @@
 #include "JuceHeader.h"
 #include "seq64.h"
 #include "TextListModel.h"
+#include "IndexedFile.h"
+#include "SequenceBanksMap.h"
 //[/Headers]
 
 
@@ -76,39 +78,20 @@ public:
     void rowSelected(TextListModel* parent, int row);
     void textEditorTextChanged(TextEditor& editorThatWasChanged);
 
-    void fillFileTable();
-    void fillKFiles();
-    void fillKFileParams();
-    void fillIndex();
-    void refreshIndexEntry();
-    void fillIEntryParams();
-    void fillInstSetBoxes();
+    void reloadFiles();
+	void romDescLoaded();
+	String getFileDescription(uint32 a, int i);
+	void fillFileTable();
+	bool isKnownFileType(String filetype);
+	void fillKFiles();
+	void fillKFileParams();
+	void fillIndex();
+	void fillIEntryParams();
+	void ieNameChanged(bool updateNameBox);
+	void fillSeqBankList();
+	void fixSBMForBankChange(bool add, int idx);
+    void fixSampleTables(bool add, int idx);
 
-    void romDescLoaded();
-
-    bool isKnownFileType(String filetype);
-    ValueTree getFileForIndex(String indexname);
-    String getFileDescription(uint32 a, int i);
-    String getIEntryDescription(int i);
-
-    void setIEntryName(String newname, bool updateNameBox);
-    void changedIndexAddress(String indextype, int newaddress);
-    void loadIndexParams(String indexname);
-    void validateIndexParams(int iaddr, int32 &addr_out, int16 &count_out);
-    int16 getIndexCount(uint32 iaddr);
-    void readIEAddrLen(uint32 iaddr, int entry, uint32 &address, uint32 &length);
-    void writeIEAddr(uint32 iaddr, int entry, uint32 address);
-    void writeIELen(uint32 iaddr, int entry, uint32 length);
-    bool getIndexAndFileParams(int32 &ilen, int32 &faddr, String &indexname, String &filename);
-    int getFileRealEnd(int knownend);
-    uint32 getRealEntrySize(int i);
-    int getLastObjectEnd(int32 faddr);
-    void moveRestOfFile(uint32 faddr, int32 flen, int32 dstart, int32 delta);
-    bool updateFileLength(String filename, int32 faddr, int32 flen);
-
-
-    bool compact();
-    int makeroom(int mrlen);
     //[/UserMethods]
 
     void paint (Graphics& g);
@@ -122,26 +105,17 @@ private:
     //[UserVariables]   -- You can add your own custom variables in this section.
     SEQ64& seq64;
 
-    uint32 ftaddr;
     ValueTree filelistnode;
     ValueTree kfilelistnode;
-    ValueTree idxlistnode;
+
+	IndexedFile audiobank;
+	IndexedFile audioseq;
+	IndexedFile audiotable;
+	SequenceBanksMap sbm;
+
+	IndexedFile *selifile;
     ValueTree selkfile;
-    uint32 dataaddr;
     int ientryidx;
-    ValueTree selindex;
-    ValueTree seldata;
-
-    uint32 indexaddr;
-    int32 abi_addr;
-    int32 asi_addr;
-    int32 ssi_addr;
-    int32 isi_addr;
-
-    int16 indexcount;
-    int16 abi_count;
-    int16 asi_count;
-    int16 ssi_count;
 
     ScopedPointer<TextListModel> lsmFileTable;
     ScopedPointer<ListBox> lstFileTable;
@@ -152,15 +126,16 @@ private:
     ScopedPointer<TextListModel> lsmIndex;
     ScopedPointer<ListBox> lstIndex;
 
-    ScopedPointer<TextListModel> lsmInstSets;
-    ScopedPointer<ListBox> lstInstSets;
-
-    int seq_lastbank;
+    ScopedPointer<TextListModel> lsmSeqBanks;
+    ScopedPointer<ListBox> lstSeqBanks;
 
     //[/UserVariables]
 
     //==============================================================================
-    ScopedPointer<GroupComponent> grpUtilities;
+    ScopedPointer<GroupComponent> grpSeqBanks;
+    ScopedPointer<GroupComponent> grpIndex;
+    ScopedPointer<GroupComponent> grpUtilitiesEntry;
+    ScopedPointer<GroupComponent> groupComponent;
     ScopedPointer<GroupComponent> grpUtilitiesContents;
     ScopedPointer<GroupComponent> grpMFT;
     ScopedPointer<Label> label;
@@ -179,19 +154,16 @@ private:
     ScopedPointer<TextEditor> txtKFileAddr;
     ScopedPointer<Label> label7;
     ScopedPointer<TextEditor> txtKFileLength;
-    ScopedPointer<GroupComponent> grpIndex;
     ScopedPointer<Label> lblIndexProps;
     ScopedPointer<Label> label11;
     ScopedPointer<TextEditor> txtIEntryName;
     ScopedPointer<Label> lblIEntryData;
-    ScopedPointer<TextButton> btnLoadEntry;
-    ScopedPointer<TextButton> btnSaveEntry;
-    ScopedPointer<GroupComponent> groupComponent4;
+    ScopedPointer<TextButton> btnLoadObject;
+    ScopedPointer<TextButton> btnSaveObject;
     ScopedPointer<ToggleButton> optIndexType1;
     ScopedPointer<ToggleButton> optIndexType2;
-    ScopedPointer<Label> lblInstSet;
     ScopedPointer<Label> label10;
-    ScopedPointer<ComboBox> cbxInstSet1;
+    ScopedPointer<ComboBox> cbxSeqBank;
     ScopedPointer<TextButton> btnEditIE;
     ScopedPointer<TextButton> btnCompact;
     ScopedPointer<TextButton> btnMakeRoom;
@@ -201,10 +173,13 @@ private:
     ScopedPointer<TextButton> btnContentsDestroy;
     ScopedPointer<Label> label9;
     ScopedPointer<TextEditor> txtEntryPointer;
-    ScopedPointer<GroupComponent> grpUtilitiesEntry;
     ScopedPointer<TextButton> btnEntryInsert;
     ScopedPointer<TextButton> btnEntryAdd;
     ScopedPointer<TextButton> btnEntryDelete;
+    ScopedPointer<Label> label12;
+    ScopedPointer<TextButton> btnSBMAdd;
+    ScopedPointer<TextButton> btnSBMDelete;
+    ScopedPointer<Label> label13;
 
 
     //==============================================================================

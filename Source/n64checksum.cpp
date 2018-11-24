@@ -149,7 +149,8 @@ static const uint32 cic_seed_list[NUM_CICS] = {
 };
 
 int getNumCICs() { return NUM_CICS; }
-int getCICName(int i) { if(i < 0 || i >= NUM_CICS) return 0; return cic_name_list[i]; }
+//1-based index; a CIC index of 0 means "no CIC/CRC, do not calculate/update checksum"
+int getCICName(int i) { if(i <= 0 || i > NUM_CICS) return 0; return cic_name_list[i-1]; }
 
 
 #define ROL(i, b) (((i) << (b)) | ((i) >> (32 - (b))))
@@ -165,16 +166,19 @@ int getCICName(int i) { if(i < 0 || i >= NUM_CICS) return 0; return cic_name_lis
 
 
 int CalculateCRC(ROM& rom, int cic_index, uint32* crc1, uint32* crc2) {
-    if(cic_index >= NUM_CICS){
+    if(cic_index < 0 || cic_index > NUM_CICS){
         SEQ64::say("Unknown CIC index " + String(cic_index) + "! See n64checksum.cpp for usage!");
         return -1;
+    }
+    if(cic_index == 0){
+        return 0; //No CIC/CRC
     }
     if(rom.getSize() < CHECKSUM_START+CHECKSUM_LENGTH){
         SEQ64::say("ROM smaller than area to calculate checksum on!");
         return -1;
     }
-	uint32 seed = cic_seed_list[cic_index];
-	int bootcode = cic_name_list[cic_index];
+	uint32 seed = cic_seed_list[cic_index-1];
+	int bootcode = cic_name_list[cic_index-1];
 	//SEQ64::say("Checking CRCs of ROM with CIC " + String(bootcode) + "...");
 
 	uint32 t1, t2, t3, t4, t5, t6;
@@ -224,6 +228,10 @@ int UpdateCRC(ROM& rom){
         SEQ64::say("ROM has unknown CIC, cannot update CRC!");
         return -1;
     }
+    if(rom.cic_index == 0){
+        SEQ64::say("ROM specified to have no CIC/CRC, not updating");
+        return 0;
+    }
     uint32 crc1, crc2;
     int ret = CalculateCRC(rom, rom.cic_index, &crc1, &crc2);
     if(ret < 0) return ret;
@@ -250,12 +258,12 @@ int FindCIC(ROM& rom){
     uint32 old_crc1 = rom.readWord(N64_CRC1);
 	uint32 old_crc2 = rom.readWord(N64_CRC2);
 	int ret;
-    for(int cic_index = 0; cic_index < NUM_CICS; cic_index++){
+    for(int cic_index = 1; cic_index <= NUM_CICS; cic_index++){
         ret = CalculateCRC(rom, cic_index, &crc1, &crc2);
         if(ret < 0) return ret;
         if(crc1 == old_crc1 && crc2 == old_crc2){
 	        SEQ64::say("CRCs match: 0x" + ROM::hex(crc1) + ", 0x" + ROM::hex(crc2) 
-	                + "-- ROM has CIC " + String(cic_name_list[cic_index]));
+	                + "-- ROM has CIC " + String(cic_name_list[cic_index-1]));
 	        rom.cic_index = cic_index;
 	        return cic_index;
 	    }

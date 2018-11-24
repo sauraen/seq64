@@ -143,7 +143,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
     if(menuItemID == 1){
         //ROM::Load...
         FileChooser box("Select a ROM to load...", SEQ64::readFolderProperty("romfolder"), 
-                "*.z64;*.v64;*.n64", SEQ64::useNativeFileChooser());
+                "*.z64;*.n64;*.v64;*.r64;*.ndd;*.ndr", SEQ64::useNativeFileChooser());
         if(box.browseForFileToOpen()){
             seq64.romfile = box.getResult();
             if(!seq64.romfile.existsAsFile()){
@@ -159,7 +159,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
                 seq64.romfile = File::nonexistent;
                 return;
             }
-            while(FindCIC(seq64.rom) < 0){
+            while(seq64.rom.cic_index < 0){
                 int res = NativeMessageBox::showYesNoCancelBox(AlertWindow::WarningIcon,
                         "CRC Check", "ROM CRCs did not match according to any known CIC!\n"
                         "\n"
@@ -169,6 +169,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
                         "Click Cancel: No change, but CIC will not be updated when ROM is saved", nullptr, nullptr);
                 if(res == 1){
                     queryByteOrdering();
+                    FindCIC(seq64.rom);
                 }else if(res == 2){
                     DialogWindow::LaunchOptions cicbox;
                     cicbox.dialogTitle = "Set CIC";
@@ -178,6 +179,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
                     cicbox.launchAsync();
                     break;
                 }else{
+                    seq64.rom.cic_index = 0;
                     break;
                 }
             }
@@ -217,7 +219,7 @@ void MainComponent::menuItemSelected(int menuItemID, int topLevelMenuIndex){
                 default: extension = ".rom"; break;
             }
         }
-        FileChooser box("Save As", newsavelocation, "*" + extension, SEQ64::useNativeFileChooser());
+        FileChooser box("Save As", newsavelocation, "*", SEQ64::useNativeFileChooser());
         if(box.browseForFileToSave(true)){
             newsavelocation = box.getResult();
             if(!newsavelocation.hasWriteAccess()){
@@ -424,6 +426,7 @@ void MainComponent::resized()
 
 void MainComponent::onROMLoaded(){
     window.setName(seq64.rom.getROMName() + "- seq64");
+    onRomDescLoaded();
 }
 void MainComponent::onRomDescLoaded(){
     filespane->romDescLoaded();
@@ -482,7 +485,7 @@ const String MainComponent::helpText3 = String(
     "see the license for details.\n"
     "\n"
     "seq64 - sequenced music editor for first-party N64 games\n"
-    "Copyright (C) 2017 Sauraen; components under other copyrights\n"
+    "Copyright (C) 2018 Sauraen; components under other copyrights\n"
     "(but all GPL licensed), see their source files for details.\n"
     "\n"
     "This program is free software: you can redistribute it and/or modify\n"

@@ -50,8 +50,8 @@
 //[/MiscUserDefs]
 
 //==============================================================================
-IEEditor::IEEditor (SEQ64& seq64_, FilesPane& fp_, uint32 ieaddr_)
-    : seq64(seq64_), fp(fp_), ieaddr(ieaddr_)
+IEEditor::IEEditor (IndexedFile& ifile_, FilesPane& fp_, int entry_)
+    : ifile(ifile_), fp(fp_), entry(entry_)
 {
     //[Constructor_pre] You can add your own custom stuff here..
     //[/Constructor_pre]
@@ -184,18 +184,30 @@ IEEditor::IEEditor (SEQ64& seq64_, FilesPane& fp_, uint32 ieaddr_)
 
 
     //[Constructor] You can add your own custom stuff here..
-    txtAddress->setText(ROM::hex(seq64.rom.readWord(ieaddr)));
-    txtLength->setText(ROM::hex(seq64.rom.readWord(ieaddr+4)));
-    indextype = (int)seq64.romdesc.getProperty("indextype", 1);
-    if(indextype == 2){
-        txtF1->setText(ROM::hex(seq64.rom.readByte(ieaddr+0x8)));
-        txtF2->setText(ROM::hex(seq64.rom.readByte(ieaddr+0x9)));
-        txtF3->setText(ROM::hex(seq64.rom.readByte(ieaddr+0xA)));
-        txtF4->setText(ROM::hex(seq64.rom.readByte(ieaddr+0xB)));
-        txtF5->setText(ROM::hex(seq64.rom.readByte(ieaddr+0xC)));
-        txtF6->setText(ROM::hex(seq64.rom.readByte(ieaddr+0xD)));
-        txtF7->setText(ROM::hex(seq64.rom.readByte(ieaddr+0xE)));
-        txtF8->setText(ROM::hex(seq64.rom.readByte(ieaddr+0xF)));
+    uint32 addr, len;
+    ifile.getObjectAddrLen(entry, addr, len);
+    txtAddress->setText(ROM::hex(addr));
+    txtLength->setText(ROM::hex(len));
+    if(ifile.hasMetadata()){
+        uint32 md1, md2;
+        ifile.getObjectMetadata(entry, md1, md2);
+        txtF1->setText(ROM::hex((uint8)((md1 >> 24) & 0xFF)));
+        txtF2->setText(ROM::hex((uint8)((md1 >> 16) & 0xFF)));
+        txtF3->setText(ROM::hex((uint8)((md1 >>  8) & 0xFF)));
+        txtF4->setText(ROM::hex((uint8)((md1      ) & 0xFF)));
+        txtF5->setText(ROM::hex((uint8)((md2 >> 24) & 0xFF)));
+        txtF6->setText(ROM::hex((uint8)((md2 >> 16) & 0xFF)));
+        txtF7->setText(ROM::hex((uint8)((md2 >>  8) & 0xFF)));
+        txtF8->setText(ROM::hex((uint8)((md2      ) & 0xFF)));
+    }else{
+        txtF1->setEnabled(false);
+        txtF2->setEnabled(false);
+        txtF3->setEnabled(false);
+        txtF4->setEnabled(false);
+        txtF5->setEnabled(false);
+        txtF6->setEnabled(false);
+        txtF7->setEnabled(false);
+        txtF8->setEnabled(false);
     }
     //[/Constructor]
 }
@@ -268,19 +280,29 @@ void IEEditor::buttonClicked (Button* buttonThatWasClicked)
     if (buttonThatWasClicked == btnOverride)
     {
         //[UserButtonCode_btnOverride] -- add your button handler code here..
-        seq64.rom.writeWord(ieaddr, txtAddress->getText().getHexValue32());
-        seq64.rom.writeWord(ieaddr+4, txtLength->getText().getHexValue32());
-        if(indextype == 2){
-            seq64.rom.writeByte(ieaddr+0x8, (uint8)txtF1->getText().getHexValue32());
-            seq64.rom.writeByte(ieaddr+0x9, (uint8)txtF2->getText().getHexValue32());
-            seq64.rom.writeByte(ieaddr+0xA, (uint8)txtF3->getText().getHexValue32());
-            seq64.rom.writeByte(ieaddr+0xB, (uint8)txtF4->getText().getHexValue32());
-            seq64.rom.writeByte(ieaddr+0xC, (uint8)txtF5->getText().getHexValue32());
-            seq64.rom.writeByte(ieaddr+0xD, (uint8)txtF6->getText().getHexValue32());
-            seq64.rom.writeByte(ieaddr+0xE, (uint8)txtF7->getText().getHexValue32());
-            seq64.rom.writeByte(ieaddr+0xF, (uint8)txtF8->getText().getHexValue32());
+        ifile.setObjectAddr(entry, txtAddress->getText().getHexValue32());
+        ifile.setObjectLen(entry, txtLength->getText().getHexValue32());
+        if(ifile.hasMetadata()){
+            uint32 md1, md2;
+            md1 = 0;
+            md1 |= (uint8)txtF1->getText().getHexValue32();
+            md1 <<= 8;
+            md1 |= (uint8)txtF2->getText().getHexValue32();
+            md1 <<= 8;
+            md1 |= (uint8)txtF3->getText().getHexValue32();
+            md1 <<= 8;
+            md1 |= (uint8)txtF4->getText().getHexValue32();
+            md2 = 0;
+            md2 |= (uint8)txtF5->getText().getHexValue32();
+            md2 <<= 8;
+            md2 |= (uint8)txtF6->getText().getHexValue32();
+            md2 <<= 8;
+            md2 |= (uint8)txtF7->getText().getHexValue32();
+            md2 <<= 8;
+            md2 |= (uint8)txtF8->getText().getHexValue32();
+            ifile.setObjectMetadata(entry, md1, md2);
         }
-        fp.refreshIndexEntry();
+        fp.fillIEntryParams();
         //[/UserButtonCode_btnOverride]
     }
 
@@ -307,8 +329,8 @@ void IEEditor::buttonClicked (Button* buttonThatWasClicked)
 BEGIN_JUCER_METADATA
 
 <JUCER_COMPONENT documentType="Component" className="IEEditor" componentName=""
-                 parentClasses="public Component" constructorParams="SEQ64&amp; seq64_, FilesPane&amp; fp_, uint32 ieaddr_"
-                 variableInitialisers="seq64(seq64_), fp(fp_), ieaddr(ieaddr_)"
+                 parentClasses="public Component" constructorParams="IndexedFile&amp; ifile_, FilesPane&amp; fp_, int entry_"
+                 variableInitialisers="ifile(ifile_), fp(fp_), entry(entry_)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
                  fixedSize="1" initialWidth="168" initialHeight="176">
   <BACKGROUND backgroundColour="ffffffff"/>

@@ -19,6 +19,8 @@
       <FILE id="ETKRIb" name="FilesPane.h" compile="0" resource="0" file="Source/FilesPane.h"/>
       <FILE id="G7pSb9" name="IEEditor.cpp" compile="1" resource="0" file="Source/IEEditor.cpp"/>
       <FILE id="VzAjOc" name="IEEditor.h" compile="0" resource="0" file="Source/IEEditor.h"/>
+      <FILE id="nTvRsk" name="IndexedFile.cpp" compile="1" resource="0" file="Source/IndexedFile.cpp"/>
+      <FILE id="XfmHk5" name="IndexedFile.h" compile="0" resource="0" file="Source/IndexedFile.h"/>
       <FILE id="wiy2KP" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
       <FILE id="Tp4gdP" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
@@ -32,6 +34,10 @@
       <FILE id="r8Nmn8" name="seq64.h" compile="0" resource="0" file="Source/seq64.h"/>
       <FILE id="GI153n" name="SeqFile.cpp" compile="1" resource="0" file="Source/SeqFile.cpp"/>
       <FILE id="IuqEgu" name="SeqFile.h" compile="0" resource="0" file="Source/SeqFile.h"/>
+      <FILE id="MoELGL" name="SequenceBanksMap.cpp" compile="1" resource="0"
+            file="Source/SequenceBanksMap.cpp"/>
+      <FILE id="w4Pe3K" name="SequenceBanksMap.h" compile="0" resource="0"
+            file="Source/SequenceBanksMap.h"/>
       <FILE id="mUrQ7s" name="TextListModel.cpp" compile="1" resource="0"
             file="Source/TextListModel.cpp"/>
       <FILE id="tOetGe" name="TextListModel.h" compile="0" resource="0" file="Source/TextListModel.h"/>

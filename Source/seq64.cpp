@@ -202,10 +202,9 @@ void SEQ64::initialise (const String& commandLine) {
             quit();
             return;
         }
-        if(FindCIC(rom) < 0){
-            say("ROM CICs did not match, wrong byte ordering or corrupted ROM");
-            quit();
-            return;
+        if(rom.cic_index < 0){
+            say("Warning, ROM CICs did not match, wrong byte ordering or corrupted ROM!");
+            say("Saving the ROM may corrupt it further!");
         }
     }
     if(romdescpath != ""){
@@ -264,7 +263,7 @@ void SEQ64::initialise (const String& commandLine) {
         seq->load(rom, seqnumber);
         FileOutputStream fos(outputfile);
         ScopedPointer<MidiFile> midi;
-        midi = seq->toMIDIFile();
+        midi = seq->toMIDIFile(rom);
         midi->writeTo(fos);
         fos.flush();
         SEQ64::say("Wrote MIDI file to " + outputfile.getFullPathName() + "!");
@@ -296,6 +295,12 @@ bool SEQ64::loadROM(){
         say("Interpreting " + extension + " file as ABCD order");
     }
     say("Successfully loaded 0x" + ROM::hex((uint32)rom.getSize()) + " bytes");
+    if(extension == ".ndd" || extension == ".ndr"){
+        say("Interpreting " + extension + " as N64DD image, no CIC/CRC");
+        rom.cic_index = 0;
+    }else{
+        FindCIC(rom);
+    }
     return true;
 }
 

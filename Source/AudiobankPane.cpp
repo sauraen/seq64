@@ -282,7 +282,7 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     lblStructSemicolon->setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
     addAndMakeVisible (label = new Label ("new label",
-                                          TRANS("Instrument sets:")));
+                                          TRANS("Banks:")));
     label->setFont (Font (15.00f, Font::plain));
     label->setJustificationType (Justification::centredLeft);
     label->setEditable (false, false, false);
@@ -513,7 +513,7 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
     btnLoadXML->addListener (this);
 
     addAndMakeVisible (chkLibFixAddr = new ToggleButton ("new toggle button"));
-    chkLibFixAddr->setButtonText (TRANS("Convert Sample Addr for Sample Set"));
+    chkLibFixAddr->setButtonText (TRANS("Convert Sample Addr for Table"));
     chkLibFixAddr->addListener (this);
     chkLibFixAddr->setToggleState (true, dontSendNotification);
 
@@ -571,7 +571,7 @@ AudiobankPane::AudiobankPane (SEQ64& seq64_)
 
     //[/UserPreSize]
 
-    setSize (600, 400);
+    setSize (1078, 713);
 
 
     //[Constructor] You can add your own custom stuff here..
@@ -1127,7 +1127,7 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
                     "node labels (e.g. instrument names, etc.)--but not including\n"
                     "the actual audio sample data of course. Loading it again\n"
                     "will restore the state, but it will only be compatible with\n"
-                    "ROMs that have the same sample sets (generally, different\n"
+                    "ROMs that have the same sample tables (generally, different\n"
                     "hacks/edits of the same ROM are fine but different released\n"
                     "ROM versions may not be). Of course it is also dependent on\n"
                     "the Audiobank format (as defined in the RomDesc) being the\n"
@@ -1157,7 +1157,7 @@ void AudiobankPane::buttonClicked (Button* buttonThatWasClicked)
                     "including header/metadata and node labels (e.g. instrument\n"
                     "names, etc.)--but not including the actual audio sample data\n"
                     "of course. Loading it will restore the state, but it will only\n"
-                    "be compatible with ROMs that have the same sample sets\n"
+                    "be compatible with ROMs that have the same sample tables\n"
                     "(generally, different hacks/edits of the same ROM are fine but\n"
                     "different released ROM versions may not be). Of course it is\n"
                     "also dependent on the Audiobank format (as defined in the\n"
@@ -1441,12 +1441,12 @@ void AudiobankPane::fillMeaningsBox(){
     if(editstruct == "ABIndexEntry"){
         cbxMeaning->addItem("Ptr Bank (in Audiobank)", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Bank Length", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Sample Set Index number", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Sample Table number", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_INST", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_DRUM", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_SFX", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABHeader"){
-        cbxMeaning->addItem("Sample Set Index number", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Sample Table number", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_INST", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_DRUM", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("NUM_SFX", cbxMeaning->getNumItems()+1);
@@ -1460,6 +1460,8 @@ void AudiobankPane::fillMeaningsBox(){
     }else if(editstruct == "ABSFXList"){
         cbxMeaning->addItem("List of Sounds", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABInstrument"){
+        cbxMeaning->addItem("Split Point 1", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Split Point 2", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Ptr Envelope", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("List of 3 Sounds for Splits", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABDrum"){
@@ -1470,7 +1472,7 @@ void AudiobankPane::fillMeaningsBox(){
     }else if(editstruct == "ABSound"){
         cbxMeaning->addItem("Ptr Sample", cbxMeaning->getNumItems()+1);
     }else if(editstruct == "ABSample"){
-        cbxMeaning->addItem("Sample Address (in Sample Set)", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Sample Address (in Sample Table)", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Sample Length", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Ptr ALADPCMLoop", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Ptr ALADPCMBook", cbxMeaning->getNumItems()+1);
@@ -1777,7 +1779,7 @@ BEGIN_JUCER_METADATA
                  parentClasses="public Component, public TextEditor::Listener, public TextListModel::Listener"
                  constructorParams="SEQ64&amp; seq64_" variableInitialisers="seq64(seq64_)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
-                 fixedSize="0" initialWidth="600" initialHeight="400">
+                 fixedSize="1" initialWidth="1078" initialHeight="713">
   <METHODS>
     <METHOD name="visibilityChanged()"/>
     <METHOD name="broughtToFront()"/>
@@ -1897,9 +1899,9 @@ BEGIN_JUCER_METADATA
          fontsize="15" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="bf0f024772c31c54" memberName="label" virtualName=""
          explicitFocusOrder="0" pos="8 360 240 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Instrument sets:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15" bold="0" italic="0" justification="33"/>
+         edBkgCol="0" labelText="Banks:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15"
+         bold="0" italic="0" justification="33"/>
   <COMBOBOX name="new combo box" id="dc4b63bcb4d73721" memberName="cbxLibList"
             virtualName="" explicitFocusOrder="0" pos="256 360 240 24" editable="0"
             layout="33" items="Instruments&#10;Drums&#10;Sound Effects" textWhenNonSelected=""
@@ -2022,7 +2024,7 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="912 176 104 24" buttonText="Load XML"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <TOGGLEBUTTON name="new toggle button" id="23b75b22565a0123" memberName="chkLibFixAddr"
-                virtualName="" explicitFocusOrder="0" pos="512 480 232 24" buttonText="Convert Sample Addr for Sample Set"
+                virtualName="" explicitFocusOrder="0" pos="512 480 232 24" buttonText="Convert Sample Addr for Table"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
 </JUCER_COMPONENT>
 

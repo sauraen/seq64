@@ -65,7 +65,7 @@ class IEEditor  : public Component,
 {
 public:
     //==============================================================================
-    IEEditor (SEQ64& seq64_, FilesPane& fp_, uint32 ieaddr_);
+    IEEditor (IndexedFile& ifile_, FilesPane& fp_, int entry_);
     ~IEEditor();
 
     //==============================================================================
@@ -80,10 +80,9 @@ public:
 
 private:
     //[UserVariables]   -- You can add your own custom variables in this section.
-    SEQ64& seq64;
+    IndexedFile& ifile;
     FilesPane& fp;
-    uint32 ieaddr;
-    int indextype;
+    int entry;
     //[/UserVariables]
 
     //==============================================================================

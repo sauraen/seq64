@@ -149,6 +149,13 @@ private:
     ScopedPointer<Label> label12;
     ScopedPointer<ToggleButton> optMstrVol;
     ScopedPointer<TextEditor> txtMstrVol;
+    ScopedPointer<GroupComponent> groupComponent2;
+    ScopedPointer<ToggleButton> optExportOrig;
+    ScopedPointer<ToggleButton> optExportGM;
+    ScopedPointer<Label> label;
+    ScopedPointer<ToggleButton> optInstDrumCh10;
+    ScopedPointer<ToggleButton> optInstDrumMulti;
+    Path internalPath1;
 
 
     //==============================================================================

@@ -2,7 +2,7 @@
  * ============================================================================
  *
  * BankFile.cpp
- * Class to hold/import/export a single instrument set (Audiobank format)
+ * Class to hold/import/export a single bank (Audiobank format)
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
  * Copyright (C) 2014-2018 Sauraen
@@ -23,7 +23,8 @@
 */
 
 #include "BankFile.h"
-
+#include "ROM.h"
+#include "seq64.h"
 
 #define ALIGN(a, b) MACRO_WITH_FORCED_SEMICOLON(a += (b-1); a /= b; a *= b;)
 
@@ -65,7 +66,7 @@ void BankFile::reset(){
     d.setProperty("NUM_INST", -1, nullptr);
     d.setProperty("NUM_DRUM", -1, nullptr);
     d.setProperty("NUM_SFX", -1, nullptr);
-    d.setProperty("SSIindex", -1, nullptr);
+    d.setProperty("ATnum", -1, nullptr);
 }
 
 void BankFile::loadRDNamesNode(int banknum){
@@ -363,9 +364,9 @@ bool BankFile::load(ROM& rom, int banknum){
     if(!bankprops.valid) return false;
     d.getChildWithName("abindexentry").addChild(bankprops.abiestru, -1, nullptr);
     //
-    temp = bankprops.abiestru.getChildWithProperty("meaning", "Sample Set Index number");
+    temp = bankprops.abiestru.getChildWithProperty("meaning", "Sample Table number");
     if(temp.isValid()){
-        d.setProperty("SSIindex", temp.getProperty("value", 0), nullptr);
+        d.setProperty("ATnum", temp.getProperty("value", 0), nullptr);
     }
     //
     temp = bankprops.abiestru.getChildWithProperty("meaning", "NUM_INST");
@@ -393,12 +394,13 @@ bool BankFile::load(ROM& rom, int banknum){
     a += strsize;
     baseaddr = a;
     //Read relevant data from header
-    temp = stru.getChildWithProperty("meaning", "Sample Set Index number");
+    temp = stru.getChildWithProperty("meaning", "Sample Table number");
     if(temp.isValid()){
-        d.setProperty("SSIindex", temp.getProperty("value", 0), nullptr);
+        d.setProperty("ATnum", temp.getProperty("value", 0), nullptr);
     }
-    if((int)d.getProperty("SSIindex") < 0){
-        SEQ64::say("Sample Set Index number not defined in either ABIndexEntry or ABHeader (not critical)");
+    if((int)d.getProperty("ATnum") < 0){
+        SEQ64::say("Sample Table number not defined in either ABIndexEntry or ABHeader!");
+        return false;
     }
     temp = stru.getChildWithProperty("meaning", "NUM_INST");
     if(temp.isValid()){
@@ -471,12 +473,6 @@ bool BankFile::load(ROM& rom, int banknum){
     return ret == 1;
 }
 
-/*
-
-    int save(ROM& rom, int banknum);
-    bool saveRaw(File rawfile);
-    int save_internal(ROM& rom, uint32 abieaddr, uint32 abbaseaddr);
-*/
 int BankFile::save(ROM& rom, int banknum){
     //========================================================================
     //Put in all info determined at import
@@ -1642,52 +1638,52 @@ ValueTree BankFile::importNodeRecurse(ROM& rom, BankFile& sourcebank, bool merge
     }
     //Check for sample address to fix
     while(fixsampleaddr && destnode.getProperty("meaning", "None").toString() 
-                == "Sample Address (in Sample Set)"){
+                == "Sample Address (in Sample Table)"){
         uint32 origaddr = (uint32)(int)destnode.getProperty("value", 0);
-        int src_ssiindex = (int)sourcebank.d.getProperty("SSIindex", -1);
-        int dest_ssiindex = (int)d.getProperty("SSIindex", -1);
-        SEQ64::say("Trying to fix sample address: src_ssiindex=" + String(src_ssiindex) 
-                + ", dest_ssiindex=" + String(dest_ssiindex));
-        if(src_ssiindex < 0 || dest_ssiindex < 0){
-            SEQ64::say("--Source or dest bank don't have SSI index!");
+        int src_ATnum = (int)sourcebank.d.getProperty("ATnum", -1);
+        int dest_ATnum = (int)d.getProperty("ATnum", -1);
+        SEQ64::say("Trying to fix sample address: src_ATnum=" + String(src_ATnum) 
+                + ", dest_ATnum=" + String(dest_ATnum));
+        if(src_ATnum < 0 || dest_ATnum < 0){
+            SEQ64::say("--Source or dest bank don't have Sample Table number!");
             break;
         }
-        //Read sample set index
-        ValueTree ssinode = romdesc.getOrCreateChildWithName("knownfilelist", nullptr)
-                .getChildWithProperty("type", "Sample Set Index");
-        uint32 ssiaddr = 0x7FFFFFFF;
-        if(ssinode.isValid()){
-            ssiaddr = (uint32)(int)ssinode.getProperty("address", 0x7FFFFFFF);
+        //Read table number
+        ValueTree atinode = romdesc.getOrCreateChildWithName("knownfilelist", nullptr)
+                .getChildWithProperty("type", "Audiotable Index");
+        uint32 atiaddr = 0x7FFFFFFF;
+        if(atinode.isValid()){
+            atiaddr = (uint32)(int)atinode.getProperty("address", 0x7FFFFFFF);
         }
-        if(ssiaddr >= rom.getSize()){
-            SEQ64::say("--Nonexistent or invalid Sample Set Index in romdesc!");
+        if(atiaddr >= rom.getSize()){
+            SEQ64::say("--Nonexistent or invalid Audiotable Index in romdesc!");
             break;
         }
         uint16 count;
         if((int)romdesc.getProperty("indextype", 1) == 2){
-            count = rom.readHalfWord(ssiaddr);
+            count = rom.readHalfWord(atiaddr);
         }else{
-            count = rom.readHalfWord(ssiaddr+2);
+            count = rom.readHalfWord(atiaddr+2);
         }
         if(count > 1000 || count <= 0){
-            SEQ64::say("--" + String(count) + " entries in SSI, probably wrong!");
+            SEQ64::say("--" + String(count) + " entries in Audiotable Index, probably wrong!");
             break;
         }
-        if(src_ssiindex >= (int)count || dest_ssiindex >= (int)count){
-            SEQ64::say("--Source or dest bank have SSI index larger than SSI count!");
+        if(src_ATnum >= (int)count || dest_ATnum >= (int)count){
+            SEQ64::say("--Source or dest bank have Sample Table number larger than Audiotable Index count!");
             break;
         }
-        uint32 src_ssaddr, dest_ssaddr;
+        uint32 src_tbladdr, dest_tbladdr;
         if((int)romdesc.getProperty("indextype", 1) == 2){
-            src_ssaddr = rom.readWord(ssiaddr + (16*src_ssiindex) + 16);
-            dest_ssaddr = rom.readWord(ssiaddr + (16*dest_ssiindex) + 16);
+            src_tbladdr = rom.readWord(atiaddr + (16*src_ATnum) + 16);
+            dest_tbladdr = rom.readWord(atiaddr + (16*dest_ATnum) + 16);
         }else{
-            src_ssaddr = rom.readWord(ssiaddr + (8*src_ssiindex) + 4);
-            dest_ssaddr = rom.readWord(ssiaddr + (8*dest_ssiindex) + 4);
+            src_tbladdr = rom.readWord(atiaddr + (8*src_ATnum) + 4);
+            dest_tbladdr = rom.readWord(atiaddr + (8*dest_ATnum) + 4);
         }
-        SEQ64::say("--src_ssaddr=0x" + ROM::hex(src_ssaddr) 
-                + ", dest_ssaddr=0x" + ROM::hex(dest_ssaddr));
-        uint32 newaddr = origaddr + src_ssaddr - dest_ssaddr;
+        SEQ64::say("--src_tbladdr=0x" + ROM::hex(src_tbladdr) 
+                + ", dest_tbladdr=0x" + ROM::hex(dest_tbladdr));
+        uint32 newaddr = origaddr + src_tbladdr - dest_tbladdr;
         SEQ64::say("--Moving sample addr from 0x" + ROM::hex(origaddr) + " to 0x" + ROM::hex(newaddr));
         destnode.setProperty("value", (int)newaddr, nullptr);
         break;
