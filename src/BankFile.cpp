@@ -1188,6 +1188,21 @@ String BankFile::getNodeDesc(ValueTree node){
         return node.getProperty("name", "Error!").toString();
     }
     if(type == "field" || type == "element"){
+        if(node.getProperty("datatype", "").toString() == "ABSound"){
+            ValueTree ptr = node.getChild(0).getChildWithProperty("meaning", "Ptr Sample");
+            if(ptr.isValid()){
+                if((int)ptr.getProperty("value", 0) == 0){
+                    return "ABSound //nullptr";
+                }else{
+                    ValueTree s = d.getChildWithName("samples").getChild((int)ptr.getProperty("index", -1));
+                    if(!s.isValid()){
+                        return "ABSound //INVALID PTR";
+                    }else{
+                        return "ABSound //" + s.getProperty("name", "").toString();
+                    }
+                }
+            }
+        }
         return getFieldDesc(node, false);
     }else{
         return type;

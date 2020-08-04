@@ -347,6 +347,9 @@ bool IndexedFile::getObjectRealSize(int o, uint32 &realsize){
 }
 
 void IndexedFile::moveRestOfFile(uint32 dstart, int32 delta){
+    if((delta & 0xF) != 0){
+        SEQ64::say("WARNING: Moving part of file by non-16-bytes delta " + String(delta) + "!");
+    }
     uint32 flen = fdataend - faddr;
     uint8* fileptr = &((uint8*)rom.getData())[faddr];
     memmove(&fileptr[dstart+delta], &fileptr[dstart], flen - dstart);
@@ -379,6 +382,9 @@ bool IndexedFile::compact(){
         if(oaddr+olen+faddr < realend){
             //We've actually grown the object instead--make sure we didn't
             //round up over someone else's data
+            //TODO this might lead to rounding up over someone else's zeros,
+            //but this shouldn't happen as long as files always start at 
+            //multiples of 16
             for(int b=oaddr+olen+faddr; b<realend; ++b){
                 if(rom.readByte(b) != 0){
                     realend = b;
@@ -442,6 +448,7 @@ bool IndexedFile::compact(){
 
 bool IndexedFile::makeRoom(int o, uint32 newtotallen){
     if(iaddr == 0 || o >= icount || o < 0) return false;
+    newtotallen = ((newtotallen + 15) >> 4) << 4; //Round up to 16 bytes
     //Get object params
     uint32 oaddr, olen;
     getObjectAddrLen(o, oaddr, olen);

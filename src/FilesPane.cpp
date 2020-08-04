@@ -586,7 +586,11 @@ FilesPane::FilesPane (SEQ64& seq64_)
     txtKFileLength->addListener(this);
     txtIEntryName->addListener(this);
     txtEntryPointer->addListener(this);
-
+    
+    btnSBMAdd->setEnabled(false);
+    btnSBMDelete->setEnabled(false);
+    cbxSeqBank->setEnabled(false);
+    
     //[/UserPreSize]
 
     setSize (1078, 713);
@@ -1200,6 +1204,7 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnSBMAdd.get())
     {
         //[UserButtonCode_btnSBMAdd] -- add your button handler code here..
+        if(selifile->getIName() != "Audioseq Index") return;
         if(!sbm.canAddBank(ientryidx)){
             NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "seq64",
                 "Can't add new bank to Sequence Banks Index for sequence " + String(ientryidx)
@@ -1218,6 +1223,7 @@ void FilesPane::buttonClicked (Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnSBMDelete.get())
     {
         //[UserButtonCode_btnSBMDelete] -- add your button handler code here..
+        if(selifile->getIName() != "Audioseq Index") return;
         int row = lstSeqBanks->getLastRowSelected();
         if(!sbm.canRemoveBank(ientryidx, row)){
             NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "seq64",
@@ -1270,6 +1276,7 @@ void FilesPane::rowSelected(TextListModel* parent, int row){
         ientryidx = row;
         fillIEntryParams();
     }else if(parent == &*lsmSeqBanks){
+        if(selifile->getIName() != "Audioseq Index") return;
 		cbxSeqBank->setSelectedItemIndex(sbm.getSeqBank(ientryidx, row), dontSendNotification);
     }
 }
@@ -1466,6 +1473,7 @@ void FilesPane::fillIndex(){
 	grpUtilitiesContents->setText("Object (Contents)");
 	grpUtilitiesEntry->setText("Index Entry");
 	lblIndexProps->setText("File selected is not an index", dontSendNotification);
+    fillSeqBankList();
 	//Check params
     if(seq64.rom.getSize() == 0){
         lblIndexProps->setText("No ROM loaded", dontSendNotification);
@@ -1500,7 +1508,6 @@ void FilesPane::fillIndex(){
 	}
     grpIndex->setText(selifile->getIName());
     //Refresh things that may have changed with changes to index
-    fillSeqBankList();
     if(selifile->getIName() == "Audiobank Index"){
         seq64.maincomponent->onGotABI();
     }
@@ -1573,18 +1580,36 @@ void FilesPane::fillIEntryParams(){
         txtEntryPointer->setText("00", dontSendNotification);
     }
     //Select banks
-    if(selifile->getIName() != "Audioseq Index") return;
-	int nbanks = sbm.getSeqNumBanks(ientryidx);
-    int sel_seqbank = lstSeqBanks->getLastRowSelected();
-    if(sel_seqbank < 0 || sel_seqbank >= nbanks) sel_seqbank = nbanks - 1;
-    lsmSeqBanks->clear();
-    lstSeqBanks->updateContent();
-	for(int i=0; i<nbanks; ++i){
-		uint8 b = sbm.getSeqBank(ientryidx, i);
-		lsmSeqBanks->add(ROM::hex(b) + ": " + audiobank.getObjectName(b));
-	}
-    lstSeqBanks->updateContent();
-    lstSeqBanks->selectRow(sel_seqbank);
+    if(selifile->getIName() == "Audioseq Index"){
+    	int nbanks = sbm.getSeqNumBanks(ientryidx);
+        int sel_seqbank = lstSeqBanks->getLastRowSelected();
+        if(sel_seqbank < 0 || sel_seqbank >= nbanks) sel_seqbank = nbanks - 1;
+        lsmSeqBanks->clear();
+        lstSeqBanks->updateContent();
+    	for(int i=0; i<nbanks; ++i){
+    		uint8 b = sbm.getSeqBank(ientryidx, i);
+    		lsmSeqBanks->add(ROM::hex(b) + ": " + audiobank.getObjectName(b));
+    	}
+        lstSeqBanks->updateContent();
+        lstSeqBanks->selectRow(sel_seqbank);
+    }else if(selifile->getIName() == "Audiobank Index"){
+        lsmSeqBanks->clear();
+        lstSeqBanks->updateContent();
+        for(uint8 s=0; s<audioseq.getICount(); ++s){
+            bool flag = false;
+            int nbanks = sbm.getSeqNumBanks(s);
+            for(int b=0; b<nbanks; ++b){
+                if(sbm.getSeqBank(s, b) == ientryidx){
+                    flag = true;
+                    break;
+                }
+            }
+            if(flag){
+                lsmSeqBanks->add(ROM::hex(s) + ": " + audioseq.getObjectName(s));
+            }
+        }
+        lstSeqBanks->updateContent();
+    }
 }
 
 void FilesPane::ieNameChanged(bool updateNameBox){
@@ -1597,16 +1622,24 @@ void FilesPane::ieNameChanged(bool updateNameBox){
 
 void FilesPane::fillSeqBankList(){
     cbxSeqBank->clear();
+    btnSBMAdd->setEnabled(false);
+    btnSBMDelete->setEnabled(false);
+    cbxSeqBank->setEnabled(false);
     if(seq64.rom.getSize() == 0) return;
     if(selifile == nullptr) return;
-    if(selifile->getIName() != "Audioseq Index"){
-        grpSeqBanks->setText("Sequence banks (Audioseq Index only):");
-        return;
+    if(selifile->getIName() == "Audioseq Index"){
+        grpSeqBanks->setText("Sequence banks:");
+    	for(int i=0; i<audiobank.getICount(); ++i){
+    		cbxSeqBank->addItem(ROM::hex((uint8)i) + ": " + audiobank.getObjectName(i), cbxSeqBank->getNumItems()+1);
+    	}
+        btnSBMAdd->setEnabled(true);
+        btnSBMDelete->setEnabled(true);
+        cbxSeqBank->setEnabled(true);
+    }else if(selifile->getIName() == "Audiobank Index"){
+        grpSeqBanks->setText("Sequences that use this bank:");
+    }else{
+        grpSeqBanks->setText("No");
     }
-    grpSeqBanks->setText("Sequence banks:");
-	for(int i=0; i<audiobank.getICount(); ++i){
-		cbxSeqBank->addItem(ROM::hex((uint8)i) + ": " + audiobank.getObjectName(i), cbxSeqBank->getNumItems()+1);
-	}
 }
 
 void FilesPane::fixSBMForBankChange(bool add, int idx){
@@ -1831,4 +1864,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-
