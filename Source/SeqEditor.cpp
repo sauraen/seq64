@@ -1,0 +1,990 @@
+/*
+  ==============================================================================
+
+  This is an automatically generated GUI class created by the Projucer!
+
+  Be careful when adding custom code to these files, as only the code within
+  the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
+  and re-saved.
+
+  Created with Projucer version: 6.0.1
+
+  ------------------------------------------------------------------------------
+
+  The Projucer is part of the JUCE library.
+  Copyright (c) 2020 - Raw Material Software Limited.
+
+  ==============================================================================
+*/
+
+//[Headers] You can add your own extra header files here...
+//[/Headers]
+
+#include "SeqEditor.hpp"
+
+
+//[MiscUserDefs] You can add your own user definitions and misc code here...
+//[/MiscUserDefs]
+
+//==============================================================================
+SeqEditor::SeqEditor ()
+{
+    //[Constructor_pre] You can add your own custom stuff here..
+    //[/Constructor_pre]
+
+    btnImportCom.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnImportCom.get());
+    btnImportCom->setButtonText (TRANS("Import .com/.aseq"));
+    btnImportCom->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportCom->addListener (this);
+
+    btnImportCom->setBounds (8, 704, 152, 32);
+
+    btnExportCom.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnExportCom.get());
+    btnExportCom->setButtonText (TRANS("Export .com/.aseq"));
+    btnExportCom->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportCom->addListener (this);
+
+    btnExportCom->setBounds (8, 736, 152, 32);
+
+    btnImportMus.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnImportMus.get());
+    btnImportMus->setButtonText (TRANS("Import .mus"));
+    btnImportMus->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportMus->addListener (this);
+
+    btnImportMus->setBounds (8, 536, 152, 32);
+
+    btnExportMus.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnExportMus.get());
+    btnExportMus->setButtonText (TRANS("Export .mus"));
+    btnExportMus->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportMus->addListener (this);
+
+    btnExportMus->setBounds (8, 568, 152, 32);
+
+    grpMusDialect.reset (new juce::GroupComponent (juce::String(),
+                                                   TRANS(".mus dialect")));
+    addAndMakeVisible (grpMusDialect.get());
+
+    grpMusDialect->setBounds (8, 609, 320, 47);
+
+    optMusCommunity.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (optMusCommunity.get());
+    optMusCommunity->setButtonText (TRANS("Community"));
+    optMusCommunity->setRadioGroupId (1);
+    optMusCommunity->addListener (this);
+
+    optMusCommunity->setBounds (16, 624, 112, 24);
+
+    optMusCanon.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (optMusCanon.get());
+    optMusCanon->setButtonText (TRANS("Canon"));
+    optMusCanon->setRadioGroupId (1);
+    optMusCanon->addListener (this);
+
+    optMusCanon->setBounds (128, 624, 80, 24);
+
+    optMusCanonOld.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (optMusCanonOld.get());
+    optMusCanonOld->setButtonText (TRANS("Canon (Old)"));
+    optMusCanonOld->setRadioGroupId (1);
+    optMusCanonOld->addListener (this);
+
+    optMusCanonOld->setBounds (208, 624, 112, 24);
+
+    btnImportMIDI.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnImportMIDI.get());
+    btnImportMIDI->setButtonText (TRANS("Import MIDI"));
+    btnImportMIDI->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportMIDI->addListener (this);
+
+    btnImportMIDI->setBounds (8, 320, 152, 32);
+
+    btnExportMIDI.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnExportMIDI.get());
+    btnExportMIDI->setButtonText (TRANS("Export MIDI"));
+    btnExportMIDI->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportMIDI->addListener (this);
+
+    btnExportMIDI->setBounds (8, 352, 152, 32);
+
+    grpImportMIDI.reset (new juce::GroupComponent ("new group",
+                                                   TRANS("MIDI Import")));
+    addAndMakeVisible (grpImportMIDI.get());
+
+    grpImportMIDI->setBounds (8, 120, 320, 192);
+
+    chkLoopSeq.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (chkLoopSeq.get());
+    chkLoopSeq->setButtonText (TRANS("Smart Loop"));
+    chkLoopSeq->addListener (this);
+    chkLoopSeq->setToggleState (true, dontSendNotification);
+
+    chkLoopSeq->setBounds (16, 136, 112, 24);
+
+    grpOptimizer.reset (new juce::GroupComponent ("new group",
+                                                  TRANS("Optimizer")));
+    addAndMakeVisible (grpOptimizer.get());
+
+    grpOptimizer->setBounds (16, 184, 304, 120);
+
+    chkUseCalls.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (chkUseCalls.get());
+    chkUseCalls->setButtonText (TRANS("Calls"));
+    chkUseCalls->addListener (this);
+    chkUseCalls->setToggleState (true, dontSendNotification);
+
+    chkUseCalls->setBounds (24, 200, 80, 24);
+
+    txtMasterVol.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtMasterVol.get());
+    txtMasterVol->setMultiLine (false);
+    txtMasterVol->setReturnKeyStartsNewLine (false);
+    txtMasterVol->setReadOnly (false);
+    txtMasterVol->setScrollbarsShown (false);
+    txtMasterVol->setCaretVisible (true);
+    txtMasterVol->setPopupMenuEnabled (true);
+    txtMasterVol->setText (TRANS("58"));
+
+    txtMasterVol->setBounds (272, 136, 40, 24);
+
+    lblMasterVol.reset (new juce::Label ("new label",
+                                         TRANS("Default Master Vol:")));
+    addAndMakeVisible (lblMasterVol.get());
+    lblMasterVol->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblMasterVol->setJustificationType (juce::Justification::centredLeft);
+    lblMasterVol->setEditable (false, false, false);
+    lblMasterVol->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblMasterVol->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblMasterVol->setBounds (136, 136, 136, 24);
+
+    chkUseLoops.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (chkUseLoops.get());
+    chkUseLoops->setButtonText (TRANS("Loops"));
+    chkUseLoops->addListener (this);
+    chkUseLoops->setToggleState (true, dontSendNotification);
+
+    chkUseLoops->setBounds (24, 224, 80, 24);
+
+    txtMergeVel.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtMergeVel.get());
+    txtMergeVel->setMultiLine (false);
+    txtMergeVel->setReturnKeyStartsNewLine (false);
+    txtMergeVel->setReadOnly (false);
+    txtMergeVel->setScrollbarsShown (false);
+    txtMergeVel->setCaretVisible (true);
+    txtMergeVel->setPopupMenuEnabled (true);
+    txtMergeVel->setText (TRANS("5"));
+
+    txtMergeVel->setBounds (160, 224, 40, 24);
+
+    lblMergeVel.reset (new juce::Label ("new label",
+                                        TRANS("Vels")));
+    addAndMakeVisible (lblMergeVel.get());
+    lblMergeVel->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblMergeVel->setJustificationType (juce::Justification::centredLeft);
+    lblMergeVel->setEditable (false, false, false);
+    lblMergeVel->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblMergeVel->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblMergeVel->setBounds (104, 224, 55, 24);
+
+    txtMergeGates.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtMergeGates.get());
+    txtMergeGates->setMultiLine (false);
+    txtMergeGates->setReturnKeyStartsNewLine (false);
+    txtMergeGates->setReadOnly (false);
+    txtMergeGates->setScrollbarsShown (false);
+    txtMergeGates->setCaretVisible (true);
+    txtMergeGates->setPopupMenuEnabled (true);
+    txtMergeGates->setText (TRANS("3"));
+
+    txtMergeGates->setBounds (160, 248, 40, 24);
+
+    lblMergeGates.reset (new juce::Label ("new label",
+                                          TRANS("Gates")));
+    addAndMakeVisible (lblMergeGates.get());
+    lblMergeGates->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblMergeGates->setJustificationType (juce::Justification::centredLeft);
+    lblMergeGates->setEditable (false, false, false);
+    lblMergeGates->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblMergeGates->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblMergeGates->setBounds (104, 248, 55, 24);
+
+    txtMergeCCs.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtMergeCCs.get());
+    txtMergeCCs->setMultiLine (false);
+    txtMergeCCs->setReturnKeyStartsNewLine (false);
+    txtMergeCCs->setReadOnly (false);
+    txtMergeCCs->setScrollbarsShown (false);
+    txtMergeCCs->setCaretVisible (true);
+    txtMergeCCs->setPopupMenuEnabled (true);
+    txtMergeCCs->setText (TRANS("1"));
+
+    txtMergeCCs->setBounds (160, 272, 40, 24);
+
+    lblMergeCCs.reset (new juce::Label ("new label",
+                                        TRANS("CCs")));
+    addAndMakeVisible (lblMergeCCs.get());
+    lblMergeCCs->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblMergeCCs->setJustificationType (juce::Justification::centredLeft);
+    lblMergeCCs->setEditable (false, false, false);
+    lblMergeCCs->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblMergeCCs->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblMergeCCs->setBounds (104, 272, 55, 24);
+
+    txtQuantVolPan.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtQuantVolPan.get());
+    txtQuantVolPan->setMultiLine (false);
+    txtQuantVolPan->setReturnKeyStartsNewLine (false);
+    txtQuantVolPan->setReadOnly (false);
+    txtQuantVolPan->setScrollbarsShown (false);
+    txtQuantVolPan->setCaretVisible (true);
+    txtQuantVolPan->setPopupMenuEnabled (true);
+    txtQuantVolPan->setText (TRANS("2"));
+
+    txtQuantVolPan->setBounds (272, 224, 40, 24);
+
+    lblQuantVolPan.reset (new juce::Label ("new label",
+                                           TRANS("Vol/Pan")));
+    addAndMakeVisible (lblQuantVolPan.get());
+    lblQuantVolPan->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblQuantVolPan->setJustificationType (juce::Justification::centredLeft);
+    lblQuantVolPan->setEditable (false, false, false);
+    lblQuantVolPan->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblQuantVolPan->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblQuantVolPan->setBounds (208, 224, 64, 24);
+
+    txtQuantPitch.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtQuantPitch.get());
+    txtQuantPitch->setMultiLine (false);
+    txtQuantPitch->setReturnKeyStartsNewLine (false);
+    txtQuantPitch->setReadOnly (false);
+    txtQuantPitch->setScrollbarsShown (false);
+    txtQuantPitch->setCaretVisible (true);
+    txtQuantPitch->setPopupMenuEnabled (true);
+    txtQuantPitch->setText (TRANS("1"));
+
+    txtQuantPitch->setBounds (272, 248, 40, 24);
+
+    lblQuantPitch.reset (new juce::Label ("new label",
+                                          TRANS("Pitch")));
+    addAndMakeVisible (lblQuantPitch.get());
+    lblQuantPitch->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblQuantPitch->setJustificationType (juce::Justification::centredLeft);
+    lblQuantPitch->setEditable (false, false, false);
+    lblQuantPitch->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblQuantPitch->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblQuantPitch->setBounds (208, 248, 64, 24);
+
+    txtQuantOther.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtQuantOther.get());
+    txtQuantOther->setMultiLine (false);
+    txtQuantOther->setReturnKeyStartsNewLine (false);
+    txtQuantOther->setReadOnly (false);
+    txtQuantOther->setScrollbarsShown (false);
+    txtQuantOther->setCaretVisible (true);
+    txtQuantOther->setPopupMenuEnabled (true);
+    txtQuantOther->setText (TRANS("1"));
+
+    txtQuantOther->setBounds (272, 272, 40, 24);
+
+    lblQuantOther.reset (new juce::Label ("new label",
+                                          TRANS("Other")));
+    addAndMakeVisible (lblQuantOther.get());
+    lblQuantOther->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblQuantOther->setJustificationType (juce::Justification::centredLeft);
+    lblQuantOther->setEditable (false, false, false);
+    lblQuantOther->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblQuantOther->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblQuantOther->setBounds (208, 272, 64, 24);
+
+    lblMerge.reset (new juce::Label ("new label",
+                                     TRANS("Merge Close:")));
+    addAndMakeVisible (lblMerge.get());
+    lblMerge->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblMerge->setJustificationType (juce::Justification::centredLeft);
+    lblMerge->setEditable (false, false, false);
+    lblMerge->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblMerge->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblMerge->setBounds (104, 200, 96, 24);
+
+    lblQuant.reset (new juce::Label ("new label",
+                                     TRANS("Quantize:")));
+    addAndMakeVisible (lblQuant.get());
+    lblQuant->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblQuant->setJustificationType (juce::Justification::centredLeft);
+    lblQuant->setEditable (false, false, false);
+    lblQuant->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblQuant->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblQuant->setBounds (208, 200, 104, 24);
+
+    grpExportMIDI.reset (new juce::GroupComponent ("new group",
+                                                   TRANS("MIDI Export")));
+    addAndMakeVisible (grpExportMIDI.get());
+
+    grpExportMIDI->setBounds (8, 392, 320, 96);
+
+    optInstOrig.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (optInstOrig.get());
+    optInstOrig->setButtonText (TRANS("Orig Inst/Drums"));
+    optInstOrig->setRadioGroupId (2);
+    optInstOrig->addListener (this);
+    optInstOrig->setToggleState (true, dontSendNotification);
+
+    optInstOrig->setBounds (16, 408, 144, 24);
+
+    optInstGM10.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (optInstGM10.get());
+    optInstGM10->setButtonText (TRANS("GM, drums ch 10"));
+    optInstGM10->setRadioGroupId (2);
+    optInstGM10->addListener (this);
+
+    optInstGM10->setBounds (16, 432, 144, 24);
+
+    optInstGMMulti.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (optInstGMMulti.get());
+    optInstGMMulti->setButtonText (TRANS("GM, drums multi"));
+    optInstGMMulti->setRadioGroupId (2);
+    optInstGMMulti->addListener (this);
+
+    optInstGMMulti->setBounds (16, 456, 144, 24);
+
+    lblBend.reset (new juce::Label ("new label",
+                                    TRANS("Bend range:")));
+    addAndMakeVisible (lblBend.get());
+    lblBend->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblBend->setJustificationType (juce::Justification::centredLeft);
+    lblBend->setEditable (false, false, false);
+    lblBend->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblBend->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblBend->setBounds (176, 408, 96, 24);
+
+    txtBend.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtBend.get());
+    txtBend->setMultiLine (false);
+    txtBend->setReturnKeyStartsNewLine (false);
+    txtBend->setReadOnly (false);
+    txtBend->setScrollbarsShown (false);
+    txtBend->setCaretVisible (true);
+    txtBend->setPopupMenuEnabled (true);
+    txtBend->setText (TRANS("6"));
+
+    txtBend->setBounds (272, 408, 40, 24);
+
+    lblPPQN.reset (new juce::Label ("new label",
+                                    TRANS("PPQN 48x:")));
+    addAndMakeVisible (lblPPQN.get());
+    lblPPQN->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblPPQN->setJustificationType (juce::Justification::centredLeft);
+    lblPPQN->setEditable (false, false, false);
+    lblPPQN->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblPPQN->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblPPQN->setBounds (176, 432, 95, 24);
+
+    txtPPQN.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtPPQN.get());
+    txtPPQN->setMultiLine (false);
+    txtPPQN->setReturnKeyStartsNewLine (false);
+    txtPPQN->setReadOnly (false);
+    txtPPQN->setScrollbarsShown (false);
+    txtPPQN->setCaretVisible (true);
+    txtPPQN->setPopupMenuEnabled (true);
+    txtPPQN->setText (TRANS("4"));
+
+    txtPPQN->setBounds (272, 432, 40, 24);
+
+    juce__textEditor.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (juce__textEditor.get());
+    juce__textEditor->setMultiLine (true);
+    juce__textEditor->setReturnKeyStartsNewLine (true);
+    juce__textEditor->setReadOnly (true);
+    juce__textEditor->setScrollbarsShown (true);
+    juce__textEditor->setCaretVisible (false);
+    juce__textEditor->setPopupMenuEnabled (false);
+    juce__textEditor->setText (juce::String());
+
+    juce__textEditor->setBounds (352, 248, 440, 544);
+
+    lblInternal.reset (new juce::Label ("new label",
+                                        TRANS("SEQ64 internal sequence representation:")));
+    addAndMakeVisible (lblInternal.get());
+    lblInternal->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblInternal->setJustificationType (juce::Justification::centredLeft);
+    lblInternal->setEditable (false, false, false);
+    lblInternal->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblInternal->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblInternal->setBounds (352, 224, 448, 24);
+
+    lblDebug.reset (new juce::Label ("new label",
+                                     TRANS("Debug output:")));
+    addAndMakeVisible (lblDebug.get());
+    lblDebug->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblDebug->setJustificationType (juce::Justification::centredLeft);
+    lblDebug->setEditable (false, false, false);
+    lblDebug->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblDebug->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblDebug->setBounds (352, 0, 448, 24);
+
+    juce__textEditor2.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (juce__textEditor2.get());
+    juce__textEditor2->setMultiLine (true);
+    juce__textEditor2->setReturnKeyStartsNewLine (true);
+    juce__textEditor2->setReadOnly (true);
+    juce__textEditor2->setScrollbarsShown (true);
+    juce__textEditor2->setCaretVisible (false);
+    juce__textEditor2->setPopupMenuEnabled (false);
+    juce__textEditor2->setText (juce::String());
+
+    juce__textEditor2->setBounds (352, 24, 440, 192);
+
+    grpComFormat.reset (new juce::GroupComponent (juce::String(),
+                                                  TRANS("Binary format")));
+    addAndMakeVisible (grpComFormat.get());
+
+    grpComFormat->setBounds (8, 0, 320, 72);
+
+    btnFormatEdit.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnFormatEdit.get());
+    btnFormatEdit->setButtonText (TRANS("Edit..."));
+    btnFormatEdit->addListener (this);
+
+    btnFormatEdit->setBounds (256, 24, 63, 32);
+
+    chkRel.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (chkRel.get());
+    chkRel->setButtonText (TRANS("Relative Addrs"));
+    chkRel->addListener (this);
+
+    chkRel->setBounds (16, 160, 136, 24);
+
+    internalPath1.startNewSubPath (160.0f, 336.0f);
+    internalPath1.lineTo (348.0f, 336.0f);
+    internalPath1.startNewSubPath (340.0f, 344.0f);
+    internalPath1.lineTo (348.0f, 336.0f);
+    internalPath1.lineTo (340.0f, 328.0f);
+
+    internalPath2.startNewSubPath (352.0f, 368.0f);
+    internalPath2.lineTo (164.0f, 368.0f);
+    internalPath2.startNewSubPath (172.0f, 376.0f);
+    internalPath2.lineTo (164.0f, 368.0f);
+    internalPath2.lineTo (172.0f, 360.0f);
+
+    internalPath3.startNewSubPath (160.0f, 552.0f);
+    internalPath3.lineTo (348.0f, 552.0f);
+    internalPath3.startNewSubPath (340.0f, 560.0f);
+    internalPath3.lineTo (348.0f, 552.0f);
+    internalPath3.lineTo (340.0f, 544.0f);
+
+    internalPath4.startNewSubPath (352.0f, 584.0f);
+    internalPath4.lineTo (164.0f, 584.0f);
+    internalPath4.startNewSubPath (172.0f, 592.0f);
+    internalPath4.lineTo (164.0f, 584.0f);
+    internalPath4.lineTo (172.0f, 576.0f);
+
+    internalPath5.startNewSubPath (160.0f, 720.0f);
+    internalPath5.lineTo (348.0f, 720.0f);
+    internalPath5.startNewSubPath (340.0f, 728.0f);
+    internalPath5.lineTo (348.0f, 720.0f);
+    internalPath5.lineTo (340.0f, 712.0f);
+
+    internalPath6.startNewSubPath (352.0f, 752.0f);
+    internalPath6.lineTo (164.0f, 752.0f);
+    internalPath6.startNewSubPath (172.0f, 760.0f);
+    internalPath6.lineTo (164.0f, 752.0f);
+    internalPath6.lineTo (172.0f, 744.0f);
+
+
+    //[UserPreSize]
+    //[/UserPreSize]
+
+    setSize (800, 800);
+
+
+    //[Constructor] You can add your own custom stuff here..
+    //[/Constructor]
+}
+
+SeqEditor::~SeqEditor()
+{
+    //[Destructor_pre]. You can add your own custom destruction code here..
+    //[/Destructor_pre]
+
+    btnImportCom = nullptr;
+    btnExportCom = nullptr;
+    btnImportMus = nullptr;
+    btnExportMus = nullptr;
+    grpMusDialect = nullptr;
+    optMusCommunity = nullptr;
+    optMusCanon = nullptr;
+    optMusCanonOld = nullptr;
+    btnImportMIDI = nullptr;
+    btnExportMIDI = nullptr;
+    grpImportMIDI = nullptr;
+    chkLoopSeq = nullptr;
+    grpOptimizer = nullptr;
+    chkUseCalls = nullptr;
+    txtMasterVol = nullptr;
+    lblMasterVol = nullptr;
+    chkUseLoops = nullptr;
+    txtMergeVel = nullptr;
+    lblMergeVel = nullptr;
+    txtMergeGates = nullptr;
+    lblMergeGates = nullptr;
+    txtMergeCCs = nullptr;
+    lblMergeCCs = nullptr;
+    txtQuantVolPan = nullptr;
+    lblQuantVolPan = nullptr;
+    txtQuantPitch = nullptr;
+    lblQuantPitch = nullptr;
+    txtQuantOther = nullptr;
+    lblQuantOther = nullptr;
+    lblMerge = nullptr;
+    lblQuant = nullptr;
+    grpExportMIDI = nullptr;
+    optInstOrig = nullptr;
+    optInstGM10 = nullptr;
+    optInstGMMulti = nullptr;
+    lblBend = nullptr;
+    txtBend = nullptr;
+    lblPPQN = nullptr;
+    txtPPQN = nullptr;
+    juce__textEditor = nullptr;
+    lblInternal = nullptr;
+    lblDebug = nullptr;
+    juce__textEditor2 = nullptr;
+    grpComFormat = nullptr;
+    btnFormatEdit = nullptr;
+    chkRel = nullptr;
+
+
+    //[Destructor]. You can add your own custom destruction code here..
+    //[/Destructor]
+}
+
+//==============================================================================
+void SeqEditor::paint (juce::Graphics& g)
+{
+    //[UserPrePaint] Add your own custom painting code here..
+    //[/UserPrePaint]
+
+    g.fillAll (juce::Colour (0xff323e44));
+
+    {
+        float x = 0, y = 0;
+        juce::Colour fillColour = juce::Colours::aliceblue;
+        juce::Colour strokeColour = juce::Colours::aliceblue;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillPath (internalPath1, juce::AffineTransform::translation(x, y));
+        g.setColour (strokeColour);
+        g.strokePath (internalPath1, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
+    }
+
+    {
+        float x = 0, y = 0;
+        juce::Colour fillColour = juce::Colours::aliceblue;
+        juce::Colour strokeColour = juce::Colours::aliceblue;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillPath (internalPath2, juce::AffineTransform::translation(x, y));
+        g.setColour (strokeColour);
+        g.strokePath (internalPath2, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
+    }
+
+    {
+        float x = 0, y = 0;
+        juce::Colour fillColour = juce::Colours::aliceblue;
+        juce::Colour strokeColour = juce::Colours::aliceblue;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillPath (internalPath3, juce::AffineTransform::translation(x, y));
+        g.setColour (strokeColour);
+        g.strokePath (internalPath3, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
+    }
+
+    {
+        float x = 0, y = 0;
+        juce::Colour fillColour = juce::Colours::aliceblue;
+        juce::Colour strokeColour = juce::Colours::aliceblue;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillPath (internalPath4, juce::AffineTransform::translation(x, y));
+        g.setColour (strokeColour);
+        g.strokePath (internalPath4, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
+    }
+
+    {
+        float x = 0, y = 0;
+        juce::Colour fillColour = juce::Colours::aliceblue;
+        juce::Colour strokeColour = juce::Colours::aliceblue;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillPath (internalPath5, juce::AffineTransform::translation(x, y));
+        g.setColour (strokeColour);
+        g.strokePath (internalPath5, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
+    }
+
+    {
+        float x = 0, y = 0;
+        juce::Colour fillColour = juce::Colours::aliceblue;
+        juce::Colour strokeColour = juce::Colours::aliceblue;
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillPath (internalPath6, juce::AffineTransform::translation(x, y));
+        g.setColour (strokeColour);
+        g.strokePath (internalPath6, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
+    }
+
+    {
+        int x = 16, y = 18, width = 232, height = 48;
+        juce::Colour fillColour = juce::Colour (0xff792aa5);
+        //[UserPaintCustomArguments] Customize the painting arguments here..
+        //[/UserPaintCustomArguments]
+        g.setColour (fillColour);
+        g.fillRect (x, y, width, height);
+    }
+
+    //[UserPaint] Add your own custom painting code here..
+    //[/UserPaint]
+}
+
+void SeqEditor::resized()
+{
+    //[UserPreResize] Add your own custom resize code here..
+    //[/UserPreResize]
+
+    //[UserResized] Add your own custom resize handling here..
+    //[/UserResized]
+}
+
+void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
+{
+    //[UserbuttonClicked_Pre]
+    //[/UserbuttonClicked_Pre]
+
+    if (buttonThatWasClicked == btnImportCom.get())
+    {
+        //[UserButtonCode_btnImportCom] -- add your button handler code here..
+        //[/UserButtonCode_btnImportCom]
+    }
+    else if (buttonThatWasClicked == btnExportCom.get())
+    {
+        //[UserButtonCode_btnExportCom] -- add your button handler code here..
+        //[/UserButtonCode_btnExportCom]
+    }
+    else if (buttonThatWasClicked == btnImportMus.get())
+    {
+        //[UserButtonCode_btnImportMus] -- add your button handler code here..
+        //[/UserButtonCode_btnImportMus]
+    }
+    else if (buttonThatWasClicked == btnExportMus.get())
+    {
+        //[UserButtonCode_btnExportMus] -- add your button handler code here..
+        //[/UserButtonCode_btnExportMus]
+    }
+    else if (buttonThatWasClicked == optMusCommunity.get())
+    {
+        //[UserButtonCode_optMusCommunity] -- add your button handler code here..
+        //[/UserButtonCode_optMusCommunity]
+    }
+    else if (buttonThatWasClicked == optMusCanon.get())
+    {
+        //[UserButtonCode_optMusCanon] -- add your button handler code here..
+        //[/UserButtonCode_optMusCanon]
+    }
+    else if (buttonThatWasClicked == optMusCanonOld.get())
+    {
+        //[UserButtonCode_optMusCanonOld] -- add your button handler code here..
+        //[/UserButtonCode_optMusCanonOld]
+    }
+    else if (buttonThatWasClicked == btnImportMIDI.get())
+    {
+        //[UserButtonCode_btnImportMIDI] -- add your button handler code here..
+        //[/UserButtonCode_btnImportMIDI]
+    }
+    else if (buttonThatWasClicked == btnExportMIDI.get())
+    {
+        //[UserButtonCode_btnExportMIDI] -- add your button handler code here..
+        //[/UserButtonCode_btnExportMIDI]
+    }
+    else if (buttonThatWasClicked == chkLoopSeq.get())
+    {
+        //[UserButtonCode_chkLoopSeq] -- add your button handler code here..
+        //[/UserButtonCode_chkLoopSeq]
+    }
+    else if (buttonThatWasClicked == chkUseCalls.get())
+    {
+        //[UserButtonCode_chkUseCalls] -- add your button handler code here..
+        //[/UserButtonCode_chkUseCalls]
+    }
+    else if (buttonThatWasClicked == chkUseLoops.get())
+    {
+        //[UserButtonCode_chkUseLoops] -- add your button handler code here..
+        //[/UserButtonCode_chkUseLoops]
+    }
+    else if (buttonThatWasClicked == optInstOrig.get())
+    {
+        //[UserButtonCode_optInstOrig] -- add your button handler code here..
+        //[/UserButtonCode_optInstOrig]
+    }
+    else if (buttonThatWasClicked == optInstGM10.get())
+    {
+        //[UserButtonCode_optInstGM10] -- add your button handler code here..
+        //[/UserButtonCode_optInstGM10]
+    }
+    else if (buttonThatWasClicked == optInstGMMulti.get())
+    {
+        //[UserButtonCode_optInstGMMulti] -- add your button handler code here..
+        //[/UserButtonCode_optInstGMMulti]
+    }
+    else if (buttonThatWasClicked == btnFormatEdit.get())
+    {
+        //[UserButtonCode_btnFormatEdit] -- add your button handler code here..
+        //[/UserButtonCode_btnFormatEdit]
+    }
+    else if (buttonThatWasClicked == chkRel.get())
+    {
+        //[UserButtonCode_chkRel] -- add your button handler code here..
+        //[/UserButtonCode_chkRel]
+    }
+
+    //[UserbuttonClicked_Post]
+    //[/UserbuttonClicked_Post]
+}
+
+
+
+//[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
+//[/MiscUserCode]
+
+
+//==============================================================================
+#if 0
+/*  -- Projucer information section --
+
+    This is where the Projucer stores the metadata that describe this GUI layout, so
+    make changes in here at your peril!
+
+BEGIN_JUCER_METADATA
+
+<JUCER_COMPONENT documentType="Component" className="SeqEditor" componentName=""
+                 parentClasses="public juce::Component" constructorParams="" variableInitialisers=""
+                 snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
+                 fixedSize="1" initialWidth="800" initialHeight="800">
+  <BACKGROUND backgroundColour="ff323e44">
+    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
+          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 336 l 348 336 s 340 344 l 348 336 l 340 328</PATH>
+    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
+          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 368 l 164 368 s 172 376 l 164 368 l 172 360</PATH>
+    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
+          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 552 l 348 552 s 340 560 l 348 552 l 340 544</PATH>
+    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
+          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 584 l 164 584 s 172 592 l 164 584 l 172 576</PATH>
+    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
+          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 720 l 348 720 s 340 728 l 348 720 l 340 712</PATH>
+    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
+          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 752 l 164 752 s 172 760 l 164 752 l 172 744</PATH>
+    <RECT pos="16 18 232 48" fill="solid: ff792aa5" hasStroke="0"/>
+  </BACKGROUND>
+  <TEXTBUTTON name="new button" id="ce9eeb4274035fc6" memberName="btnImportCom"
+              virtualName="" explicitFocusOrder="0" pos="8 704 152 32" buttonText="Import .com/.aseq"
+              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="e373bb4f6fe0c973" memberName="btnExportCom"
+              virtualName="" explicitFocusOrder="0" pos="8 736 152 32" buttonText="Export .com/.aseq"
+              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="3bb24dc32903c5e7" memberName="btnImportMus"
+              virtualName="" explicitFocusOrder="0" pos="8 536 152 32" buttonText="Import .mus"
+              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="8f9107dadce8a52a" memberName="btnExportMus"
+              virtualName="" explicitFocusOrder="0" pos="8 568 152 32" buttonText="Export .mus"
+              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+  <GROUPCOMPONENT name="" id="288b23c83f4e83ab" memberName="grpMusDialect" virtualName=""
+                  explicitFocusOrder="0" pos="8 609 320 47" title=".mus dialect"/>
+  <TOGGLEBUTTON name="new toggle button" id="47cfaabd82293101" memberName="optMusCommunity"
+                virtualName="" explicitFocusOrder="0" pos="16 624 112 24" buttonText="Community"
+                connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
+  <TOGGLEBUTTON name="new toggle button" id="aa9f5ce6f473ab73" memberName="optMusCanon"
+                virtualName="" explicitFocusOrder="0" pos="128 624 80 24" buttonText="Canon"
+                connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
+  <TOGGLEBUTTON name="new toggle button" id="3788ddb7be05010c" memberName="optMusCanonOld"
+                virtualName="" explicitFocusOrder="0" pos="208 624 112 24" buttonText="Canon (Old)"
+                connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
+  <TEXTBUTTON name="new button" id="dda1a6799546c40" memberName="btnImportMIDI"
+              virtualName="" explicitFocusOrder="0" pos="8 320 152 32" buttonText="Import MIDI"
+              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="afcf973a847dd8fa" memberName="btnExportMIDI"
+              virtualName="" explicitFocusOrder="0" pos="8 352 152 32" buttonText="Export MIDI"
+              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+  <GROUPCOMPONENT name="new group" id="6c3ae9ab90971ff0" memberName="grpImportMIDI"
+                  virtualName="" explicitFocusOrder="0" pos="8 120 320 192" title="MIDI Import"/>
+  <TOGGLEBUTTON name="new toggle button" id="298575bd077da219" memberName="chkLoopSeq"
+                virtualName="" explicitFocusOrder="0" pos="16 136 112 24" buttonText="Smart Loop"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
+  <GROUPCOMPONENT name="new group" id="5c6bcdf4f16c5863" memberName="grpOptimizer"
+                  virtualName="" explicitFocusOrder="0" pos="16 184 304 120" title="Optimizer"/>
+  <TOGGLEBUTTON name="new toggle button" id="844c730ae280e7ec" memberName="chkUseCalls"
+                virtualName="" explicitFocusOrder="0" pos="24 200 80 24" buttonText="Calls"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
+  <TEXTEDITOR name="new text editor" id="154dd00d08a19a23" memberName="txtMasterVol"
+              virtualName="" explicitFocusOrder="0" pos="272 136 40 24" initialText="58"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="2f44836e853ff58e" memberName="lblMasterVol"
+         virtualName="" explicitFocusOrder="0" pos="136 136 136 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Default Master Vol:" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TOGGLEBUTTON name="new toggle button" id="d41d23e2781f6f08" memberName="chkUseLoops"
+                virtualName="" explicitFocusOrder="0" pos="24 224 80 24" buttonText="Loops"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
+  <TEXTEDITOR name="new text editor" id="78aaa4ed17c1daf0" memberName="txtMergeVel"
+              virtualName="" explicitFocusOrder="0" pos="160 224 40 24" initialText="5"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="2c9954e88ae8e669" memberName="lblMergeVel"
+         virtualName="" explicitFocusOrder="0" pos="104 224 55 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Vels" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="8816310b8df382e9" memberName="txtMergeGates"
+              virtualName="" explicitFocusOrder="0" pos="160 248 40 24" initialText="3"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="b3c139534d0c5e82" memberName="lblMergeGates"
+         virtualName="" explicitFocusOrder="0" pos="104 248 55 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Gates" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="5e89a6c4e553dd90" memberName="txtMergeCCs"
+              virtualName="" explicitFocusOrder="0" pos="160 272 40 24" initialText="1"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="66a9164a43b56ffb" memberName="lblMergeCCs"
+         virtualName="" explicitFocusOrder="0" pos="104 272 55 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="CCs" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="db26cbb96e518db0" memberName="txtQuantVolPan"
+              virtualName="" explicitFocusOrder="0" pos="272 224 40 24" initialText="2"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="efae19279bcd8096" memberName="lblQuantVolPan"
+         virtualName="" explicitFocusOrder="0" pos="208 224 64 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Vol/Pan" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="4a30b577b172724c" memberName="txtQuantPitch"
+              virtualName="" explicitFocusOrder="0" pos="272 248 40 24" initialText="1"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="158ac64e370f720a" memberName="lblQuantPitch"
+         virtualName="" explicitFocusOrder="0" pos="208 248 64 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Pitch" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="555bf6985ab64c24" memberName="txtQuantOther"
+              virtualName="" explicitFocusOrder="0" pos="272 272 40 24" initialText="1"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="43e6a535c362df1d" memberName="lblQuantOther"
+         virtualName="" explicitFocusOrder="0" pos="208 272 64 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Other" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <LABEL name="new label" id="6afc2a191b7a4913" memberName="lblMerge"
+         virtualName="" explicitFocusOrder="0" pos="104 200 96 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Merge Close:" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
+  <LABEL name="new label" id="ce1f3929ac632965" memberName="lblQuant"
+         virtualName="" explicitFocusOrder="0" pos="208 200 104 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Quantize:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <GROUPCOMPONENT name="new group" id="abc01da3904d8db0" memberName="grpExportMIDI"
+                  virtualName="" explicitFocusOrder="0" pos="8 392 320 96" title="MIDI Export"/>
+  <TOGGLEBUTTON name="new toggle button" id="fb17c74cd24b8be6" memberName="optInstOrig"
+                virtualName="" explicitFocusOrder="0" pos="16 408 144 24" buttonText="Orig Inst/Drums"
+                connectedEdges="0" needsCallback="1" radioGroupId="2" state="1"/>
+  <TOGGLEBUTTON name="new toggle button" id="592157384d470058" memberName="optInstGM10"
+                virtualName="" explicitFocusOrder="0" pos="16 432 144 24" buttonText="GM, drums ch 10"
+                connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
+  <TOGGLEBUTTON name="new toggle button" id="974cd53f9babaa12" memberName="optInstGMMulti"
+                virtualName="" explicitFocusOrder="0" pos="16 456 144 24" buttonText="GM, drums multi"
+                connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
+  <LABEL name="new label" id="dd94b04b9d4171b8" memberName="lblBend" virtualName=""
+         explicitFocusOrder="0" pos="176 408 96 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Bend range:" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="f6451ae8871410f6" memberName="txtBend"
+              virtualName="" explicitFocusOrder="0" pos="272 408 40 24" initialText="6"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="20b130cdc7fc8b6f" memberName="lblPPQN" virtualName=""
+         explicitFocusOrder="0" pos="176 432 95 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="PPQN 48x:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="7884c8ddfeb40a43" memberName="txtPPQN"
+              virtualName="" explicitFocusOrder="0" pos="272 432 40 24" initialText="4"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <TEXTEDITOR name="new text editor" id="6103737800c72a64" memberName="juce__textEditor"
+              virtualName="" explicitFocusOrder="0" pos="352 248 440 544" initialText=""
+              multiline="1" retKeyStartsLine="1" readonly="1" scrollbars="1"
+              caret="0" popupmenu="0"/>
+  <LABEL name="new label" id="acc8f386f68b50d2" memberName="lblInternal"
+         virtualName="" explicitFocusOrder="0" pos="352 224 448 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="SEQ64 internal sequence representation:"
+         editableSingleClick="0" editableDoubleClick="0" focusDiscardsChanges="0"
+         fontname="Default font" fontsize="15.0" kerning="0.0" bold="0"
+         italic="0" justification="33"/>
+  <LABEL name="new label" id="4156baae8395f4b3" memberName="lblDebug"
+         virtualName="" explicitFocusOrder="0" pos="352 0 448 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Debug output:" editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="354824bf45a24c31" memberName="juce__textEditor2"
+              virtualName="" explicitFocusOrder="0" pos="352 24 440 192" initialText=""
+              multiline="1" retKeyStartsLine="1" readonly="1" scrollbars="1"
+              caret="0" popupmenu="0"/>
+  <GROUPCOMPONENT name="" id="8627fa20de81115" memberName="grpComFormat" virtualName=""
+                  explicitFocusOrder="0" pos="8 0 320 72" title="Binary format"/>
+  <TEXTBUTTON name="new button" id="2804f8f09ab1af85" memberName="btnFormatEdit"
+              virtualName="" explicitFocusOrder="0" pos="256 24 63 32" buttonText="Edit..."
+              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
+  <TOGGLEBUTTON name="new toggle button" id="32dace4af418847d" memberName="chkRel"
+                virtualName="" explicitFocusOrder="0" pos="16 160 136 24" buttonText="Relative Addrs"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
+</JUCER_COMPONENT>
+
+END_JUCER_METADATA
+*/
+#endif
+
+
+//[EndFile] You can add extra defines here...
+//[/EndFile]
+

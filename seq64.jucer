@@ -1,107 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="uDdIKt" name="seq64" projectType="consoleapp" jucerVersion="5.4.5"
-              companyName="Sauraen" companyCopyright="Copyright (C) 2014-2019 Sauraen"
-              companyWebsite="sauraen.com" companyEmail="sauraen@gmail.com">
-  <MAINGROUP id="xL4ytI" name="seq64">
-    <GROUP id="{7284F174-D82B-D99C-2BF4-7FC308F6B3F7}" name="src">
-      <FILE id="dCJWKy" name="AudiobankPane.cpp" compile="1" resource="0"
-            file="src/AudiobankPane.cpp"/>
-      <FILE id="RUjG5e" name="AudiobankPane.h" compile="0" resource="0" file="src/AudiobankPane.h"/>
-      <FILE id="HS4OaU" name="AudioseqPane.cpp" compile="1" resource="0"
-            file="src/AudioseqPane.cpp"/>
-      <FILE id="flojs6" name="AudioseqPane.h" compile="0" resource="0" file="src/AudioseqPane.h"/>
-      <FILE id="rbj022" name="BankFile.cpp" compile="1" resource="0" file="src/BankFile.cpp"/>
-      <FILE id="iXGnlu" name="BankFile.h" compile="0" resource="0" file="src/BankFile.h"/>
-      <FILE id="XFnckX" name="CICSetter.cpp" compile="1" resource="0" file="src/CICSetter.cpp"/>
-      <FILE id="aEDRGT" name="CICSetter.h" compile="0" resource="0" file="src/CICSetter.h"/>
-      <FILE id="G1WnGb" name="FilesPane.cpp" compile="1" resource="0" file="src/FilesPane.cpp"/>
-      <FILE id="pNYFii" name="FilesPane.h" compile="0" resource="0" file="src/FilesPane.h"/>
-      <FILE id="z5zpqq" name="Finder.cpp" compile="1" resource="0" file="src/Finder.cpp"/>
-      <FILE id="VU5REc" name="Finder.h" compile="0" resource="0" file="src/Finder.h"/>
-      <FILE id="wN3OnR" name="IEEditor.cpp" compile="1" resource="0" file="src/IEEditor.cpp"/>
-      <FILE id="keQrey" name="IEEditor.h" compile="0" resource="0" file="src/IEEditor.h"/>
-      <FILE id="N2NkDC" name="IndexedFile.cpp" compile="1" resource="0" file="src/IndexedFile.cpp"/>
-      <FILE id="usQ6WK" name="IndexedFile.h" compile="0" resource="0" file="src/IndexedFile.h"/>
-      <FILE id="TizsdN" name="MainComponent.cpp" compile="1" resource="0"
-            file="src/MainComponent.cpp"/>
-      <FILE id="TMW8fh" name="MainComponent.h" compile="0" resource="0" file="src/MainComponent.h"/>
-      <FILE id="J3YZQy" name="MidiPane.cpp" compile="1" resource="0" file="src/MidiPane.cpp"/>
-      <FILE id="tfjIMv" name="MidiPane.h" compile="0" resource="0" file="src/MidiPane.h"/>
-      <FILE id="pJupfr" name="n64checksum.cpp" compile="1" resource="0" file="src/n64checksum.cpp"/>
-      <FILE id="mbelwF" name="n64checksum.h" compile="0" resource="0" file="src/n64checksum.h"/>
-      <FILE id="RN7kP3" name="ROM.cpp" compile="1" resource="0" file="src/ROM.cpp"/>
-      <FILE id="HZI1yg" name="ROM.h" compile="0" resource="0" file="src/ROM.h"/>
-      <FILE id="C6zwXH" name="seq64.cpp" compile="1" resource="0" file="src/seq64.cpp"/>
-      <FILE id="xpdssv" name="seq64.h" compile="0" resource="0" file="src/seq64.h"/>
-      <FILE id="kt2o3i" name="SeqFile.cpp" compile="1" resource="0" file="src/SeqFile.cpp"/>
-      <FILE id="MS7pye" name="SeqFile.h" compile="0" resource="0" file="src/SeqFile.h"/>
-      <FILE id="w8WbJH" name="SequenceBanksMap.cpp" compile="1" resource="0"
-            file="src/SequenceBanksMap.cpp"/>
-      <FILE id="Dlt2jF" name="SequenceBanksMap.h" compile="0" resource="0"
-            file="src/SequenceBanksMap.h"/>
-      <FILE id="gZqK0c" name="TextListModel.cpp" compile="1" resource="0"
-            file="src/TextListModel.cpp"/>
-      <FILE id="ZIBrcE" name="TextListModel.h" compile="0" resource="0" file="src/TextListModel.h"/>
-      <FILE id="aO0SVT" name="yaz0_yay0.cpp" compile="1" resource="0" file="src/yaz0_yay0.cpp"/>
-      <FILE id="LmyVIA" name="yaz0_yay0.h" compile="0" resource="0" file="src/yaz0_yay0.h"/>
+<JUCERPROJECT id="CteiBh" name="seq64" projectType="guiapp" useAppConfig="1"
+              addUsingNamespaceToJuceHeader="1" jucerFormatVersion="1" version="2.0.0"
+              companyName="Sauraen" companyCopyright="Copyright (C) 2020 Sauraen"
+              companyWebsite="https://github.com/sauraen" companyEmail="sauraen@gmail.com">
+  <MAINGROUP id="qSbMOT" name="seq64">
+    <GROUP id="{5464FE01-B6C9-BF98-7392-885F51B736E0}" name="Source">
+      <FILE id="OGNDST" name="SeqFile.cpp" compile="1" resource="0" file="Source/SeqFile.cpp"/>
+      <FILE id="eyOSW3" name="SeqFile.hpp" compile="0" resource="0" file="Source/SeqFile.hpp"/>
+      <FILE id="WSf21a" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="tzGmAf" name="SeqEditor.cpp" compile="1" resource="0" file="Source/SeqEditor.cpp"/>
+      <FILE id="vbdwgV" name="SeqEditor.hpp" compile="0" resource="0" file="Source/SeqEditor.hpp"/>
+      <FILE id="oMYen7" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
+      <FILE id="pmWFxj" name="MainComponent.cpp" compile="1" resource="0"
+            file="Source/MainComponent.cpp"/>
     </GROUP>
   </MAINGROUP>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_USE_CURL="0"/>
   <EXPORTFORMATS>
-    <XCODE_MAC targetFolder="Builds/MacOSX">
-      <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug"/>
-        <CONFIGURATION isDebug="0" name="Release"/>
-      </CONFIGURATIONS>
-      <MODULEPATHS>
-        <MODULEPATH id="juce_audio_basics" path="JuceModules"/>
-        <MODULEPATH id="juce_core" path="JuceModules"/>
-        <MODULEPATH id="juce_data_structures" path="JuceModules"/>
-        <MODULEPATH id="juce_events" path="JuceModules"/>
-        <MODULEPATH id="juce_graphics" path="JuceModules"/>
-        <MODULEPATH id="juce_gui_basics" path="JuceModules"/>
-      </MODULEPATHS>
-    </XCODE_MAC>
-    <VS2017 targetFolder="Builds/VisualStudio2017">
-      <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug"/>
-        <CONFIGURATION isDebug="0" name="Release"/>
-      </CONFIGURATIONS>
-      <MODULEPATHS>
-        <MODULEPATH id="juce_audio_basics" path="JuceModules"/>
-        <MODULEPATH id="juce_core" path="JuceModules"/>
-        <MODULEPATH id="juce_data_structures" path="JuceModules"/>
-        <MODULEPATH id="juce_events" path="JuceModules"/>
-        <MODULEPATH id="juce_graphics" path="JuceModules"/>
-        <MODULEPATH id="juce_gui_basics" path="JuceModules"/>
-      </MODULEPATHS>
-    </VS2017>
     <LINUX_MAKE targetFolder="Builds/LinuxMakefile">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug"/>
-        <CONFIGURATION isDebug="0" name="Release"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="seq64"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="seq64"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_audio_basics" path="JuceModules"/>
-        <MODULEPATH id="juce_core" path="JuceModules"/>
-        <MODULEPATH id="juce_data_structures" path="JuceModules"/>
-        <MODULEPATH id="juce_events" path="JuceModules"/>
-        <MODULEPATH id="juce_graphics" path="JuceModules"/>
-        <MODULEPATH id="juce_gui_basics" path="JuceModules"/>
+        <MODULEPATH id="juce_audio_basics" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_core" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_events" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_graphics" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../Juce6/modules"/>
       </MODULEPATHS>
     </LINUX_MAKE>
+    <VS2017 targetFolder="Builds/VisualStudio2017">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="0" name="Release" targetName="seq64" winArchitecture="x64"
+                       linkTimeOptimisation="1" fastMath="1" optimisation="3" winWarningLevel="4"
+                       warningsAreErrors="0" useRuntimeLibDLL="0" multiProcessorCompilation="1"
+                       enableIncrementalLinking="1" alwaysGenerateDebugSymbols="1" debugInformationFormat="ProgramDatabase"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_core" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_events" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_graphics" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../Juce6/modules"/>
+      </MODULEPATHS>
+    </VS2017>
+    <XCODE_MAC targetFolder="Builds/MacOSX">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="seq64"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="seq64"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_audio_basics" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_core" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_events" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_graphics" path="../Juce6/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../Juce6/modules"/>
+      </MODULEPATHS>
+    </XCODE_MAC>
   </EXPORTFORMATS>
   <MODULES>
-    <MODULE id="juce_audio_basics" showAllCode="0" useLocalCopy="0" useGlobalPath="0"/>
-    <MODULE id="juce_core" showAllCode="0" useLocalCopy="0" useGlobalPath="0"/>
-    <MODULE id="juce_data_structures" showAllCode="0" useLocalCopy="0" useGlobalPath="0"/>
-    <MODULE id="juce_events" showAllCode="0" useLocalCopy="0" useGlobalPath="0"/>
-    <MODULE id="juce_graphics" showAllCode="0" useLocalCopy="0" useGlobalPath="0"/>
-    <MODULE id="juce_gui_basics" showAllCode="0" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_audio_basics" showAllCode="0" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_core" showAllCode="0" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_data_structures" showAllCode="0" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_events" showAllCode="0" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_graphics" showAllCode="0" useLocalCopy="1" useGlobalPath="0"/>
+    <MODULE id="juce_gui_basics" showAllCode="0" useLocalCopy="1" useGlobalPath="0"/>
   </MODULES>
   <LIVE_SETTINGS>
     <LINUX/>
-    <WINDOWS/>
   </LIVE_SETTINGS>
-  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
 </JUCERPROJECT>

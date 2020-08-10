@@ -1,7 +1,7 @@
 seq64 - Sequenced music editor for first-party N64 games.
-Created by and Copyright (C) 2018 Sauraen, sauraen@gmail.com
-Licensed under the GNU General Public License - see LICENSE.txt
-Made using Juce Cross-Platform C++ Library version 3 (free for GPL use) - http://www.juce.com/
+Created by and Copyright (C) 2014-2020 Sauraen, sauraen@gmail.com
+Licensed under the GNU General Public License version 3 - see LICENSE.txt
+Made using Juce Cross-Platform C++ Library version 6 under the GPL - http://www.juce.com/
 
 SEQ64 is a full-featured editor for sequenced music in first-party Nintendo 64 games.
 
