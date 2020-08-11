@@ -25,20 +25,28 @@
 
 #pragma once
 
-#include "JuceHeader.h"
+#include "Common.hpp"
 
 class SeqFile{
 public:
     SeqFile(ValueTree abi_);
     ~SeqFile();
     
+    static StringArray getAvailABIs();
+    static ValueTree loadABI(String name);
+    
+    //Import results are 0 okay, 1 warnings, 2+ errors.
+    
     int importMIDI(File midifile, ValueTree midiopts);
+    #if 0
     void exportMIDI(File midifile, ValueTree midiopts);
     int importMus(File musfile, int dialect);
     void exportMus(File musfile, int dialect);
     int importCom(File comfile);
     void exportCom(File comfile);
+    #endif
     
+    String getInternalString();
     String getDebugOutput();
     
     String name;
@@ -47,6 +55,11 @@ private:
     //For all
     ValueTree abi;
     ValueTree structure;
+    int importresult;
+    
+    String debug_messages;
+    CriticalSection debug_mutex;
+    void dbgmsg(String s, bool newline = true);
     
     //For importMIDI
     MidiMessageSequence* ensureSimulMsgsInOrder(MidiMessageSequence &in);
@@ -69,6 +82,7 @@ private:
     void optimize(ValueTree midiopts);
     void reduceTrackNotes();
     
+    #if 0
     //For exportMIDI
     ValueTree getDescription(uint8 firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
     ValueTree getCommand(uint32 address, int stype);
@@ -82,6 +96,7 @@ private:
     
     //For exportCom
     void writeCommand(uint32 address, ValueTree command);
+    #endif
     
     //Identifiers
     

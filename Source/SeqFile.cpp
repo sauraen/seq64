@@ -23,7 +23,7 @@
  * ============================================================================
 */
 
-#include "SeqFile.h"
+#include "SeqFile.hpp"
 
 Identifier SeqFile::idName("name");
 Identifier SeqFile::idLength("length");
@@ -54,21 +54,53 @@ Identifier SeqFile::idTargetSection("targetsection");
 Identifier SeqFile::idTargetHash("targethash");
 Identifier SeqFile::idWillDrop("willdrop");
 
-
+//TODO
 SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
-    //TODO double-check
     //data.clearQuick();
     //data.ensureStorageAllocated(0x8000); //Should be enough
 }
 
+//TODO
 SeqFile::~SeqFile(){
     
+}
+
+String SeqFile::getInternalString(){
+    if(structure.isValid()){
+        XmlElement::TextFormat fmt;
+        fmt.addDefaultHeader = false;
+        fmt.lineWrapLength = 80;
+        return structure.toXmlString(fmt);
+    }
+    return "(No sequence loaded)";
+}
+
+StringArray SeqFile::getAvailABIs(){
+    StringArray ret;
+    ret.add("blah");
+    return ret;
+}
+ValueTree SeqFile::loadABI(String name){
+    return ValueTree();
+}
+
+void SeqFile::dbgmsg(String s, bool newline){
+    const ScopedLock lock(debug_mutex);
+    debug_messages += s;
+    if(newline) debug_messages += "\n";
+}
+String SeqFile::getDebugOutput(){
+    const ScopedLock lock(debug_mutex);
+    String ret(debug_messages);
+    debug_messages.clear();
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// importMIDI functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+//Probably OK
 MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
     in.updateMatchedPairs();
     in.sort();
@@ -84,7 +116,7 @@ MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
                 msg = &(in.getEventPointer(i)->message);
                 if(msg->getTimeStamp() > ts) break;
                 else if(msg->getTimeStamp() < ts){
-                    SEQ64::say("Consistency error: messages out of order after sorting!");
+                    dbgmsg("Consistency error: messages out of order after sorting!");
                     return out;
                 }
                 switch(phase){
@@ -92,7 +124,7 @@ MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
                     case 1: addme = (!msg->isNoteOnOrOff() && !msg->isProgramChange()); break;
                     case 2: addme = msg->isProgramChange(); break;
                     case 3: addme = true; break;
-                    default: SEQ64::say("Bad phase in sorting!"); return out;
+                    default: dbgmsg("Bad phase in sorting!"); return out;
                 }
                 if(addme){
                     out->addEvent(*msg, 0.0);
@@ -105,6 +137,7 @@ MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
     return out;
 }
 
+//Probably OK
 int SeqFile::getCommandRange(ValueTree command, String meaning){
     if(!command.isValid()) return 0;
     ValueTree param = command.getChildWithProperty(idMeaning, meaning);
@@ -127,6 +160,7 @@ int SeqFile::getCommandRange(ValueTree command, String meaning){
     return 0;
 }
 
+//Probably OK
 int SeqFile::getLargestCommandRange(int stype, String action, String meaning){
     ValueTree test, param, param2;
     ValueTree possibleCmdsList("possiblecmdslist");
@@ -144,6 +178,7 @@ int SeqFile::getLargestCommandRange(int stype, String action, String meaning){
     return maxrange;
 }
 
+//Probably OK
 bool SeqFile::isCommandValidIn(ValueTree command, int stype){
     if(!command.isValid()) return false;
     if(stype == 0){
@@ -157,18 +192,23 @@ bool SeqFile::isCommandValidIn(ValueTree command, int stype){
     }
 }
 
+//Probably OK
 ValueTree SeqFile::wantAction(String action, int stype){
     ValueTree ret("wantedcmd");
     ret.setProperty(idAction, action, nullptr);
     ret.setProperty(idSType, stype, nullptr);
     return ret;
 }
+
+//Probably OK
 void SeqFile::wantProperty(ValueTree want, String meaning, int value){
     ValueTree sub("wantedproperty");
     sub.setProperty(idMeaning, meaning, nullptr);
     sub.setProperty(idValue, value, nullptr);
     want.addChild(sub, -1, nullptr);
 }
+
+//Probably OK
 ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     if(!want.isValid()) return want;
     int stype = want.getProperty(idSType);
@@ -195,7 +235,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
             value = want.getChild(j).getProperty(idValue);
             range = getCommandRange(test, meaning);
             if(value >= range){
-                //SEQ64::say("--Looking for " + action + " command, meaning " + meaning 
+                //dbgmsg("--Looking for " + action + " command, meaning " + meaning 
                 //        + ", throwing out due to range " + String(range) + " vs. value " + String(value));
                 flag = false;
                 break;
@@ -209,9 +249,9 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     }
     if(possibleCmdsList.getNumChildren() == 0){
         if(warnIfImpossible){
-            SEQ64::say("No " + action + " command defined in stype " + String(stype) + " with all the needed parameters!");
+            dbgmsg("No " + action + " command defined in stype " + String(stype) + " with all the needed parameters!");
             for(j=0; j<want.getNumChildren(); j++){
-                SEQ64::say("----Want: " + want.getChild(j).getProperty(idMeaning).toString()
+                dbgmsg("----Want: " + want.getChild(j).getProperty(idMeaning).toString()
                         + " value " + want.getChild(j).getProperty(idValue).toString());
             }
         }
@@ -271,6 +311,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     return test;
 }
 
+//Probably OK
 void SeqFile::advanceToTimestamp(ValueTree section, int stype, int &cmd, int &t, int newt){
     int maxdelay = getLargestCommandRange(stype, "Timestamp", "Delay") - 1;
     while(t < newt){
@@ -283,6 +324,7 @@ void SeqFile::advanceToTimestamp(ValueTree section, int stype, int &cmd, int &t,
     }
 }
 
+//Probably OK
 ValueTree SeqFile::createMarker(){
     ValueTree ret("marker");
     ret.setProperty(idAction, "Marker", nullptr);
@@ -290,6 +332,7 @@ ValueTree SeqFile::createMarker(){
     return ret;
 }
 
+//Probably OK
 int SeqFile::getNewCommandLength(ValueTree command){
     if(!command.isValid()) return 0;
     if(command.getProperty(idAction, "No Action").toString() == "Marker") return 0;
@@ -318,6 +361,7 @@ int SeqFile::getNewCommandLength(ValueTree command){
     return cmdlen;
 }
 
+//Probably OK
 bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCCMerge, ValueTree midiopts){
     String action = command1.getProperty(idAction, "No Action1");
     if(action != command2.getProperty(idAction, "No Action2").toString()) return false;
@@ -399,6 +443,7 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCC
     }
 }
 
+//Probably OK
 int SeqFile::getTotalSectionTime(ValueTree section){
     int totaltime = 0, t, loopmult = 1;
     for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
@@ -408,7 +453,7 @@ int SeqFile::getTotalSectionTime(ValueTree section){
         if(action == "Call Same Level"){
             int s = command.getProperty(idTargetSection, -1);
             if(s < 0 || s >= structure.getNumChildren()){
-                SEQ64::say("getTotalSectionTime: Call Same Level to invalid target section!");
+                dbgmsg("getTotalSectionTime: Call Same Level to invalid target section!");
                 importresult |= 2;
                 continue;
             }
@@ -421,7 +466,7 @@ int SeqFile::getTotalSectionTime(ValueTree section){
                 loopmult = param.getProperty(idValue, 0);
             }
             if(loopmult < 2){
-                SEQ64::say("Loop Start with count < 2!");
+                dbgmsg("Loop Start with count < 2!");
                 importresult |= 2;
             }
         }else if(action == "Loop End"){
@@ -432,7 +477,7 @@ int SeqFile::getTotalSectionTime(ValueTree section){
                 t = param.getProperty(idValue, 0);
             }
             if(t == 0){
-                SEQ64::say("Timestamp without delay!");
+                dbgmsg("Timestamp without delay!");
                 importresult |= 2;
             }
         }
@@ -441,16 +486,17 @@ int SeqFile::getTotalSectionTime(ValueTree section){
     return totaltime;
 }
 
+//Probably OK
 void SeqFile::deleteSection(int sectodelete){
     ValueTree dsection = structure.getChild(sectodelete);
     /*
-    SEQ64::say("Deleting empty section " + String(sectodelete) 
+    dbgmsg("Deleting empty section " + String(sectodelete) 
         + " stype=" + dsection.getProperty(idSType, -1).toString()
         + " channel=" + dsection.getProperty(idChannel, -1).toString()
         + " layer=" + dsection.getProperty(idLayer, -1).toString()
         + " tsection=" + dsection.getProperty(idTSection, -1).toString());
     */
-    SEQ64::sayNoNewline("*");
+    dbgmsg("*", false);
     int s, c, t;
     ValueTree section, command;
     for(s=0; s<structure.getNumChildren(); ++s){
@@ -459,7 +505,7 @@ void SeqFile::deleteSection(int sectodelete){
             command = section.getChild(c);
             t = command.getProperty(idTargetSection, -1);
             if(t == sectodelete){
-                //SEQ64::say("--Removing command " + command.getProperty(idAction, "No Action").toString()
+                //dbgmsg("--Removing command " + command.getProperty(idAction, "No Action").toString()
                 //    + " from section " + String(s) + " stype " + section.getProperty(idSType, -1).toString());
                 section.removeChild(command, nullptr);
                 --c;
@@ -476,6 +522,7 @@ void SeqFile::deleteSection(int sectodelete){
 ///////////////////////////// importMIDI objects ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+//Probably OK
 class LayerState{
 public:
     LayerState(int historylen) : histl(historylen) { clear(); }
@@ -513,6 +560,7 @@ private:
     int histl;
 };
 
+//Probably OK
 struct CCTracker{
     CCTracker(){
         action = "";
@@ -528,14 +576,14 @@ struct CCTracker{
 
 int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     if(!midifile.existsAsFile()){
-        SEQ64::say("File " + midifile + " does not exist!");
+        dbgmsg("File " + midifile.getFullPathName() + " does not exist!");
         return -1;
     }
     FileInputStream fis(midifile);
     MidiFile mfile;
     mfile.readFrom(fis);
     name = midifile.getFileNameWithoutExtension();
-    SEQ64::say("IMPORTING MIDI FILE");
+    dbgmsg("IMPORTING MIDI FILE");
     importresult = 0;
     String chnvol = midiopts.getProperty("chnvol", "CC7 (Volume)").toString();
     String mtrvol = midiopts.getProperty("mtrvol", "CC24 (None)").toString();
@@ -547,14 +595,14 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     int channel, track, layer, m, i;
     int timestamp = 0;
     //Reorganize
-    SEQ64::say("Reorganizing MIDI file into master track and tracks for each channel...");
+    dbgmsg("Reorganizing MIDI file into master track and tracks for each channel...");
     int master_ppqn = mfile.getTimeFormat();
     if(master_ppqn <= 0){
-        SEQ64::say("MIDI files with SMPTE time format are not supported, only PPQN format!");
+        dbgmsg("MIDI files with SMPTE time format are not supported, only PPQN format!");
         importresult = 2;
-        return;
+        return importresult;
     }else{
-        SEQ64::say("Converting " + String(master_ppqn) + " to 48 ppqn");
+        dbgmsg("Converting " + String(master_ppqn) + " to 48 ppqn");
     }
     double ticks_multiplier = 48.0 / (double)master_ppqn;
     double last_timestampd = mfile.getLastTimestamp();
@@ -566,6 +614,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         mastertrack->updateMatchedPairs();
     }
     //Scale all events to N64 PPQN
+    //TODO check for extremely short notes
     for(m=mastertrack->getNumEvents()-1; m>=0; m--){
         msgptr = &mastertrack->getEventPointer(m)->message;
         msgptr->setTimeStamp(msgptr->getTimeStamp() * ticks_multiplier);
@@ -575,7 +624,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //Get new last timestamp
     last_timestampd *= ticks_multiplier;
     int last_timestamp = (int)(last_timestampd);
-    SEQ64::say("Last timestamp t" + String(last_timestamp) + ", i.e. " + String(last_timestamp / 48)
+    dbgmsg("Last timestamp t" + String(last_timestamp) + ", i.e. " + String(last_timestamp / 48)
             + " beats or " + String(last_timestamp / 192) + " measures 4/4");
     //Put channel events into chantracks
     OwnedArray<MidiMessageSequence> chantracks;
@@ -587,7 +636,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         chantracks[channel]->updateMatchedPairs();
     }
     //Find sections
-    SEQ64::say("Finding sections...");
+    dbgmsg("Finding sections...");
     Array<int> sectiontimes;
     sectiontimes.add(0);
     String metatext; 
@@ -613,12 +662,12 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         }
     }
     if(sectiontimes.size() <= 1){
-        SEQ64::say("MIDI file had no sections specified. (If you meant to do this, no problem.)");
-        SEQ64::say("Use Marker meta events (text event type 6) with text 'Section <n>' (no quotes)");
-        SEQ64::say("in your master track to define sections.");
+        dbgmsg("MIDI file had no sections specified. (If you meant to do this, no problem.)");
+        dbgmsg("Use Marker meta events (text event type 6) with text 'Section <n>' (no quotes)");
+        dbgmsg("in your master track to define sections.");
     }
     //See if there are any empty channels (i.e. with no note ons)
-    SEQ64::sayNoNewline("Empty channels: ");
+    dbgmsg("Empty channels: ", false);
     Array<int> channelsused;
     uint16 chanBitfield = 0;
     for(channel=0; channel<16; channel++){
@@ -632,16 +681,16 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         }
         chanBitfield >>= 1;
         if(channelsused[channel] < 0){
-            SEQ64::sayNoNewline(String(channel) + ", ");
+            dbgmsg(String(channel) + ", ", false);
         }else{
             chanBitfield |= 0x8000;
         }
     }
-    SEQ64::say("[end]");
+    dbgmsg("[end]");
     //Figure out notelayers
     MidiMessageSequence* trk;
     MidiMessageSequence* layertrk;
-    SEQ64::say("Assigning notes to notelayers...");
+    dbgmsg("Assigning notes to notelayers...");
     int max_layers = 4; //TODO investigate
     OwnedArray<MidiMessageSequence> layertracks;
     for(channel=0; channel<16; channel++){
@@ -686,7 +735,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 //Check for duplicate
                 for(layer=0; layer<max_layers; layer++){
                     if(ls[layer]->curNote() == msg.getNoteNumber()){
-                        SEQ64::say("Duplicate note on in chan " + String(channel) + " t= " 
+                        dbgmsg("Duplicate note on in chan " + String(channel) + " t= " 
                                 + String(msg.getTimeStamp()) + ", ignoring");
                         importresult |= 1;
                         layer = -2;
@@ -699,10 +748,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 bestlayer = -1;
                 for(layer=0; layer<max_layers; ++layer){
                     if(ls[layer]->isInUse()) continue;
-                    /*
-                    bestlayer = layer; //TODO testing
-                    break;
-                    */
                     //Calculate the weighted mean-squared error between the new note and the layer's history
                     thislayermse = ls[layer]->mse(msg.getNoteNumber());
                     if(thislayermse < bestlayermse){
@@ -713,9 +758,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 if(bestlayer < 0){
                     //No layer was free
                     if(!too_many_notes){
-                        SEQ64::say("Channel " + String(channel) + " has more than " + String(max_layers) 
+                        dbgmsg("Channel " + String(channel) + " has more than " + String(max_layers) 
                                 + " notes on at a time (at t=" + String(msg.getTimeStamp()) + ")!");
-                        SEQ64::say("Putting the extra notes on an unused channel is not yet supported.");
+                        dbgmsg("Putting the extra notes on an unused channel is not yet supported.");
                         too_many_notes = true;
                         importresult |= 1;
                     }
@@ -736,7 +781,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 }
                 if(layer < 0) continue;
                 if(!too_many_notes){
-                    SEQ64::say("Note off (ch=" + String(channel) + " note=" + String(msg.getNoteNumber())
+                    dbgmsg("Note off (ch=" + String(channel) + " note=" + String(msg.getNoteNumber())
                             + " time=" + String(msg.getTimeStamp()) + ") received for note that is not on!");
                     too_many_notes = true;
                     importresult |= 1;
@@ -746,7 +791,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         //Check final state
         for(layer=0; layer<max_layers; layer++){
             if(ls[layer]->isInUse()){
-                SEQ64::say("Chan " + String(channel) + " layer " + String(layer) + " left hanging! Fixing...");
+                dbgmsg("Chan " + String(channel) + " layer " + String(layer) + " left hanging! Fixing...");
                 importresult |= 1;
                 msg = MidiMessage::noteOff(channel+1, ls[layer]->curNote());
                 msg.setTimeStamp(last_timestamp);
@@ -759,22 +804,20 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             layertrk->sort();
             layertrk->updateMatchedPairs();
             if(layertrk->getNumEvents() & 1){
-                SEQ64::say("Chan " + String(channel) + " lyr " + String(layer) + " track has " 
+                dbgmsg("Chan " + String(channel) + " lyr " + String(layer) + " track has " 
                         + String(layertrk->getNumEvents()) + " (odd number of) events!");
                 importresult |= 1;
             }
         }
     }
     //Generate Audioseq data
-    data.clearQuick();
-    sections.clear();
     structure = ValueTree("structure");
     ValueTree want, want2, section, newsec;
     Random::getSystemRandom().setSeedRandomly();
     //=======================================================================
     //Sequence header
     //=======================================================================
-    SEQ64::sayNoNewline("Creating sequence header");
+    dbgmsg("Creating sequence header", false);
     int num_tsections = sectiontimes.size();
     sectiontimes.add(last_timestamp);
     double newtempo;
@@ -788,6 +831,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //End of Data
     want = wantAction("End of Data", 0);
     section.addChild(createCommand(want), 0, nullptr);
+    //TODO different default midiopts for D3 20 etc.
     //Sequence Format (D3 20)
     if((bool)midiopts.getProperty("writeseqformat", false)){
         value = (int)midiopts.getProperty("formatbytedefault", 0x20);
@@ -804,7 +848,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         section.addChild(createCommand(want), cmd, nullptr);
         cmd++;
     }
-    //Jump commands: TODO
     //Channel Enable (D7 XXXX)
     if((bool)midiopts.getProperty("writechanbits", false)){
         want = wantAction("Channel Enable", 0);
@@ -834,8 +877,8 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         //sectimeidx is the *upcoming* section boundary, not the current section time is in
         for(; sectimeidx < num_tsections; sectimeidx++){ //Don't execute this for the boundary at the end of the piece
             if(!done && timestamp < sectiontimes[sectimeidx]) break; //Still more commands before section boundary
-            //SEQ64::say("Section " + String(sectimeidx) + " starting at " + String(sectiontimes[sectimeidx]));
-            SEQ64::sayNoNewline(".");
+            //dbgmsg("Section " + String(sectimeidx) + " starting at " + String(sectiontimes[sectimeidx]));
+            dbgmsg(".", false);
             //Get up to the time
             advanceToTimestamp(section, 0, cmd, t, sectiontimes[sectimeidx]);
             //Channel pointers for new section
@@ -914,7 +957,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //Master Volume
     if(!hadmastervol && (bool)midiopts.getProperty("addmstrvol", true)){
         uint8 defaultval = (int)midiopts.getProperty("addmstrvolval", 0x58);
-        SEQ64::say("No Master Volume sysex command in the MIDI, adding default 0x" + ROM::hex(defaultval));
+        dbgmsg("No Master Volume sysex command in the MIDI, adding default 0x" + hex(defaultval));
         want = wantAction("Master Volume", 0);
         wantProperty(want, "Value", defaultval);
         section.addChild(createCommand(want), addmstrvol_cmd, nullptr);
@@ -923,7 +966,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //=======================================================================
     //Channels
     //=======================================================================
-    SEQ64::sayNoNewline("\nCreating channel headers");
+    dbgmsg("\nCreating channel headers", false);
     int starttime, endtime;
     int cc;
     //CC Bandwidth Reduction setup
@@ -977,8 +1020,8 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
             starttime = sectiontimes[sectimeidx];
             endtime = sectiontimes[sectimeidx+1];
-            //SEQ64::say("Chn " + String(channel) + " sec " + String(sectimeidx) + " starting at t" + String(starttime));
-            SEQ64::sayNoNewline(".");
+            //dbgmsg("Chn " + String(channel) + " sec " + String(sectimeidx) + " starting at t" + String(starttime));
+            dbgmsg(".", false);
             //Find channel header
             for(sec=0; sec<structure.getNumChildren(); sec++){
                 section = structure.getChild(sec);
@@ -989,7 +1032,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 }
             }
             if(sec >= structure.getNumChildren()){
-                SEQ64::say("Could not find channel header for ch " + String(channel) + ", section " + String(sectimeidx) + "!");
+                dbgmsg("Could not find channel header for ch " + String(channel) + ", section " + String(sectimeidx) + "!");
                 importresult |= 2;
                 break;
             }
@@ -1075,7 +1118,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //=======================================================================
     //Note Layers / Tracks
     //=======================================================================
-    SEQ64::sayNoNewline("\nCreating tracks");
+    dbgmsg("\nCreating tracks", false);
     MidiMessage msg2, msg3;
     int timestamp2, timestamp3;
     int note, delay, transpose;
@@ -1085,13 +1128,13 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         for(layer=0; layer<max_layers; layer++){
             layertrk = layertracks[(max_layers*channel)+layer];
             if(layertrk->getNumEvents() == 0) continue;
-            //SEQ64::say("Layer " + String(layer) + " chn " + String(channel) + " with " + String(layertrk->getNumEvents()) + " events");
-            SEQ64::sayNoNewline(".");
+            //dbgmsg("Layer " + String(layer) + " chn " + String(channel) + " with " + String(layertrk->getNumEvents()) + " events");
+            dbgmsg(".", false);
             for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
                 starttime = sectiontimes[sectimeidx];
                 endtime = sectiontimes[sectimeidx+1];
-                //SEQ64::say("Sec " + String(sectimeidx) + " starting at t" + String(starttime));
-                SEQ64::sayNoNewline(".");
+                //dbgmsg("Sec " + String(sectimeidx) + " starting at t" + String(starttime));
+                dbgmsg(".", false);
                 //Find track
                 for(sec=0; sec<structure.getNumChildren(); sec++){
                     section = structure.getChild(sec);
@@ -1103,7 +1146,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     }
                 }
                 if(sec >= structure.getNumChildren()){
-                    SEQ64::say("Could not find track data for layer " + String(layer) + " ch " + String(channel) + ", section " + String(sectimeidx) + "!");
+                    dbgmsg("Could not find track data for layer " + String(layer) + " ch " + String(channel) + ", section " + String(sectimeidx) + "!");
                     importresult |= 2;
                     break;
                 }
@@ -1133,10 +1176,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     }
                 }
                 if(m >= layertrk->getNumEvents()){
-                    /*
-                    SEQ64::say("Chn " + String(channel) + " ly " + String(layer) 
-                        + ": no notes played in section " + String(sectimeidx));
-                    */
                     continue;
                 }
                 //Seek to timestamp
@@ -1148,13 +1187,13 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     //Get next thing, which should be corresponding note off
                     m++;
                     if(m >= layertrk->getNumEvents()){
-                        SEQ64::say("Ran off end of track looking for note off!");
+                        dbgmsg("Ran off end of track looking for note off!");
                         importresult |= 2;
                         break;
                     }
                     msg2 = layertrk->getEventPointer(m)->message;
                     if(!msg2.isNoteOff()){
-                        SEQ64::say("Note Off out of order! Cancelling track import!");
+                        dbgmsg("Note Off out of order! Cancelling track import!");
                         importresult |= 2;
                         break;
                     }
@@ -1173,7 +1212,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                         }else{
                             msg3 = layertrk->getEventPointer(m)->message;
                             if(!msg3.isNoteOn()){
-                                SEQ64::say("Note On out of order! Cancelling track import!");
+                                dbgmsg("Note On out of order! Cancelling track import!");
                                 importresult |= 2;
                                 break;
                             }
@@ -1187,7 +1226,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     }
                     if(timestamp2 == timestamp && timestamp3 == timestamp){
                         //The next note is at the same time, just skip to it
-                        SEQ64::say("Zero-length note with no delay afterwards in chn " + String(channel)
+                        dbgmsg("Zero-length note with no delay afterwards in chn " + String(channel)
                                 + " ly " + String(layer) + " at t=" + String(timestamp) + ", discarding!");
                         importresult |= 1;
                         continue;
@@ -1228,7 +1267,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                             value = (timestamp3-timestamp2) * 0x100 / delay;
                             if(value > 0xFF){
                                 //Zero-length note, make it a small length instead
-                                SEQ64::say("Zero-length note in chn " + String(channel) 
+                                dbgmsg("Zero-length note in chn " + String(channel) 
                                     + " ly " + String(layer) + " at t=" + String(timestamp)
                                     + "! Making small length instead...");
                                 importresult |= 1;
@@ -1251,10 +1290,11 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //=======================================================================
     //Optimization
     //=======================================================================
-    optimize();
+    optimize(midiopts);
     reduceTrackNotes();
     //Done
-    SEQ64::say("\n----------------------------------------------------------\nDone!!!");
+    dbgmsg("\n----------------------------------------------------------\nDone!!!");
+    return importresult;
 }
 
 void SeqFile::optimize(ValueTree midiopts){
@@ -1293,12 +1333,12 @@ void SeqFile::optimize(ValueTree midiopts){
     bool useCalls = midiopts.getProperty("usecalls", true);
     bool useLoops = midiopts.getProperty("useloops", true);
     if(!useCalls && !useLoops){
-        SEQ64::say("\nNo loop or call optimization selected.");
+        dbgmsg("\nNo loop or call optimization selected.");
         return;
     }
 	//Check if loops need to be limited to 255 iterations
 	int maxloopcount = getLargestCommandRange(0, "Loop Start", "Loop Count") - 1;
-    SEQ64::say("\nMaximum of " + String(maxloopcount) + " loop iterations");
+    dbgmsg("\nMaximum of " + String(maxloopcount) + " loop iterations");
     //
     int cmdafter;
     bool flag;
@@ -1309,18 +1349,18 @@ void SeqFile::optimize(ValueTree midiopts){
     int i;
     int cclast, ccdir, ccthis;
     if(useLoops){
-        SEQ64::say("\nLooking for data to loop");
+        dbgmsg("\nLooking for data to loop");
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){
             section1 = structure.getChild(sec1);
             stype1 = section1.getProperty(idSType, -1);
             numcmds1 = section1.getNumChildren();
-            //SEQ64::say("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
-            SEQ64::sayNoNewline(".");
+            //dbgmsg("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
+            dbgmsg(".", false);
             //Pick a command
             for(cmd1=0; cmd1<numcmds1-1; cmd1++){
                 command1 = section1.getChild(cmd1);
                 action1 = command1.getProperty(idAction, "No Action");
-                //SEQ64::say("----Command " + String(cmd1) + "(" + action1 + ")");
+                //dbgmsg("----Command " + String(cmd1) + "(" + action1 + ")");
                 //Don't loop pointers or no actions
                 if(action1 == "No Action" || action1 == "End of Data" || action1 == "Jump Same Level"
                         || action1 == "Ptr Channel Header" || action1 == "Ptr Track Data"){
@@ -1329,7 +1369,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 //See if this command repeats later in the track, for loops
                 for(cmd2=cmd1+1; cmd2<numcmds1-1; cmd2++){
                     command2 = section1.getChild(cmd2);
-                    if(isCloseEnough(command1, command2, true)){
+                    if(isCloseEnough(command1, command2, true, midiopts)){
                         //See if everything is the same in between
                         flag = true;
                         cmd3 = cmd1+1;
@@ -1339,7 +1379,7 @@ void SeqFile::optimize(ValueTree midiopts){
                                 flag = false;
                                 break;
                             }
-                            if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), true)){
+                            if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), true, midiopts)){
                                 flag = false;
                                 break;
                             }
@@ -1348,7 +1388,7 @@ void SeqFile::optimize(ValueTree midiopts){
                         }
                         if(!flag) continue;
                         //We have a loop!
-                        //SEQ64::say("Sec " + String(sec1) + ": found loopable data from cmds " + String(cmd1) + " to " + String(cmd2));
+                        //dbgmsg("Sec " + String(sec1) + ": found loopable data from cmds " + String(cmd1) + " to " + String(cmd2));
                         //Check if the contents of the loop are solely timestamps and one kind of CC,
                         //and the CC values are monotonically going in one direction
                         flag = true;
@@ -1366,7 +1406,7 @@ void SeqFile::optimize(ValueTree midiopts){
                                     action4 = action3;
                                     param = command3.getChildWithProperty(idMeaning, "Value");
                                     if(!param.isValid()){
-                                        SEQ64::say("Error, Chn CC command without value!");
+                                        dbgmsg("Error, Chn CC command without value!");
                                         importresult |= 2;
                                         flag = false;
                                         break;
@@ -1378,7 +1418,7 @@ void SeqFile::optimize(ValueTree midiopts){
                                 }else{
                                     param = command3.getChildWithProperty(idMeaning, "Value");
                                     if(!param.isValid()){
-                                        SEQ64::say("Error, Chn CC command without value!");
+                                        dbgmsg("Error, Chn CC command without value!");
                                         importresult |= 2;
                                         flag = false;
                                         break;
@@ -1417,7 +1457,7 @@ void SeqFile::optimize(ValueTree midiopts){
                                     flag = false;
                                     break;
                                 }
-                                if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), false)){
+                                if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), false, midiopts)){
                                     flag = false;
                                     break;
                                 }
@@ -1439,7 +1479,7 @@ void SeqFile::optimize(ValueTree midiopts){
                                 cmd3 = cmd1;
                                 cmdafter = cmd4;
                             }
-                            if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), flag)){
+                            if(!isCloseEnough(section1.getChild(cmd3), section1.getChild(cmd4), flag, midiopts)){
                                 break;
                             }
                             cmd3++;
@@ -1447,9 +1487,9 @@ void SeqFile::optimize(ValueTree midiopts){
                         }
                         //How much data to delete?
                         numCmdsDelete = cmdafter - cmd2;
-                        //SEQ64::say("Found loop at " + String(cmd1) + ", " + String(numCmdsDelete) + " commands"
+                        //dbgmsg("Found loop at " + String(cmd1) + ", " + String(numCmdsDelete) + " commands"
                         //        + " long, which repeats " + String(loopCount) + " times" );
-                        SEQ64::sayNoNewline("*");
+                        dbgmsg("*", false);
                         for(i=0; i<numCmdsDelete; i++){
                             section1.removeChild(cmd2, nullptr);
                         }
@@ -1470,7 +1510,7 @@ void SeqFile::optimize(ValueTree midiopts){
         }
     }
     if(useCalls){
-        SEQ64::say("\nLooking for hooks");
+        dbgmsg("\nLooking for hooks");
         ValueTree origlist("list");
         ValueTree item;
         ValueTree sectionN;
@@ -1483,13 +1523,13 @@ void SeqFile::optimize(ValueTree midiopts){
             stype1 = section1.getProperty(idSType, -1);
             numcmds1 = section1.getNumChildren();
             int sec1time = getTotalSectionTime(section1);
-            //SEQ64::say("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
-            SEQ64::sayNoNewline(".");
+            //dbgmsg("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
+            dbgmsg(".", false);
             //Pick a command
             for(cmd1=0; cmd1<numcmds1-1; cmd1++){
                 command1 = section1.getChild(cmd1);
                 action1 = command1.getProperty(idAction, "No Action");
-                //SEQ64::say("----Command " + String(cmd1) + "(" + action1 + ")");
+                //dbgmsg("----Command " + String(cmd1) + "(" + action1 + ")");
                 if(action1 == "No Action" || action1 == "End of Data" || action1 == "Jump Same Level"
                         || action1 == "Ptr Channel Header" || action1 == "Ptr Track Data"){
                     continue;
@@ -1515,8 +1555,8 @@ void SeqFile::optimize(ValueTree midiopts){
                         command4 = section2.getChild(cmd2+1);
                         action4 = command4.getProperty(idAction, "No Action");
                         if(action4 != action3) continue;
-                        if(!isCloseEnough(command1, command2, true)) continue;
-                        if(!isCloseEnough(command3, command4, true)) continue;
+                        if(!isCloseEnough(command1, command2, true, midiopts)) continue;
+                        if(!isCloseEnough(command3, command4, true, midiopts)) continue;
                         item = ValueTree("item");
                         item.setProperty(idSection, sec2, nullptr);
                         item.setProperty(idCmd, cmd2, nullptr);
@@ -1526,7 +1566,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 }
                 //Found anything?
                 if(origlist.getNumChildren() == 0) continue;
-                //SEQ64::say("Got hook, found elsewhere " + String(list.getNumChildren()) + " times");
+                //dbgmsg("Got hook, found elsewhere " + String(list.getNumChildren()) + " times");
                 //Make temporary copy of original list with no overlaps and increasingly long hooks
                 int bestscore = 0, curscore;
                 ValueTree list, bestlist;
@@ -1575,7 +1615,7 @@ void SeqFile::optimize(ValueTree midiopts){
                                 command4 = section2.getChild(cmd4);
                                 action4 = command4.getProperty(idAction, "No Action");
                                 if(action3 != action4) break;
-                                if(!isCloseEnough(command3, command4, true)) break;
+                                if(!isCloseEnough(command3, command4, true, midiopts)) break;
                             }
                             if(j > hooklength){
                                 //Ran off end of loop, therefore it matched
@@ -1594,7 +1634,7 @@ void SeqFile::optimize(ValueTree midiopts){
                     bestscore = curscore;
                     bestlist = list.createCopy();
                 }
-                //SEQ64::say("Grew hook to " + String(hooklength) + ", now used " + String(bestlist.getNumChildren()) + " times");
+                //dbgmsg("Grew hook to " + String(hooklength) + ", now used " + String(bestlist.getNumChildren()) + " times");
                 //Calculate data savings, ensure it's a savings
                 j = 0;
                 for(i=0; i<hooklength; ++i){
@@ -1610,12 +1650,12 @@ void SeqFile::optimize(ValueTree midiopts){
                 want = createCommand(want);
                 calleddatalength += bestlist.getNumChildren() * getNewCommandLength(want);
                 if(curdatalength <= calleddatalength){
-                    //SEQ64::say("Current data " + String(curdatalength) + " bytes, with calls " + String(calleddatalength) + " bytes, no savings, aborting call");
+                    //dbgmsg("Current data " + String(curdatalength) + " bytes, with calls " + String(calleddatalength) + " bytes, no savings, aborting call");
                     continue;
                 }else{
-                    //SEQ64::say("Call " + String(hooklength) + " commands from " + String(bestlist.getNumChildren())
+                    //dbgmsg("Call " + String(hooklength) + " commands from " + String(bestlist.getNumChildren())
                     //        + " places saved " + String(curdatalength - calleddatalength) + " bytes");
-                    SEQ64::sayNoNewline("*");
+                    dbgmsg("*", false);
                 }
                 //Create new section 
                 secN = structure.getNumChildren();
@@ -1652,14 +1692,14 @@ void SeqFile::optimize(ValueTree midiopts){
                 //Make sure we didn't screw up
                 int sec1time_after = getTotalSectionTime(section1);
                 if(sec1time != sec1time_after){
-                    SEQ64::say("CRITICAL: Bug found when creating calls! Call data contained:");
+                    dbgmsg("CRITICAL: Bug found when creating calls! Call data contained:");
                     for(i=0; i<hooklength; ++i){
-                        SEQ64::say("--" + sectionN.getChild(i).getProperty(idAction).toString());
+                        dbgmsg("--" + sectionN.getChild(i).getProperty(idAction).toString());
                     }
-                    SEQ64::say("Call was found at:");
-                    SEQ64::say("--Section " + String(sec1) + " cmd " + String(cmd1));
+                    dbgmsg("Call was found at:");
+                    dbgmsg("--Section " + String(sec1) + " cmd " + String(cmd1));
                     for(i=0; i<bestlist.getNumChildren(); ++i){
-                        SEQ64::say("-- Section " + bestlist.getChild(i).getProperty(idSection).toString() 
+                        dbgmsg("-- Section " + bestlist.getChild(i).getProperty(idSection).toString() 
                                        + " cmd " + bestlist.getChild(i).getProperty(idCmd).toString());
                     }
                     importresult |= 2;
@@ -1668,7 +1708,7 @@ void SeqFile::optimize(ValueTree midiopts){
             }
         }
         //Replace all 2-loops of 1-calls, 2-loops of 2-calls, or 3-loops of 1-calls with individual calls
-        SEQ64::sayNoNewline("\nFixing short-looped calls...");
+        dbgmsg("\nFixing short-looped calls...", false);
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){
             section1 = structure.getChild(sec1);
             stype1 = section1.getProperty(idSType, -1);
@@ -1684,8 +1724,8 @@ void SeqFile::optimize(ValueTree midiopts){
                     if(command3.getProperty(idAction, "No Action").toString() != "Loop End") continue;
                     command2 = section1.getChild(cmd1+1);
                     if(command2.getProperty(idAction, "No Action").toString() != "Call Same Level") continue;
-                    //SEQ64::say("----Converting 3-loop of 1-call to 3 calls in sec " + String(sec1) + " cmd " + String(cmd1));
-                    SEQ64::sayNoNewline("*");
+                    //dbgmsg("----Converting 3-loop of 1-call to 3 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                    dbgmsg("*", false);
                     //Remove loop start, replace with call
                     section1.removeChild(cmd1, nullptr);
                     section1.addChild(command2.createCopy(), cmd1, nullptr);
@@ -1699,8 +1739,8 @@ void SeqFile::optimize(ValueTree midiopts){
                     command3 = section1.getChild(cmd1+2);
                     command4 = section1.getChild(cmd1+3);
                     if(command3.getProperty(idAction, "No Action").toString() == "Loop End"){
-                        //SEQ64::say("----Converting 2-loop of 1-call to 2 calls in sec " + String(sec1) + " cmd " + String(cmd1));
-                        SEQ64::sayNoNewline("*");
+                        //dbgmsg("----Converting 2-loop of 1-call to 2 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                        dbgmsg("*", false);
                         //Remove loop start, replace with call
                         section1.removeChild(cmd1, nullptr);
                         section1.addChild(command2.createCopy(), cmd1, nullptr);
@@ -1710,8 +1750,8 @@ void SeqFile::optimize(ValueTree midiopts){
                         cmd1--; //Go back so we hit the next command
                     }else if(command4.getProperty(idAction, "No Action").toString() == "Loop End"){
                         if(command3.getProperty(idAction, "No Action").toString() != "Call Same Level") continue;
-                        //SEQ64::say("----Converting 2-loop of 2-calls to 4 calls in sec " + String(sec1) + " cmd " + String(cmd1));
-                        SEQ64::sayNoNewline("*");
+                        //dbgmsg("----Converting 2-loop of 2-calls to 4 calls in sec " + String(sec1) + " cmd " + String(cmd1));
+                        dbgmsg("*", false);
                         //Remove loop start
                         section1.removeChild(cmd1, nullptr);
                         //Remove loop end
@@ -1729,7 +1769,7 @@ void SeqFile::optimize(ValueTree midiopts){
 }
 
 void SeqFile::reduceTrackNotes(){
-    SEQ64::say("\nReducing track notes to shortest types...");
+    dbgmsg("\nReducing track notes to shortest types...");
     int sec, lastdelay, delay, gate, cmd;
     ValueTree section;
     ValueTree command, newcommand, paramd, paramg;
@@ -1738,7 +1778,7 @@ void SeqFile::reduceTrackNotes(){
     for(sec=0; sec<structure.getNumChildren(); sec++){
         section = structure.getChild(sec);
         if((int)section.getProperty(idSType, -1) != 2) continue;
-        //SEQ64::say("--Section " + String(sec));
+        //dbgmsg("--Section " + String(sec));
         lastdelay = -1234;
         for(cmd=0; cmd<section.getNumChildren(); cmd++){
             command = section.getChild(cmd);
@@ -1782,6 +1822,7 @@ void SeqFile::reduceTrackNotes(){
 ///////////////////////////// exportMIDI functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+#if 0
 
 //Stype: 0 seq hdr, 1 chn hdr, 2 track data
 ValueTree SeqFile::getDescription(uint8 firstbyte, int stype){
@@ -1821,7 +1862,7 @@ ValueTree SeqFile::getCommand(uint32 address, int stype){
         ret = desc.createCopy();
         cmdoffset = c - (int)ret.getProperty(idCmd, 0);
         action = desc.getProperty(idAction, "No Action");
-        //SEQ64::say(ROM::hex((uint32)address, 6) + ": " + ROM::hex(c) + " " + action);
+        //dbgmsg(hex((uint32)address, 6) + ": " + hex(c) + " " + action);
         for(paramindex=0; paramindex<ret.getNumChildren(); paramindex++){
             param = ret.getChild(paramindex);
             meaning = param.getProperty(idMeaning, "None");
@@ -1864,7 +1905,7 @@ ValueTree SeqFile::getCommand(uint32 address, int stype){
                         paramlen++;
                     }
                 }else{
-                    SEQ64::say("Due to SeqFile variable length format, length > 2 not defined!");
+                    dbgmsg("Due to SeqFile variable length format, length > 2 not defined!");
                     paramvalue = 0;
                     len += datalen;
                     paramlen += datalen;
@@ -1872,7 +1913,7 @@ ValueTree SeqFile::getCommand(uint32 address, int stype){
                 param.setProperty(idDataAddr, (int)(a-address), nullptr);
                 param.setProperty(idDataActualLen, paramlen, nullptr);
             }else{
-                SEQ64::say("Invalid command description! datasrc == " + datasrc + ", action == " + action);
+                dbgmsg("Invalid command description! datasrc == " + datasrc + ", action == " + action);
             }
             //Store info about parameter
             param.setProperty(idValue, paramvalue, nullptr);
@@ -1910,13 +1951,13 @@ int SeqFile::getPtrAddress(ValueTree command, uint32 currentAddr){
         if(param.isValid()){
             address = (int)getAdjustedValue(param) + (int)currentAddr;
         }else{
-            SEQ64::say("@" + ROM::hex(currentAddr,4) + ": Pointer with no address value!");
+            dbgmsg("@" + hex(currentAddr,4) + ": Pointer with no address value!");
             return -1;
         }
     }
     if(address >= data.size()){
-        SEQ64::say("@" + ROM::hex(currentAddr,4) + ": Pointer off end of sequence to " 
-                + ROM::hex((uint32)address,4) + ", skipping!");
+        dbgmsg("@" + hex(currentAddr,4) + ": Pointer off end of sequence to " 
+                + hex((uint32)address,4) + ", skipping!");
         return -1;
     }
     return address;
@@ -2001,36 +2042,39 @@ void exportMIDI(File midifile, ValueTree midiopts){
     msg = MidiMessage::textMetaEvent(0x06, "Section 0");
     msg.setTimeStamp(0);
     mastertrack.addEvent(msg);
+    /*
+    TODO banks
     //Bank setup
     //Try to load bank number
     std::unique_ptr<BankFile> bank = nullptr;
     do{
         if(bank_num < 0){
-            SEQ64::say("No bank associated with this sequence at load time");
+            dbgmsg("No bank associated with this sequence at load time");
             break;
         }
         //Look up bank info
         ValueTree abinfonode = romdesc.getChildWithName("knownfilelist")
                 .getChildWithProperty("type", "Audiobank");
         if(!abinfonode.isValid()){
-            SEQ64::say("No Audiobank Index defined in RomDesc, cannot load bank");
+            dbgmsg("No Audiobank Index defined in RomDesc, cannot load bank");
             break;
         }
         uint32 abaddr = (int)abinfonode.getProperty("address");
         if(abaddr >= rom.getSize()){
-            SEQ64::say("Invalid Audiobank Index in RomDesc " + ROM::hex(abaddr) + ", cannot load bank");
+            dbgmsg("Invalid Audiobank Index in RomDesc " + hex(abaddr) + ", cannot load bank");
             break;
         }
         //Load bank
-        SEQ64::say("Loading bank " + ROM::hex((uint8)bank_num));
+        dbgmsg("Loading bank " + hex((uint8)bank_num));
         bank.reset(new BankFile(romdesc));
         if(!bank->load(rom, bank_num)){
-            SEQ64::say("Loading bank " + String(bank_num) + " failed");
+            dbgmsg("Loading bank " + String(bank_num) + " failed");
             bank = nullptr;
         }
     }while(false);
+    */
     //BEGIN
-    SEQ64::say("EXPORTING MIDI FILE");
+    dbgmsg("EXPORTING MIDI FILE");
     t = 0;
     a = 0;
 	channel = notelayer = 0;
@@ -2044,8 +2088,8 @@ void exportMIDI(File midifile, ValueTree midiopts){
         //Normal actions
         if(action == "Unknown"){
             //do nothing
-            SEQ64::say("Unknown Action " + ROM::hex((uint8)(int)command.getProperty(idCmd)) 
-                    + " in stype " + String(stype) + " @" + ROM::hex(a, 6));
+            dbgmsg("Unknown Action " + hex((uint8)(int)command.getProperty(idCmd)) 
+                    + " in stype " + String(stype) + " @" + hex(a, 6));
         }else if(action == "No Action"){
             //do nothing
         }else if(action == "Sequence Format"){
@@ -2069,11 +2113,11 @@ void exportMIDI(File midifile, ValueTree midiopts){
             //Pop return address
             stackptr--;
             while(stackptr >= 0 && stypestack[stackptr] == -4){
-                SEQ64::say("End of Data while in a loop (i.e. corrupt sequence)!");
+                dbgmsg("End of Data while in a loop (i.e. corrupt sequence)!");
                 stackptr--;
             }
             if(stackptr < 0 || stypestack[stackptr] < 0){
-                SEQ64::say("FATAL: Hopelessly corrupted sequence structure!");
+                dbgmsg("FATAL: Hopelessly corrupted sequence structure!");
                 break;
             }
             //Restore values
@@ -2084,7 +2128,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                 stype = stypestack[stackptr];
             }
         }else if(action == "Jump Same Level"){
-            SEQ64::say("Ignoring Jump Same Level @" + ROM::hex(a,4));
+            dbgmsg("Ignoring Jump Same Level @" + hex(a,4));
         }else if(action == "Call Same Level"){
             value = getPtrAddress(command, a);
             if(value < 0) continue;
@@ -2094,7 +2138,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             stypestack[stackptr] = stype;
             stackptr++;
             if(stackptr >= stack_size){
-                SEQ64::say("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
+                dbgmsg("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
                 break;
             }
             a = address;
@@ -2102,7 +2146,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             param = command.getChildWithProperty(idMeaning, "Loop Count");
             int loopcount = getAdjustedValue(param);
             if(loopcount < 2 || loopcount > 0xFF){
-                SEQ64::say("Likely invalid loop count = " + String(loopcount) + ", ignoring!");
+                dbgmsg("Likely invalid loop count = " + String(loopcount) + ", ignoring!");
                 continue;
             }
             addrstack[stackptr] = a;
@@ -2110,12 +2154,12 @@ void exportMIDI(File midifile, ValueTree midiopts){
             stypestack[stackptr] = -4; //means loop stack entry
             stackptr++;
             if(stackptr >= stack_size){
-                SEQ64::say("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
+                dbgmsg("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
                 break;
             }
         }else if(action == "Loop End"){
             if(stackptr <= 0 || stypestack[stackptr-1] != -4){
-                SEQ64::say("Loop End command not after Loop Start, ignoring!");
+                dbgmsg("Loop End command not after Loop Start, ignoring!");
                 continue;
             }
             stackptr--;
@@ -2134,13 +2178,13 @@ void exportMIDI(File midifile, ValueTree midiopts){
                 channel = getAdjustedValue(param);
             }
             if(channel >= 16){
-                SEQ64::say("Ptr Channel Header with channel >= 16!");
+                dbgmsg("Ptr Channel Header with channel >= 16!");
                 continue;
             }
             //Valid pointer
             //MIDI file section
             if(willBeNewTSec){
-                SEQ64::say("New section @" + ROM::hex(a,4) + ", t=" + ROM::hex(t,4));
+                dbgmsg("New section @" + hex(a,4) + ", t=" + hex(t,4));
                 //Finish current section
                 curtsec->address_end = a - cmdlen;
                 //Make new section
@@ -2161,7 +2205,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             stypestack[stackptr] = stype;
             stackptr++;
             if(stackptr >= stack_size){
-                SEQ64::say("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
+                dbgmsg("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
                 break;
             }
             a = address;
@@ -2169,14 +2213,14 @@ void exportMIDI(File midifile, ValueTree midiopts){
             velocity = 127;
             gate = 0xFF;
             delay = -1;
-            //SEQ64::say("----T" + ROM::hex(t, 6) + ": Entering Chan " + String(channel) + " Hdr");
+            //dbgmsg("----T" + hex(t, 6) + ": Entering Chan " + String(channel) + " Hdr");
         }else if(action == "Ptr Track Data"){
             value = getPtrAddress(command, a);
             if(value < 0) continue;
             address = value;
             param = command.getChildWithProperty(idMeaning, "Note Layer");
             if(!param.isValid()){
-                SEQ64::say("Ptr Track Data with no note layer value!");
+                dbgmsg("Ptr Track Data with no note layer value!");
                 continue;
             }
             notelayer = getAdjustedValue(param);
@@ -2185,17 +2229,17 @@ void exportMIDI(File midifile, ValueTree midiopts){
             stypestack[stackptr] = stype;
             stackptr++;
             if(stackptr >= stack_size){
-                SEQ64::say("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
+                dbgmsg("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
                 break;
             }
             a = address;
             stype = 2;
-            //SEQ64::say("----====T" + ROM::hex(t, 6) + ": Entering Track layer " + String(notelayer));
-            //SEQ64::say("@" + ROM::hex(a, 6) + ": Track Data " + String(notelayer));
+            //dbgmsg("----====T" + hex(t, 6) + ": Entering Track layer " + String(notelayer));
+            //dbgmsg("@" + hex(a, 6) + ": Track Data " + String(notelayer));
         }else if(action == "Master Volume"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Master Volume event with no value!");
+                dbgmsg("Master Volume event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2223,7 +2267,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                 mastertrack.addEvent(msg);
                 continue;
             }else{
-                SEQ64::say("Master Volume event, unknown mapping: " + mtrvol + ", ignoring");
+                dbgmsg("Master Volume event, unknown mapping: " + mtrvol + ", ignoring");
                 continue;
             }
             if(stype == 0){
@@ -2241,7 +2285,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Tempo"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Tempo event with no value!");
+                dbgmsg("Tempo event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2257,7 +2301,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Chn Priority"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Chn Priority event with no value!");
+                dbgmsg("Chn Priority event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2269,7 +2313,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             }else if(chnpriority == "CC79 (SC10)"){
                 cc = 79;
             }else{
-                SEQ64::say("Channel Priority event, unknown mapping: " + chnpriority + ", ignoring");
+                dbgmsg("Channel Priority event, unknown mapping: " + chnpriority + ", ignoring");
                 continue;
             }
             msg = MidiMessage::controllerEvent(channel+1, cc, value);
@@ -2278,7 +2322,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Chn Volume"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Chn Volume event with no value!");
+                dbgmsg("Chn Volume event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2288,7 +2332,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             }else if(chnvol == "CC11 (Expr)"){
                 cc = 11;
             }else{
-                SEQ64::say("Channel Volume event, unknown mapping: " + chnvol + ", ignoring");
+                dbgmsg("Channel Volume event, unknown mapping: " + chnvol + ", ignoring");
                 continue;
             }
             msg = MidiMessage::controllerEvent(channel+1, cc, value);
@@ -2297,7 +2341,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Chn Pan"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Chn Pan event with no value!");
+                dbgmsg("Chn Pan event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2307,7 +2351,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Chn Effects"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Chn Effects event with no value!");
+                dbgmsg("Chn Effects event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2317,7 +2361,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Chn Vibrato"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Chn Vibrato event with no value!");
+                dbgmsg("Chn Vibrato event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2327,7 +2371,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Chn Pitch Bend"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Chn Pitch Bend event with no value!");
+                dbgmsg("Chn Pitch Bend event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2335,14 +2379,14 @@ void exportMIDI(File midifile, ValueTree midiopts){
             value = (1<<13) + (value << 7);
             if(value < 0) value = 0;
             if(value >= (1<<14)) value = (1<<14) - 1;
-            //SEQ64::say("Pitch Bend original value " + String(value) + " or " + ROM::hex((uint32)value));
+            //dbgmsg("Pitch Bend original value " + String(value) + " or " + hex((uint32)value));
             msg = MidiMessage::pitchWheel(channel+1, value);
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Transpose"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Chn Transpose event with no value!");
+                dbgmsg("Chn Transpose event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2353,7 +2397,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Layer Transpose"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Layer Transpose event with no value!");
+                dbgmsg("Layer Transpose event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
@@ -2362,45 +2406,47 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Chn Instrument"){
             param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                SEQ64::say("Chn Instrument event with no value!");
+                dbgmsg("Chn Instrument event with no value!");
                 continue;
             }
             value = getAdjustedValue(param);
-            SEQ64::say("Chn Instrument " + String(value) + " channel " + String(channel));
+            dbgmsg("Chn Instrument " + String(value) + " channel " + String(channel));
             //Cancel previous progoptions
             msg = MidiMessage::controllerEvent(channel+1, progoptionsnullcc, 0);
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
+            /*
+            TODO bank integration
             //Load MIDI equivalent instrument from bank
             int midiprogram = value;
             do{
                 if(midiopts.getProperty("exportformat", "generalmidi").toString() == "original"){
-                    SEQ64::say("Not converting Chn Instrument because want original format export");
+                    dbgmsg("Not converting Chn Instrument because want original format export");
                     break;
                 }
                 if(bank == nullptr){
-                    SEQ64::say("Could not load MIDI instrument from bank: no bank specified");
+                    dbgmsg("Could not load MIDI instrument from bank: no bank specified");
                     break;
                 }
                 ValueTree instlist = bank->d.getChildWithName("abbank").getChildWithProperty("name", "ABBank")
                         .getChildWithProperty("meaning", "List of Ptrs to Insts");
                 if(!instlist.isValid()){
-                    SEQ64::say("Could not load MIDI instrument from bank: abbank invalid");
+                    dbgmsg("Could not load MIDI instrument from bank: abbank invalid");
                     break;
                 }
                 ValueTree instlistitem = instlist.getChild(value);
                 if(!instlistitem.isValid()){
-                    SEQ64::say("Could not load MIDI instrument from bank: no ABBank entry for inst #" + String(value) + " (usually means out of range)");
+                    dbgmsg("Could not load MIDI instrument from bank: no ABBank entry for inst #" + String(value) + " (usually means out of range)");
                     break;
                 }
                 int instindex = instlistitem.getProperty("index", -1);
                 if(instindex < 0){
-                    SEQ64::say("Could not load MIDI instrument from bank: instrument is nullptr");
+                    dbgmsg("Could not load MIDI instrument from bank: instrument is nullptr");
                     break;
                 }
                 ValueTree instrument = bank->d.getChildWithName("instruments").getChild(instindex);
                 if(!instrument.isValid()){
-                    SEQ64::say("Could not load MIDI instrument from bank: could not load instrument #" + String(instindex));
+                    dbgmsg("Could not load MIDI instrument from bank: could not load instrument #" + String(instindex));
                     break;
                 }
                 String map = instrument.getProperty("map", "Error").toString();
@@ -2415,7 +2461,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                         tpopt.setProperty("tp", tp, nullptr);
                         progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
                     }
-                    SEQ64::say("Changed instrument " + String(value) + " to program " + String(midiprogram)
+                    dbgmsg("Changed instrument " + String(value) + " to program " + String(midiprogram)
                              + ", transpose " + String(tp));
                 }else if(map == "drum"){
                     msg = MidiMessage::controllerEvent(channel+1, progoptionscc, progoptions.getNumChildren());
@@ -2427,14 +2473,14 @@ void exportMIDI(File midifile, ValueTree midiopts){
                     tpopt.setProperty("drum3", instrument.getProperty("drumsplit3", 0), nullptr);
                     ValueTree temp = instrument.getChildWithName("struct").getChildWithProperty("meaning", "Split Point 1");
                     if(!temp.isValid()){
-                        SEQ64::say("Instrument has no Split Point 1 field!");
+                        dbgmsg("Instrument has no Split Point 1 field!");
                         tpopt.setProperty("split1", -1, nullptr);
                     }else{
                         tpopt.setProperty("split1", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
                     }
                     temp = instrument.getChildWithName("struct").getChildWithProperty("meaning", "Split Point 2");
                     if(!temp.isValid()){
-                        SEQ64::say("Instrument has no Split Point 2 field!");
+                        dbgmsg("Instrument has no Split Point 2 field!");
                         tpopt.setProperty("split2", -1, nullptr);
                     }else{
                         tpopt.setProperty("split2", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
@@ -2442,13 +2488,11 @@ void exportMIDI(File midifile, ValueTree midiopts){
                     progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
                     if(midiopts.getProperty("instdrum", "ch10").toString() == "multi"){
                         //Add multi-drum-channel hacks
-                        /*
                         //GM2 mode on
-                        uint8 gm2modeonsysex[4] = {0x7E, 0x7F, 0x09, 0x03};
-                        msg = MidiMessage::createSysExMessage(gm2modeonsysex, 4);
-                        msg.setTimeStamp(t*ticks_multiplier);
-                        mtracks[channel]->addEvent(msg);
-                        */
+                        // uint8 gm2modeonsysex[4] = {0x7E, 0x7F, 0x09, 0x03};
+                        // msg = MidiMessage::createSysExMessage(gm2modeonsysex, 4);
+                        // msg.setTimeStamp(t*ticks_multiplier);
+                        // mtracks[channel]->addEvent(msg);
                         //GM2 bank 120,0 is percussion
                         msg = MidiMessage(0xB0 | channel, 0, 120, t*ticks_multiplier);
                         mtracks[channel]->addEvent(msg);
@@ -2464,6 +2508,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                     continue; //Don't add program change message
                 }
             }while(false);
+            */
             //
             msg = MidiMessage::programChange(channel+1, midiprogram);
             msg.setTimeStamp(t*ticks_multiplier);
@@ -2474,14 +2519,14 @@ void exportMIDI(File midifile, ValueTree midiopts){
             //Note
             param = command.getChildWithProperty(idMeaning, "Note");
             if(!param.isValid()){
-                SEQ64::say("Track Note event with no note!");
+                dbgmsg("Track Note event with no note!");
                 continue;
             }
             value = getAdjustedValue(param);
             transpose = transposes[(channel*max_layers)+notelayer];
             note = value + transpose + midi_basenote;
             if(note < 0 || note >= 128){
-                SEQ64::say("Bad (transposed?) note @" + ROM::hex(a, 4)
+                dbgmsg("Bad (transposed?) note @" + hex(a, 4)
                         + ": c " + String(channel) + ", l " + String(notelayer)
                         + ": note " + String(value)
                         + ", transpose " + String(transpose)
@@ -2512,10 +2557,10 @@ void exportMIDI(File midifile, ValueTree midiopts){
                 //qDelay = true;
             }else{
                 if(delay < 0){
-                    SEQ64::say("Track Note command using previous delay, but not previously set! (Corrupted sequence / will break timings)");
+                    dbgmsg("Track Note command using previous delay, but not previously set! (Corrupted sequence / will break timings)");
                     delay = 1;
                 }
-                //SEQ64::say("@" + ROM::hex(a, 6) + ": No delay value given, using current " + ROM::hex((uint32)delay, 4));
+                //dbgmsg("@" + hex(a, 6) + ": No delay value given, using current " + hex((uint32)delay, 4));
                 //Add it so we actually do the delay!
                 param = ValueTree("parameter");
                 param.setProperty(idMeaning, "Delay", nullptr);
@@ -2523,9 +2568,9 @@ void exportMIDI(File midifile, ValueTree midiopts){
                 command.addChild(param, command.getNumChildren(), nullptr);
             }
             /*
-            SEQ64::say("@" + ROM::hex(a, 4) + " c " + ROM::hex((uint8)channel, 1) + " l " + ROM::hex((uint8)notelayer, 1)
-                    + " n " + ROM::hex((uint8)note)       + " v " +  ROM::hex((uint8)velocity) 
-                    + " g " +  ROM::hex((uint32)gate, 4)  + " d " + ROM::hex((uint32)delay, 4)
+            dbgmsg("@" + hex(a, 4) + " c " + hex((uint8)channel, 1) + " l " + hex((uint8)notelayer, 1)
+                    + " n " + hex((uint8)note)       + " v " +  hex((uint8)velocity) 
+                    + " g " +  hex((uint32)gate, 4)  + " d " + hex((uint32)delay, 4)
                     + " r " + String((float)((gate*delay) / 256.0))
                     + (qDelay ? ("") : (" (using old delay)"))
                     + (qGate ? ("") : (" (no gate)"))
@@ -2538,7 +2583,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             msg.setTimeStamp((t + delay - ((gate*delay) >> 8))*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else{
-            SEQ64::say("Unknown command action " + action + "!");
+            dbgmsg("Unknown command action " + action + "!");
         }
         //Execute delay
         param = command.getChildWithProperty(idMeaning, "Delay");
@@ -2548,21 +2593,21 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }
     }
     if(!ended_naturally){
-        SEQ64::say("Converting sequence ran off end! a==" + ROM::hex(a) + ", length==" + ROM::hex((uint32)data.size()));
+        dbgmsg("Converting sequence ran off end! a==" + hex(a) + ", length==" + hex((uint32)data.size()));
     }
     //Ensure messages are in order
     for(channel=0; channel<16; channel++){
         mtracks.set(channel, ensureSimulMsgsInOrder(*mtracks[channel]), true);
     }
     //Resolve progoptions
-    SEQ64::say("Resolving progoptions...");
+    dbgmsg("Resolving progoptions...");
     for(channel=0; channel<16; channel++){
         int tp = 0;
         int drummode = 0, drum1 = -1, drum2 = -1, drum3 = -1, split1 = -1, split2 = -1;
         for(int m=0; m<mtracks[channel]->getNumEvents(); ++m){
             MidiMessage* msgp = &(mtracks[channel]->getEventPointer(m)->message);
             if(msgp->isController() && msgp->getControllerNumber() == progoptionsnullcc){
-                SEQ64::say("--Chn " + String(channel) + ": progoptions reset");
+                dbgmsg("--Chn " + String(channel) + ": progoptions reset");
                 tp = 0;
                 drummode = 0;
                 mtracks[channel]->deleteEvent(m, false);
@@ -2572,11 +2617,11 @@ void exportMIDI(File midifile, ValueTree midiopts){
                 mtracks[channel]->deleteEvent(m, false);
                 --m;
                 if(!po.isValid()){
-                    SEQ64::say("progoptions consistency error!");
+                    dbgmsg("progoptions consistency error!");
                     continue;
                 }
                 if(po.getType().toString() == "instrument"){
-                    SEQ64::say("--Chn " + String(channel) + ": new inst progoptions tp=" + String(tp));
+                    dbgmsg("--Chn " + String(channel) + ": new inst progoptions tp=" + String(tp));
                     tp = po.getProperty("tp", 0);
                 }else if(po.getType().toString() == "drum"){
                     drum1 = po.getProperty("drum1", -1);
@@ -2585,14 +2630,14 @@ void exportMIDI(File midifile, ValueTree midiopts){
                     split1 = po.getProperty("split1", -1);
                     split2 = po.getProperty("split2", -1);
                     if(midiopts.getProperty("instdrum", "ch10").toString() == "multi"){
-                        SEQ64::say("--Chn " + String(channel) + ": new progoptions multi drum mode");
+                        dbgmsg("--Chn " + String(channel) + ": new progoptions multi drum mode");
                         drummode = 2;
                     }else{
-                        SEQ64::say("--Chn " + String(channel) + ": new progoptions ch10 drum mode");
+                        dbgmsg("--Chn " + String(channel) + ": new progoptions ch10 drum mode");
                         drummode = 1;
                     }
                 }else{
-                    SEQ64::say("progoptions type error!");
+                    dbgmsg("progoptions type error!");
                 }
             }else if(msgp->isNoteOnOrOff()){
                 if(drummode == 0){
@@ -2619,7 +2664,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             }
         }
     }
-    SEQ64::say("Finishing MIDI...");
+    dbgmsg("Finishing MIDI...");
     //Ensure messages are in order (again)
     for(channel=0; channel<16; channel++){
         mtracks.set(channel, ensureSimulMsgsInOrder(*mtracks[channel]), true);
@@ -2629,7 +2674,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
     for(channel=0; channel<16; channel++){
         ret->addTrack(*mtracks[channel]);
     }
-    SEQ64::say("====== DONE ======");
+    dbgmsg("====== DONE ======");
     return ret;
 }
 
@@ -2662,7 +2707,7 @@ bool SeqFile::isSectionAt(uint32 a, int stype){
     for(int s=0; s<sections.size(); s++){
         if(sections[s]->address != a) continue;
         if(sections[s]->stype != stype){
-            SEQ64::say("Pointer to section @" + ROM::hex(a,4) + " from stype " 
+            dbgmsg("Pointer to section @" + hex(a,4) + " from stype " 
                     + String(stype) + " to stype " + String(sections[s]->stype) + "!");
         }
         return true;
@@ -2725,29 +2770,29 @@ OwnedArray<SeqData> sections;
 
 bool SeqFile::load(ROM& rom, int seqnumber){
     //if(rom.byteOrdering != ROM::ABCD && ((seqaddr & 0x00000003) || (length & 0x00000003))){
-    //    SEQ64::say("Byte-swapped ROM with non-word-aligned data... this will end poorly!");
+    //    dbgmsg("Byte-swapped ROM with non-word-aligned data... this will end poorly!");
     //}
     //Get file and index properties from RomDesc
     ValueTree asiinfonode = romdesc.getChildWithName("knownfilelist")
             .getChildWithProperty("type", "Audioseq Index");
     if(!asiinfonode.isValid()){
-        SEQ64::say("Audioseq Index not defined in RomDesc!");
+        dbgmsg("Audioseq Index not defined in RomDesc!");
         return false;
     }
     uint32 asiaddr = (int)asiinfonode.getProperty("address");
     if(asiaddr >= rom.getSize()){
-        SEQ64::say("Audioseq Index at invalid index " + ROM::hex(asiaddr) + "!");
+        dbgmsg("Audioseq Index at invalid index " + hex(asiaddr) + "!");
         return false;
     }
     ValueTree asinfonode = romdesc.getChildWithName("knownfilelist")
             .getChildWithProperty("type", "Audioseq");
     if(!asinfonode.isValid()){
-        SEQ64::say("Audioseq not defined in RomDesc!");
+        dbgmsg("Audioseq not defined in RomDesc!");
         return false;
     }
     uint32 asaddr = (int)asinfonode.getProperty("address");
     if(asaddr >= rom.getSize()){
-        SEQ64::say("Audioseq at invalid index " + ROM::hex(asaddr) + "!");
+        dbgmsg("Audioseq at invalid index " + hex(asaddr) + "!");
         return false;
     }
     //Get sequence properties from index
@@ -2760,40 +2805,42 @@ bool SeqFile::load(ROM& rom, int seqnumber){
         seqlen = rom.readWord(asiaddr + (8*seqnumber) + 8);
     }
     if(seqlen >= 10000000){
-        SEQ64::say("Trying to load sequence more than 10MB! Probably wrong!");
+        dbgmsg("Trying to load sequence more than 10MB! Probably wrong!");
         return false;
     }
     //Actually load sequence
-    SEQ64::say("Loading sequence file from " + ROM::hex(seqaddr) + " length " + ROM::hex(seqlen));
+    dbgmsg("Loading sequence file from " + hex(seqaddr) + " length " + hex(seqlen));
     data.ensureStorageAllocated(seqlen);
     for(int i=0; i<seqlen; i++){
         data.add(rom.readByte(i+seqaddr));
     }
-    SEQ64::say("Copied ROM data to sequence, size == " + ROM::hex((uint32)data.size()));
+    dbgmsg("Copied ROM data to sequence, size == " + hex((uint32)data.size()));
     trim();
+    /*
+    TODO bank integration
     //Try to load bank number
     bank_num = -1;
     ValueTree sbminfonode = romdesc.getChildWithName("knownfilelist")
             .getChildWithProperty("type", "Sequence Banks Map");
     do{
         if(!sbminfonode.isValid()){
-            SEQ64::say("No Sequence Banks Map defined in RomDesc, cannot load bank");
+            dbgmsg("No Sequence Banks Map defined in RomDesc, cannot load bank");
             break;
         }
         uint32 sbmaddr = (int)sbminfonode.getProperty("address");
         if(sbmaddr >= rom.getSize()){
-            SEQ64::say("Invalid Sequence Banks Map in RomDesc " + ROM::hex(sbmaddr) + ", cannot load bank");
+            dbgmsg("Invalid Sequence Banks Map in RomDesc " + hex(sbmaddr) + ", cannot load bank");
             break;
         }
         //Read bank number
         uint16 ptr = rom.readHalfWord(sbmaddr + (seqnumber << 1));
         uint8 seq_isetcount = rom.readByte(sbmaddr + ptr);
         if(seq_isetcount == 0){
-            SEQ64::say("Sequence has no banks, cannot load bank");
+            dbgmsg("Sequence has no banks, cannot load bank");
             break;
         }
         if(seq_isetcount > 1){
-            SEQ64::say(
+            dbgmsg(
                     "========================== PLEASE NOTE ============================\n"
                     "This sequence uses more than one bank.\n"
                     "By default the first one will be used for MIDI export--\n"
@@ -2802,6 +2849,7 @@ bool SeqFile::load(ROM& rom, int seqnumber){
         }
         bank_num = rom.readByte(sbmaddr + ptr + 1);
     }while(false);
+    */
     //Before we leave
     parse();
     return true;
@@ -2810,36 +2858,35 @@ bool SeqFile::load(ROM& rom, int seqnumber){
 bool SeqFile::loadRaw(File file){
     int len = file.getSize();
     if(!file.existsAsFile() || len <= 0){
-        SEQ64::say("File " + file.getFullPathName() + " doesn't exist!");
+        dbgmsg("File " + file.getFullPathName() + " doesn't exist!");
         return false;
     }
     if(len > 1000000){
-        SEQ64::say("File " + file.getFullPathName() + " is more than 1MB, probably not a sequence!");
+        dbgmsg("File " + file.getFullPathName() + " is more than 1MB, probably not a sequence!");
         return false;
     }
     FileInputStream fis(file);
     if(fis.failedToOpen()){
-        SEQ64::say("Couldn't open file " + file.getFullPathName() + "!");
+        dbgmsg("Couldn't open file " + file.getFullPathName() + "!");
         return false;
     }
-    SEQ64::say("Loading " + String(len) + " bytes to sequence from " + file.getFullPathName());
+    dbgmsg("Loading " + String(len) + " bytes to sequence from " + file.getFullPathName());
     data.clear();
     data.ensureStorageAllocated(len);
     for(int i=0; i<len; ++i){
         data.add(fis.readByte());
     }
     name = file.getFileNameWithoutExtension();
-    bank_num = -1;
-    SEQ64::say("Successfully loaded raw sequence");
+    dbgmsg("Successfully loaded raw sequence");
     parse();
     return true;
 }
 
 void SeqFile::parse(){
     sections.clear();
-    SEQ64::say("Sequence starts with " 
-            + ROM::hex(data[0]) + ROM::hex(data[1]) + ROM::hex(data[2]) + ROM::hex(data[3])
-            + ROM::hex(data[4]) + ROM::hex(data[5]) + ROM::hex(data[6]) + ROM::hex(data[7]));
+    dbgmsg("Sequence starts with " 
+            + hex(data[0]) + hex(data[1]) + hex(data[2]) + hex(data[3])
+            + hex(data[4]) + hex(data[5]) + hex(data[6]) + hex(data[7]));
     ValueTree command, param;
     String action, meaning;
     int cmdlen = 1, channel = -1, notelayer = -1, value;
@@ -2857,7 +2904,7 @@ void SeqFile::parse(){
     sec = getOrMakeSectionAt(0);
     sec->stype = 0;
     //
-    SEQ64::say("Parsing Sequence");
+    dbgmsg("Parsing Sequence");
     while(a < data.size()){
         //See if we just ran into any existing section
         for(value=0; value<sections.size(); value++){
@@ -2870,17 +2917,17 @@ void SeqFile::parse(){
                 if(!tmpsec->finished){
                     //Unfinished, that's good
                     if(tmpsec->stype == stype){
-                        SEQ64::say("@" + ROM::hex(a,4) + ": ran into branch destination (normal)");
+                        dbgmsg("@" + hex(a,4) + ": ran into branch destination (normal)");
                     }else{
-                        SEQ64::say("@" + ROM::hex(a,4) + ": reading section ran into start of previously-jumped-to section of DIFFERENT type!");
+                        dbgmsg("@" + hex(a,4) + ": reading section ran into start of previously-jumped-to section of DIFFERENT type!");
                     }
                     sections.remove(value);
                     value--;
                 }else{
-                    SEQ64::say("@" + ROM::hex(a,4) + ": reading section ran into start of already-read data!");
+                    dbgmsg("@" + hex(a,4) + ": reading section ran into start of already-read data!");
                 }
             }else{
-                SEQ64::say("@" + ROM::hex(a,4) + ": reading section lawnmowed across start of existing section!");
+                dbgmsg("@" + hex(a,4) + ": reading section lawnmowed across start of existing section!");
             }
         }
         sec->cmdoffsets.add(a);
@@ -2908,7 +2955,7 @@ void SeqFile::parse(){
                 }
                 if(value >= sections.size()){
                     //No non-finished sections
-                    SEQ64::say("Finished parsing sequence");
+                    dbgmsg("Finished parsing sequence");
                     return;
                 }
                 //Finish this section
@@ -2917,7 +2964,7 @@ void SeqFile::parse(){
                 stype = sec->stype;
                 channel = sec->channel;
                 notelayer = sec->layer;
-                SEQ64::say("Finishing unfinished section @" + ROM::hex(a,4));
+                dbgmsg("Finishing unfinished section @" + hex(a,4));
             }else{
                 //Go back to parent section
                 stackptr--;
@@ -2930,14 +2977,14 @@ void SeqFile::parse(){
             value = getPtrAddress(command, a);
             if(value < 0) continue;
             address = value;
-            SEQ64::sayNoNewline("Jump Same Level @" + ROM::hex(a,4) + " to @" + ROM::hex(address,4));
+            dbgmsg("Jump Same Level @" + hex(a,4) + " to @" + hex(address,4), false);
             if(address <= a && address >= sec->address){
                 //Pointer is to earlier in the current section
-                SEQ64::say("...earlier in same section");
+                dbgmsg("...earlier in same section");
                 continue;
             }
             //Make a new section, but don't jump to it
-            SEQ64::say("...making new section for later");
+            dbgmsg("...making new section for later");
             tmpsec = getOrMakeSectionAt(address);
             tmpsec->stype = stype;
             tmpsec->channel = channel;
@@ -2957,7 +3004,7 @@ void SeqFile::parse(){
             sectionstack[stackptr] = sec;
             stackptr++;
             if(stackptr >= stack_size){
-                SEQ64::say("FATAL: Stack Overflow SeqFile::parse()!");
+                dbgmsg("FATAL: Stack Overflow SeqFile::parse()!");
                 break;
             }
             a = address;
@@ -2971,7 +3018,7 @@ void SeqFile::parse(){
             //do nothing
         }else if(action == "Ptr Channel Header"){
             if(stype != 0){
-                SEQ64::say("@" + ROM::hex(a,4) + ": Ptr Channel Header from something other than seq header!");
+                dbgmsg("@" + hex(a,4) + ": Ptr Channel Header from something other than seq header!");
                 continue;
             }
             value = getPtrAddress(command, a);
@@ -2986,7 +3033,7 @@ void SeqFile::parse(){
                 channel = getAdjustedValue(param);
             }
             if(channel >= 16){
-                SEQ64::say("Ptr Channel Header with channel >= 16!");
+                dbgmsg("Ptr Channel Header with channel >= 16!");
                 continue;
             }
             //Jump to new address
@@ -2996,7 +3043,7 @@ void SeqFile::parse(){
             sectionstack[stackptr] = sec;
             stackptr++;
             if(stackptr >= stack_size){
-                SEQ64::say("FATAL: Stack Overflow SeqFile::parse()!");
+                dbgmsg("FATAL: Stack Overflow SeqFile::parse()!");
                 break;
             }
             a = address;
@@ -3006,7 +3053,7 @@ void SeqFile::parse(){
             sec->channel = channel;
         }else if(action == "Ptr Track Data"){
             if(stype != 1){
-                SEQ64::say("@" + ROM::hex(a,4) + ": Ptr Track Data from something other than a channel!");
+                dbgmsg("@" + hex(a,4) + ": Ptr Track Data from something other than a channel!");
                 continue;
             }
             value = getPtrAddress(command, a);
@@ -3018,7 +3065,7 @@ void SeqFile::parse(){
             }
             param = command.getChildWithProperty(idMeaning, "Note Layer");
             if(!param.isValid()){
-                SEQ64::say("Ptr Track Data with no note layer value!");
+                dbgmsg("Ptr Track Data with no note layer value!");
                 continue;
             }
             notelayer = getAdjustedValue(param);
@@ -3029,7 +3076,7 @@ void SeqFile::parse(){
             sectionstack[stackptr] = sec;
             stackptr++;
             if(stackptr >= stack_size){
-                SEQ64::say("FATAL: Stack Overflow SeqFile::parse()!");
+                dbgmsg("FATAL: Stack Overflow SeqFile::parse()!");
                 break;
             }
             a = address;
@@ -3073,10 +3120,10 @@ void SeqFile::parse(){
         }else if(action == "Track Note"){
             //do nothing
         }else{
-            SEQ64::say("Unknown command action " + action + "!");
+            dbgmsg("Unknown command action " + action + "!");
         }
     }
-    SEQ64::say("Parsing sequence ran off end! a==" + ROM::hex(a) + ", length==" + ROM::hex((uint32)data.size()));
+    dbgmsg("Parsing sequence ran off end! a==" + hex(a) + ", length==" + hex((uint32)data.size()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3136,10 +3183,10 @@ void SeqFile::writeCommand(uint32 address, ValueTree command){
                     address += 2;
                 }
             }else{
-                SEQ64::say("Variable datalen only supported with length 1 or 2!");
+                dbgmsg("Variable datalen only supported with length 1 or 2!");
             }
         }else{
-            SEQ64::say("Unknown datasrc: " + datasrc);
+            dbgmsg("Unknown datasrc: " + datasrc);
         }
     }
 }
@@ -3149,7 +3196,7 @@ void SeqFile::writeCommand(uint32 address, ValueTree command){
 ////////////////////////////////////////////////////////////////////////////////
 
 void SeqFile::render(){
-    SEQ64::say("Rendering sequence structure to binary data...");
+    dbgmsg("Rendering sequence structure to binary data...");
     data.clearQuick();
     int datasize = 0x8000;
     data.ensureStorageAllocated(datasize); //Should be enough
@@ -3175,7 +3222,7 @@ void SeqFile::render(){
     int ptraddr = -1, ptrsec, ptrhash, cmd2;
     ValueTree section2, command2, param;
     for(sec=0; sec<structure.getNumChildren(); sec++){
-        //SEQ64::say("----Section " + String(sec));
+        //dbgmsg("----Section " + String(sec));
         section = structure.getChild(sec);
         for(cmd=0; cmd<section.getNumChildren(); cmd++){
             command = section.getChild(cmd);
@@ -3185,7 +3232,7 @@ void SeqFile::render(){
             if(command.hasProperty(idTargetSection)){
                 ptrsec = command.getProperty(idTargetSection);
                 if(ptrsec >= structure.getNumChildren()){
-                    SEQ64::say("Pointer to undefined section!");
+                    dbgmsg("Pointer to undefined section!");
                     importresult |= 2;
                 }else{
                     section2 = structure.getChild(ptrsec);
@@ -3201,7 +3248,7 @@ void SeqFile::render(){
                             }
                         }
                         if(ptraddr < 0){
-                            SEQ64::say("Could not find command with correct hash!");
+                            dbgmsg("Could not find command with correct hash!");
                             ptraddr = 0;
                             importresult |= 2;
                         }
@@ -3218,7 +3265,7 @@ void SeqFile::render(){
                     if(param.isValid()){
                         param.setProperty(idValue, (int)(ptraddr - (address + len)), nullptr);
                     }else{
-                        SEQ64::say("Command had idTargetSection but no parameters with absolute or relative address!");
+                        dbgmsg("Command had idTargetSection but no parameters with absolute or relative address!");
                         importresult |= 2;
                     }
                 }
@@ -3239,7 +3286,7 @@ void SeqFile::render(){
 
 bool SeqFile::saveRaw(File file){
     if(!file.hasWriteAccess()){
-        SEQ64::say("No write access to " + file.getFullPathName() + "!");
+        dbgmsg("No write access to " + file.getFullPathName() + "!");
         return false;
     }
     if(file.exists()){
@@ -3247,24 +3294,26 @@ bool SeqFile::saveRaw(File file){
     }
     FileOutputStream fos(file);
     if(fos.failedToOpen()){
-        SEQ64::say("Couldn't open file " + file.getFullPathName() + " for writing!");
+        dbgmsg("Couldn't open file " + file.getFullPathName() + " for writing!");
         return false;
     }
     for(int i=0; i<data.size(); ++i){
         fos.writeByte(data[i]);
     }
     fos.flush();
-    SEQ64::say("Saved " + String(data.size()) + " bytes from sequence to " + file.getFullPathName());
+    dbgmsg("Saved " + String(data.size()) + " bytes from sequence to " + file.getFullPathName());
     return true;
 }
 
 
 void SeqFile::saveToROM(ROM& rom, uint32 start_addr){
-    SEQ64::say("Saving " + ROM::hex((uint32)data.size(), 4) + " bytes to sequence @" + ROM::hex(start_addr));
+    dbgmsg("Saving " + hex((uint32)data.size(), 4) + " bytes to sequence @" + hex(start_addr));
     for(int i=0; i<data.size(); i++){
         rom.writeByte(i+start_addr, data[i]);
     }
 }
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////// No longer used (GUI editing) /////////////////////////
@@ -3281,10 +3330,10 @@ void SeqFile::trim(){
     }
     lastbyte = (lastbyte & 0xFFFFFFFC) + 4;
     if(lastbyte >= data.size()){
-        SEQ64::say("SeqFile::trim(): no trim required");
+        dbgmsg("SeqFile::trim(): no trim required");
         return;
     }
-    SEQ64::say("Trimming SeqFile from " + ROM::hex((uint32)data.size(), 4) + " to " + ROM::hex((uint32)lastbyte, 4) + " bytes");
+    dbgmsg("Trimming SeqFile from " + hex((uint32)data.size(), 4) + " to " + hex((uint32)lastbyte, 4) + " bytes");
     data.removeRange(lastbyte, data.size() - lastbyte);
 }
 
@@ -3296,7 +3345,7 @@ int SeqFile::getNumSections(){
 String SeqFile::getSectionDescription(int s){
     if(s < 0 || s >= sections.size()) return "";
     SeqData* sec = sections[s];
-    String ret = "@" + ROM::hex(sec->address, 4) + ": ";
+    String ret = "@" + hex(sec->address, 4) + ": ";
     if(sec->stype == 0){
         ret += "Seq -- --";
     }else if(sec->stype == 1){
@@ -3317,10 +3366,10 @@ String SeqFile::getCommandDescription(int s, int c){
     ValueTree cmd = getCommand(a, section->stype);
     int len = cmd.getProperty(idLength, 1);
     for(int i=0; i<len; i++){
-        ret += ROM::hex(data[a+i]) + " ";
+        ret += hex(data[a+i]) + " ";
     }
     ret = ret.paddedRight(' ', 15);
-    ret = "@" + ROM::hex(a, 4) + ": " + ret;
+    ret = "@" + hex(a, 4) + ": " + ret;
     ret += cmd.getProperty(idName, "[Unknown Cmd]").toString();
     return ret;
 }
@@ -3367,7 +3416,7 @@ void SeqFile::insertSpaceAt(uint32 address, int size, int enlargeSection){
 }
 void SeqFile::removeData(uint32 address, int size, int shrinkSection){
     if(size <= 0){
-        SEQ64::say("Asked to remove data with invalid size " + String(size) + "!");
+        dbgmsg("Asked to remove data with invalid size " + String(size) + "!");
         return;
     }
     //Fix pointers
@@ -3410,7 +3459,7 @@ void SeqFile::editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize,
     ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
     if(param.isValid()){
         if(param.getProperty(idDataSrc, "fixed").toString() != "fixed"){
-            SEQ64::say("Address command parameters must be fixed-length! (in " + action + ")");
+            dbgmsg("Address command parameters must be fixed-length! (in " + action + ")");
             return;
         }
         int oldvalue = (int)param.getProperty(idValue, 0);
@@ -3422,7 +3471,7 @@ void SeqFile::editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize,
             int datalen = (int)param.getProperty(idDataLen, 1);
             //Check out-of-range
             if(newvalue < 0 || newvalue >= (1 << (datalen << 3))){ //8-bit for one, 16-bit for two...
-                SEQ64::say("Absolute address pointer going out-of-range @" + ROM::hex(cmdaddr,4) 
+                dbgmsg("Absolute address pointer going out-of-range @" + hex(cmdaddr,4) 
                         + " in " + action + ", now " + String(newvalue) + "!");
                 return;
             }
@@ -3438,11 +3487,11 @@ void SeqFile::editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize,
     param = command.getChildWithProperty(idMeaning, "Relative Address");
     if(param.isValid()){
         if(param.getProperty(idDataSrc, "fixed").toString() != "fixed"){
-            SEQ64::say("Address command parameters must be fixed-length! (in " + action + ")");
+            dbgmsg("Address command parameters must be fixed-length! (in " + action + ")");
             return;
         }
         int oldvalue = (int)param.getProperty(idValue, 0);
-        //SEQ64::say("Relative address value @" + ROM::hex(cmdaddr,4) + " parsed to " + String(oldvalue));
+        //dbgmsg("Relative address value @" + hex(cmdaddr,4) + " parsed to " + String(oldvalue));
         int newvalue = 0;
         int datalen = (int)param.getProperty(idDataLen, 1);
         if(cmdaddr >= daddr && (int)cmdaddr + oldvalue < daddr){
@@ -3455,7 +3504,7 @@ void SeqFile::editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize,
         //Check out-of-range
         int max_value = (1 << ((datalen << 3) - 1)) - 1; //7-bit for one, 15-bit for two...
         if(newvalue < 0 - max_value || newvalue > max_value){
-            SEQ64::say("Relative address pointer going out-of-range @" + ROM::hex(cmdaddr,4) 
+            dbgmsg("Relative address pointer going out-of-range @" + hex(cmdaddr,4) 
                     + " in " + action + ", now " + String(newvalue) + "!");
             return;
         }
@@ -3468,12 +3517,12 @@ void SeqFile::editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize,
 }
 
 int SeqFile::editCmdParam(int section, uint32 address, int stype, String meaning, int newvalue){
-    SEQ64::say("Editing command parameter @" + ROM::hex(address,4) + " stype " + String(stype) + " " + meaning + " to " + ROM::hex((uint32)newvalue));
+    dbgmsg("Editing command parameter @" + hex(address,4) + " stype " + String(stype) + " " + meaning + " to " + hex((uint32)newvalue));
     int ret = 0;
     ValueTree command = getCommand(address, stype);
     ValueTree param = command.getChildWithProperty(idMeaning, meaning);
     if(!param.isValid()){
-        SEQ64::say("Error: asked to edit command parameter with meaning " + meaning + ", does not exist!");
+        dbgmsg("Error: asked to edit command parameter with meaning " + meaning + ", does not exist!");
         return -1;
     }
     int value = param.getProperty(idValue, 0);
@@ -3526,11 +3575,11 @@ int SeqFile::editCmdParam(int section, uint32 address, int stype, String meaning
                 data.set(a+1, (newvalue & 0xFF));
             }
         }else{
-            SEQ64::say("Due to SeqFile variable length format, length > 2 not defined!");
+            dbgmsg("Due to SeqFile variable length format, length > 2 not defined!");
             return -1;
         }
     }else{
-         SEQ64::say("Invalid command description! datasrc == " + datasrc);
+         dbgmsg("Invalid command description! datasrc == " + datasrc);
          return -1;
     }
     return ret;
@@ -3546,7 +3595,7 @@ bool SeqFile::swapCommands(int sectionidx, int firstcmdidx){
     uint32 len_1 = (int)cmd_1.getProperty("length", 1);
     uint32 len_2 = (int)cmd_2.getProperty("length", 1);
     if(len_1 != (cmdaddr_2 - cmdaddr_1)){
-        SEQ64::say("Difference in address between commands not equal to first command's length!");
+        dbgmsg("Difference in address between commands not equal to first command's length!");
         return false;
     }
     //Edit command relative addresses
@@ -3579,10 +3628,10 @@ bool SeqFile::swapCommands(int sectionidx, int firstcmdidx){
 
 void SeqFile::insertCommand(int section, int cmdidx, ValueTree command){
     if(!command.isValid()) return;
-    //SEQ64::say("Writing command " + command.getProperty(idAction).toString() + " section " 
+    //dbgmsg("Writing command " + command.getProperty(idAction).toString() + " section " 
     //        + String(section) + " index " + String(cmdidx));
     if(section >= sections.size() || section < 0){
-        SEQ64::say("Invalid section " + String(section));
+        dbgmsg("Invalid section " + String(section));
         return;
     }
     SeqData* sec = sections[section];
@@ -3620,12 +3669,12 @@ void SeqFile::insertCommand(int section, int cmdidx, ValueTree command){
 
 void SeqFile::deleteCommand(int section, int cmdidx){
     if(section >= sections.size() || section < 0){
-        SEQ64::say("Invalid section " + String(section));
+        dbgmsg("Invalid section " + String(section));
         return;
     }
     SeqData* sec = sections[section];
     if(cmdidx >= sec->cmdoffsets.size() || cmdidx < 0){
-        SEQ64::say("Invalid command " + String(section));
+        dbgmsg("Invalid command " + String(section));
         return;
     }
     uint32 address = sec->cmdoffsets[cmdidx];

@@ -45,9 +45,9 @@
 			isa = PBXBuildFile;
 			fileRef = 1AB2A017C8917D9F029A4FD6;
 		};
-		7C184C3F68CA0FC355DB7EE6 = {
+		A8EE48369A8C0D1D865CD7FC = {
 			isa = PBXBuildFile;
-			fileRef = 5709615798C6E8DF4958D349;
+			fileRef = 61EFCD40569ABE9307280924;
 		};
 		FD0F1E1AD95750094B72F937 = {
 			isa = PBXBuildFile;
@@ -72,6 +72,13 @@
 		33327D64E3A1EC4E5635DB1E = {
 			isa = PBXBuildFile;
 			fileRef = EBEEADB6287263125B049B48;
+		};
+		0087DD1B92560BBD0C1FE85F = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.h;
+			name = TextListBox.hpp;
+			path = ../../Source/TextListBox.hpp;
+			sourceTree = "SOURCE_ROOT";
 		};
 		00E83CA5A76EC1C0123F7B19 = {
 			isa = PBXFileReference;
@@ -122,25 +129,18 @@
 			path = RecentFilesMenuTemplate.nib;
 			sourceTree = "SOURCE_ROOT";
 		};
-		5709615798C6E8DF4958D349 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.cpp.cpp;
-			name = MainComponent.cpp;
-			path = ../../Source/MainComponent.cpp;
-			sourceTree = "SOURCE_ROOT";
-		};
-		5721DC297187809ACE0BC345 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.c.h;
-			name = MainComponent.h;
-			path = ../../Source/MainComponent.h;
-			sourceTree = "SOURCE_ROOT";
-		};
 		5C6D044F189B5B4CBC46EA28 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.c.h;
 			name = SeqFile.hpp;
 			path = ../../Source/SeqFile.hpp;
+			sourceTree = "SOURCE_ROOT";
+		};
+		61EFCD40569ABE9307280924 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = TextListBox.cpp;
+			path = ../../Source/TextListBox.cpp;
 			sourceTree = "SOURCE_ROOT";
 		};
 		6C761EA4F54968A4CB0E51F3 = {
@@ -242,8 +242,8 @@
 				6C761EA4F54968A4CB0E51F3,
 				1AB2A017C8917D9F029A4FD6,
 				6C8262C2A4D3D92C419150E6,
-				5721DC297187809ACE0BC345,
-				5709615798C6E8DF4958D349,
+				61EFCD40569ABE9307280924,
+				0087DD1B92560BBD0C1FE85F,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -343,6 +343,7 @@
 				HEADER_SEARCH_PATHS = (
 					"../../JuceLibraryCode",
 					"../../JuceLibraryCode/modules",
+					"Source/",
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = Info-App.plist;
@@ -386,6 +387,7 @@
 				HEADER_SEARCH_PATHS = (
 					"../../JuceLibraryCode",
 					"../../JuceLibraryCode/modules",
+					"Source/",
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = Info-App.plist;
@@ -529,7 +531,7 @@
 				38ACF4CD6FFD6BABA34FA8E6,
 				BB7BE789445FB621108D1C48,
 				7D5D08E91909D6FB9E7879A3,
-				7C184C3F68CA0FC355DB7EE6,
+				A8EE48369A8C0D1D865CD7FC,
 				FD0F1E1AD95750094B72F937,
 				4FB18B0560AB7DF223F322BD,
 				195CB3A189696344F83CE38A,

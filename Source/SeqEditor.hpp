@@ -20,7 +20,33 @@
 #pragma once
 
 //[Headers]     -- You can add your own extra header files here --
-#include <JuceHeader.h>
+/*
+ * ============================================================================
+ *
+ * SeqEditor.hpp
+ * GUI component to edit a Nintendo Music Macro Language (Audioseq)
+ * format sequence file
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2020 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
+#include "Common.hpp"
+#include "SeqFile.hpp"
+#include "TextListBox.hpp"
 //[/Headers]
 
 
@@ -34,6 +60,7 @@
                                                                     //[/Comments]
 */
 class SeqEditor  : public juce::Component,
+                   private TextListBox::Listener,
                    public juce::Button::Listener
 {
 public:
@@ -53,6 +80,11 @@ public:
 
 private:
     //[UserVariables]   -- You can add your own custom variables in this section.
+    void rowSelected(TextListBox* parent, int row) override;
+
+    SeqFile *seq;
+
+    std::unique_ptr<TextListBox> lstABI;
     //[/UserVariables]
 
     //==============================================================================
@@ -99,8 +131,8 @@ private:
     std::unique_ptr<juce::Label> lblInternal;
     std::unique_ptr<juce::Label> lblDebug;
     std::unique_ptr<juce::TextEditor> juce__textEditor2;
-    std::unique_ptr<juce::GroupComponent> grpComFormat;
-    std::unique_ptr<juce::TextButton> btnFormatEdit;
+    std::unique_ptr<juce::GroupComponent> grpABI;
+    std::unique_ptr<juce::TextButton> btnEditABI;
     std::unique_ptr<juce::ToggleButton> chkRel;
     juce::Path internalPath1;
     juce::Path internalPath2;

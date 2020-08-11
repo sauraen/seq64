@@ -3,7 +3,8 @@
 <JUCERPROJECT id="CteiBh" name="seq64" projectType="guiapp" useAppConfig="1"
               addUsingNamespaceToJuceHeader="1" jucerFormatVersion="1" version="2.0.0"
               companyName="Sauraen" companyCopyright="Copyright (C) 2020 Sauraen"
-              companyWebsite="https://github.com/sauraen" companyEmail="sauraen@gmail.com">
+              companyWebsite="https://github.com/sauraen" companyEmail="sauraen@gmail.com"
+              headerPath="Source/">
   <MAINGROUP id="qSbMOT" name="seq64">
     <GROUP id="{5464FE01-B6C9-BF98-7392-885F51B736E0}" name="Source">
       <FILE id="OGNDST" name="SeqFile.cpp" compile="1" resource="0" file="Source/SeqFile.cpp"/>
@@ -11,9 +12,8 @@
       <FILE id="WSf21a" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="tzGmAf" name="SeqEditor.cpp" compile="1" resource="0" file="Source/SeqEditor.cpp"/>
       <FILE id="vbdwgV" name="SeqEditor.hpp" compile="0" resource="0" file="Source/SeqEditor.hpp"/>
-      <FILE id="oMYen7" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
-      <FILE id="pmWFxj" name="MainComponent.cpp" compile="1" resource="0"
-            file="Source/MainComponent.cpp"/>
+      <FILE id="xoE3xr" name="TextListBox.cpp" compile="1" resource="0" file="Source/TextListBox.cpp"/>
+      <FILE id="OBLyEW" name="TextListBox.hpp" compile="0" resource="0" file="Source/TextListBox.hpp"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_USE_CURL="0"/>

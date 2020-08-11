@@ -18,6 +18,30 @@
 */
 
 //[Headers] You can add your own extra header files here...
+/*
+ * ============================================================================
+ *
+ * SeqEditor.cpp
+ * GUI component to edit a Nintendo Music Macro Language (Audioseq)
+ * format sequence file
+ *
+ * From seq64 - Sequenced music editor for first-party N64 games
+ * Copyright (C) 2014-2020 Sauraen
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ============================================================================
+*/
 //[/Headers]
 
 #include "SeqEditor.hpp"
@@ -28,6 +52,7 @@
 
 //==============================================================================
 SeqEditor::SeqEditor ()
+    : seq(nullptr)
 {
     //[Constructor_pre] You can add your own custom stuff here..
     //[/Constructor_pre]
@@ -452,18 +477,18 @@ SeqEditor::SeqEditor ()
 
     juce__textEditor2->setBounds (352, 24, 440, 192);
 
-    grpComFormat.reset (new juce::GroupComponent (juce::String(),
-                                                  TRANS("Binary format")));
-    addAndMakeVisible (grpComFormat.get());
+    grpABI.reset (new juce::GroupComponent (juce::String(),
+                                            TRANS("Binary format (ABI)")));
+    addAndMakeVisible (grpABI.get());
 
-    grpComFormat->setBounds (8, 0, 320, 72);
+    grpABI->setBounds (8, 0, 320, 72);
 
-    btnFormatEdit.reset (new juce::TextButton ("new button"));
-    addAndMakeVisible (btnFormatEdit.get());
-    btnFormatEdit->setButtonText (TRANS("Edit..."));
-    btnFormatEdit->addListener (this);
+    btnEditABI.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnEditABI.get());
+    btnEditABI->setButtonText (TRANS("Edit..."));
+    btnEditABI->addListener (this);
 
-    btnFormatEdit->setBounds (256, 24, 63, 32);
+    btnEditABI->setBounds (256, 24, 63, 32);
 
     chkRel.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (chkRel.get());
@@ -510,12 +535,20 @@ SeqEditor::SeqEditor ()
 
 
     //[UserPreSize]
+
+    lstABI.reset(new TextListBox(this));
+    addAndMakeVisible(lstABI.get());
+    lstABI->setBounds(16, 16, 232, 48);
     //[/UserPreSize]
 
     setSize (800, 800);
 
 
     //[Constructor] You can add your own custom stuff here..
+    StringArray abis = SeqFile::getAvailABIs();
+    for(int i=0; i<abis.size(); ++i){
+        lstABI->add(abis[i]);
+    }
     //[/Constructor]
 }
 
@@ -567,8 +600,8 @@ SeqEditor::~SeqEditor()
     lblInternal = nullptr;
     lblDebug = nullptr;
     juce__textEditor2 = nullptr;
-    grpComFormat = nullptr;
-    btnFormatEdit = nullptr;
+    grpABI = nullptr;
+    btnEditABI = nullptr;
     chkRel = nullptr;
 
 
@@ -654,15 +687,6 @@ void SeqEditor::paint (juce::Graphics& g)
         g.fillPath (internalPath6, juce::AffineTransform::translation(x, y));
         g.setColour (strokeColour);
         g.strokePath (internalPath6, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
-    }
-
-    {
-        int x = 16, y = 18, width = 232, height = 48;
-        juce::Colour fillColour = juce::Colour (0xff792aa5);
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.fillRect (x, y, width, height);
     }
 
     //[UserPaint] Add your own custom painting code here..
@@ -758,10 +782,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_optInstGMMulti] -- add your button handler code here..
         //[/UserButtonCode_optInstGMMulti]
     }
-    else if (buttonThatWasClicked == btnFormatEdit.get())
+    else if (buttonThatWasClicked == btnEditABI.get())
     {
-        //[UserButtonCode_btnFormatEdit] -- add your button handler code here..
-        //[/UserButtonCode_btnFormatEdit]
+        //[UserButtonCode_btnEditABI] -- add your button handler code here..
+        //[/UserButtonCode_btnEditABI]
     }
     else if (buttonThatWasClicked == chkRel.get())
     {
@@ -776,6 +800,11 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
 
 
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
+
+void SeqEditor::rowSelected(TextListBox* parent, int row){
+        
+}
+
 //[/MiscUserCode]
 
 
@@ -789,9 +818,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
 BEGIN_JUCER_METADATA
 
 <JUCER_COMPONENT documentType="Component" className="SeqEditor" componentName=""
-                 parentClasses="public juce::Component" constructorParams="" variableInitialisers=""
-                 snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
-                 fixedSize="1" initialWidth="800" initialHeight="800">
+                 parentClasses="public juce::Component, private TextListBox::Listener"
+                 constructorParams="" variableInitialisers="seq(nullptr)" snapPixels="8"
+                 snapActive="1" snapShown="1" overlayOpacity="0.330" fixedSize="1"
+                 initialWidth="800" initialHeight="800">
   <BACKGROUND backgroundColour="ff323e44">
     <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
           strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 336 l 348 336 s 340 344 l 348 336 l 340 328</PATH>
@@ -805,7 +835,6 @@ BEGIN_JUCER_METADATA
           strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 720 l 348 720 s 340 728 l 348 720 l 340 712</PATH>
     <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
           strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 752 l 164 752 s 172 760 l 164 752 l 172 744</PATH>
-    <RECT pos="16 18 232 48" fill="solid: ff792aa5" hasStroke="0"/>
   </BACKGROUND>
   <TEXTBUTTON name="new button" id="ce9eeb4274035fc6" memberName="btnImportCom"
               virtualName="" explicitFocusOrder="0" pos="8 704 152 32" buttonText="Import .com/.aseq"
@@ -970,9 +999,9 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="352 24 440 192" initialText=""
               multiline="1" retKeyStartsLine="1" readonly="1" scrollbars="1"
               caret="0" popupmenu="0"/>
-  <GROUPCOMPONENT name="" id="8627fa20de81115" memberName="grpComFormat" virtualName=""
-                  explicitFocusOrder="0" pos="8 0 320 72" title="Binary format"/>
-  <TEXTBUTTON name="new button" id="2804f8f09ab1af85" memberName="btnFormatEdit"
+  <GROUPCOMPONENT name="" id="8627fa20de81115" memberName="grpABI" virtualName=""
+                  explicitFocusOrder="0" pos="8 0 320 72" title="Binary format (ABI)"/>
+  <TEXTBUTTON name="new button" id="2804f8f09ab1af85" memberName="btnEditABI"
               virtualName="" explicitFocusOrder="0" pos="256 24 63 32" buttonText="Edit..."
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <TOGGLEBUTTON name="new toggle button" id="32dace4af418847d" memberName="chkRel"
