@@ -54,6 +54,8 @@ Identifier SeqFile::idTargetSection("targetsection");
 Identifier SeqFile::idTargetHash("targethash");
 Identifier SeqFile::idWillDrop("willdrop");
 
+//TODO reladdr
+
 //TODO
 SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
     //data.clearQuick();
@@ -77,17 +79,39 @@ String SeqFile::getInternalString(){
 
 StringArray SeqFile::getAvailABIs(){
     StringArray ret;
-    ret.add("blah");
+    File abifolder = findFile("abi/");
+    if(!abifolder.isDirectory()){
+        ret.add("Could not find abi folder!");
+        return ret;
+    }
+    Array<File> xmlfiles = abifolder.findChildFiles(File::findFiles, false, "*.xml");
+    if(xmlfiles.size() == 0){
+        ret.add("No abi XML files in abi folder!");
+    }
+    for(int i=0; i<xmlfiles.size(); ++i){
+        ret.add(xmlfiles[i].getFileNameWithoutExtension());
+    }
     return ret;
 }
 ValueTree SeqFile::loadABI(String name){
-    return ValueTree();
+    File abi = findFile("abi/" + name + ".xml");
+    if(!abi.existsAsFile()){
+        std::cout << "Could not find file " + abi.getFullPathName() + "!";
+        return ValueTree();
+    }
+    std::unique_ptr<XmlElement> xml = parseXML(abi);
+    if(xml == nullptr){
+        std::cout << "Error parsing XML of " + abi.getFullPathName() + "!";
+        return ValueTree();
+    }
+    return ValueTree::fromXml(*xml);
 }
 
 void SeqFile::dbgmsg(String s, bool newline){
     const ScopedLock lock(debug_mutex);
+    if(newline) s += "\n";
     debug_messages += s;
-    if(newline) debug_messages += "\n";
+    std::cout << s;
 }
 String SeqFile::getDebugOutput(){
     const ScopedLock lock(debug_mutex);
@@ -585,11 +609,11 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     name = midifile.getFileNameWithoutExtension();
     dbgmsg("IMPORTING MIDI FILE");
     importresult = 0;
-    String chnvol = midiopts.getProperty("chnvol", "CC7 (Volume)").toString();
-    String mtrvol = midiopts.getProperty("mtrvol", "CC24 (None)").toString();
-    String chnpriority = midiopts.getProperty("chnpriority", "CC25 (None)").toString();
+    //Changing these is no longer supported--I never heard of anyone using them
+    String chnvol = "CC7 (Volume)"; //midiopts.getProperty("chnvol", "CC7 (Volume)").toString();
+    String mtrvol = "SysEx MstrVol"; //midiopts.getProperty("mtrvol", "CC24 (None)").toString();
+    String chnpriority = "CC25 (None)"; //midiopts.getProperty("chnpriority", ).toString();
     const int midi_basenote = 21;
-    bool useRelative = false; //TODO support relative, optimize each
     MidiMessage msg;
     MidiMessage* msgptr;
     int channel, track, layer, m, i;
@@ -831,30 +855,23 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //End of Data
     want = wantAction("End of Data", 0);
     section.addChild(createCommand(want), 0, nullptr);
-    //TODO different default midiopts for D3 20 etc.
-    //Sequence Format (D3 20)
-    if((bool)midiopts.getProperty("writeseqformat", false)){
-        value = (int)midiopts.getProperty("formatbytedefault", 0x20);
-        want = wantAction("Sequence Format", 0);
-        wantProperty(want, "Value", value);
-        section.addChild(createCommand(want), cmd, nullptr);
-        cmd++;
-    }
-    //Sequence Type (D5 32)
-    if((bool)midiopts.getProperty("writeseqtype", false)){
-        value = (int)midiopts.getProperty("typebytedefault", 0x32);
-        want = wantAction("Sequence Type", 0);
-        wantProperty(want, "Value", value);
-        section.addChild(createCommand(want), cmd, nullptr);
-        cmd++;
-    }
+    //Not Sequence Format (D3 20)
+    value = (int)midiopts.getProperty("d3", 0x20);
+    want = wantAction("Sequence Format", 0);
+    wantProperty(want, "Value", value);
+    section.addChild(createCommand(want), cmd, nullptr);
+    cmd++;
+    //Not Sequence Type (D5 32)
+    value = (int)midiopts.getProperty("d5", 0x32);
+    want = wantAction("Sequence Type", 0);
+    wantProperty(want, "Value", value);
+    section.addChild(createCommand(want), cmd, nullptr);
+    cmd++;
     //Channel Enable (D7 XXXX)
-    if((bool)midiopts.getProperty("writechanbits", false)){
-        want = wantAction("Channel Enable", 0);
-        wantProperty(want, "Bitfield", chanBitfield);
-        section.addChild(createCommand(want), cmd, nullptr);
-        cmd++;
-    }
+    want = wantAction("Channel Enable", 0);
+    wantProperty(want, "Bitfield", chanBitfield);
+    section.addChild(createCommand(want), cmd, nullptr);
+    cmd++;
     int addmstrvol_cmd = cmd;
     bool hadmastervol = false;
     //Beginning of track (for pointer later)
@@ -938,9 +955,10 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //Get the time to the end
     advanceToTimestamp(section, 0, cmd, t, last_timestamp);
     //Loop to start
-    if((bool)midiopts.getProperty("writeloopall", false)){
+    if((bool)midiopts.getProperty("smartloop", false)){
         want = wantAction("Jump Same Level", 0);
         wantProperty(want, "Absolute Address", 1337);
+        //TODO smart loop, skip intro
         want = createCommand(want);
         want.setProperty(idTargetSection, 0, nullptr);
         want.setProperty(idTargetHash, ptrBeginData, nullptr);
@@ -948,14 +966,12 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         cmd++;
     }
     //Channel Disable (D6 XXXX)
-    if((bool)midiopts.getProperty("writechanbits", false)){
-        want = wantAction("Channel Disable", 0);
-        wantProperty(want, "Bitfield", chanBitfield);
-        section.addChild(createCommand(want), cmd, nullptr);
-        cmd++;
-    }
+    want = wantAction("Channel Disable", 0);
+    wantProperty(want, "Bitfield", chanBitfield);
+    section.addChild(createCommand(want), cmd, nullptr);
+    cmd++;
     //Master Volume
-    if(!hadmastervol && (bool)midiopts.getProperty("addmstrvol", true)){
+    if(!hadmastervol){
         uint8 defaultval = (int)midiopts.getProperty("addmstrvolval", 0x58);
         dbgmsg("No Master Volume sysex command in the MIDI, adding default 0x" + hex(defaultval));
         want = wantAction("Master Volume", 0);
@@ -972,23 +988,26 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //CC Bandwidth Reduction setup
     OwnedArray<CCTracker> ccstates;
     int qt, qa;
-    qt = midiopts.getProperty("q_other_time", 1);
+    //TODO this is a mess
+    qt = 0; //midiopts.getProperty("q_other_time", 1);
     qa = midiopts.getProperty("q_other_amp", 1);
     for(cc=0; cc<130; cc++){ //128 is pitch, 129 is program
         ccstates.add(new CCTracker());
         ccstates[cc]->q_time = qt;
         ccstates[cc]->q_amp = qa;
     }
-    ccstates[128]->q_time = midiopts.getProperty("q_pitch_time", 1);
+    ccstates[128]->q_time = 0; //midiopts.getProperty("q_pitch_time", 1);
     ccstates[128]->q_amp = midiopts.getProperty("q_pitch_amp", 1);
-    qt = midiopts.getProperty("q_vol_time", 3);
-    qa = midiopts.getProperty("q_vol_amp", 2);
+    ccstates[129]->q_time = 0;
+    ccstates[129]->q_amp = 0;
+    qt = 0; //midiopts.getProperty("q_volpan_time", 3);
+    qa = midiopts.getProperty("q_volpan_amp", 2);
     ccstates[7]->q_time = qt;
     ccstates[7]->q_amp = qa;
     ccstates[11]->q_time = qt;
     ccstates[11]->q_amp = qa;
-    qt = midiopts.getProperty("q_pan_time", 3);
-    qa = midiopts.getProperty("q_pan_amp", 2);
+    //qt = 0; //midiopts.getProperty("q_pan_time", 3);
+    //qa = midiopts.getProperty("q_pan_amp", 2);
     ccstates[10]->q_time = qt;
     ccstates[10]->q_amp = qa;
     ccstates[91]->q_time = qt;
@@ -1038,7 +1057,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             }
             cmd = 0;
             //Channel Reset (C4)
-            if(sectimeidx == 0 && (bool)midiopts.getProperty("writechanreset", false)){
+            if(sectimeidx == 0){
                 want = wantAction("Chn Reset", 1);
                 section.addChild(createCommand(want), cmd, nullptr);
                 cmd++;
@@ -1329,7 +1348,7 @@ void SeqFile::optimize(ValueTree midiopts){
         --sec1;
     }
     //Check if we want loop or call optimizations
-    int stacksize = midiopts.getProperty("stacksize", 4); //TODO consider stack
+    int stacksize = 4; //TODO consider stack
     bool useCalls = midiopts.getProperty("usecalls", true);
     bool useLoops = midiopts.getProperty("useloops", true);
     if(!useCalls && !useLoops){
@@ -2013,9 +2032,10 @@ void exportMIDI(File midifile, ValueTree midiopts){
     if(ticks_multiplier <= 0) ticks_multiplier = 1;
     int bend_range = midiopts.getProperty("bendrange", 6);
     if(bend_range <= 0) bend_range = 1;
-    String chnvol = midiopts.getProperty("chnvol", "CC7 (Volume)").toString();
-    String mtrvol = midiopts.getProperty("mtrvol", "CC24 (None)").toString();
-    String chnpriority = midiopts.getProperty("chnpriority", "CC25 (None)").toString();
+    //Changing these is no longer supported--I never heard of anyone using them
+    String chnvol = "CC7 (Volume)"; //midiopts.getProperty("chnvol", "CC7 (Volume)").toString();
+    String mtrvol = "SysEx MstrVol"; //midiopts.getProperty("mtrvol", "CC24 (None)").toString();
+    String chnpriority = "CC25 (None)"; //midiopts.getProperty("chnpriority", ).toString();
     const int midi_basenote = 21;
     //MIDI file/tracks setup
     MidiMessage msg;
@@ -2420,7 +2440,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             //Load MIDI equivalent instrument from bank
             int midiprogram = value;
             do{
-                if(midiopts.getProperty("exportformat", "generalmidi").toString() == "original"){
+                if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "original"){
                     dbgmsg("Not converting Chn Instrument because want original format export");
                     break;
                 }
@@ -2486,7 +2506,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                         tpopt.setProperty("split2", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
                     }
                     progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
-                    if(midiopts.getProperty("instdrum", "ch10").toString() == "multi"){
+                    if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "gm_multi"){
                         //Add multi-drum-channel hacks
                         //GM2 mode on
                         // uint8 gm2modeonsysex[4] = {0x7E, 0x7F, 0x09, 0x03};
@@ -2629,7 +2649,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                     drum3 = po.getProperty("drum3", -1);
                     split1 = po.getProperty("split1", -1);
                     split2 = po.getProperty("split2", -1);
-                    if(midiopts.getProperty("instdrum", "ch10").toString() == "multi"){
+                    if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "gm_multi"){
                         dbgmsg("--Chn " + String(channel) + ": new progoptions multi drum mode");
                         drummode = 2;
                     }else{

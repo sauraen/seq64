@@ -82,24 +82,18 @@ private:
     //[UserVariables]   -- You can add your own custom variables in this section.
     void rowSelected(TextListBox* parent, int row) override;
 
-    SeqFile *seq;
+    std::unique_ptr<SeqFile> seq;
 
     std::unique_ptr<TextListBox> lstABI;
     //[/UserVariables]
 
     //==============================================================================
-    std::unique_ptr<juce::TextButton> btnImportCom;
-    std::unique_ptr<juce::TextButton> btnExportCom;
-    std::unique_ptr<juce::TextButton> btnImportMus;
-    std::unique_ptr<juce::TextButton> btnExportMus;
     std::unique_ptr<juce::GroupComponent> grpMusDialect;
     std::unique_ptr<juce::ToggleButton> optMusCommunity;
     std::unique_ptr<juce::ToggleButton> optMusCanon;
     std::unique_ptr<juce::ToggleButton> optMusCanonOld;
-    std::unique_ptr<juce::TextButton> btnImportMIDI;
-    std::unique_ptr<juce::TextButton> btnExportMIDI;
     std::unique_ptr<juce::GroupComponent> grpImportMIDI;
-    std::unique_ptr<juce::ToggleButton> chkLoopSeq;
+    std::unique_ptr<juce::ToggleButton> chkSmartLoop;
     std::unique_ptr<juce::GroupComponent> grpOptimizer;
     std::unique_ptr<juce::ToggleButton> chkUseCalls;
     std::unique_ptr<juce::TextEditor> txtMasterVol;
@@ -127,13 +121,23 @@ private:
     std::unique_ptr<juce::TextEditor> txtBend;
     std::unique_ptr<juce::Label> lblPPQN;
     std::unique_ptr<juce::TextEditor> txtPPQN;
-    std::unique_ptr<juce::TextEditor> juce__textEditor;
+    std::unique_ptr<juce::TextEditor> txtSeq;
     std::unique_ptr<juce::Label> lblInternal;
     std::unique_ptr<juce::Label> lblDebug;
-    std::unique_ptr<juce::TextEditor> juce__textEditor2;
+    std::unique_ptr<juce::TextEditor> txtDebug;
     std::unique_ptr<juce::GroupComponent> grpABI;
     std::unique_ptr<juce::TextButton> btnEditABI;
     std::unique_ptr<juce::ToggleButton> chkRel;
+    std::unique_ptr<juce::TextButton> btnImportMIDI;
+    std::unique_ptr<juce::TextButton> btnExportMIDI;
+    std::unique_ptr<juce::TextButton> btnImportMus;
+    std::unique_ptr<juce::TextButton> btnExportMus;
+    std::unique_ptr<juce::TextButton> btnImportCom;
+    std::unique_ptr<juce::TextButton> btnExportCom;
+    std::unique_ptr<juce::Label> lblD3;
+    std::unique_ptr<juce::TextEditor> txtD3;
+    std::unique_ptr<juce::Label> lblD5;
+    std::unique_ptr<juce::TextEditor> txtD5;
     juce::Path internalPath1;
     juce::Path internalPath2;
     juce::Path internalPath3;

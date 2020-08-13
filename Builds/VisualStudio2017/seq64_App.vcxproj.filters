@@ -13,10 +13,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\SeqFile.cpp">
+    <ClCompile Include="..\..\Source\Main.cpp">
       <Filter>seq64\Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\Main.cpp">
+    <ClCompile Include="..\..\Source\SeqFile.cpp">
       <Filter>seq64\Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\SeqEditor.cpp">
@@ -45,6 +45,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\Common.hpp">
+      <Filter>seq64\Source</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\SeqFile.hpp">
       <Filter>seq64\Source</Filter>
     </ClInclude>

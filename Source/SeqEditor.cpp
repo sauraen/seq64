@@ -57,38 +57,6 @@ SeqEditor::SeqEditor ()
     //[Constructor_pre] You can add your own custom stuff here..
     //[/Constructor_pre]
 
-    btnImportCom.reset (new juce::TextButton ("new button"));
-    addAndMakeVisible (btnImportCom.get());
-    btnImportCom->setButtonText (TRANS("Import .com/.aseq"));
-    btnImportCom->setConnectedEdges (juce::Button::ConnectedOnBottom);
-    btnImportCom->addListener (this);
-
-    btnImportCom->setBounds (8, 704, 152, 32);
-
-    btnExportCom.reset (new juce::TextButton ("new button"));
-    addAndMakeVisible (btnExportCom.get());
-    btnExportCom->setButtonText (TRANS("Export .com/.aseq"));
-    btnExportCom->setConnectedEdges (juce::Button::ConnectedOnTop);
-    btnExportCom->addListener (this);
-
-    btnExportCom->setBounds (8, 736, 152, 32);
-
-    btnImportMus.reset (new juce::TextButton ("new button"));
-    addAndMakeVisible (btnImportMus.get());
-    btnImportMus->setButtonText (TRANS("Import .mus"));
-    btnImportMus->setConnectedEdges (juce::Button::ConnectedOnBottom);
-    btnImportMus->addListener (this);
-
-    btnImportMus->setBounds (8, 536, 152, 32);
-
-    btnExportMus.reset (new juce::TextButton ("new button"));
-    addAndMakeVisible (btnExportMus.get());
-    btnExportMus->setButtonText (TRANS("Export .mus"));
-    btnExportMus->setConnectedEdges (juce::Button::ConnectedOnTop);
-    btnExportMus->addListener (this);
-
-    btnExportMus->setBounds (8, 568, 152, 32);
-
     grpMusDialect.reset (new juce::GroupComponent (juce::String(),
                                                    TRANS(".mus dialect")));
     addAndMakeVisible (grpMusDialect.get());
@@ -100,6 +68,7 @@ SeqEditor::SeqEditor ()
     optMusCommunity->setButtonText (TRANS("Community"));
     optMusCommunity->setRadioGroupId (1);
     optMusCommunity->addListener (this);
+    optMusCommunity->setToggleState (true, dontSendNotification);
 
     optMusCommunity->setBounds (16, 624, 112, 24);
 
@@ -119,35 +88,19 @@ SeqEditor::SeqEditor ()
 
     optMusCanonOld->setBounds (208, 624, 112, 24);
 
-    btnImportMIDI.reset (new juce::TextButton ("new button"));
-    addAndMakeVisible (btnImportMIDI.get());
-    btnImportMIDI->setButtonText (TRANS("Import MIDI"));
-    btnImportMIDI->setConnectedEdges (juce::Button::ConnectedOnBottom);
-    btnImportMIDI->addListener (this);
-
-    btnImportMIDI->setBounds (8, 320, 152, 32);
-
-    btnExportMIDI.reset (new juce::TextButton ("new button"));
-    addAndMakeVisible (btnExportMIDI.get());
-    btnExportMIDI->setButtonText (TRANS("Export MIDI"));
-    btnExportMIDI->setConnectedEdges (juce::Button::ConnectedOnTop);
-    btnExportMIDI->addListener (this);
-
-    btnExportMIDI->setBounds (8, 352, 152, 32);
-
     grpImportMIDI.reset (new juce::GroupComponent ("new group",
                                                    TRANS("MIDI Import")));
     addAndMakeVisible (grpImportMIDI.get());
 
     grpImportMIDI->setBounds (8, 120, 320, 192);
 
-    chkLoopSeq.reset (new juce::ToggleButton ("new toggle button"));
-    addAndMakeVisible (chkLoopSeq.get());
-    chkLoopSeq->setButtonText (TRANS("Smart Loop"));
-    chkLoopSeq->addListener (this);
-    chkLoopSeq->setToggleState (true, dontSendNotification);
+    chkSmartLoop.reset (new juce::ToggleButton ("new toggle button"));
+    addAndMakeVisible (chkSmartLoop.get());
+    chkSmartLoop->setButtonText (TRANS("Smart Loop"));
+    chkSmartLoop->addListener (this);
+    chkSmartLoop->setToggleState (true, dontSendNotification);
 
-    chkLoopSeq->setBounds (16, 136, 112, 24);
+    chkSmartLoop->setBounds (16, 136, 112, 24);
 
     grpOptimizer.reset (new juce::GroupComponent ("new group",
                                                   TRANS("Optimizer")));
@@ -431,17 +384,17 @@ SeqEditor::SeqEditor ()
 
     txtPPQN->setBounds (272, 432, 40, 24);
 
-    juce__textEditor.reset (new juce::TextEditor ("new text editor"));
-    addAndMakeVisible (juce__textEditor.get());
-    juce__textEditor->setMultiLine (true);
-    juce__textEditor->setReturnKeyStartsNewLine (true);
-    juce__textEditor->setReadOnly (true);
-    juce__textEditor->setScrollbarsShown (true);
-    juce__textEditor->setCaretVisible (false);
-    juce__textEditor->setPopupMenuEnabled (false);
-    juce__textEditor->setText (juce::String());
+    txtSeq.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtSeq.get());
+    txtSeq->setMultiLine (true);
+    txtSeq->setReturnKeyStartsNewLine (true);
+    txtSeq->setReadOnly (true);
+    txtSeq->setScrollbarsShown (true);
+    txtSeq->setCaretVisible (false);
+    txtSeq->setPopupMenuEnabled (false);
+    txtSeq->setText (juce::String());
 
-    juce__textEditor->setBounds (352, 248, 440, 544);
+    txtSeq->setBounds (352, 248, 440, 544);
 
     lblInternal.reset (new juce::Label ("new label",
                                         TRANS("SEQ64 internal sequence representation:")));
@@ -465,17 +418,17 @@ SeqEditor::SeqEditor ()
 
     lblDebug->setBounds (352, 0, 448, 24);
 
-    juce__textEditor2.reset (new juce::TextEditor ("new text editor"));
-    addAndMakeVisible (juce__textEditor2.get());
-    juce__textEditor2->setMultiLine (true);
-    juce__textEditor2->setReturnKeyStartsNewLine (true);
-    juce__textEditor2->setReadOnly (true);
-    juce__textEditor2->setScrollbarsShown (true);
-    juce__textEditor2->setCaretVisible (false);
-    juce__textEditor2->setPopupMenuEnabled (false);
-    juce__textEditor2->setText (juce::String());
+    txtDebug.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtDebug.get());
+    txtDebug->setMultiLine (true);
+    txtDebug->setReturnKeyStartsNewLine (true);
+    txtDebug->setReadOnly (true);
+    txtDebug->setScrollbarsShown (true);
+    txtDebug->setCaretVisible (false);
+    txtDebug->setPopupMenuEnabled (false);
+    txtDebug->setText (juce::String());
 
-    juce__textEditor2->setBounds (352, 24, 440, 192);
+    txtDebug->setBounds (352, 24, 440, 192);
 
     grpABI.reset (new juce::GroupComponent (juce::String(),
                                             TRANS("Binary format (ABI)")));
@@ -496,6 +449,100 @@ SeqEditor::SeqEditor ()
     chkRel->addListener (this);
 
     chkRel->setBounds (16, 160, 136, 24);
+
+    btnImportMIDI.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnImportMIDI.get());
+    btnImportMIDI->setButtonText (TRANS("Import MIDI"));
+    btnImportMIDI->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportMIDI->addListener (this);
+
+    btnImportMIDI->setBounds (8, 320, 152, 32);
+
+    btnExportMIDI.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnExportMIDI.get());
+    btnExportMIDI->setButtonText (TRANS("Export MIDI"));
+    btnExportMIDI->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportMIDI->addListener (this);
+
+    btnExportMIDI->setBounds (8, 352, 152, 32);
+
+    btnImportMus.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnImportMus.get());
+    btnImportMus->setButtonText (TRANS("Import .mus"));
+    btnImportMus->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportMus->addListener (this);
+
+    btnImportMus->setBounds (8, 536, 152, 32);
+
+    btnExportMus.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnExportMus.get());
+    btnExportMus->setButtonText (TRANS("Export .mus"));
+    btnExportMus->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportMus->addListener (this);
+
+    btnExportMus->setBounds (8, 568, 152, 32);
+
+    btnImportCom.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnImportCom.get());
+    btnImportCom->setButtonText (TRANS("Import .com/.aseq"));
+    btnImportCom->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportCom->addListener (this);
+
+    btnImportCom->setBounds (8, 704, 152, 32);
+
+    btnExportCom.reset (new juce::TextButton ("new button"));
+    addAndMakeVisible (btnExportCom.get());
+    btnExportCom->setButtonText (TRANS("Export .com/.aseq"));
+    btnExportCom->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportCom->addListener (this);
+
+    btnExportCom->setBounds (8, 736, 152, 32);
+
+    lblD3.reset (new juce::Label ("new label",
+                                  TRANS("D3")));
+    addAndMakeVisible (lblD3.get());
+    lblD3->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblD3->setJustificationType (juce::Justification::centredLeft);
+    lblD3->setEditable (false, false, false);
+    lblD3->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblD3->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblD3->setBounds (160, 160, 40, 24);
+
+    txtD3.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtD3.get());
+    txtD3->setMultiLine (false);
+    txtD3->setReturnKeyStartsNewLine (false);
+    txtD3->setReadOnly (false);
+    txtD3->setScrollbarsShown (false);
+    txtD3->setCaretVisible (true);
+    txtD3->setPopupMenuEnabled (true);
+    txtD3->setText (TRANS("20"));
+
+    txtD3->setBounds (192, 160, 40, 24);
+
+    lblD5.reset (new juce::Label ("new label",
+                                  TRANS("D5")));
+    addAndMakeVisible (lblD5.get());
+    lblD5->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblD5->setJustificationType (juce::Justification::centredLeft);
+    lblD5->setEditable (false, false, false);
+    lblD5->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblD5->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblD5->setBounds (240, 160, 40, 24);
+
+    txtD5.reset (new juce::TextEditor ("new text editor"));
+    addAndMakeVisible (txtD5.get());
+    txtD5->setMultiLine (false);
+    txtD5->setReturnKeyStartsNewLine (false);
+    txtD5->setReadOnly (false);
+    txtD5->setScrollbarsShown (false);
+    txtD5->setCaretVisible (true);
+    txtD5->setPopupMenuEnabled (true);
+    txtD5->setText (TRANS("32"));
+
+    txtD5->setBounds (272, 160, 40, 24);
 
     internalPath1.startNewSubPath (160.0f, 336.0f);
     internalPath1.lineTo (348.0f, 336.0f);
@@ -557,18 +604,12 @@ SeqEditor::~SeqEditor()
     //[Destructor_pre]. You can add your own custom destruction code here..
     //[/Destructor_pre]
 
-    btnImportCom = nullptr;
-    btnExportCom = nullptr;
-    btnImportMus = nullptr;
-    btnExportMus = nullptr;
     grpMusDialect = nullptr;
     optMusCommunity = nullptr;
     optMusCanon = nullptr;
     optMusCanonOld = nullptr;
-    btnImportMIDI = nullptr;
-    btnExportMIDI = nullptr;
     grpImportMIDI = nullptr;
-    chkLoopSeq = nullptr;
+    chkSmartLoop = nullptr;
     grpOptimizer = nullptr;
     chkUseCalls = nullptr;
     txtMasterVol = nullptr;
@@ -596,13 +637,23 @@ SeqEditor::~SeqEditor()
     txtBend = nullptr;
     lblPPQN = nullptr;
     txtPPQN = nullptr;
-    juce__textEditor = nullptr;
+    txtSeq = nullptr;
     lblInternal = nullptr;
     lblDebug = nullptr;
-    juce__textEditor2 = nullptr;
+    txtDebug = nullptr;
     grpABI = nullptr;
     btnEditABI = nullptr;
     chkRel = nullptr;
+    btnImportMIDI = nullptr;
+    btnExportMIDI = nullptr;
+    btnImportMus = nullptr;
+    btnExportMus = nullptr;
+    btnImportCom = nullptr;
+    btnExportCom = nullptr;
+    lblD3 = nullptr;
+    txtD3 = nullptr;
+    lblD5 = nullptr;
+    txtD5 = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -707,27 +758,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     //[UserbuttonClicked_Pre]
     //[/UserbuttonClicked_Pre]
 
-    if (buttonThatWasClicked == btnImportCom.get())
-    {
-        //[UserButtonCode_btnImportCom] -- add your button handler code here..
-        //[/UserButtonCode_btnImportCom]
-    }
-    else if (buttonThatWasClicked == btnExportCom.get())
-    {
-        //[UserButtonCode_btnExportCom] -- add your button handler code here..
-        //[/UserButtonCode_btnExportCom]
-    }
-    else if (buttonThatWasClicked == btnImportMus.get())
-    {
-        //[UserButtonCode_btnImportMus] -- add your button handler code here..
-        //[/UserButtonCode_btnImportMus]
-    }
-    else if (buttonThatWasClicked == btnExportMus.get())
-    {
-        //[UserButtonCode_btnExportMus] -- add your button handler code here..
-        //[/UserButtonCode_btnExportMus]
-    }
-    else if (buttonThatWasClicked == optMusCommunity.get())
+    if (buttonThatWasClicked == optMusCommunity.get())
     {
         //[UserButtonCode_optMusCommunity] -- add your button handler code here..
         //[/UserButtonCode_optMusCommunity]
@@ -742,20 +773,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_optMusCanonOld] -- add your button handler code here..
         //[/UserButtonCode_optMusCanonOld]
     }
-    else if (buttonThatWasClicked == btnImportMIDI.get())
+    else if (buttonThatWasClicked == chkSmartLoop.get())
     {
-        //[UserButtonCode_btnImportMIDI] -- add your button handler code here..
-        //[/UserButtonCode_btnImportMIDI]
-    }
-    else if (buttonThatWasClicked == btnExportMIDI.get())
-    {
-        //[UserButtonCode_btnExportMIDI] -- add your button handler code here..
-        //[/UserButtonCode_btnExportMIDI]
-    }
-    else if (buttonThatWasClicked == chkLoopSeq.get())
-    {
-        //[UserButtonCode_chkLoopSeq] -- add your button handler code here..
-        //[/UserButtonCode_chkLoopSeq]
+        //[UserButtonCode_chkSmartLoop] -- add your button handler code here..
+        //[/UserButtonCode_chkSmartLoop]
     }
     else if (buttonThatWasClicked == chkUseCalls.get())
     {
@@ -792,6 +813,94 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_chkRel] -- add your button handler code here..
         //[/UserButtonCode_chkRel]
     }
+    else if (buttonThatWasClicked == btnImportMIDI.get())
+    {
+        //[UserButtonCode_btnImportMIDI] -- add your button handler code here..
+        ValueTree abi = SeqFile::loadABI(lstABI->get(lstABI->getLastRowSelected()));
+        if(!abi.isValid()){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
+                "Invalid ABI selected!");
+            return;
+        }
+
+        ValueTree midiopts("midiopts");
+        midiopts.setProperty("smartloop", chkSmartLoop->getToggleState(), nullptr);
+        midiopts.setProperty("addmstrvolval", txtMasterVol->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("reladdr", chkRel->getToggleState(), nullptr);
+        midiopts.setProperty("d3", txtD3->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("d5", txtD5->getText().getFloatValue(), nullptr);
+
+        midiopts.setProperty("usecalls", chkUseCalls->getToggleState(), nullptr);
+        midiopts.setProperty("useloops", chkUseLoops->getToggleState(), nullptr);
+        midiopts.setProperty("delta_vel", txtMergeVel->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("delta_gate", txtMergeGates->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("delta_cc", txtMergeCCs->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("q_volpan_amp", txtQuantVolPan->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("q_pitch_amp", txtQuantPitch->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("q_other_amp", txtQuantOther->getText().getFloatValue(), nullptr);
+
+        midiopts.setProperty("bendrange", txtBend->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("ppqnmultiplier", txtPPQN->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("exportformat",
+            optInstOrig->getToggleState() ? "original" :
+            optInstGM10->getToggleState() ? "gm_ch10" : "gm_multi", nullptr);
+
+        //TODO default files
+        if(seq != nullptr){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
+        }
+        File dest = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("midiimportfolder");
+        FileChooser box("Select a MIDI to load...", dest, "*.mid;*.midi;*.rmi", SEQ64::useNativeFileChooser());
+        if(!box.browseForFileToOpen()) return;
+        dest = box.getResult();
+        if(!dest.existsAsFile()){
+            SEQ64::say("File " + dest.getFullPathName() + " does not exist!");
+            return;
+        }
+        //TODO SEQ64::writeProperty("midiimportfolder", dest.getParentDirectory().getFullPathName());
+        seq.reset(new SeqFile(abi));
+        int res = seq->importMIDI(dest, midiopts);
+        txtSeq->setText(seq->getInternalString());
+        txtDebug->setText(seq->getDebugOutput());
+        if(res == 0){
+            NativeMessageBox::showMessageBox(AlertWindow::InfoIcon, "seq64",
+                "MIDI import succeeded!");
+        }else if(res == 1){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
+                "MIDI import completed, but there were warnings, see the debug"
+                " output for details.");
+        }else{
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
+                "MIDI import failed, see the terminal output for details.");
+        }
+        //[/UserButtonCode_btnImportMIDI]
+    }
+    else if (buttonThatWasClicked == btnExportMIDI.get())
+    {
+        //[UserButtonCode_btnExportMIDI] -- add your button handler code here..
+        //[/UserButtonCode_btnExportMIDI]
+    }
+    else if (buttonThatWasClicked == btnImportMus.get())
+    {
+        //[UserButtonCode_btnImportMus] -- add your button handler code here..
+        //[/UserButtonCode_btnImportMus]
+    }
+    else if (buttonThatWasClicked == btnExportMus.get())
+    {
+        //[UserButtonCode_btnExportMus] -- add your button handler code here..
+        //[/UserButtonCode_btnExportMus]
+    }
+    else if (buttonThatWasClicked == btnImportCom.get())
+    {
+        //[UserButtonCode_btnImportCom] -- add your button handler code here..
+        //[/UserButtonCode_btnImportCom]
+    }
+    else if (buttonThatWasClicked == btnExportCom.get())
+    {
+        //[UserButtonCode_btnExportCom] -- add your button handler code here..
+        //[/UserButtonCode_btnExportCom]
+    }
 
     //[UserbuttonClicked_Post]
     //[/UserbuttonClicked_Post]
@@ -802,7 +911,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
 
 void SeqEditor::rowSelected(TextListBox* parent, int row){
-        
+
 }
 
 //[/MiscUserCode]
@@ -836,38 +945,20 @@ BEGIN_JUCER_METADATA
     <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
           strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 752 l 164 752 s 172 760 l 164 752 l 172 744</PATH>
   </BACKGROUND>
-  <TEXTBUTTON name="new button" id="ce9eeb4274035fc6" memberName="btnImportCom"
-              virtualName="" explicitFocusOrder="0" pos="8 704 152 32" buttonText="Import .com/.aseq"
-              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="e373bb4f6fe0c973" memberName="btnExportCom"
-              virtualName="" explicitFocusOrder="0" pos="8 736 152 32" buttonText="Export .com/.aseq"
-              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="3bb24dc32903c5e7" memberName="btnImportMus"
-              virtualName="" explicitFocusOrder="0" pos="8 536 152 32" buttonText="Import .mus"
-              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="8f9107dadce8a52a" memberName="btnExportMus"
-              virtualName="" explicitFocusOrder="0" pos="8 568 152 32" buttonText="Export .mus"
-              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <GROUPCOMPONENT name="" id="288b23c83f4e83ab" memberName="grpMusDialect" virtualName=""
                   explicitFocusOrder="0" pos="8 609 320 47" title=".mus dialect"/>
   <TOGGLEBUTTON name="new toggle button" id="47cfaabd82293101" memberName="optMusCommunity"
                 virtualName="" explicitFocusOrder="0" pos="16 624 112 24" buttonText="Community"
-                connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
+                connectedEdges="0" needsCallback="1" radioGroupId="1" state="1"/>
   <TOGGLEBUTTON name="new toggle button" id="aa9f5ce6f473ab73" memberName="optMusCanon"
                 virtualName="" explicitFocusOrder="0" pos="128 624 80 24" buttonText="Canon"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="3788ddb7be05010c" memberName="optMusCanonOld"
                 virtualName="" explicitFocusOrder="0" pos="208 624 112 24" buttonText="Canon (Old)"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
-  <TEXTBUTTON name="new button" id="dda1a6799546c40" memberName="btnImportMIDI"
-              virtualName="" explicitFocusOrder="0" pos="8 320 152 32" buttonText="Import MIDI"
-              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="new button" id="afcf973a847dd8fa" memberName="btnExportMIDI"
-              virtualName="" explicitFocusOrder="0" pos="8 352 152 32" buttonText="Export MIDI"
-              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <GROUPCOMPONENT name="new group" id="6c3ae9ab90971ff0" memberName="grpImportMIDI"
                   virtualName="" explicitFocusOrder="0" pos="8 120 320 192" title="MIDI Import"/>
-  <TOGGLEBUTTON name="new toggle button" id="298575bd077da219" memberName="chkLoopSeq"
+  <TOGGLEBUTTON name="new toggle button" id="298575bd077da219" memberName="chkSmartLoop"
                 virtualName="" explicitFocusOrder="0" pos="16 136 112 24" buttonText="Smart Loop"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <GROUPCOMPONENT name="new group" id="5c6bcdf4f16c5863" memberName="grpOptimizer"
@@ -980,7 +1071,7 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="272 432 40 24" initialText="4"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
-  <TEXTEDITOR name="new text editor" id="6103737800c72a64" memberName="juce__textEditor"
+  <TEXTEDITOR name="new text editor" id="6103737800c72a64" memberName="txtSeq"
               virtualName="" explicitFocusOrder="0" pos="352 248 440 544" initialText=""
               multiline="1" retKeyStartsLine="1" readonly="1" scrollbars="1"
               caret="0" popupmenu="0"/>
@@ -995,7 +1086,7 @@ BEGIN_JUCER_METADATA
          edBkgCol="0" labelText="Debug output:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="354824bf45a24c31" memberName="juce__textEditor2"
+  <TEXTEDITOR name="new text editor" id="354824bf45a24c31" memberName="txtDebug"
               virtualName="" explicitFocusOrder="0" pos="352 24 440 192" initialText=""
               multiline="1" retKeyStartsLine="1" readonly="1" scrollbars="1"
               caret="0" popupmenu="0"/>
@@ -1007,6 +1098,42 @@ BEGIN_JUCER_METADATA
   <TOGGLEBUTTON name="new toggle button" id="32dace4af418847d" memberName="chkRel"
                 virtualName="" explicitFocusOrder="0" pos="16 160 136 24" buttonText="Relative Addrs"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
+  <TEXTBUTTON name="new button" id="dda1a6799546c40" memberName="btnImportMIDI"
+              virtualName="" explicitFocusOrder="0" pos="8 320 152 32" buttonText="Import MIDI"
+              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="afcf973a847dd8fa" memberName="btnExportMIDI"
+              virtualName="" explicitFocusOrder="0" pos="8 352 152 32" buttonText="Export MIDI"
+              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="3bb24dc32903c5e7" memberName="btnImportMus"
+              virtualName="" explicitFocusOrder="0" pos="8 536 152 32" buttonText="Import .mus"
+              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="8f9107dadce8a52a" memberName="btnExportMus"
+              virtualName="" explicitFocusOrder="0" pos="8 568 152 32" buttonText="Export .mus"
+              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="ce9eeb4274035fc6" memberName="btnImportCom"
+              virtualName="" explicitFocusOrder="0" pos="8 704 152 32" buttonText="Import .com/.aseq"
+              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+  <TEXTBUTTON name="new button" id="e373bb4f6fe0c973" memberName="btnExportCom"
+              virtualName="" explicitFocusOrder="0" pos="8 736 152 32" buttonText="Export .com/.aseq"
+              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+  <LABEL name="new label" id="f47463540eb17b52" memberName="lblD3" virtualName=""
+         explicitFocusOrder="0" pos="160 160 40 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="D3" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="eaf577117e5f825a" memberName="txtD3"
+              virtualName="" explicitFocusOrder="0" pos="192 160 40 24" initialText="20"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
+  <LABEL name="new label" id="f55d4d9dc7a4d940" memberName="lblD5" virtualName=""
+         explicitFocusOrder="0" pos="240 160 40 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="D5" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTEDITOR name="new text editor" id="5781be6e6a4a3b3b" memberName="txtD5"
+              virtualName="" explicitFocusOrder="0" pos="272 160 40 24" initialText="32"
+              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
+              caret="1" popupmenu="1"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA
@@ -1016,4 +1143,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-

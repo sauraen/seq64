@@ -80,7 +80,7 @@ inline bool isDec(String str, bool allowNegative = true){
     return true;
 }
 
-inline String FloatToString(float f, int minDecPlaces, int maxDecPlaces){
+inline String floatToString(float f, int minDecPlaces, int maxDecPlaces){
     jassert(minDecPlaces <= maxDecPlaces);
     jassert(minDecPlaces >= 0);
     float mult = 1.0f;
@@ -119,6 +119,16 @@ inline Colour LFWindowColor(){
 }
 inline Colour LFWidgetColor(){
     return FROMLOOKANDFEEL(TextEditor::backgroundColourId);
+}
+
+inline File findFile(String relpath){
+    File f = File::getSpecialLocation(File::currentApplicationFile).getParentDirectory();
+    while(true){
+        File test = f.getChildFile(relpath);
+        if(test.exists()) return test;
+        if(f.isRoot()) return File();
+        f = f.getParentDirectory();
+    }
 }
 
 #undef FROMLOOKANDFEEL

@@ -33,13 +33,13 @@
 			isa = PBXBuildFile;
 			fileRef = 42456C6596135794C5985AFF;
 		};
-		38ACF4CD6FFD6BABA34FA8E6 = {
-			isa = PBXBuildFile;
-			fileRef = 2F84167D426D118E12B1E635;
-		};
 		BB7BE789445FB621108D1C48 = {
 			isa = PBXBuildFile;
 			fileRef = 6C761EA4F54968A4CB0E51F3;
+		};
+		38ACF4CD6FFD6BABA34FA8E6 = {
+			isa = PBXBuildFile;
+			fileRef = 2F84167D426D118E12B1E635;
 		};
 		7D5D08E91909D6FB9E7879A3 = {
 			isa = PBXBuildFile;
@@ -178,6 +178,13 @@
 			path = ../../JuceLibraryCode/AppConfig.h;
 			sourceTree = "SOURCE_ROOT";
 		};
+		A8F63157B415A1B5789BA2C2 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.h;
+			name = Common.hpp;
+			path = ../../Source/Common.hpp;
+			sourceTree = "SOURCE_ROOT";
+		};
 		C2902630D0A0D089A8DF129A = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.cpp.objcpp;
@@ -237,9 +244,10 @@
 		88EB834D98D3C59C2CC2B78A = {
 			isa = PBXGroup;
 			children = (
+				A8F63157B415A1B5789BA2C2,
+				6C761EA4F54968A4CB0E51F3,
 				2F84167D426D118E12B1E635,
 				5C6D044F189B5B4CBC46EA28,
-				6C761EA4F54968A4CB0E51F3,
 				1AB2A017C8917D9F029A4FD6,
 				6C8262C2A4D3D92C419150E6,
 				61EFCD40569ABE9307280924,
@@ -528,8 +536,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				38ACF4CD6FFD6BABA34FA8E6,
 				BB7BE789445FB621108D1C48,
+				38ACF4CD6FFD6BABA34FA8E6,
 				7D5D08E91909D6FB9E7879A3,
 				A8EE48369A8C0D1D865CD7FC,
 				FD0F1E1AD95750094B72F937,

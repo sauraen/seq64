@@ -83,8 +83,8 @@
     <Lib/>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Source\SeqFile.cpp"/>
     <ClCompile Include="..\..\Source\Main.cpp"/>
+    <ClCompile Include="..\..\Source\SeqFile.cpp"/>
     <ClCompile Include="..\..\Source\SeqEditor.cpp"/>
     <ClCompile Include="..\..\Source\TextListBox.cpp"/>
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_audio_basics.cpp"/>
@@ -95,6 +95,7 @@
     <ClCompile Include="..\..\JuceLibraryCode\include_juce_gui_basics.cpp"/>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\Common.hpp"/>
     <ClInclude Include="..\..\Source\SeqFile.hpp"/>
     <ClInclude Include="..\..\Source\SeqEditor.hpp"/>
     <ClInclude Include="..\..\Source\TextListBox.hpp"/>

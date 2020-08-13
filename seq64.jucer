@@ -7,9 +7,10 @@
               headerPath="Source/">
   <MAINGROUP id="qSbMOT" name="seq64">
     <GROUP id="{5464FE01-B6C9-BF98-7392-885F51B736E0}" name="Source">
+      <FILE id="mrGv7i" name="Common.hpp" compile="0" resource="0" file="Source/Common.hpp"/>
+      <FILE id="WSf21a" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="OGNDST" name="SeqFile.cpp" compile="1" resource="0" file="Source/SeqFile.cpp"/>
       <FILE id="eyOSW3" name="SeqFile.hpp" compile="0" resource="0" file="Source/SeqFile.hpp"/>
-      <FILE id="WSf21a" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="tzGmAf" name="SeqEditor.cpp" compile="1" resource="0" file="Source/SeqEditor.cpp"/>
       <FILE id="vbdwgV" name="SeqEditor.hpp" compile="0" resource="0" file="Source/SeqEditor.hpp"/>
       <FILE id="xoE3xr" name="TextListBox.cpp" compile="1" resource="0" file="Source/TextListBox.cpp"/>
