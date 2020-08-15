@@ -54,8 +54,6 @@ Identifier SeqFile::idTargetSection("targetsection");
 Identifier SeqFile::idTargetHash("targethash");
 Identifier SeqFile::idWillDrop("willdrop");
 
-//TODO reladdr
-
 //TODO
 SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
     //data.clearQuick();
@@ -68,13 +66,26 @@ SeqFile::~SeqFile(){
 }
 
 String SeqFile::getInternalString(){
-    if(structure.isValid()){
-        XmlElement::TextFormat fmt;
-        fmt.addDefaultHeader = false;
-        fmt.lineWrapLength = 80;
-        return structure.toXmlString(fmt);
+    if(!structure.isValid()) return "(No sequence loaded)";
+    String ret;
+    for(int i=0; i<structure.getNumChildren(); ++i){
+        ValueTree section = structure.getChild(i);
+        ret += section.getType() + "\n";
+        for(int j=0; j<section.getNumChildren(); ++j){
+            //TODO display hex, display addr targets, name fallback to action/meaning
+            ValueTree cmd = section.getChild(j);
+            String cmddesc = /*cmd.getProperty(idAction, "None").toString();
+            if(cmddesc == "None") cmddesc =*/ cmd.getProperty(idName, "Error").toString();
+            for(int k=0; k<cmd.getNumChildren(); ++k){
+                ValueTree param = cmd.getChild(k);
+                String paramdesc = /*param.getProperty(idMeaning, "None").toString();
+                if(paramdesc == "None") paramdesc =*/ param.getProperty(idName, "Error").toString();
+                cmddesc += ", " + paramdesc + " " + param.getProperty(idValue, "Error").toString();
+            }
+            ret += "  " + cmddesc + "\n";
+        }
     }
-    return "(No sequence loaded)";
+    return ret;
 }
 
 StringArray SeqFile::getAvailABIs(){
@@ -589,9 +600,11 @@ struct CCTracker{
     CCTracker(){
         action = "";
         q_time = lasttime = q_amp = lastvalue = 0;
+        lastcmd = ValueTree();
     }
     String action;
     int q_time, lasttime, q_amp, lastvalue;
+    ValueTree lastcmd;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -609,6 +622,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     name = midifile.getFileNameWithoutExtension();
     dbgmsg("IMPORTING MIDI FILE");
     importresult = 0;
+    bool reladdr = (bool)midiopts.getProperty("reladdr", false);
     //Changing these is no longer supported--I never heard of anyone using them
     String chnvol = "CC7 (Volume)"; //midiopts.getProperty("chnvol", "CC7 (Volume)").toString();
     String mtrvol = "SysEx MstrVol"; //midiopts.getProperty("mtrvol", "CC24 (None)").toString();
@@ -629,8 +643,26 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         dbgmsg("Converting " + String(master_ppqn) + " to 48 ppqn");
     }
     double ticks_multiplier = 48.0 / (double)master_ppqn;
-    double last_timestampd = mfile.getLastTimestamp();
+    //Check for extremely short notes
+    for(track=0; track<mfile.getNumTracks(); track++){
+        MidiMessageSequence trk(*mfile.getTrack(track));
+        trk.updateMatchedPairs();
+        for(i=0; i<trk.getNumEvents(); ++i){
+            msgptr = &trk.getEventPointer(i)->message;
+            if(msgptr->isNoteOn()){
+                if((trk.getTimeOfMatchingKeyUp(i) - msgptr->getTimeStamp()) 
+                        * ticks_multiplier < 2.0){
+                    dbgmsg("Warning, extremely short note (pitch " 
+                        + String(msgptr->getNoteNumber()) + ", chn "
+                        + String(msgptr->getChannel()) + ", quarter note ~" 
+                        + String(msgptr->getTimeStamp() * ticks_multiplier / 48.0)
+                        + "), may be dropped or corrupt nearby note ons/offs!");
+                }
+            }
+        }
+    }
     //Put all events into master track
+    double last_timestampd = mfile.getLastTimestamp();
     std::unique_ptr<MidiMessageSequence> mastertrack;
     mastertrack.reset(new MidiMessageSequence());
     for(track=0; track<mfile.getNumTracks(); track++){
@@ -638,7 +670,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         mastertrack->updateMatchedPairs();
     }
     //Scale all events to N64 PPQN
-    //TODO check for extremely short notes
     for(m=mastertrack->getNumEvents()-1; m>=0; m--){
         msgptr = &mastertrack->getEventPointer(m)->message;
         msgptr->setTimeStamp(msgptr->getTimeStamp() * ticks_multiplier);
@@ -722,7 +753,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             layertracks.add(new MidiMessageSequence());
         }
     }
-    int other_channel = -1; //TODO put notes on another channel
     bool too_many_notes;
     OwnedArray<LayerState> ls;
     const int ls_history = 4;
@@ -784,7 +814,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     if(!too_many_notes){
                         dbgmsg("Channel " + String(channel) + " has more than " + String(max_layers) 
                                 + " notes on at a time (at t=" + String(msg.getTimeStamp()) + ")!");
-                        dbgmsg("Putting the extra notes on an unused channel is not yet supported.");
                         too_many_notes = true;
                         importresult |= 1;
                     }
@@ -913,7 +942,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 //Add Ptr Channel Header to seq hdr
                 want = wantAction("Ptr Channel Header", 0);
                 wantProperty(want, "Channel", channel);
-                wantProperty(want, "Absolute Address", 0);
+                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, structure.getNumChildren() - 1, nullptr);
                 section.addChild(want, cmd, nullptr);
@@ -957,10 +986,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //Loop to start
     if((bool)midiopts.getProperty("smartloop", false)){
         want = wantAction("Jump Same Level", 0);
-        wantProperty(want, "Absolute Address", 1337);
-        //TODO smart loop, skip intro
+        wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
         want = createCommand(want);
-        want.setProperty(idTargetSection, 0, nullptr);
+        want.setProperty(idTargetSection, num_tsections <= 1 ? 0 : 1, nullptr);
         want.setProperty(idTargetHash, ptrBeginData, nullptr);
         section.addChild(want, cmd, nullptr);
         cmd++;
@@ -988,9 +1016,8 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //CC Bandwidth Reduction setup
     OwnedArray<CCTracker> ccstates;
     int qt, qa;
-    //TODO this is a mess
-    qt = 0; //midiopts.getProperty("q_other_time", 1);
-    qa = midiopts.getProperty("q_other_amp", 1);
+    qt = 0;
+    qa = 0;
     for(cc=0; cc<130; cc++){ //128 is pitch, 129 is program
         ccstates.add(new CCTracker());
         ccstates[cc]->q_time = qt;
@@ -998,20 +1025,20 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     }
     ccstates[128]->q_time = 0; //midiopts.getProperty("q_pitch_time", 1);
     ccstates[128]->q_amp = midiopts.getProperty("q_pitch_amp", 1);
-    ccstates[129]->q_time = 0;
-    ccstates[129]->q_amp = 0;
     qt = 0; //midiopts.getProperty("q_volpan_time", 3);
     qa = midiopts.getProperty("q_volpan_amp", 2);
     ccstates[7]->q_time = qt;
     ccstates[7]->q_amp = qa;
     ccstates[11]->q_time = qt;
     ccstates[11]->q_amp = qa;
-    //qt = 0; //midiopts.getProperty("q_pan_time", 3);
-    //qa = midiopts.getProperty("q_pan_amp", 2);
     ccstates[10]->q_time = qt;
     ccstates[10]->q_amp = qa;
+    qt = 0; //midiopts.getProperty("q_other_time", 1);
+    qa = midiopts.getProperty("q_other_amp", 1);
     ccstates[91]->q_time = qt;
     ccstates[91]->q_amp = qa;
+    ccstates[77]->q_time = qt;
+    ccstates[77]->q_amp = qa;
     //CC actions setup
     if(chnpriority == "CC17 (GPC2)"){
         cc = 17;
@@ -1079,7 +1106,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 //Add Ptr Track Data command to channel
                 want = wantAction("Ptr Track Data", 1);
                 wantProperty(want, "Note Layer", layer);
-                wantProperty(want, "Absolute Address", 0);
+                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, structure.getNumChildren() - 1, nullptr);
                 section.addChild(want, cmd, nullptr);
@@ -1089,6 +1116,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             for(cc=0; cc<130; cc++){ //128 is pitch, 129 is program
                 ccstates[cc]->lasttime = -10000000;
                 ccstates[cc]->lastvalue = -10000000;
+                ccstates[cc]->lastcmd = ValueTree();
             }
             //Parse all commands
             t = starttime;
@@ -1117,17 +1145,27 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     value &= 0x000000FF;
                 }
                 if(cc < 0 || cc >= 130) continue;
-                if(abs(value - ccstates[cc]->lastvalue) < ccstates[cc]->q_amp) continue;
-                if(timestamp - ccstates[cc]->lasttime < ccstates[cc]->q_time) continue;
+                if(abs(value - ccstates[cc]->lastvalue) <= ccstates[cc]->q_amp ||
+                        timestamp - ccstates[cc]->lasttime <= ccstates[cc]->q_time){
+                    //This command is quantized out
+                    //Update the last command's value, but don't update lastvalue
+                    //(otherwise this would progressively quantize out any slow CC fade)
+                    if(ccstates[cc]->lastcmd.isValid()){
+                        //lastcmd will be invalid if this is an action we aren't tracking
+                        ccstates[cc]->lastcmd.setProperty("Value", value, nullptr);
+                    }
+                    continue;
+                }
                 ccstates[cc]->lastvalue = value;
                 ccstates[cc]->lasttime = timestamp;
                 if(ccstates[cc]->action != ""){
                     want = wantAction(ccstates[cc]->action, 1);
                     wantProperty(want, "Value", value);
                     advanceToTimestamp(section, 1, cmd, t, timestamp);
-                    //Write command
-                    section.addChild(createCommand(want), cmd, nullptr);
+                    ValueTree tmpcmd = createCommand(want);
+                    section.addChild(tmpcmd, cmd, nullptr);
                     cmd++;
+                    ccstates[cc]->lastcmd = tmpcmd;
                 }
             }
             //Get the time to the end
@@ -1348,6 +1386,7 @@ void SeqFile::optimize(ValueTree midiopts){
         --sec1;
     }
     //Check if we want loop or call optimizations
+    bool reladdr = (bool)midiopts.getProperty("reladdr", false);
     int stacksize = 4; //TODO consider stack
     bool useCalls = midiopts.getProperty("usecalls", true);
     bool useLoops = midiopts.getProperty("useloops", true);
@@ -1665,7 +1704,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 want = createCommand(want);
                 calleddatalength += getNewCommandLength(want);
                 want = wantAction("Call Same Level", stype1);
-                wantProperty(want, "Absolute Address", 1337);
+                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
                 want = createCommand(want);
                 calleddatalength += bestlist.getNumChildren() * getNewCommandLength(want);
                 if(curdatalength <= calleddatalength){
@@ -1690,7 +1729,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 sectionN.addChild(createCommand(want), -1, nullptr);
                 //Replace all instances of data with pointer to new section
                 want = wantAction("Call Same Level", stype1);
-                wantProperty(want, "Absolute Address", 1337);
+                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, secN, nullptr);
                 for(i=bestlist.getNumChildren() - 1; i>=0; i--){ //Go in reverse order so the cmd numbers are never changed
@@ -1961,8 +2000,8 @@ int SeqFile::getAdjustedValue(const ValueTree& param){
 }
 
 int SeqFile::getPtrAddress(ValueTree command, uint32 currentAddr){
-    ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
     int address;
+    ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
     if(param.isValid()){
         address = getAdjustedValue(param);
     }else{

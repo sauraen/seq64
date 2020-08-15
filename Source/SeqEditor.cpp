@@ -825,10 +825,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
 
         ValueTree midiopts("midiopts");
         midiopts.setProperty("smartloop", chkSmartLoop->getToggleState(), nullptr);
-        midiopts.setProperty("addmstrvolval", txtMasterVol->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("addmstrvolval", txtMasterVol->getText().getHexValue32(), nullptr);
         midiopts.setProperty("reladdr", chkRel->getToggleState(), nullptr);
-        midiopts.setProperty("d3", txtD3->getText().getFloatValue(), nullptr);
-        midiopts.setProperty("d5", txtD5->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("d3", txtD3->getText().getHexValue32(), nullptr);
+        midiopts.setProperty("d5", txtD5->getText().getHexValue32(), nullptr);
 
         midiopts.setProperty("usecalls", chkUseCalls->getToggleState(), nullptr);
         midiopts.setProperty("useloops", chkUseLoops->getToggleState(), nullptr);
@@ -851,11 +851,11 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
                     "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
         }
         File dest = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("midiimportfolder");
-        FileChooser box("Select a MIDI to load...", dest, "*.mid;*.midi;*.rmi", SEQ64::useNativeFileChooser());
+        FileChooser box("Select a MIDI to load...", dest, "*.mid;*.midi;*.rmi", true);
         if(!box.browseForFileToOpen()) return;
         dest = box.getResult();
         if(!dest.existsAsFile()){
-            SEQ64::say("File " + dest.getFullPathName() + " does not exist!");
+            std::cout << "File " << dest.getFullPathName() << " does not exist!";
             return;
         }
         //TODO SEQ64::writeProperty("midiimportfolder", dest.getParentDirectory().getFullPathName());
