@@ -70,17 +70,37 @@ String SeqFile::getInternalString(){
     String ret;
     for(int i=0; i<structure.getNumChildren(); ++i){
         ValueTree section = structure.getChild(i);
-        ret += section.getType() + "\n";
+        ret += "Section " + String(i) + ": " + section.getType();
+        if((int)section.getProperty(idChannel, -1) >= 0){
+            ret += ", chn " + section.getProperty(idChannel, -1).toString();
+        }
+        if((int)section.getProperty(idLayer, -1) >= 0){
+            ret += ", layer " + section.getProperty(idLayer, -1).toString();
+        }
+        ret += "\n";
         for(int j=0; j<section.getNumChildren(); ++j){
-            //TODO display hex, display addr targets, name fallback to action/meaning
             ValueTree cmd = section.getChild(j);
-            String cmddesc = /*cmd.getProperty(idAction, "None").toString();
-            if(cmddesc == "None") cmddesc =*/ cmd.getProperty(idName, "Error").toString();
+            String cmddesc = cmd.getProperty(idName, "None").toString();
+            String cmdaction = cmd.getProperty(idAction, "Error").toString();
+            if(cmddesc == "None") cmddesc = cmdaction;
+            if(cmd.hasProperty(idTargetSection)){
+                cmddesc += " to Sec " + cmd.getProperty(idTargetSection, "Error").toString();
+            }
+            if(cmd.hasProperty(idTargetHash)){
+                cmddesc += " to hash " + cmd.getProperty(idTargetHash, "Error").toString();
+            }
+            if(cmdaction == "Marker"){
+                cmddesc += " hash " + cmd.getProperty(idHash, "Error").toString();
+            }
             for(int k=0; k<cmd.getNumChildren(); ++k){
                 ValueTree param = cmd.getChild(k);
-                String paramdesc = /*param.getProperty(idMeaning, "None").toString();
-                if(paramdesc == "None") paramdesc =*/ param.getProperty(idName, "Error").toString();
-                cmddesc += ", " + paramdesc + " " + param.getProperty(idValue, "Error").toString();
+                String parammeaning = param.getProperty(idMeaning, "Error").toString();
+                if(parammeaning == "Absolute Address" || parammeaning == "Relative Address"){
+                    continue;
+                }
+                String paramdesc = param.getProperty(idName, "None").toString();
+                if(paramdesc == "None") paramdesc = parammeaning;
+                cmddesc += ", " + paramdesc + " " + hexauto((int)param.getProperty(idValue, 0x1337));
             }
             ret += "  " + cmddesc + "\n";
         }
@@ -724,7 +744,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //See if there are any empty channels (i.e. with no note ons)
     dbgmsg("Empty channels: ", false);
     Array<int> channelsused;
-    uint16 chanBitfield = 0;
+    uint16_t chanBitfield = 0;
     for(channel=0; channel<16; channel++){
         channelsused.add(-1);
         for(m=0; m<chantracks[channel]->getNumEvents(); m++){
@@ -903,11 +923,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     cmd++;
     int addmstrvol_cmd = cmd;
     bool hadmastervol = false;
-    //Beginning of track (for pointer later)
-    want = createMarker();
-    int ptrBeginData = want.getProperty(idHash);
-    section.addChild(want, cmd, nullptr);
-    cmd++;
+    int loopStartHash = -1;
     //Add events from master track
     m=0;
     int sectimeidx = 0;
@@ -927,6 +943,13 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             dbgmsg(".", false);
             //Get up to the time
             advanceToTimestamp(section, 0, cmd, t, sectiontimes[sectimeidx]);
+            //Section marker (for pointer later)
+            if(num_tsections == 1 || sectimeidx == 1){
+                want = createMarker();
+                loopStartHash = want.getProperty(idHash);
+                section.addChild(want, cmd, nullptr);
+                cmd++;
+            }
             //Channel pointers for new section
             for(channel=0; channel<16; channel++){
                 if(channelsused[channel] < 0) continue;
@@ -942,7 +965,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 //Add Ptr Channel Header to seq hdr
                 want = wantAction("Ptr Channel Header", 0);
                 wantProperty(want, "Channel", channel);
-                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
+                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, structure.getNumChildren() - 1, nullptr);
                 section.addChild(want, cmd, nullptr);
@@ -963,7 +986,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             }
         }else if(msg.isSysEx()){
             if(msg.getSysExDataSize() == 6){
-                const uint8* sysexdata = msg.getSysExData();
+                const uint8_t* sysexdata = msg.getSysExData();
                 if(sysexdata[2] == 0x04 && sysexdata[3] == 0x01){
                     //Master volume
                     want = wantAction("Master Volume", 0);
@@ -986,10 +1009,10 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //Loop to start
     if((bool)midiopts.getProperty("smartloop", false)){
         want = wantAction("Jump Same Level", 0);
-        wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
+        wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
         want = createCommand(want);
-        want.setProperty(idTargetSection, num_tsections <= 1 ? 0 : 1, nullptr);
-        want.setProperty(idTargetHash, ptrBeginData, nullptr);
+        want.setProperty(idTargetSection, 0, nullptr);
+        want.setProperty(idTargetHash, loopStartHash, nullptr);
         section.addChild(want, cmd, nullptr);
         cmd++;
     }
@@ -1000,7 +1023,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     cmd++;
     //Master Volume
     if(!hadmastervol){
-        uint8 defaultval = (int)midiopts.getProperty("addmstrvolval", 0x58);
+        uint8_t defaultval = (int)midiopts.getProperty("addmstrvolval", 0x58);
         dbgmsg("No Master Volume sysex command in the MIDI, adding default 0x" + hex(defaultval));
         want = wantAction("Master Volume", 0);
         wantProperty(want, "Value", defaultval);
@@ -1106,7 +1129,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 //Add Ptr Track Data command to channel
                 want = wantAction("Ptr Track Data", 1);
                 wantProperty(want, "Note Layer", layer);
-                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
+                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, structure.getNumChildren() - 1, nullptr);
                 section.addChild(want, cmd, nullptr);
@@ -1704,7 +1727,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 want = createCommand(want);
                 calleddatalength += getNewCommandLength(want);
                 want = wantAction("Call Same Level", stype1);
-                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
+                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
                 calleddatalength += bestlist.getNumChildren() * getNewCommandLength(want);
                 if(curdatalength <= calleddatalength){
@@ -1729,7 +1752,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 sectionN.addChild(createCommand(want), -1, nullptr);
                 //Replace all instances of data with pointer to new section
                 want = wantAction("Call Same Level", stype1);
-                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 1337);
+                wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, secN, nullptr);
                 for(i=bestlist.getNumChildren() - 1; i>=0; i--){ //Go in reverse order so the cmd numbers are never changed
@@ -1883,7 +1906,7 @@ void SeqFile::reduceTrackNotes(){
 #if 0
 
 //Stype: 0 seq hdr, 1 chn hdr, 2 track data
-ValueTree SeqFile::getDescription(uint8 firstbyte, int stype){
+ValueTree SeqFile::getDescription(uint8_t firstbyte, int stype){
     ValueTree test;
     for(int i=0; i<abi.getNumChildren(); i++){
         test = abi.getChild(i);
@@ -1904,13 +1927,13 @@ ValueTree SeqFile::getDescription(uint8 firstbyte, int stype){
 }
 
 
-ValueTree SeqFile::getCommand(uint32 address, int stype){
+ValueTree SeqFile::getCommand(uint32_t address, int stype){
     ValueTree ret("command");
     ValueTree param, desc;
     String action, meaning, datasrc;
     int i, len, paramlen, paramindex, cmdoffset, paramvalue, datalen;
-    uint8 c, d;
-    uint32 a = address;
+    uint8_t c, d;
+    uint32_t a = address;
     //
     len = 1;
     c = data[address];
@@ -1920,7 +1943,7 @@ ValueTree SeqFile::getCommand(uint32 address, int stype){
         ret = desc.createCopy();
         cmdoffset = c - (int)ret.getProperty(idCmd, 0);
         action = desc.getProperty(idAction, "No Action");
-        //dbgmsg(hex((uint32)address, 6) + ": " + hex(c) + " " + action);
+        //dbgmsg(hex((uint32_t)address, 6) + ": " + hex(c) + " " + action);
         for(paramindex=0; paramindex<ret.getNumChildren(); paramindex++){
             param = ret.getChild(paramindex);
             meaning = param.getProperty(idMeaning, "None");
@@ -1938,13 +1961,13 @@ ValueTree SeqFile::getCommand(uint32 address, int stype){
                     len++;
                     paramlen++;
                     paramvalue <<= 8;
-                    paramvalue += (uint8)data[a+i];
+                    paramvalue += (uint8_t)data[a+i];
                 }
                 param.setProperty(idDataAddr, (int)(a-address), nullptr);
                 param.setProperty(idDataActualLen, paramlen, nullptr);
             }else if(datasrc == "variable"){
                 if(datalen == 1){
-                    d = (uint8)data[a];
+                    d = (uint8_t)data[a];
                     if(d <= 0x7F){
                         paramvalue = d;
                         len++;
@@ -1954,11 +1977,11 @@ ValueTree SeqFile::getCommand(uint32 address, int stype){
                     d = 0;
                     len++;
                     paramlen++;
-                    paramvalue = (uint8)data[a];
+                    paramvalue = (uint8_t)data[a];
                     if(paramvalue & 0x80){
                         paramvalue &= 0x7F;
                         paramvalue <<= 8;
-                        paramvalue += (uint8)data[a+1];
+                        paramvalue += (uint8_t)data[a+1];
                         len++;
                         paramlen++;
                     }
@@ -1999,7 +2022,7 @@ int SeqFile::getAdjustedValue(const ValueTree& param){
     return origvalue;
 }
 
-int SeqFile::getPtrAddress(ValueTree command, uint32 currentAddr){
+int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr){
     int address;
     ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
     if(param.isValid()){
@@ -2015,7 +2038,7 @@ int SeqFile::getPtrAddress(ValueTree command, uint32 currentAddr){
     }
     if(address >= data.size()){
         dbgmsg("@" + hex(currentAddr,4) + ": Pointer off end of sequence to " 
-                + hex((uint32)address,4) + ", skipping!");
+                + hex((uint32_t)address,4) + ", skipping!");
         return -1;
     }
     return address;
@@ -2029,7 +2052,7 @@ struct SeqTSection{
     SeqTSection(){
         time = address = address_end = 0;
     }
-    uint32 time, address, address_end;
+    uint32_t time, address, address_end;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2042,13 +2065,13 @@ void exportMIDI(File midifile, ValueTree midiopts){
     String action, meaning;
     int channel, notelayer, value, transpose, delay, note, velocity, gate;
     //bool qDelay, qVelocity, qGate;
-    uint32 address, t, a;
+    uint32_t address, t, a;
     int stype = 0;
     int cmdlen;
     //Stacks
     const int stack_size = 16;
-    uint32 addrstack[stack_size];
-    uint32 timestack[stack_size];
+    uint32_t addrstack[stack_size];
+    uint32_t timestack[stack_size];
     int stypestack[stack_size];
     int stackptr = 0;
     //TSections
@@ -2118,13 +2141,13 @@ void exportMIDI(File midifile, ValueTree midiopts){
             dbgmsg("No Audiobank Index defined in RomDesc, cannot load bank");
             break;
         }
-        uint32 abaddr = (int)abinfonode.getProperty("address");
+        uint32_t abaddr = (int)abinfonode.getProperty("address");
         if(abaddr >= rom.getSize()){
             dbgmsg("Invalid Audiobank Index in RomDesc " + hex(abaddr) + ", cannot load bank");
             break;
         }
         //Load bank
-        dbgmsg("Loading bank " + hex((uint8)bank_num));
+        dbgmsg("Loading bank " + hex((uint8_t)bank_num));
         bank.reset(new BankFile(romdesc));
         if(!bank->load(rom, bank_num)){
             dbgmsg("Loading bank " + String(bank_num) + " failed");
@@ -2147,7 +2170,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         //Normal actions
         if(action == "Unknown"){
             //do nothing
-            dbgmsg("Unknown Action " + hex((uint8)(int)command.getProperty(idCmd)) 
+            dbgmsg("Unknown Action " + hex((uint8_t)(int)command.getProperty(idCmd)) 
                     + " in stype " + String(stype) + " @" + hex(a, 6));
         }else if(action == "No Action"){
             //do nothing
@@ -2348,7 +2371,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                 continue;
             }
             value = getAdjustedValue(param);
-            uint32 tempovalue = 60000000 / value;
+            uint32_t tempovalue = 60000000 / value;
             msg = MidiMessage::tempoMetaEvent(tempovalue);
             msg.setTimeStamp(t*ticks_multiplier);
             mastertrack.addEvent(msg);
@@ -2438,7 +2461,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
             value = (1<<13) + (value << 7);
             if(value < 0) value = 0;
             if(value >= (1<<14)) value = (1<<14) - 1;
-            //dbgmsg("Pitch Bend original value " + String(value) + " or " + hex((uint32)value));
+            //dbgmsg("Pitch Bend original value " + String(value) + " or " + hex((uint32_t)value));
             msg = MidiMessage::pitchWheel(channel+1, value);
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
@@ -2548,7 +2571,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                     if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "gm_multi"){
                         //Add multi-drum-channel hacks
                         //GM2 mode on
-                        // uint8 gm2modeonsysex[4] = {0x7E, 0x7F, 0x09, 0x03};
+                        // uint8_t gm2modeonsysex[4] = {0x7E, 0x7F, 0x09, 0x03};
                         // msg = MidiMessage::createSysExMessage(gm2modeonsysex, 4);
                         // msg.setTimeStamp(t*ticks_multiplier);
                         // mtracks[channel]->addEvent(msg);
@@ -2558,7 +2581,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                         msg = MidiMessage(0xB0 | channel, 32, 0, t*ticks_multiplier);
                         mtracks[channel]->addEvent(msg);
                         //Roland GS: SysEx to turn any channel to percussion mode
-                        uint8 gssysex[9] = {0x41, 0x10, 0x42, 0x12, 0x40, (uint8)(0x10 + channel), 0x15, 0x02, (uint8)(0x19 - channel)};
+                        uint8_t gssysex[9] = {0x41, 0x10, 0x42, 0x12, 0x40, (uint8_t)(0x10 + channel), 0x15, 0x02, (uint8_t)(0x19 - channel)};
                         msg = MidiMessage::createSysExMessage(gssysex, 9);
                         msg.setTimeStamp(t*ticks_multiplier);
                         mtracks[channel]->addEvent(msg);
@@ -2619,7 +2642,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
                     dbgmsg("Track Note command using previous delay, but not previously set! (Corrupted sequence / will break timings)");
                     delay = 1;
                 }
-                //dbgmsg("@" + hex(a, 6) + ": No delay value given, using current " + hex((uint32)delay, 4));
+                //dbgmsg("@" + hex(a, 6) + ": No delay value given, using current " + hex((uint32_t)delay, 4));
                 //Add it so we actually do the delay!
                 param = ValueTree("parameter");
                 param.setProperty(idMeaning, "Delay", nullptr);
@@ -2627,18 +2650,18 @@ void exportMIDI(File midifile, ValueTree midiopts){
                 command.addChild(param, command.getNumChildren(), nullptr);
             }
             /*
-            dbgmsg("@" + hex(a, 4) + " c " + hex((uint8)channel, 1) + " l " + hex((uint8)notelayer, 1)
-                    + " n " + hex((uint8)note)       + " v " +  hex((uint8)velocity) 
-                    + " g " +  hex((uint32)gate, 4)  + " d " + hex((uint32)delay, 4)
+            dbgmsg("@" + hex(a, 4) + " c " + hex((uint8_t)channel, 1) + " l " + hex((uint8_t)notelayer, 1)
+                    + " n " + hex((uint8_t)note)       + " v " +  hex((uint8_t)velocity) 
+                    + " g " +  hex((uint32_t)gate, 4)  + " d " + hex((uint32_t)delay, 4)
                     + " r " + String((float)((gate*delay) / 256.0))
                     + (qDelay ? ("") : (" (using old delay)"))
                     + (qGate ? ("") : (" (no gate)"))
                     + (qVelocity ? ("") : (" (using old velocity)"))  );
             */
-            msg = MidiMessage::noteOn(channel+1, note, (uint8)velocity);
+            msg = MidiMessage::noteOn(channel+1, note, (uint8_t)velocity);
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
-            msg = MidiMessage::noteOff(channel+1, note, (uint8)0);
+            msg = MidiMessage::noteOff(channel+1, note, (uint8_t)0);
             msg.setTimeStamp((t + delay - ((gate*delay) >> 8))*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else{
@@ -2652,7 +2675,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         }
     }
     if(!ended_naturally){
-        dbgmsg("Converting sequence ran off end! a==" + hex(a) + ", length==" + hex((uint32)data.size()));
+        dbgmsg("Converting sequence ran off end! a==" + hex(a) + ", length==" + hex((uint32_t)data.size()));
     }
     //Ensure messages are in order
     for(channel=0; channel<16; channel++){
@@ -2744,7 +2767,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
 ////////////////////////////////////////////////////////////////////////////////
 
 
-SeqData* SeqFile::getOrMakeSectionAt(uint32 a){
+SeqData* SeqFile::getOrMakeSectionAt(uint32_t a){
     for(int s=0; s<sections.size(); s++){
         if(sections[s]->address == a){
             return sections[s];
@@ -2762,7 +2785,7 @@ SeqData* SeqFile::getOrMakeSectionAt(uint32 a){
     sections.add(newsection);
     return newsection;
 }
-bool SeqFile::isSectionAt(uint32 a, int stype){
+bool SeqFile::isSectionAt(uint32_t a, int stype){
     for(int s=0; s<sections.size(); s++){
         if(sections[s]->address != a) continue;
         if(sections[s]->stype != stype){
@@ -2782,15 +2805,15 @@ SeqData* SeqFile::getSection(int s){
 /////////////////////////////// importCom objects //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-Array<uint8> data;
+Array<uint8_t> data;
 
-uint8 SeqFile::readByte(uint32 address){
+uint8_t SeqFile::readByte(uint32_t address){
     return data[address];
 }
-void SeqFile::writeByte(uint32 address, uint8 d){
+void SeqFile::writeByte(uint32_t address, uint8_t d){
     data.set(address, d);
 }
-uint32 SeqFile::getLength(){
+uint32_t SeqFile::getLength(){
     return data.size();
 }
 
@@ -2798,15 +2821,15 @@ uint32 SeqFile::getLength(){
 struct SeqData{
     SeqData();
 
-    uint32 address;
-    uint32 address_end;
-    int8 stype;
-    int8 channel;
-    int8 layer;
-    int8 calldepth;
-    int8 finished;
-    int16 tsection;
-    Array<uint32> cmdoffsets;
+    uint32_t address;
+    uint32_t address_end;
+    int8_t stype;
+    int8_t channel;
+    int8_t layer;
+    int8_t calldepth;
+    int8_t finished;
+    int16_t tsection;
+    Array<uint32_t> cmdoffsets;
 };
 
 SeqData::SeqData(){
@@ -2838,7 +2861,7 @@ bool SeqFile::load(ROM& rom, int seqnumber){
         dbgmsg("Audioseq Index not defined in RomDesc!");
         return false;
     }
-    uint32 asiaddr = (int)asiinfonode.getProperty("address");
+    uint32_t asiaddr = (int)asiinfonode.getProperty("address");
     if(asiaddr >= rom.getSize()){
         dbgmsg("Audioseq Index at invalid index " + hex(asiaddr) + "!");
         return false;
@@ -2849,13 +2872,13 @@ bool SeqFile::load(ROM& rom, int seqnumber){
         dbgmsg("Audioseq not defined in RomDesc!");
         return false;
     }
-    uint32 asaddr = (int)asinfonode.getProperty("address");
+    uint32_t asaddr = (int)asinfonode.getProperty("address");
     if(asaddr >= rom.getSize()){
         dbgmsg("Audioseq at invalid index " + hex(asaddr) + "!");
         return false;
     }
     //Get sequence properties from index
-    uint32 seqaddr, seqlen;
+    uint32_t seqaddr, seqlen;
     if((int)romdesc.getProperty("indextype", 1) == 2){
         seqaddr = asaddr + rom.readWord(asiaddr + (16*seqnumber) + 16);
         seqlen = rom.readWord(asiaddr + (16*seqnumber) + 20);
@@ -2873,7 +2896,7 @@ bool SeqFile::load(ROM& rom, int seqnumber){
     for(int i=0; i<seqlen; i++){
         data.add(rom.readByte(i+seqaddr));
     }
-    dbgmsg("Copied ROM data to sequence, size == " + hex((uint32)data.size()));
+    dbgmsg("Copied ROM data to sequence, size == " + hex((uint32_t)data.size()));
     trim();
     /*
     TODO bank integration
@@ -2886,14 +2909,14 @@ bool SeqFile::load(ROM& rom, int seqnumber){
             dbgmsg("No Sequence Banks Map defined in RomDesc, cannot load bank");
             break;
         }
-        uint32 sbmaddr = (int)sbminfonode.getProperty("address");
+        uint32_t sbmaddr = (int)sbminfonode.getProperty("address");
         if(sbmaddr >= rom.getSize()){
             dbgmsg("Invalid Sequence Banks Map in RomDesc " + hex(sbmaddr) + ", cannot load bank");
             break;
         }
         //Read bank number
-        uint16 ptr = rom.readHalfWord(sbmaddr + (seqnumber << 1));
-        uint8 seq_isetcount = rom.readByte(sbmaddr + ptr);
+        uint16_t ptr = rom.readHalfWord(sbmaddr + (seqnumber << 1));
+        uint8_t seq_isetcount = rom.readByte(sbmaddr + ptr);
         if(seq_isetcount == 0){
             dbgmsg("Sequence has no banks, cannot load bank");
             break;
@@ -2949,12 +2972,12 @@ void SeqFile::parse(){
     ValueTree command, param;
     String action, meaning;
     int cmdlen = 1, channel = -1, notelayer = -1, value;
-    uint32 a = 0;
+    uint32_t a = 0;
     const int stack_size = 8;
-    uint32 addrstack[stack_size];
+    uint32_t addrstack[stack_size];
     int stypestack[stack_size];
     SeqData* sectionstack[stack_size];
-    uint32 address;
+    uint32_t address;
     int stackptr = 0;
     int stype = 0;
     SeqData* sec;
@@ -3182,22 +3205,24 @@ void SeqFile::parse(){
             dbgmsg("Unknown command action " + action + "!");
         }
     }
-    dbgmsg("Parsing sequence ran off end! a==" + hex(a) + ", length==" + hex((uint32)data.size()));
+    dbgmsg("Parsing sequence ran off end! a==" + hex(a) + ", length==" + hex((uint32_t)data.size()));
 }
+
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// exportCom functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
  //Overwrite whatever is at address, don't resize
-void SeqFile::writeCommand(uint32 address, ValueTree command){
+void SeqFile::writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree command){
     if(!command.isValid()) return;
     if(command.getProperty(idAction, "No Action").toString() == "Marker") return;
     ValueTree param;
     int i, p, datalen, value;
     String datasrc;
     //Write command byte
-    uint8 d = (int)command.getProperty(idCmd);
+    uint8_t d = (int)command.getProperty(idCmd);
     param = command.getChildWithProperty(idDataSrc, "offset");
     if(param.isValid()){
         d += (int)param.getProperty(idValue);
@@ -3254,14 +3279,26 @@ void SeqFile::writeCommand(uint32 address, ValueTree command){
 /////////////////////////////////// exportCom //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void SeqFile::render(){
+void SeqFile::exportCom(File comfile){
+    if(!comfile.hasWriteAccess()){
+        dbgmsg("No write access to " + comfile.getFullPathName() + "!");
+        return;
+    }
+    if(comfile.exists()){
+        comfile.deleteFile();
+    }
+    FileOutputStream fos(comfile);
+    if(fos.failedToOpen()){
+        dbgmsg("Couldn't open file " + comfile.getFullPathName() + " for writing!");
+        return;
+    }
     dbgmsg("Rendering sequence structure to binary data...");
-    data.clearQuick();
-    int datasize = 0x8000;
-    data.ensureStorageAllocated(datasize); //Should be enough
-    data.insertMultiple(0, 0, datasize);
+    Array<uint8_t> data;
+    int maxseqsize = 0x8000; //OoT maximum is 0x3800
+    data.ensureStorageAllocated(maxseqsize);
+    data.insertMultiple(0, 0, maxseqsize);
     //Find lengths and addresses of everything
-    uint32 address = 0;
+    uint32_t address = 0;
     int sec, cmd, len;
     ValueTree section, command;
     String action;
@@ -3290,7 +3327,7 @@ void SeqFile::render(){
             //Get addresses of pointers
             if(command.hasProperty(idTargetSection)){
                 ptrsec = command.getProperty(idTargetSection);
-                if(ptrsec >= structure.getNumChildren()){
+                if(ptrsec < 0 || ptrsec >= structure.getNumChildren()){
                     dbgmsg("Pointer to undefined section!");
                     importresult |= 2;
                 }else{
@@ -3329,50 +3366,27 @@ void SeqFile::render(){
                     }
                 }
             }
-            writeCommand(address, command);
+            writeCommand(data, address, command);
             address += len;
             //Enlarge data if necessary
-            if(address >= (datasize - 0x100)){
-                data.ensureStorageAllocated(datasize * 2);
-                data.insertMultiple(datasize, 0, datasize);
-                datasize *= 2;
+            if(address >= (maxseqsize - 0x100)){
+                dbgmsg("Warning, sequence extremely large, probably bug!");
+                importresult |= 1;
+                data.ensureStorageAllocated(maxseqsize * 2);
+                data.insertMultiple(maxseqsize, 0, maxseqsize);
+                maxseqsize *= 2;
             }
         }
     }
     //Shrink data
     data.removeRange(address, data.size() - address);
-}
-
-bool SeqFile::saveRaw(File file){
-    if(!file.hasWriteAccess()){
-        dbgmsg("No write access to " + file.getFullPathName() + "!");
-        return false;
-    }
-    if(file.exists()){
-        file.deleteFile();
-    }
-    FileOutputStream fos(file);
-    if(fos.failedToOpen()){
-        dbgmsg("Couldn't open file " + file.getFullPathName() + " for writing!");
-        return false;
-    }
+    //Write file
     for(int i=0; i<data.size(); ++i){
         fos.writeByte(data[i]);
     }
     fos.flush();
-    dbgmsg("Saved " + String(data.size()) + " bytes from sequence to " + file.getFullPathName());
-    return true;
+    dbgmsg("Saved " + String(data.size()) + " bytes from sequence to " + comfile.getFullPathName());
 }
-
-
-void SeqFile::saveToROM(ROM& rom, uint32 start_addr){
-    dbgmsg("Saving " + hex((uint32)data.size(), 4) + " bytes to sequence @" + hex(start_addr));
-    for(int i=0; i<data.size(); i++){
-        rom.writeByte(i+start_addr, data[i]);
-    }
-}
-
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////// No longer used (GUI editing) /////////////////////////
@@ -3392,7 +3406,7 @@ void SeqFile::trim(){
         dbgmsg("SeqFile::trim(): no trim required");
         return;
     }
-    dbgmsg("Trimming SeqFile from " + hex((uint32)data.size(), 4) + " to " + hex((uint32)lastbyte, 4) + " bytes");
+    dbgmsg("Trimming SeqFile from " + hex((uint32_t)data.size(), 4) + " to " + hex((uint32_t)lastbyte, 4) + " bytes");
     data.removeRange(lastbyte, data.size() - lastbyte);
 }
 
@@ -3421,7 +3435,7 @@ String SeqFile::getCommandDescription(int s, int c){
     String ret = "";
     SeqData* section = sections[s];
     if(c < 0 || c >= section->cmdoffsets.size()) return "";
-    uint32 a = section->cmdoffsets[c];
+    uint32_t a = section->cmdoffsets[c];
     ValueTree cmd = getCommand(a, section->stype);
     int len = cmd.getProperty(idLength, 1);
     for(int i=0; i<len; i++){
@@ -3434,13 +3448,13 @@ String SeqFile::getCommandDescription(int s, int c){
 }
 
 
-void SeqFile::insertSpaceAt(uint32 address, int size, int enlargeSection){
+void SeqFile::insertSpaceAt(uint32_t address, int size, int enlargeSection){
     //Fix pointers
     SeqData* sec;
     ValueTree command, param;
     String action;
     int c;
-    uint32 a;
+    uint32_t a;
     int addrOfChangeSection = -1;
     if(enlargeSection >= 0 && enlargeSection < sections.size()){
         addrOfChangeSection = sections[enlargeSection]->address;
@@ -3473,7 +3487,7 @@ void SeqFile::insertSpaceAt(uint32 address, int size, int enlargeSection){
     //Actually insert space
     data.insertMultiple(address, 0, size);
 }
-void SeqFile::removeData(uint32 address, int size, int shrinkSection){
+void SeqFile::removeData(uint32_t address, int size, int shrinkSection){
     if(size <= 0){
         dbgmsg("Asked to remove data with invalid size " + String(size) + "!");
         return;
@@ -3482,7 +3496,7 @@ void SeqFile::removeData(uint32 address, int size, int shrinkSection){
     SeqData* sec;
     ValueTree command, param;
     int c;
-    uint32 a;
+    uint32_t a;
     int addrOfChangeSection = -1;
     if(shrinkSection >= 0 && shrinkSection < sections.size()){
         addrOfChangeSection = sections[shrinkSection]->address;
@@ -3511,7 +3525,7 @@ void SeqFile::removeData(uint32 address, int size, int shrinkSection){
     data.removeRange(address, size);
 }
 
-void SeqFile::editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize, int addrOfChangeSection){
+void SeqFile::editCmdPointer(uint32_t cmdaddr, int stype, uint32_t daddr, int dsize, int addrOfChangeSection){
     ValueTree command = getCommand(cmdaddr, stype);
     String action = command.getProperty(idAction);
     //Fix absolute pointers
@@ -3575,8 +3589,8 @@ void SeqFile::editCmdPointer(uint32 cmdaddr, int stype, uint32 daddr, int dsize,
     }
 }
 
-int SeqFile::editCmdParam(int section, uint32 address, int stype, String meaning, int newvalue){
-    dbgmsg("Editing command parameter @" + hex(address,4) + " stype " + String(stype) + " " + meaning + " to " + hex((uint32)newvalue));
+int SeqFile::editCmdParam(int section, uint32_t address, int stype, String meaning, int newvalue){
+    dbgmsg("Editing command parameter @" + hex(address,4) + " stype " + String(stype) + " " + meaning + " to " + hex((uint32_t)newvalue));
     int ret = 0;
     ValueTree command = getCommand(address, stype);
     ValueTree param = command.getChildWithProperty(idMeaning, meaning);
@@ -3586,7 +3600,7 @@ int SeqFile::editCmdParam(int section, uint32 address, int stype, String meaning
     }
     int value = param.getProperty(idValue, 0);
     if(newvalue == value) return 0;
-    uint32 a = address + (int)param.getProperty(idDataAddr, 1);
+    uint32_t a = address + (int)param.getProperty(idDataAddr, 1);
     String datasrc = param.getProperty(idDataSrc, "fixed");
     int datalen = param.getProperty(idDataLen, 1);
     //int dataactuallen = param.getProperty(idDataActualLen, 1);
@@ -3647,12 +3661,12 @@ bool SeqFile::swapCommands(int sectionidx, int firstcmdidx){
     SeqData* section = getSection(sectionidx);
     if(firstcmdidx <= 0 || firstcmdidx >= section->cmdoffsets.size() - 1) return false;
     //Get commands
-    uint32 cmdaddr_1 = section->cmdoffsets[firstcmdidx];
-    uint32 cmdaddr_2 = section->cmdoffsets[firstcmdidx+1];
+    uint32_t cmdaddr_1 = section->cmdoffsets[firstcmdidx];
+    uint32_t cmdaddr_2 = section->cmdoffsets[firstcmdidx+1];
     ValueTree cmd_1 = getCommand(cmdaddr_1, section->stype);
     ValueTree cmd_2 = getCommand(cmdaddr_2, section->stype);
-    uint32 len_1 = (int)cmd_1.getProperty("length", 1);
-    uint32 len_2 = (int)cmd_2.getProperty("length", 1);
+    uint32_t len_1 = (int)cmd_1.getProperty("length", 1);
+    uint32_t len_2 = (int)cmd_2.getProperty("length", 1);
     if(len_1 != (cmdaddr_2 - cmdaddr_1)){
         dbgmsg("Difference in address between commands not equal to first command's length!");
         return false;
@@ -3673,7 +3687,7 @@ bool SeqFile::swapCommands(int sectionidx, int firstcmdidx){
         }
     }
     //Swap commands
-    uint32 s, d;
+    uint32_t s, d;
     for(s=cmdaddr_1, d=cmdaddr_2+len_2; s<cmdaddr_2; ++s, ++d){
         data.insert(d, data[s]);
     }
@@ -3698,7 +3712,7 @@ void SeqFile::insertCommand(int section, int cmdidx, ValueTree command){
     ValueTree param;
     String datasrc;
     //Get address to insert command at
-    uint32 address;
+    uint32_t address;
     //bool insertAtEnd = false;
     if(cmdidx < sec->cmdoffsets.size() && cmdidx >= 0){
         address = sec->cmdoffsets[cmdidx];
@@ -3736,7 +3750,7 @@ void SeqFile::deleteCommand(int section, int cmdidx){
         dbgmsg("Invalid command " + String(section));
         return;
     }
-    uint32 address = sec->cmdoffsets[cmdidx];
+    uint32_t address = sec->cmdoffsets[cmdidx];
     ValueTree command = getCommand(address, sec->stype);
     int cmdlen = command.getProperty(idLength, 1);
     //Delete the cmdoffset

@@ -899,6 +899,16 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnExportCom.get())
     {
         //[UserButtonCode_btnExportCom] -- add your button handler code here..
+        if(seq == nullptr){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
+                "There is no sequence loaded.");
+        }
+        File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
+        FileChooser box("Save .com/.aseq", savelocation, "*.com;*.aseq", true);
+        if(!box.browseForFileToSave(true)) return;
+        savelocation = box.getResult();
+        seq->exportCom(savelocation);
+        txtDebug->setText(seq->getDebugOutput());
         //[/UserButtonCode_btnExportCom]
     }
 
@@ -1143,3 +1153,4 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
+

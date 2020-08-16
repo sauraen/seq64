@@ -43,8 +43,8 @@ public:
     int importMus(File musfile, int dialect);
     void exportMus(File musfile, int dialect);
     int importCom(File comfile);
-    void exportCom(File comfile);
     #endif
+    void exportCom(File comfile);
     
     String getInternalString();
     String getDebugOutput();
@@ -93,10 +93,10 @@ private:
     SeqData* getOrMakeSectionAt(uint32 a);
     bool isSectionAt(uint32 a, int stype);
     SeqData* getSection(int s);
+    #endif
     
     //For exportCom
-    void writeCommand(uint32 address, ValueTree command);
-    #endif
+    void writeCommand(Array<uint8_t> &data, uint32 address, ValueTree command);
     
     //Identifiers
     

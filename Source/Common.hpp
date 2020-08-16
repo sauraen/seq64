@@ -110,6 +110,7 @@ template<typename INT_TYPE> inline String hex(INT_TYPE i, int bits){
 inline String hex(uint8_t i) { return hex(i, 8); }
 inline String hex(uint16_t i) { return hex(i, 16); }
 inline String hex(uint32_t i) { return hex(i, 32); }
+inline String hexauto(int i) { return hex(i, i >= 0x10000 ? 32 : i >= 0x100 ? 16 : 8); }
 
 #define FROMLOOKANDFEEL(colorType) \
     LookAndFeel::getDefaultLookAndFeel().findColour(colorType)
