@@ -42,8 +42,8 @@ public:
     void exportMIDI(File midifile, ValueTree midiopts);
     int importMus(File musfile, int dialect);
     void exportMus(File musfile, int dialect);
-    int importCom(File comfile);
     #endif
+    int importCom(File comfile);
     void exportCom(File comfile);
     
     String getInternalString();
@@ -82,21 +82,14 @@ private:
     void optimize(ValueTree midiopts);
     void reduceTrackNotes();
     
-    #if 0
-    //For exportMIDI
-    ValueTree getDescription(uint8 firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
-    ValueTree getCommand(uint32 address, int stype);
-    int getAdjustedValue(const ValueTree& param);
-    int getPtrAddress(ValueTree command, uint32 currentAddr);
-    
     //For importCom
-    SeqData* getOrMakeSectionAt(uint32 a);
-    bool isSectionAt(uint32 a, int stype);
-    SeqData* getSection(int s);
-    #endif
+    ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
+    ValueTree getCommand(uint32_t address, int stype);
+    int getAdjustedValue(const ValueTree& param);
+    int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
     
     //For exportCom
-    void writeCommand(Array<uint8_t> &data, uint32 address, ValueTree command);
+    void writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree command);
     
     //Identifiers
     
