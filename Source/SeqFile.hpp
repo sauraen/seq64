@@ -84,7 +84,7 @@ private:
     
     //For importCom
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
-    ValueTree getCommand(uint32_t address, int stype);
+    ValueTree getCommand(Array<uint8_t> &data, uint32_t address, int stype);
     int getAdjustedValue(const ValueTree& param);
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
     

@@ -848,19 +848,20 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //TODO default files
         if(seq != nullptr){
             if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
-                    "Overwrite?", "A sequence is already loaded, overwrite it?", nullptr, nullptr)) return;
+                    "Overwrite?", "A sequence is already loaded, overwrite it?",
+                    nullptr, nullptr)) return;
         }
-        File dest = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("midiimportfolder");
-        FileChooser box("Select a MIDI to load...", dest, "*.mid;*.midi;*.rmi", true);
+        File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("midiimportfolder");
+        FileChooser box("Select a MIDI to load...", f, "*.mid;*.midi;*.rmi", true);
         if(!box.browseForFileToOpen()) return;
-        dest = box.getResult();
-        if(!dest.existsAsFile()){
-            std::cout << "File " << dest.getFullPathName() << " does not exist!";
+        f = box.getResult();
+        if(!f.existsAsFile()){
+            std::cout << "File " << f.getFullPathName() << " does not exist!";
             return;
         }
         //TODO SEQ64::writeProperty("midiimportfolder", dest.getParentDirectory().getFullPathName());
         seq.reset(new SeqFile(abi));
-        int res = seq->importMIDI(dest, midiopts);
+        int res = seq->importMIDI(f, midiopts);
         txtSeq->setText(seq->getInternalString());
         txtDebug->setText(seq->getDebugOutput());
         if(res == 0){
@@ -872,7 +873,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
                 " output for details.");
         }else{
             NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
-                "MIDI import failed, see the terminal output for details.");
+                "MIDI import failed, see the debug output for details.");
         }
         //[/UserButtonCode_btnImportMIDI]
     }
@@ -894,6 +895,37 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnImportCom.get())
     {
         //[UserButtonCode_btnImportCom] -- add your button handler code here..
+        ValueTree abi = SeqFile::loadABI(lstABI->get(lstABI->getLastRowSelected()));
+        if(!abi.isValid()){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
+                "Invalid ABI selected!");
+            return;
+        }
+        
+        if(seq != nullptr){
+            if(!NativeMessageBox::showOkCancelBox(AlertWindow::WarningIcon,
+                    "Overwrite?", "A sequence is already loaded, overwrite it?",
+                    nullptr, nullptr)) return;
+        }
+        File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("romfolder");
+        FileChooser box("Load .com/.aseq", f, "*.com;*.aseq", true);
+        if(!box.browseForFileToOpen()) return;
+        f = box.getResult();
+        seq.reset(new SeqFile(abi));
+        int res = seq->importCom(f);
+        txtSeq->setText(seq->getInternalString());
+        txtDebug->setText(seq->getDebugOutput());
+        if(res == 0){
+            NativeMessageBox::showMessageBox(AlertWindow::InfoIcon, "seq64",
+                ".com/.aseq import succeeded!");
+        }else if(res == 1){
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
+                ".com/.aseq import completed, but there were warnings, see the debug"
+                " output for details.");
+        }else{
+            NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
+                ".com/.aseq import failed, see the debug output for details.");
+        }
         //[/UserButtonCode_btnImportCom]
     }
     else if (buttonThatWasClicked == btnExportCom.get())
@@ -902,6 +934,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(seq == nullptr){
             NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
                 "There is no sequence loaded.");
+            return;
         }
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
         FileChooser box("Save .com/.aseq", savelocation, "*.com;*.aseq", true);
@@ -1153,4 +1186,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-

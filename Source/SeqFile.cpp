@@ -102,6 +102,7 @@ String SeqFile::getInternalString(){
                 if(paramdesc == "None") paramdesc = parammeaning;
                 cmddesc += ", " + paramdesc + " " + hexauto((int)param.getProperty(idValue, 0x1337));
             }
+            if(cmd.hasProperty(idAddress)) cmddesc = hex((int)cmd.getProperty(idAddress),16) + " " + cmddesc;
             ret += "  " + cmddesc + "\n";
         }
     }
@@ -1940,6 +1941,7 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
     if(!desc.isValid()){
         //Command not found
         ret.setProperty(idCmd, (int)c, nullptr);
+        ret.setProperty(idAddress, (int)address, nullptr);
         ret.setProperty(idLength, len, nullptr);
         ret.setProperty(idHash, 0, nullptr);
         return ret;
@@ -2009,6 +2011,7 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
     if(ret.hasProperty(idCmdEnd)){
         ret.removeProperty(idCmdEnd, nullptr);
     }
+    ret.setProperty(idAddress, (int)address, nullptr);
     ret.setProperty(idLength, len, nullptr);
     ret.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
     return ret;
@@ -2019,7 +2022,7 @@ int SeqFile::getAdjustedValue(const ValueTree& param){
     if(!param.hasProperty(idValue)) return 0;
     int origvalue = (int)param.getProperty(idValue);
     if((int)param.getProperty(idAdd, 0) != 0 || (double)param.getProperty(idMultiply, 1.0) != 1.0){
-        dbgmsg("Warning, adjusted values (cmd " + param.getProperty(idName) + ") are not properly supported!");
+        dbgmsg("Warning, adjusted values (cmd " + param.getProperty(idName).toString() + ") are not properly supported!");
         importresult |= 1;
     }
     //Add first
@@ -2795,7 +2798,7 @@ int SeqFile::importCom(File comfile){
     for(int i=0; i<len; ++i){
         data.add(fis.readByte());
     }
-    name = file.getFileNameWithoutExtension();
+    name = comfile.getFileNameWithoutExtension();
     dbgmsg("Sequence starts with " 
             + hex(data[0]) + hex(data[1]) + hex(data[2]) + hex(data[3])
             + hex(data[4]) + hex(data[5]) + hex(data[6]) + hex(data[7]));
@@ -2804,13 +2807,17 @@ int SeqFile::importCom(File comfile){
     datause.insertMultiple(0, 0, len);
     structure = ValueTree("structure");
     Random::getSystemRandom().setSeedRandomly();
+    int max_layers = 4; //TODO investigate
+    importresult = 0;
+    //
     ValueTree section = ValueTree("seqhdr");
     section.setProperty(idSType, 0, nullptr);
     section.setProperty(idAddress, 0, nullptr);
     structure.addChild(section, -1, nullptr);
+    //
     for(int s=0; s<structure.getNumChildren(); ++s){
         section = structure.getChild(s);
-        uint32_t a = section.getProperty(idAddress);
+        uint32_t a = (int)section.getProperty(idAddress);
         int stype = section.getProperty(idSType);
         while(true){
             if(a >= data.size()){
@@ -2832,7 +2839,7 @@ int SeqFile::importCom(File comfile){
                 }else{
                     //Not yet read section
                     if(a == (int)tmpsec.getProperty(idAddress)){
-                        if(stype == tmpsec.getProperty(idSType)){
+                        if(stype == (int)tmpsec.getProperty(idSType)){
                             dbgmsg("@" + hex(a,16) + ": Ran into branch destination (normal)");
                             structure.removeChild(i, nullptr);
                             --i;
@@ -2844,25 +2851,25 @@ int SeqFile::importCom(File comfile){
                 }
             }
             //Get command
-            ValueTree command = getCommand(a, stype);
+            ValueTree command = getCommand(data, a, stype);
             section.appendChild(command, nullptr);
-            cmdlen = (int)command.getProperty(idLength, 1);
+            int cmdlen = (int)command.getProperty(idLength, 1);
             for(int i=a; i<a+cmdlen; ++i){
                 if(datause[i]){
                     dbgmsg("Internal error, multiple command data use @" + hex(a,16) + "!");
                     return 2;
                 }
-                datause[i] = 1;
+                datause.set(i, 1);
             }
             a += cmdlen;
-            action = command.getProperty(idAction, "Unknown");
+            String action = command.getProperty(idAction, "Unknown").toString();
             if(action == "End of Data"){
                 section.setProperty(idAddressEnd, (int)a, nullptr);
                 break;
             }else if(action == "Jump Same Level" || action == "Call Same Level" 
-                    || action == "Ptr Channel Header" || "Ptr Track Data"){
+                    || action == "Ptr Channel Header" || action == "Ptr Track Data"){
                 int tgt_addr = getPtrAddress(command, a, data.size());
-                dbgmsg(action + " @" + hex(a,16) + " to @" + hex(address,16), false);
+                dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
                 int tgt_stype = -1;
                 if(action == "Jump Same Level" || action == "Call Same Level"){
                     tgt_stype = stype;
@@ -2873,7 +2880,7 @@ int SeqFile::importCom(File comfile){
                     }
                     tgt_stype = 1;
                 }else if(action == "Ptr Track Data"){
-                    if(stype != 0){
+                    if(stype != 1){
                         dbgmsg("Got Ptr Track Data in something not channel header!");
                         return 2;
                     }
@@ -2885,6 +2892,7 @@ int SeqFile::importCom(File comfile){
                     ValueTree tmpsec = structure.getChild(i);
                     if(tgt_addr < (int)tmpsec.getProperty(idAddress)) continue;
                     if(tmpsec.hasProperty(idAddressEnd) && tgt_addr >= (int)tmpsec.getProperty(idAddressEnd)) continue;
+                    //TODO what if target is an existing empty section; add target properties to new section cmds
                     for(int j=0; !found && j<tmpsec.getNumChildren(); ++j){
                         ValueTree cmd = tmpsec.getChild(j);
                         uint32_t a = (int)cmd.getProperty(idAddress);
@@ -2908,180 +2916,59 @@ int SeqFile::importCom(File comfile){
                             + " in section " + String(i) + " @" + hex(tgt_addr,16));
                         command.setProperty(idTargetSection, i, nullptr);
                         command.setProperty(idTargetHash, cmd.getProperty(idHash), nullptr);
+                        found = true;
                     }
                 }
                 if(!found){
-                    //TODO make new section
+                    //New section
+                    ValueTree newsec(tgt_stype == 0 ? "seqhdr" : tgt_stype == 1 ? "chanhdr" : "trackdata");
+                    newsec.setProperty(idSType, tgt_stype, nullptr);
+                    newsec.setProperty(idAddress, tgt_addr, nullptr);
+                    if(tgt_stype == 1){
+                        int channel = -1;
+                        if(stype == 1){
+                            channel = section.getProperty(idChannel, -1);
+                        }else{
+                            ValueTree param = command.getChildWithProperty(idMeaning, "Channel");
+                            if(param.isValid()) channel = param.getProperty(idValue, -1);
+                        }
+                        if(channel < 0 || channel >= 16){
+                            dbgmsg("Error determining channel for new section from " + action + " @" + hex(a,16) + "!");
+                            return 2;
+                        }
+                        newsec.setProperty(idChannel, channel, nullptr);
+                    }else if(tgt_stype == 2){
+                        int channel = section.getProperty(idChannel, -1);
+                        jassert(channel >= 0 && channel < 16);
+                        int layer = -1;
+                        if(stype == 2){
+                            layer = section.getProperty(idLayer, -1);
+                        }else{
+                            ValueTree param = command.getChildWithProperty(idMeaning, "Note Layer");
+                            if(param.isValid()) layer = param.getProperty(idValue, -1);
+                        }
+                        if(layer < 0 || layer >= max_layers){
+                            dbgmsg("Error determining note layer for new section from " + action + " @" + hex(a,16) + "!");
+                            return 2;
+                        }
+                        newsec.setProperty(idChannel, channel, nullptr);
+                        newsec.setProperty(idLayer, layer, nullptr);
+                    }
+                    structure.appendChild(newsec, nullptr);
                 }
             }
         }
     }
-    /*
-    ValueTree command, param;
-    String action, meaning;
-    int cmdlen = 1, channel = -1, notelayer = -1, value;
-    uint32_t a = 0;
-    const int stack_size = 8;
-    uint32_t addrstack[stack_size];
-    int stypestack[stack_size];
-    SeqData* sectionstack[stack_size];
-    uint32_t address;
-    int stackptr = 0;
-    int stype = 0;
-    SeqData* sec;
-    SeqData* tmpsec;
-    while(a < data.size()){
-        }else if(action == "Jump Same Level"){
-            if(value < 0) continue;
-            address = value;
-            
-            if(address <= a && address >= sec->address){
-                //Pointer is to earlier in the current section
-                dbgmsg("...earlier in same section");
-                continue;
-            }
-            //Make a new section, but don't jump to it
-            dbgmsg("...making new section for later");
-            tmpsec = getOrMakeSectionAt(address);
-            tmpsec->stype = stype;
-            tmpsec->channel = channel;
-            tmpsec->layer = notelayer;
-        }else if(action == "Call Same Level"){
-            value = getPtrAddress(command, a, data.size());
-            if(value < 0) continue;
-            address = value;
-            if(isSectionAt(address, stype)){
-                //Already have gone there, skip
-                continue;
-            }
-            //Jump to new address
-            sec->address_end = a;
-            addrstack[stackptr] = a;
-            stypestack[stackptr] = stype;
-            sectionstack[stackptr] = sec;
-            stackptr++;
-            if(stackptr >= stack_size){
-                dbgmsg("FATAL: Stack Overflow SeqFile::parse()!");
-                break;
-            }
-            a = address;
-            sec = getOrMakeSectionAt(a);
-            sec->stype = stype;
-            sec->channel = channel;
-            sec->layer = notelayer;
-        }else if(action == "Loop Start"){
-            //do nothing
-        }else if(action == "Loop End"){
-            //do nothing
-        }else if(action == "Ptr Channel Header"){
-            if(stype != 0){
-                dbgmsg("@" + hex(a,16) + ": Ptr Channel Header from something other than seq header!");
-                continue;
-            }
-            value = getPtrAddress(command, a, data.size());
-            if(value < 0) continue;
-            address = value;
-            if(isSectionAt(address, stype)){
-                //Already have gone there, skip
-                continue;
-            }
-            param = command.getChildWithProperty(idMeaning, "Channel");
-            if(param.isValid()){
-                channel = getAdjustedValue(param);
-            }
-            if(channel >= 16){
-                dbgmsg("Ptr Channel Header with channel >= 16!");
-                continue;
-            }
-            //Jump to new address
-            sec->address_end = a;
-            addrstack[stackptr] = a;
-            stypestack[stackptr] = stype;
-            sectionstack[stackptr] = sec;
-            stackptr++;
-            if(stackptr >= stack_size){
-                dbgmsg("FATAL: Stack Overflow SeqFile::parse()!");
-                break;
-            }
-            a = address;
-            stype = 1;
-            sec = getOrMakeSectionAt(a);
-            sec->stype = 1;
-            sec->channel = channel;
-        }else if(action == "Ptr Track Data"){
-            if(stype != 1){
-                dbgmsg("@" + hex(a,16) + ": Ptr Track Data from something other than a channel!");
-                continue;
-            }
-            value = getPtrAddress(command, a, data.size());
-            if(value < 0) continue;
-            address = value;
-            if(isSectionAt(address, stype)){
-                //Already have gone there, skip
-                continue;
-            }
-            param = command.getChildWithProperty(idMeaning, "Note Layer");
-            if(!param.isValid()){
-                dbgmsg("Ptr Track Data with no note layer value!");
-                continue;
-            }
-            notelayer = getAdjustedValue(param);
-            //Jump to new address
-            sec->address_end = a;
-            addrstack[stackptr] = a;
-            stypestack[stackptr] = stype;
-            sectionstack[stackptr] = sec;
-            stackptr++;
-            if(stackptr >= stack_size){
-                dbgmsg("FATAL: Stack Overflow SeqFile::parse()!");
-                break;
-            }
-            a = address;
-            stype = 2;
-            sec = getOrMakeSectionAt(a);
-            sec->stype = 2;
-            sec->channel = channel;
-            sec->layer = notelayer;
-        }else if(action == "Sequence Format"){
-            //do nothing
-        }else if(action == "Sequence Type"){
-            //do nothing
-        }else if(action == "Channel Enable"){
-            //do nothing
-        }else if(action == "Channel Disable"){
-            //do nothing
-        }else if(action == "Master Volume"){
-            //do nothing
-        }else if(action == "Tempo"){
-            //do nothing
-        }else if(action == "Chn Reset"){
-            //do nothing
-        }else if(action == "Chn Priority"){
-            //do nothing
-        }else if(action == "Chn Volume"){
-            //do nothing
-        }else if(action == "Chn Pan"){
-            //do nothing
-        }else if(action == "Chn Effects"){
-            //do nothing
-        }else if(action == "Chn Vibrato"){
-            //do nothing
-        }else if(action == "Chn Pitch Bend"){
-            //do nothing
-        }else if(action == "Chn Instrument"){
-            //do nothing
-        }else if(action == "Chn Transpose"){
-            //do nothing
-        }else if(action == "Layer Transpose"){
-            //do nothing
-        }else if(action == "Track Note"){
-            //do nothing
-        }else{
-            dbgmsg("Unknown command action " + action + "!");
+    //Check to make sure every byte was used
+    for(int i=0; i<data.size(); ++i){
+        if(!datause[i]){
+            int unusedstart = i;
+            while(i<data.size() && !datause[i]) ++i;
+            dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(i,16) + " were not read as part of any command");
+            importresult |= 1;
         }
     }
-    dbgmsg("Parsing sequence ran off end! a==" + hex(a) + ", length==" + hex((uint32_t)data.size()));
-    */
+    return importresult;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
