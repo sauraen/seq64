@@ -47,6 +47,7 @@ Identifier SeqFile::idChannel("channel");
 Identifier SeqFile::idLayer("layer");
 Identifier SeqFile::idTSection("tsection");
 Identifier SeqFile::idSection("section");
+Identifier SeqFile::idOldSectionIdx("oldsectionidx");
 Identifier SeqFile::idAddress("address");
 Identifier SeqFile::idAddressEnd("address_end");
 Identifier SeqFile::idHash("hash");
@@ -70,7 +71,8 @@ String SeqFile::getInternalString(){
     String ret;
     for(int i=0; i<structure.getNumChildren(); ++i){
         ValueTree section = structure.getChild(i);
-        ret += "Section " + String(i) + ": " + section.getType();
+        ret += "Section " + String(i) + ": " + section.getType() 
+            + " (@" + hex((uint16_t)(int)section.getProperty(idAddress, -1)) + ")";
         if((int)section.getProperty(idChannel, -1) >= 0){
             ret += ", chn " + section.getProperty(idChannel, -1).toString();
         }
@@ -103,7 +105,9 @@ String SeqFile::getInternalString(){
                 cmddesc += ", " + paramdesc + " " + hexauto((int)param.getProperty(idValue, 0x1337));
             }
             if(cmd.hasProperty(idAddress)) cmddesc = hex((int)cmd.getProperty(idAddress),16) + " " + cmddesc;
-            ret += "  " + cmddesc + "\n";
+            ret += "  " + cmddesc;
+            //ret += " (" + cmd.getProperty(idHash, 0).toString() + ")";
+            ret += "\n";
         }
     }
     return ret;
@@ -2007,7 +2011,7 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
         a += paramlen;
     }
     //Store info about command
-    ret.setProperty(idCmd, (int)c, nullptr);
+    //ret.setProperty(idCmd, (int)c, nullptr); //idCmd is the base command, not the offset one
     if(ret.hasProperty(idCmdEnd)){
         ret.removeProperty(idCmdEnd, nullptr);
     }
@@ -2824,6 +2828,8 @@ int SeqFile::importCom(File comfile){
                 dbgmsg("@" + hex(a,16) + ": in section " + String(s) + ", ran off end of sequence!");
                 return 2;
             }
+            //Need to get command here because have to use hash below
+            ValueTree command = getCommand(data, a, stype);
             //See if we just ran into any existing section
             for(int i=0; i<structure.getNumChildren(); ++i){
                 if(i == s) continue;
@@ -2839,19 +2845,29 @@ int SeqFile::importCom(File comfile){
                 }else{
                     //Not yet read section
                     if(a == (int)tmpsec.getProperty(idAddress)){
-                        if(stype == (int)tmpsec.getProperty(idSType)){
-                            dbgmsg("@" + hex(a,16) + ": Ran into branch destination (normal)");
-                            structure.removeChild(i, nullptr);
-                            --i;
-                        }else{
+                        if(stype != (int)tmpsec.getProperty(idSType)){
                             dbgmsg("@" + hex(a,16) + ": Ran into start of previously-jumped-to section of DIFFERENT type!");
                             return 2;
                         }
+                        dbgmsg("@" + hex(a,16) + ": Ran into branch destination (normal)");
+                        //Update everywhere that referenced this not-yet-read section
+                        //to instead be the current section with the new command
+                        for(int j=0; j<structure.getNumChildren(); ++j){
+                            ValueTree tmpsec2 = structure.getChild(j);
+                            for(int k=0; k<tmpsec2.getNumChildren(); ++k){
+                                ValueTree cmd = tmpsec2.getChild(k);
+                                if((int)cmd.getProperty(idTargetSection, -1) == i){
+                                    cmd.setProperty(idTargetSection, s, nullptr);
+                                    cmd.setProperty(idTargetHash, command.getProperty(idHash), nullptr);
+                                }
+                            }
+                        }
+                        structure.removeChild(i, nullptr);
+                        --i;
                     }
                 }
             }
-            //Get command
-            ValueTree command = getCommand(data, a, stype);
+            //Store command
             section.appendChild(command, nullptr);
             int cmdlen = (int)command.getProperty(idLength, 1);
             for(int i=a; i<a+cmdlen; ++i){
@@ -2862,6 +2878,7 @@ int SeqFile::importCom(File comfile){
                 datause.set(i, 1);
             }
             a += cmdlen;
+            //Process structural commands
             String action = command.getProperty(idAction, "Unknown").toString();
             if(action == "End of Data"){
                 section.setProperty(idAddressEnd, (int)a, nullptr);
@@ -2869,7 +2886,7 @@ int SeqFile::importCom(File comfile){
             }else if(action == "Jump Same Level" || action == "Call Same Level" 
                     || action == "Ptr Channel Header" || action == "Ptr Track Data"){
                 int tgt_addr = getPtrAddress(command, a, data.size());
-                dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
+                //dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
                 int tgt_stype = -1;
                 if(action == "Jump Same Level" || action == "Call Same Level"){
                     tgt_stype = stype;
@@ -2890,9 +2907,21 @@ int SeqFile::importCom(File comfile){
                 bool found = false;
                 for(int i=0; !found && i<structure.getNumChildren(); ++i){
                     ValueTree tmpsec = structure.getChild(i);
-                    if(tgt_addr < (int)tmpsec.getProperty(idAddress)) continue;
+                    int tmpaddr = tmpsec.getProperty(idAddress);
+                    if(tgt_addr < tmpaddr) continue;
+                    if(tgt_addr == tmpaddr && tmpsec.getNumChildren() == 0){
+                        //Pointer to existing empty section
+                        if((int)tmpsec.getProperty(idSType) != tgt_stype){
+                            dbgmsg("Tried to jump to addr " + hex(tgt_addr,16) + " empty section "
+                                + String(i) + ": requested wrong stype " + String(tgt_stype)
+                                + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
+                            return 2;
+                        }
+                        command.setProperty(idTargetSection, i, nullptr);
+                        found = true;
+                        break;
+                    }
                     if(tmpsec.hasProperty(idAddressEnd) && tgt_addr >= (int)tmpsec.getProperty(idAddressEnd)) continue;
-                    //TODO what if target is an existing empty section; add target properties to new section cmds
                     for(int j=0; !found && j<tmpsec.getNumChildren(); ++j){
                         ValueTree cmd = tmpsec.getChild(j);
                         uint32_t a = (int)cmd.getProperty(idAddress);
@@ -2909,7 +2938,7 @@ int SeqFile::importCom(File comfile){
                             dbgmsg("Tried to jump to addr " + hex(tgt_addr,16) + " command "
                                 + String(j) + " (" + cmd.getProperty(idName).toString() + ") in section "
                                 + String(i) + ": requested wrong stype " + String(tgt_stype)
-                                + "(sec is " + tmpsec.getProperty(idSType).toString() + "!");
+                                + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
                             return 2;
                         }
                         dbgmsg("Found target command: " + cmd.getProperty(idName).toString()
@@ -2955,6 +2984,7 @@ int SeqFile::importCom(File comfile){
                         newsec.setProperty(idLayer, layer, nullptr);
                     }
                     structure.appendChild(newsec, nullptr);
+                    command.setProperty(idTargetSection, structure.getNumChildren()-1, nullptr);
                 }
             }
         }
@@ -2963,10 +2993,53 @@ int SeqFile::importCom(File comfile){
     for(int i=0; i<data.size(); ++i){
         if(!datause[i]){
             int unusedstart = i;
-            while(i<data.size() && !datause[i]) ++i;
-            dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(i,16) + " were not read as part of any command");
-            importresult |= 1;
+            bool zeroes = true;
+            while(i<data.size() && !datause[i]){
+                if(data[i] != 0) zeroes = false;
+                ++i;
+            }
+            dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(i-1,16) + 
+                (zeroes ? " (all zero)" : " (nonzeros!!)") + " were not read as part of any command");
+            if(i == data.size() && zeroes
+                    && (!(i & 0xF) && i - unusedstart <= 0xF) //padded to 16 bytes
+                    || (!(i & 0x3) && i - unusedstart <= 0x3)){ //padded to 4 bytes
+                dbgmsg("(not throwing warning because only a few zero bytes at end of file, probably padding)");
+            }else{
+                importresult |= 1;
+            }
         }
+    }
+    //Sort sections by address
+    for(int j=0; j<structure.getNumChildren(); ++j){
+        ValueTree tmpsec2 = structure.getChild(j);
+        tmpsec2.setProperty(idOldSectionIdx, j, nullptr);
+    }
+    SectionSorter s;
+    structure.sort(s, nullptr, false);
+    for(int j=0; j<structure.getNumChildren(); ++j){
+        ValueTree tmpsec2 = structure.getChild(j);
+        for(int k=0; k<tmpsec2.getNumChildren(); ++k){
+            ValueTree cmd = tmpsec2.getChild(k);
+            if(cmd.hasProperty(idTargetSection)){
+                bool found = false;
+                for(int s=0; s<structure.getNumChildren(); ++s){
+                    ValueTree section = structure.getChild(s);
+                    if(section.getProperty(idOldSectionIdx, -1) == cmd.getProperty(idTargetSection)){
+                        cmd.setProperty(idTargetSection, s, nullptr);
+                        found = true;
+                        break;
+                    }
+                }
+                if(!found){
+                    dbgmsg("Internal error when sorting sections!");
+                    return 2;
+                }
+            }
+        }
+    }
+    for(int j=0; j<structure.getNumChildren(); ++j){
+        ValueTree tmpsec2 = structure.getChild(j);
+        tmpsec2.removeProperty(idOldSectionIdx, nullptr);
     }
     return importresult;
 }

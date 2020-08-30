@@ -88,6 +88,15 @@ private:
     int getAdjustedValue(const ValueTree& param);
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
     
+    struct SectionSorter {
+        static int compareElements(const ValueTree &first, const ValueTree &second){
+            int one = first.getProperty(idAddress, -1);
+            int two = second.getProperty(idAddress, -1);
+            jassert(one != two && one >= 0 && two >= 0);
+            return one - two;
+        }
+    };
+
     //For exportCom
     void writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree command);
     
@@ -115,6 +124,7 @@ private:
     static Identifier idLayer;
     static Identifier idTSection;
     static Identifier idSection;
+    static Identifier idOldSectionIdx;
     static Identifier idAddress;
     static Identifier idAddressEnd;
     static Identifier idHash;
