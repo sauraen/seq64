@@ -47,6 +47,8 @@
 #include "Common.hpp"
 #include "SeqFile.hpp"
 #include "TextListBox.hpp"
+
+#include <thread>
 //[/Headers]
 
 
@@ -59,8 +61,9 @@
     Describe your class and how it works here!
                                                                     //[/Comments]
 */
-class SeqEditor  : public juce::Component,
+class SeqEditor  : public Component,
                    private TextListBox::Listener,
+                   private Timer,
                    public juce::Button::Listener
 {
 public:
@@ -81,8 +84,19 @@ public:
 private:
     //[UserVariables]   -- You can add your own custom variables in this section.
     void rowSelected(TextListBox* parent, int row) override;
+    void timerCallback() override;
+    
+    ValueTree getABI();
+    bool checkSeqPresence(bool shouldExist);
+    
+    template<class Fn, class... Args> void startSeqOperation(String desc, Fn&& fn, Args... args);
+    template<class Fn, class... Args> void doSeqOperation(Fn&& fn, Args... args);
 
     std::unique_ptr<SeqFile> seq;
+    std::unique_ptr<std::thread> opthread;
+    int opres;
+    String opdesc;
+    std::atomic_flag opnotdone;
 
     std::unique_ptr<TextListBox> lstABI;
     //[/UserVariables]
@@ -152,4 +166,3 @@ private:
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-

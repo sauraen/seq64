@@ -39,12 +39,12 @@ public:
     
     int importMIDI(File midifile, ValueTree midiopts);
     #if 0
-    void exportMIDI(File midifile, ValueTree midiopts);
+    int exportMIDI(File midifile, ValueTree midiopts);
     int importMus(File musfile, int dialect);
-    void exportMus(File musfile, int dialect);
+    int exportMus(File musfile, int dialect);
     #endif
     int importCom(File comfile);
-    void exportCom(File comfile);
+    int exportCom(File comfile);
     
     String getInternalString();
     String getDebugOutput();

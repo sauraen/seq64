@@ -2074,7 +2074,7 @@ struct SeqTSection{
 ////////////////////////////////// exportMIDI //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void exportMIDI(File midifile, ValueTree midiopts){
+int exportMIDI(File midifile, ValueTree midiopts){
     ROM& rom;
     ValueTree command, param;
     String action, meaning;
@@ -2772,7 +2772,7 @@ void exportMIDI(File midifile, ValueTree midiopts){
         ret->addTrack(*mtracks[channel]);
     }
     dbgmsg("====== DONE ======");
-    return ret;
+    return 0;
 }
 
 #endif
@@ -3113,10 +3113,10 @@ void SeqFile::writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree com
 /////////////////////////////////// exportCom //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void SeqFile::exportCom(File comfile){
+int SeqFile::exportCom(File comfile){
     if(!comfile.hasWriteAccess()){
         dbgmsg("No write access to " + comfile.getFullPathName() + "!");
-        return;
+        return 2;
     }
     if(comfile.exists()){
         comfile.deleteFile();
@@ -3124,9 +3124,10 @@ void SeqFile::exportCom(File comfile){
     FileOutputStream fos(comfile);
     if(fos.failedToOpen()){
         dbgmsg("Couldn't open file " + comfile.getFullPathName() + " for writing!");
-        return;
+        return 2;
     }
     dbgmsg("Rendering sequence structure to binary data...");
+    importresult = 0;
     Array<uint8_t> data;
     int maxseqsize = 0x8000; //OoT maximum is 0x3800
     data.ensureStorageAllocated(maxseqsize);
@@ -3220,6 +3221,7 @@ void SeqFile::exportCom(File comfile){
     }
     fos.flush();
     dbgmsg("Saved " + String(data.size()) + " bytes from sequence to " + comfile.getFullPathName());
+    return importresult;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
