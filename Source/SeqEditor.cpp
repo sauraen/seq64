@@ -839,12 +839,6 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         midiopts.setProperty("q_pitch_amp", txtQuantPitch->getText().getFloatValue(), nullptr);
         midiopts.setProperty("q_other_amp", txtQuantOther->getText().getFloatValue(), nullptr);
 
-        midiopts.setProperty("bendrange", txtBend->getText().getFloatValue(), nullptr);
-        midiopts.setProperty("ppqnmultiplier", txtPPQN->getText().getFloatValue(), nullptr);
-        midiopts.setProperty("exportformat",
-            optInstOrig->getToggleState() ? "original" :
-            optInstGM10->getToggleState() ? "gm_ch10" : "gm_multi", nullptr);
-
         //TODO default files
         File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("midiimportfolder");
         FileChooser box("Select a MIDI to load...", f, "*.mid;*.midi;*.rmi", true);
@@ -862,6 +856,20 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnExportMIDI.get())
     {
         //[UserButtonCode_btnExportMIDI] -- add your button handler code here..
+        if(!checkSeqPresence(true)) return;
+        
+        ValueTree midiopts("midiopts");
+        midiopts.setProperty("bendrange", txtBend->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("ppqnmultiplier", txtPPQN->getText().getFloatValue(), nullptr);
+        midiopts.setProperty("exportformat",
+            optInstOrig->getToggleState() ? "original" :
+            optInstGM10->getToggleState() ? "gm_ch10" : "gm_multi", nullptr);
+        
+        File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("midifolder");
+        FileChooser box("Save MIDI", savelocation, "*.mid", true);
+        if(!box.browseForFileToSave(true)) return;
+        savelocation = box.getResult();
+        startSeqOperation("MIDI export", &SeqFile::exportMIDI, savelocation, midiopts);
         //[/UserButtonCode_btnExportMIDI]
     }
     else if (buttonThatWasClicked == btnImportMus.get())

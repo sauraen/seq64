@@ -35,11 +35,10 @@ public:
     static StringArray getAvailABIs();
     static ValueTree loadABI(String name);
     
-    //Import results are 0 okay, 1 warnings, 2+ errors.
-    
+    //Results are 0 okay, 1 warnings, 2+ errors.
     int importMIDI(File midifile, ValueTree midiopts);
-    #if 0
     int exportMIDI(File midifile, ValueTree midiopts);
+    #if 0
     int importMus(File musfile, int dialect);
     int exportMus(File musfile, int dialect);
     #endif
@@ -85,7 +84,6 @@ private:
     //For importCom
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
     ValueTree getCommand(Array<uint8_t> &data, uint32_t address, int stype);
-    int getAdjustedValue(const ValueTree& param);
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
     
     struct SectionSorter {

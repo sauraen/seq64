@@ -1905,202 +1905,35 @@ void SeqFile::reduceTrackNotes(){
 
 
 ////////////////////////////////////////////////////////////////////////////////
-///////////////////////////// exportMIDI functions /////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-//Loads the node from the ABI describing the command.
-ValueTree SeqFile::getDescription(uint8_t firstbyte, int stype){
-    ValueTree test;
-    for(int i=0; i<abi.getNumChildren(); i++){
-        test = abi.getChild(i);
-        if(!isCommandValidIn(test, stype)) continue;
-        if(test.hasProperty(idCmdEnd)){
-            if(firstbyte >= (int)test.getProperty(idCmd)
-                    && firstbyte <= (int)test.getProperty(idCmdEnd)){
-                return test;
-            }
-        }else{
-            if(firstbyte == (int)test.getProperty(idCmd)){
-                return test;
-            }
-        }
-    }
-    test = ValueTree();
-    return test;
-}
-
-
-ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype){
-    ValueTree ret("command");
-    ValueTree param, desc;
-    String action, meaning, datasrc;
-    int i, len, paramlen, paramindex, cmdoffset, paramvalue, datalen;
-    uint8_t c, d;
-    uint32_t a = address;
-    //
-    len = 1;
-    c = data[address];
-    a++;
-    desc = getDescription(c, stype);
-    if(!desc.isValid()){
-        //Command not found
-        ret.setProperty(idCmd, (int)c, nullptr);
-        ret.setProperty(idAddress, (int)address, nullptr);
-        ret.setProperty(idLength, len, nullptr);
-        ret.setProperty(idHash, 0, nullptr);
-        return ret;
-    }
-    ret = desc.createCopy();
-    cmdoffset = c - (int)ret.getProperty(idCmd, 0);
-    action = desc.getProperty(idAction, "No Action");
-    //dbgmsg(hex((uint32_t)address, 6) + ": " + hex(c) + " " + action);
-    for(paramindex=0; paramindex<ret.getNumChildren(); paramindex++){
-        param = ret.getChild(paramindex);
-        meaning = param.getProperty(idMeaning, "None");
-        //Get the value of this parameter
-        paramvalue = 0;
-        paramlen = 0;
-        datasrc = param.getProperty(idDataSrc, "fixed");
-        datalen = param.getProperty(idDataLen, 0);
-        if(datasrc == "offset"){
-            paramvalue = cmdoffset;
-            param.setProperty(idDataAddr, 0, nullptr);
-            param.setProperty(idDataActualLen, 1, nullptr);
-        }else if(datasrc == "fixed"){
-            for(i=0; i<datalen; i++){
-                len++;
-                paramlen++;
-                paramvalue <<= 8;
-                paramvalue += (uint8_t)data[a+i];
-            }
-            param.setProperty(idDataAddr, (int)(a-address), nullptr);
-            param.setProperty(idDataActualLen, paramlen, nullptr);
-        }else if(datasrc == "variable"){
-            if(datalen == 1){
-                d = (uint8_t)data[a];
-                if(d <= 0x7F){
-                    paramvalue = d;
-                    len++;
-                    paramlen++;
-                }
-            }else if(datalen == 2){
-                d = 0;
-                len++;
-                paramlen++;
-                paramvalue = (uint8_t)data[a];
-                if(paramvalue & 0x80){
-                    paramvalue &= 0x7F;
-                    paramvalue <<= 8;
-                    paramvalue += (uint8_t)data[a+1];
-                    len++;
-                    paramlen++;
-                }
-            }else{
-                dbgmsg("Due to SeqFile variable length format, length > 2 not defined!");
-                paramvalue = 0;
-                len += datalen;
-                paramlen += datalen;
-            }
-            param.setProperty(idDataAddr, (int)(a-address), nullptr);
-            param.setProperty(idDataActualLen, paramlen, nullptr);
-        }else{
-            dbgmsg("Invalid command description! datasrc == " + datasrc + ", action == " + action);
-        }
-        //Store info about parameter
-        param.setProperty(idValue, paramvalue, nullptr);
-        a += paramlen;
-    }
-    //Store info about command
-    //ret.setProperty(idCmd, (int)c, nullptr); //idCmd is the base command, not the offset one
-    if(ret.hasProperty(idCmdEnd)){
-        ret.removeProperty(idCmdEnd, nullptr);
-    }
-    ret.setProperty(idAddress, (int)address, nullptr);
-    ret.setProperty(idLength, len, nullptr);
-    ret.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
-    return ret;
-}
-
-//TODO I don't think we un-adjust values on MIDI import, maybe get rid of this?
-int SeqFile::getAdjustedValue(const ValueTree& param){
-    if(!param.hasProperty(idValue)) return 0;
-    int origvalue = (int)param.getProperty(idValue);
-    if((int)param.getProperty(idAdd, 0) != 0 || (double)param.getProperty(idMultiply, 1.0) != 1.0){
-        dbgmsg("Warning, adjusted values (cmd " + param.getProperty(idName).toString() + ") are not properly supported!");
-        importresult |= 1;
-    }
-    //Add first
-    //origvalue += (int)param.getProperty(idAdd, 0);
-    //origvalue = (int)((double)origvalue * (double)param.getProperty(idMultiply, 1.0f));
-    return origvalue;
-}
-
-int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
-    int address;
-    ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
-    if(param.isValid()){
-        address = getAdjustedValue(param);
-    }else{
-        param = command.getChildWithProperty(idMeaning, "Relative Address");
-        if(param.isValid()){
-            address = (int)getAdjustedValue(param) + (int)currentAddr;
-        }else{
-            dbgmsg("@" + hex(currentAddr,16) + ": Pointer with no address value!");
-            return -1;
-        }
-    }
-    if(address >= seqlen){
-        dbgmsg("@" + hex(currentAddr,16) + ": Pointer off end of sequence to " 
-                + hex((uint32_t)address,16) + ", skipping!");
-        return -1;
-    }
-    return address;
-}
-
-#if 0
-
-////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// exportMIDI objects //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-struct SeqTSection{
-    SeqTSection(){
-        time = address = address_end = 0;
-    }
-    uint32_t time, address, address_end;
+struct ExportStackEntry{
+    ExportStackEntry() = default;
+    ExportStackEntry(ValueTree s, int c, int st, int l, uint32_t tt)
+        : sec(s), cmd(c), stype(st), loopcount(l), t(tt) {}
+    ValueTree sec;
+    int cmd, stype, loopcount;
+    uint32_t t;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////// exportMIDI //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-int exportMIDI(File midifile, ValueTree midiopts){
-    ROM& rom;
-    ValueTree command, param;
-    String action, meaning;
-    int channel, notelayer, value, transpose, delay, note, velocity, gate;
-    //bool qDelay, qVelocity, qGate;
-    uint32_t address, t, a;
-    int stype = 0;
-    int cmdlen;
-    //Stacks
-    const int stack_size = 16;
-    uint32_t addrstack[stack_size];
-    uint32_t timestack[stack_size];
-    int stypestack[stack_size];
-    int stackptr = 0;
-    //TSections
-    OwnedArray<SeqTSection> tsections;
-    SeqTSection* curtsec;
-    bool willBeNewTSec = false;
-    curtsec = new SeqTSection();
-    curtsec->address = 0;
-    curtsec->time = 0;
-    tsections.add(curtsec);
-    //Transpose
-    int max_layers = 4;
-	Array<int> transposes;
-	transposes.resize(16 * max_layers);
+int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
+    if(!midifile.hasWriteAccess()){
+        dbgmsg("No write access to " + midifile.getFullPathName() + "!");
+        return 2;
+    }
+    if(midifile.exists()){
+        midifile.deleteFile();
+    }
+    FileOutputStream fos(midifile);
+    if(fos.failedToOpen()){
+        dbgmsg("Couldn't open file " + midifile.getFullPathName() + " for writing!");
+        return 2;
+    }
 	//Program options
 	ValueTree progoptions("progoptions");
 	const int progoptionscc = 117, progoptionsnullcc = 116;
@@ -2109,18 +1942,14 @@ int exportMIDI(File midifile, ValueTree midiopts){
     if(ticks_multiplier <= 0) ticks_multiplier = 1;
     int bend_range = midiopts.getProperty("bendrange", 6);
     if(bend_range <= 0) bend_range = 1;
-    //Changing these is no longer supported--I never heard of anyone using them
-    String chnvol = "CC7 (Volume)"; //midiopts.getProperty("chnvol", "CC7 (Volume)").toString();
-    String mtrvol = "SysEx MstrVol"; //midiopts.getProperty("mtrvol", "CC24 (None)").toString();
-    String chnpriority = "CC25 (None)"; //midiopts.getProperty("chnpriority", ).toString();
-    const int midi_basenote = 21;
     //MIDI file/tracks setup
+    const int midi_basenote = 21;
     MidiMessage msg;
-    MidiFile* ret = new MidiFile();
+    std::unique_ptr<MidiFile> ret(new MidiFile());
     ret->setTicksPerQuarterNote(48 * ticks_multiplier);
     MidiMessageSequence mastertrack;
     OwnedArray<MidiMessageSequence> mtracks;
-    for(channel=0; channel<16; channel++){
+    for(int channel=0; channel<16; channel++){
         mtracks.add(new MidiMessageSequence());
         //Pitch bend range RPN
         msg = MidiMessage::controllerEvent(channel+1, 101, 0);
@@ -2136,9 +1965,8 @@ int exportMIDI(File midifile, ValueTree midiopts){
         msg.setTimeStamp(0);
         mtracks[channel]->addEvent(msg);
     }
-    msg = MidiMessage::textMetaEvent(0x06, "Section 0");
-    msg.setTimeStamp(0);
-    mastertrack.addEvent(msg);
+    int tsecnum = -1;
+    bool willBeNewTSec = true;
     /*
     TODO banks
     //Bank setup
@@ -2170,23 +1998,34 @@ int exportMIDI(File midifile, ValueTree midiopts){
         }
     }while(false);
     */
-    //BEGIN
+    //Stack
+    Array<ExportStackEntry> stack;
+    //Transpose
+    const int max_layers = 4;
+	Array<int> transposes;
+	transposes.resize(16 * max_layers);
+    //
     dbgmsg("EXPORTING MIDI FILE");
-    t = 0;
-    a = 0;
-	channel = notelayer = 0;
-	delay = -1;
-    bool ended_naturally = false;
-    while(a < data.size()){
-        command = getCommand(a, stype);
-        cmdlen = (int)command.getProperty(idLength, 1);
-        a += cmdlen;
-        action = command.getProperty(idAction, "Unknown");
+    importresult = 0;
+    int channel = -1, notelayer = -1;
+    int delay = -1;
+    ValueTree section = structure.getChild(0);
+    int stype = 0;
+    uint32_t t = 0;
+    int cmd = -1;
+    while(true){
+        ++cmd;
+        if(cmd >= section.getNumChildren()){
+            dbgmsg("Parsing ran off end of section!");
+            return 2;
+        }
+        ValueTree command = section.getChild(cmd);
+        String action = command.getProperty(idAction, "Unknown");
         //Normal actions
         if(action == "Unknown"){
             //do nothing
             dbgmsg("Unknown Action " + hex((uint8_t)(int)command.getProperty(idCmd)) 
-                    + " in stype " + String(stype) + " @" + hex(a, 6));
+                    + " in stype " + String(stype));
         }else if(action == "No Action"){
             //do nothing
         }else if(action == "Sequence Format"){
@@ -2198,280 +2037,243 @@ int exportMIDI(File midifile, ValueTree midiopts){
         }else if(action == "Channel Disable"){
             //do nothing
         }else if(action == "Timestamp"){
-            //Time difference taken care of by delay
+            //Time difference taken care of by delay (after this if action)
             if(stype == 0){
                 willBeNewTSec = true; //Next Ptr Chan Hdr will be a new section
             }
         }else if(action == "End of Data"){
-            if(stackptr == 0){
-                ended_naturally = true;
-                break; //Done with header
+            if(stack.size() == 0){
+                break; //Done
             }
-            //Pop return address
-            stackptr--;
-            while(stackptr >= 0 && stypestack[stackptr] == -4){
-                dbgmsg("End of Data while in a loop (i.e. corrupt sequence)!");
-                stackptr--;
+            if(cmd != section.getNumChildren()-1){
+                dbgmsg("Warning, returning due to end of data not at end of section!");
             }
-            if(stackptr < 0 || stypestack[stackptr] < 0){
-                dbgmsg("FATAL: Hopelessly corrupted sequence structure!");
-                break;
+            ExportStackEntry returnto = stack.removeAndReturn(stack.size()-1);
+            if(returnto.loopcount != 0){
+                dbgmsg("End of Data while in a loop (corrupt sequence)!");
+                return 2;
             }
-            //Restore values
-            a = addrstack[stackptr];
-            if(stypestack[stackptr] != stype){
+            section = returnto.sec;
+            cmd = returnto.cmd;
+            if(stype != returnto.stype){
                 //Return from chn or track, not call
-                t = timestack[stackptr];
-                stype = stypestack[stackptr];
+                t = returnto.t;
             }
+            stype = returnto.stype;
+            //Reset variables which are no longer valid
+            if(stype == 1){
+                notelayer = -1;
+            }else if(stype == 0){
+                channel = -1;
+            }
+            //dbgmsg("End of Data return to stype " + String(stype));
         }else if(action == "Jump Same Level"){
-            dbgmsg("Ignoring Jump Same Level @" + hex(a,16));
+            dbgmsg("Ignoring Jump Same Level");
         }else if(action == "Call Same Level"){
-            value = getPtrAddress(command, a, data.size());
-            if(value < 0) continue;
-            address = value;
-            addrstack[stackptr] = a;
-            timestack[stackptr] = 100000; //This value should never be popped!
-            stypestack[stackptr] = stype;
-            stackptr++;
-            if(stackptr >= stack_size){
-                dbgmsg("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
-                break;
+            if(!command.hasProperty(idTargetSection)){
+                dbgmsg("Call Same Level without target section!");
+                return 2;
             }
-            a = address;
+            int newsec = command.getProperty(idTargetSection);
+            if(newsec < 0 || newsec >= structure.getNumChildren()){
+                dbgmsg("Call Same Level to undefined section!");
+                return 2;
+            }
+            //dbgmsg("Call Same Level to section " + String(newsec));
+            stack.add(ExportStackEntry(section, cmd, stype, 0, 100000));
+            cmd = -1;
+            section = structure.getChild(newsec);
         }else if(action == "Loop Start"){
-            param = command.getChildWithProperty(idMeaning, "Loop Count");
-            int loopcount = getAdjustedValue(param);
+            ValueTree param = command.getChildWithProperty(idMeaning, "Loop Count");
+            if(!param.isValid()){
+                dbgmsg("Loop Start with no Loop Count!");
+                return 2;
+            }
+            int loopcount = param.getProperty(idValue);
             if(loopcount < 2 || loopcount > 0xFF){
-                dbgmsg("Likely invalid loop count = " + String(loopcount) + ", ignoring!");
-                continue;
+                dbgmsg("Likely invalid loop count = " + String(loopcount) + "!");
+                importresult |= 1;
             }
-            addrstack[stackptr] = a;
-            timestack[stackptr] = loopcount;
-            stypestack[stackptr] = -4; //means loop stack entry
-            stackptr++;
-            if(stackptr >= stack_size){
-                dbgmsg("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
-                break;
-            }
+            stack.add(ExportStackEntry(section, cmd, stype, loopcount, 100000));
         }else if(action == "Loop End"){
-            if(stackptr <= 0 || stypestack[stackptr-1] != -4){
-                dbgmsg("Loop End command not after Loop Start, ignoring!");
-                continue;
+            if(stack.size() == 0 || stack.getLast().loopcount <= 0){
+                dbgmsg("Loop End command not after Loop Start!");
+                return 2;
             }
-            stackptr--;
-            timestack[stackptr]--; //loop count
-            if(timestack[stackptr] > 0){
-                //Still some loops left for us, go back
-                a = addrstack[stackptr];
-                stackptr++;
-            }//Otherwise just continue with the sequence
+            if(stack.getLast().loopcount == 1){
+                stack.remove(stack.size()-1);
+            }else{
+                --stack.getReference(stack.size()-1).loopcount;
+                cmd = stack.getLast().cmd;
+            }
         }else if(action == "Ptr Channel Header"){
-            value = getPtrAddress(command, a, data.size());
-            if(value < 0) continue;
-            address = value;
-            param = command.getChildWithProperty(idMeaning, "Channel");
-            if(param.isValid()){
-                channel = getAdjustedValue(param);
+            if(stype != 0){
+                dbgmsg("Ptr Channel Header from somewhere other than seq header!");
+                return 2;
             }
-            if(channel >= 16){
-                dbgmsg("Ptr Channel Header with channel >= 16!");
-                continue;
+            if(!command.hasProperty(idTargetSection)){
+                dbgmsg("Ptr Channel Header without target section!");
+                return 2;
             }
-            //Valid pointer
+            int newsec = command.getProperty(idTargetSection);
+            if(newsec < 0 || newsec >= structure.getNumChildren()){
+                dbgmsg("Ptr Channel Header to undefined section!");
+                return 2;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Channel");
+            if(!param.isValid()){
+                dbgmsg("Ptr Channel Header with no Channel!");
+                return 2;
+            }
+            channel = param.getProperty(idValue);
+            if(channel < 0 || channel >= 16){
+                dbgmsg("Ptr Channel Header with invalid channel number!");
+                return 2;
+            }
+            //dbgmsg("Ptr Channel Header (ch " + String(channel) + ") to section " + String(newsec));
+            stack.add(ExportStackEntry(section, cmd, stype, 0, t));
+            section = structure.getChild(newsec);
+            if((int)section.getProperty(idSType, -1) != 1){
+                dbgmsg("Ptr Channel Header to a section which isn't a channel!");
+                return 2;
+            }
+            cmd = -1;
+            stype = 1;
             //MIDI file section
             if(willBeNewTSec){
-                dbgmsg("New section @" + hex(a,16) + ", t=" + hex(t,16));
-                //Finish current section
-                curtsec->address_end = a - cmdlen;
-                //Make new section
-                curtsec = new SeqTSection();
-                curtsec->address = a - cmdlen;
-                curtsec->time = t;
-                tsections.add(curtsec);
-                //Put marker in MIDI
-                msg = MidiMessage::textMetaEvent(0x06, "Section " + String(tsections.size() - 1));
+                ++tsecnum;
+                willBeNewTSec = false;
+                dbgmsg("Starting section " + String(tsecnum) + ", t=" + hex(t,16));
+                msg = MidiMessage::textMetaEvent(0x06, "Section " + String(tsecnum));
                 msg.setTimeStamp(t*ticks_multiplier);
                 mastertrack.addEvent(msg);
-                //Done
-                willBeNewTSec = false;
             }
-            //Jump to channel data
-            addrstack[stackptr] = a;
-            timestack[stackptr] = t;
-            stypestack[stackptr] = stype;
-            stackptr++;
-            if(stackptr >= stack_size){
-                dbgmsg("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
-                break;
-            }
-            a = address;
-            stype = 1;
-            velocity = 127;
-            gate = 0xFF;
-            delay = -1;
-            //dbgmsg("----T" + hex(t, 6) + ": Entering Chan " + String(channel) + " Hdr");
         }else if(action == "Ptr Track Data"){
-            value = getPtrAddress(command, a, data.size());
-            if(value < 0) continue;
-            address = value;
-            param = command.getChildWithProperty(idMeaning, "Note Layer");
+            if(stype != 1){
+                dbgmsg("Ptr Track Data from somewhere other than channel header!");
+                return 2;
+            }
+            if(!command.hasProperty(idTargetSection)){
+                dbgmsg("Ptr Track Data without target section!");
+                return 2;
+            }
+            int newsec = command.getProperty(idTargetSection);
+            if(newsec < 0 || newsec >= structure.getNumChildren()){
+                dbgmsg("Ptr Track Data to undefined section!");
+                return 2;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Note Layer");
             if(!param.isValid()){
-                dbgmsg("Ptr Track Data with no note layer value!");
-                continue;
+                dbgmsg("Ptr Track Data with no Note Layer!");
+                return 2;
             }
-            notelayer = getAdjustedValue(param);
-            addrstack[stackptr] = a;
-            timestack[stackptr] = t;
-            stypestack[stackptr] = stype;
-            stackptr++;
-            if(stackptr >= stack_size){
-                dbgmsg("FATAL: Stack Overflow SeqFile::toMIDIFile()!");
-                break;
+            notelayer = param.getProperty(idValue);
+            if(notelayer < 0 || notelayer >= max_layers){
+                dbgmsg("Ptr Track Data with invalid note layer!");
+                return 2;
             }
-            a = address;
+            //dbgmsg("Ptr Track Data (ch " + String(channel) + ", ly " 
+            //    + String(notelayer) + ") to section " + String(newsec));
+            stack.add(ExportStackEntry(section, cmd, stype, 0, t));
+            section = structure.getChild(newsec);
+            if((int)section.getProperty(idSType, -1) != 2){
+                dbgmsg("Ptr Track Data to a section which isn't a track!");
+                return 2;
+            }
+            cmd = -1;
             stype = 2;
-            //dbgmsg("----====T" + hex(t, 6) + ": Entering Track layer " + String(notelayer));
-            //dbgmsg("@" + hex(a, 6) + ": Track Data " + String(notelayer));
+            delay = -1;
         }else if(action == "Master Volume"){
-            param = command.getChildWithProperty(idMeaning, "Value");
+            if(stype != 0){
+                dbgmsg("Master Volume in somewhere other than seq header!");
+                importresult |= 1; continue;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 dbgmsg("Master Volume event with no value!");
-                continue;
+                importresult |= 1; continue;
             }
-            value = getAdjustedValue(param);
-            if(value > 0x7F) value = 0x7F;
-            if(value < 0) value = 0;
-            int cc = -1;
-            if(mtrvol == "CC7 (Volume)"){
-                cc = 7;
-            }else if(mtrvol == "CC11 (Expr)"){
-                cc = 11;
-            }else if(mtrvol == "CC16 (GPC1)"){
-                cc = 16;
-            }else if(mtrvol == "CC24 (None)"){
-                cc = 24;
-            }else if(mtrvol == "SysEx MstrVol"){
-                char sysexdata[6];
-                sysexdata[0] = 0x7F;
-                sysexdata[1] = 0x7F;
-                sysexdata[2] = 0x04;
-                sysexdata[3] = 0x01;
-                sysexdata[4] = 0x00;
-                sysexdata[5] = value;
-                msg = MidiMessage::createSysExMessage(sysexdata, 6);
-                msg.setTimeStamp(t*ticks_multiplier);
-                mastertrack.addEvent(msg);
-                continue;
-            }else{
-                dbgmsg("Master Volume event, unknown mapping: " + mtrvol + ", ignoring");
-                continue;
+            int value = param.getProperty(idValue);
+            if(value < 0 || value > 0x7F){
+                dbgmsg("Master Volume event with invalid value!");
+                importresult |= 1; continue;
             }
-            if(stype == 0){
-                for(channel=0; channel<16; channel++){
-                    msg = MidiMessage::controllerEvent(channel+1, cc, value);
-                    msg.setTimeStamp(t*ticks_multiplier);
-                    mtracks[channel]->addEvent(msg);
-                }
-                channel = 0;
-            }else{
-                msg = MidiMessage::controllerEvent(channel+1, cc, value);
-                msg.setTimeStamp(t*ticks_multiplier);
-                mtracks[channel]->addEvent(msg);
-            }
+            char sysexdata[6];
+            sysexdata[0] = 0x7F;
+            sysexdata[1] = 0x7F;
+            sysexdata[2] = 0x04;
+            sysexdata[3] = 0x01;
+            sysexdata[4] = 0x00;
+            sysexdata[5] = value;
+            msg = MidiMessage::createSysExMessage(sysexdata, 6);
+            msg.setTimeStamp(t*ticks_multiplier);
+            mastertrack.addEvent(msg);
         }else if(action == "Tempo"){
-            param = command.getChildWithProperty(idMeaning, "Value");
+            if(stype != 0){
+                dbgmsg("Tempo in somewhere other than seq header!");
+                importresult |= 1; continue;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 dbgmsg("Tempo event with no value!");
-                continue;
+                importresult |= 1; continue;
             }
-            value = getAdjustedValue(param);
+            int value = param.getProperty(idValue);
+            if(value <= 0){
+                dbgmsg("Tempo event with invalid value!");
+                importresult |= 1; continue;
+            }
             uint32_t tempovalue = 60000000 / value;
             msg = MidiMessage::tempoMetaEvent(tempovalue);
             msg.setTimeStamp(t*ticks_multiplier);
             mastertrack.addEvent(msg);
         }else if(action == "Chn Reset"){
+            if(stype != 1){
+                dbgmsg("Chn Reset in somewhere other than channel header!");
+                importresult |= 1; continue;
+            }
             //Reset transposes for this channel
+            //Pretty sure this is not what this command does...
             for(notelayer=0; notelayer<max_layers; notelayer++){
                 transposes.set((channel*max_layers)+notelayer, 0);
             }
-        }else if(action == "Chn Priority"){
-            param = command.getChildWithProperty(idMeaning, "Value");
+        }else if(action == "Chn Priority" || action == "Chn Volume" || action == "Chn Pan"
+                || action == "Chn Effects" || action == "Chn Vibrato"){
+            if(stype != 1){
+                dbgmsg(action + " in somewhere other than channel header!");
+                importresult |= 1; continue;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
-                dbgmsg("Chn Priority event with no value!");
-                continue;
+                dbgmsg(action + " event with no value!");
+                importresult |= 1; continue;
             }
-            value = getAdjustedValue(param);
-            int cc = 25;
-            if(chnpriority == "CC17 (GPC2)"){
-                cc = 17;
-            }else if(chnpriority == "CC25 (None)"){
-                cc = 25;
-            }else if(chnpriority == "CC79 (SC10)"){
-                cc = 79;
-            }else{
-                dbgmsg("Channel Priority event, unknown mapping: " + chnpriority + ", ignoring");
-                continue;
+            int value = param.getProperty(idValue);
+            if(value < 0 || value > 0x7F){
+                dbgmsg(action + " event with invalid value = " + String(value) + "!");
+                importresult |= 1; continue;
             }
+            int cc = -1;
+                 if(action == "Chn Priority") cc = 25;
+            else if(action == "Chn Volume"  ) cc = 7;
+            else if(action == "Chn Pan"     ) cc = 10;
+            else if(action == "Chn Effects" ) cc = 91;
+            else if(action == "Chn Vibrato" ) cc = 77;
+            jassert(cc >= 0);
             msg = MidiMessage::controllerEvent(channel+1, cc, value);
-            msg.setTimeStamp(t*ticks_multiplier);
-            mtracks[channel]->addEvent(msg);
-        }else if(action == "Chn Volume"){
-            param = command.getChildWithProperty(idMeaning, "Value");
-            if(!param.isValid()){
-                dbgmsg("Chn Volume event with no value!");
-                continue;
-            }
-            value = getAdjustedValue(param);
-            int cc = 7;
-            if(chnvol == "CC7 (Volume)"){
-                cc = 7;
-            }else if(chnvol == "CC11 (Expr)"){
-                cc = 11;
-            }else{
-                dbgmsg("Channel Volume event, unknown mapping: " + chnvol + ", ignoring");
-                continue;
-            }
-            msg = MidiMessage::controllerEvent(channel+1, cc, value);
-            msg.setTimeStamp(t*ticks_multiplier);
-            mtracks[channel]->addEvent(msg);
-        }else if(action == "Chn Pan"){
-            param = command.getChildWithProperty(idMeaning, "Value");
-            if(!param.isValid()){
-                dbgmsg("Chn Pan event with no value!");
-                continue;
-            }
-            value = getAdjustedValue(param);
-            msg = MidiMessage::controllerEvent(channel+1, 10, value);
-            msg.setTimeStamp(t*ticks_multiplier);
-            mtracks[channel]->addEvent(msg);
-        }else if(action == "Chn Effects"){
-            param = command.getChildWithProperty(idMeaning, "Value");
-            if(!param.isValid()){
-                dbgmsg("Chn Effects event with no value!");
-                continue;
-            }
-            value = getAdjustedValue(param);
-            msg = MidiMessage::controllerEvent(channel+1, 91, value);
-            msg.setTimeStamp(t*ticks_multiplier);
-            mtracks[channel]->addEvent(msg);
-        }else if(action == "Chn Vibrato"){
-            param = command.getChildWithProperty(idMeaning, "Value");
-            if(!param.isValid()){
-                dbgmsg("Chn Vibrato event with no value!");
-                continue;
-            }
-            value = getAdjustedValue(param);
-            msg = MidiMessage::controllerEvent(channel+1, 77, value);
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Pitch Bend"){
-            param = command.getChildWithProperty(idMeaning, "Value");
+            if(stype != 1){
+                dbgmsg("Chn Pitch Bend in somewhere other than channel header!");
+                importresult |= 1; continue;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 dbgmsg("Chn Pitch Bend event with no value!");
-                continue;
+                importresult |= 1; continue;
             }
-            value = getAdjustedValue(param);
+            int value = param.getProperty(idValue);
             if(value >= 0x80) value -= 0x100;
             value = (1<<13) + (value << 7);
             if(value < 0) value = 0;
@@ -2481,41 +2283,53 @@ int exportMIDI(File midifile, ValueTree midiopts){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Transpose"){
-            param = command.getChildWithProperty(idMeaning, "Value");
+            if(stype != 1){
+                dbgmsg("Chn Transpose in somewhere other than channel header!");
+                importresult |= 1; continue;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 dbgmsg("Chn Transpose event with no value!");
-                continue;
+                importresult |= 1; continue;
             }
-            value = getAdjustedValue(param);
+            int value = param.getProperty(idValue);
             if(value >= 0x80) value -= 0x100;
             for(int i = 0; i < max_layers; i++){
                 transposes.set((channel*max_layers)+i, value);
             }
         }else if(action == "Layer Transpose"){
-            param = command.getChildWithProperty(idMeaning, "Value");
+            if(stype != 2){
+                dbgmsg("Layer Transpose in somewhere other than track data!");
+                importresult |= 1; continue;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 dbgmsg("Layer Transpose event with no value!");
-                continue;
+                importresult |= 1; continue;
             }
-            value = getAdjustedValue(param);
+            int value = param.getProperty(idValue);
             if(value >= 0x80) value -= 0x100;
             transposes.set((channel*max_layers)+notelayer, value);
         }else if(action == "Chn Instrument"){
-            param = command.getChildWithProperty(idMeaning, "Value");
+            if(stype != 1){
+                dbgmsg("Chn Instrument in somewhere other than channel header!");
+                importresult |= 1; continue;
+            }
+            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
             if(!param.isValid()){
                 dbgmsg("Chn Instrument event with no value!");
-                continue;
+                importresult |= 1; continue;
             }
-            value = getAdjustedValue(param);
+            int value = param.getProperty(idValue);
             dbgmsg("Chn Instrument " + String(value) + " channel " + String(channel));
             //Cancel previous progoptions
             msg = MidiMessage::controllerEvent(channel+1, progoptionsnullcc, 0);
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
-            /*
-            TODO bank integration
             //Load MIDI equivalent instrument from bank
             int midiprogram = value;
+            /*
+            TODO bank integration
             do{
                 if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "original"){
                     dbgmsg("Not converting Chn Instrument because want original format export");
@@ -2611,58 +2425,49 @@ int exportMIDI(File midifile, ValueTree midiopts){
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
         }else if(action == "Track Note"){
-            //qDelay = qVelocity = qGate = false;
+            if(stype != 2){
+                dbgmsg("Track Note in somewhere other than track data!");
+                importresult |= 1; continue;
+            }
             //Delay already taken care of
             //Note
-            param = command.getChildWithProperty(idMeaning, "Note");
+            ValueTree param = command.getChildWithProperty(idMeaning, "Note");
             if(!param.isValid()){
                 dbgmsg("Track Note event with no note!");
-                continue;
+                importresult |= 1; continue;
             }
-            value = getAdjustedValue(param);
-            transpose = transposes[(channel*max_layers)+notelayer];
-            note = value + transpose + midi_basenote;
+            int value = param.getProperty(idValue);
+            int transpose = transposes[(channel*max_layers)+notelayer];
+            int note = value + transpose + midi_basenote;
             if(note < 0 || note >= 128){
-                dbgmsg("Bad (transposed?) note @" + hex(a, 4)
-                        + ": c " + String(channel) + ", l " + String(notelayer)
+                dbgmsg("Bad (transposed?) note: c " + String(channel) + ", l " + String(notelayer)
                         + ": note " + String(value)
                         + ", transpose " + String(transpose)
                         + ", base " + String(midi_basenote)
                         + ": result " + String(note));
-                continue;
+                importresult |= 1; continue;
             }
             //Velocity
             param = command.getChildWithProperty(idMeaning, "Velocity");
-            if(param.isValid()){
-                velocity = getAdjustedValue(param);
-                //qVelocity = true;
-			}else{
-				velocity = 0x7F;
-			}
+            int velocity = param.isValid() ? (int)param.getProperty(idValue) : 0x7F;
             //Gate time
             param = command.getChildWithProperty(idMeaning, "Gate Time");
-            if(param.isValid()){
-                gate = getAdjustedValue(param);
-                //qGate = true;
-            }else{
-                gate = 0;
-            }
+            int gate = param.isValid() ? (int)param.getProperty(idValue) : 0;
             //Fetch delay to get gate time proportion
             param = command.getChildWithProperty(idMeaning, "Delay");
             if(param.isValid()){
-                delay = getAdjustedValue(param);
-                //qDelay = true;
+                delay = param.getProperty(idValue);
             }else{
                 if(delay < 0){
-                    dbgmsg("Track Note command using previous delay, but not previously set! (Corrupted sequence / will break timings)");
-                    delay = 1;
+                    dbgmsg("Track Note command using previous delay, but not previously set!");
+                    importresult |= 1; continue;
                 }
-                //dbgmsg("@" + hex(a, 6) + ": No delay value given, using current " + hex((uint32_t)delay, 4));
-                //Add it so we actually do the delay!
+                //Add the delay to the current command so we actually do the delay after the note is written
                 param = ValueTree("parameter");
                 param.setProperty(idMeaning, "Delay", nullptr);
                 param.setProperty(idValue, delay, nullptr);
-                command.addChild(param, command.getNumChildren(), nullptr);
+                command = command.createCopy(); //don't change the actual sequence data
+                command.addChild(param, -1, nullptr);
             }
             /*
             dbgmsg("@" + hex(a, 4) + " c " + hex((uint8_t)channel, 1) + " l " + hex((uint8_t)notelayer, 1)
@@ -2683,14 +2488,11 @@ int exportMIDI(File midifile, ValueTree midiopts){
             dbgmsg("Unknown command action " + action + "!");
         }
         //Execute delay
-        param = command.getChildWithProperty(idMeaning, "Delay");
+        ValueTree param = command.getChildWithProperty(idMeaning, "Delay");
         if(param.isValid()){
             //Don't set the variable "delay"--future notes reference the last note's delay, not just the last delay which may have occurred
-            t += getAdjustedValue(param);
+            t += (int)param.getProperty(idValue);
         }
-    }
-    if(!ended_naturally){
-        dbgmsg("Converting sequence ran off end! a==" + hex(a) + ", length==" + hex((uint32_t)data.size()));
     }
     //Ensure messages are in order
     for(channel=0; channel<16; channel++){
@@ -2715,7 +2517,7 @@ int exportMIDI(File midifile, ValueTree midiopts){
                 --m;
                 if(!po.isValid()){
                     dbgmsg("progoptions consistency error!");
-                    continue;
+                    importresult |= 1; continue;
                 }
                 if(po.getType().toString() == "instrument"){
                     dbgmsg("--Chn " + String(channel) + ": new inst progoptions tp=" + String(tp));
@@ -2735,6 +2537,7 @@ int exportMIDI(File midifile, ValueTree midiopts){
                     }
                 }else{
                     dbgmsg("progoptions type error!");
+                    importresult |= 1;
                 }
             }else if(msgp->isNoteOnOrOff()){
                 if(drummode == 0){
@@ -2771,11 +2574,153 @@ int exportMIDI(File midifile, ValueTree midiopts){
     for(channel=0; channel<16; channel++){
         ret->addTrack(*mtracks[channel]);
     }
-    dbgmsg("====== DONE ======");
-    return 0;
+    if(!ret->writeTo(fos, 1)){
+        dbgmsg("Final MIDI write failed!");
+        return 2;
+    }
+    fos.flush();
+    dbgmsg("Saved MIDI to " + midifile.getFullPathName());
+    return importresult;
 }
 
-#endif
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// importCom functions /////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+//Loads the node from the ABI describing the command.
+ValueTree SeqFile::getDescription(uint8_t firstbyte, int stype){
+    ValueTree test;
+    for(int i=0; i<abi.getNumChildren(); i++){
+        test = abi.getChild(i);
+        if(!isCommandValidIn(test, stype)) continue;
+        if(test.hasProperty(idCmdEnd)){
+            if(firstbyte >= (int)test.getProperty(idCmd)
+                    && firstbyte <= (int)test.getProperty(idCmdEnd)){
+                return test;
+            }
+        }else{
+            if(firstbyte == (int)test.getProperty(idCmd)){
+                return test;
+            }
+        }
+    }
+    test = ValueTree();
+    return test;
+}
+
+ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype){
+    ValueTree ret("command");
+    ValueTree param, desc;
+    String action, meaning, datasrc;
+    int i, len, paramlen, paramindex, cmdoffset, paramvalue, datalen;
+    uint8_t c, d;
+    uint32_t a = address;
+    //
+    len = 1;
+    c = data[address];
+    a++;
+    desc = getDescription(c, stype);
+    if(!desc.isValid()){
+        //Command not found
+        ret.setProperty(idCmd, (int)c, nullptr);
+        ret.setProperty(idAddress, (int)address, nullptr);
+        ret.setProperty(idLength, len, nullptr);
+        ret.setProperty(idHash, 0, nullptr);
+        return ret;
+    }
+    ret = desc.createCopy();
+    cmdoffset = c - (int)ret.getProperty(idCmd, 0);
+    action = desc.getProperty(idAction, "No Action");
+    //dbgmsg(hex((uint32_t)address, 6) + ": " + hex(c) + " " + action);
+    for(paramindex=0; paramindex<ret.getNumChildren(); paramindex++){
+        param = ret.getChild(paramindex);
+        meaning = param.getProperty(idMeaning, "None");
+        //Get the value of this parameter
+        paramvalue = 0;
+        paramlen = 0;
+        datasrc = param.getProperty(idDataSrc, "fixed");
+        datalen = param.getProperty(idDataLen, 0);
+        if(datasrc == "offset"){
+            paramvalue = cmdoffset;
+            param.setProperty(idDataAddr, 0, nullptr);
+            param.setProperty(idDataActualLen, 1, nullptr);
+        }else if(datasrc == "fixed"){
+            for(i=0; i<datalen; i++){
+                len++;
+                paramlen++;
+                paramvalue <<= 8;
+                paramvalue += (uint8_t)data[a+i];
+            }
+            param.setProperty(idDataAddr, (int)(a-address), nullptr);
+            param.setProperty(idDataActualLen, paramlen, nullptr);
+        }else if(datasrc == "variable"){
+            if(datalen == 1){
+                d = (uint8_t)data[a];
+                if(d <= 0x7F){
+                    paramvalue = d;
+                    len++;
+                    paramlen++;
+                }
+            }else if(datalen == 2){
+                d = 0;
+                len++;
+                paramlen++;
+                paramvalue = (uint8_t)data[a];
+                if(paramvalue & 0x80){
+                    paramvalue &= 0x7F;
+                    paramvalue <<= 8;
+                    paramvalue += (uint8_t)data[a+1];
+                    len++;
+                    paramlen++;
+                }
+            }else{
+                dbgmsg("Due to SeqFile variable length format, length > 2 not defined!");
+                paramvalue = 0;
+                len += datalen;
+                paramlen += datalen;
+            }
+            param.setProperty(idDataAddr, (int)(a-address), nullptr);
+            param.setProperty(idDataActualLen, paramlen, nullptr);
+        }else{
+            dbgmsg("Invalid command description! datasrc == " + datasrc + ", action == " + action);
+        }
+        //Store info about parameter
+        param.setProperty(idValue, paramvalue, nullptr);
+        a += paramlen;
+    }
+    //Store info about command
+    //ret.setProperty(idCmd, (int)c, nullptr); //idCmd is the base command, not the offset one
+    if(ret.hasProperty(idCmdEnd)){
+        ret.removeProperty(idCmdEnd, nullptr);
+    }
+    ret.setProperty(idAddress, (int)address, nullptr);
+    ret.setProperty(idLength, len, nullptr);
+    ret.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
+    return ret;
+}
+
+int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
+    int address;
+    ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
+    if(param.isValid()){
+        address = param.getProperty(idValue);
+    }else{
+        param = command.getChildWithProperty(idMeaning, "Relative Address");
+        if(param.isValid()){
+            address = (int)param.getProperty(idValue) + (int)currentAddr;
+        }else{
+            dbgmsg("@" + hex(currentAddr,16) + ": Pointer with no address value!");
+            return -1;
+        }
+    }
+    if(address >= seqlen){
+        dbgmsg("@" + hex(currentAddr,16) + ": Pointer off end of sequence to " 
+                + hex((uint32_t)address,16) + ", skipping!");
+        return -1;
+    }
+    return address;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// importCom //////////////////////////////////
