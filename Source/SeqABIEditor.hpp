@@ -132,11 +132,11 @@ private:
     std::unique_ptr<juce::ToggleButton> optDataSrcOffset;
     std::unique_ptr<juce::ToggleButton> optDataSrcFixed;
     std::unique_ptr<juce::ToggleButton> optDataSrcVariable;
-    std::unique_ptr<juce::TextButton> btnCmdAdd2;
-    std::unique_ptr<juce::TextButton> btnDelete2;
-    std::unique_ptr<juce::TextButton> btnCmdUp2;
-    std::unique_ptr<juce::TextButton> btnCmdDown2;
-    std::unique_ptr<juce::Label> lblCmdDataSize;
+    std::unique_ptr<juce::TextButton> btnParamAdd;
+    std::unique_ptr<juce::TextButton> btnParamDelete;
+    std::unique_ptr<juce::TextButton> btnParamUp;
+    std::unique_ptr<juce::TextButton> btnParamDown;
+    std::unique_ptr<juce::Label> lblDataLen;
     std::unique_ptr<juce::TextEditor> txtDataLen;
     std::unique_ptr<juce::Label> lblDataSrc;
     std::unique_ptr<juce::TextButton> btnSave;

@@ -379,48 +379,48 @@ SeqABIEditor::SeqABIEditor (String abi_name)
 
     optDataSrcVariable->setBounds (272, 600, 88, 24);
 
-    btnCmdAdd2.reset (new juce::TextButton ("btnCmdAdd"));
-    addAndMakeVisible (btnCmdAdd2.get());
-    btnCmdAdd2->setButtonText (TRANS("Add"));
-    btnCmdAdd2->setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnBottom);
-    btnCmdAdd2->addListener (this);
+    btnParamAdd.reset (new juce::TextButton ("btnParamAdd"));
+    addAndMakeVisible (btnParamAdd.get());
+    btnParamAdd->setButtonText (TRANS("Add"));
+    btnParamAdd->setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnBottom);
+    btnParamAdd->addListener (this);
 
-    btnCmdAdd2->setBounds (96, 512, 48, 24);
+    btnParamAdd->setBounds (96, 512, 48, 24);
 
-    btnDelete2.reset (new juce::TextButton ("btnDelete"));
-    addAndMakeVisible (btnDelete2.get());
-    btnDelete2->setButtonText (TRANS("Del"));
-    btnDelete2->setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnTop);
-    btnDelete2->addListener (this);
+    btnParamDelete.reset (new juce::TextButton ("btnParamDelete"));
+    addAndMakeVisible (btnParamDelete.get());
+    btnParamDelete->setButtonText (TRANS("Del"));
+    btnParamDelete->setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnTop);
+    btnParamDelete->addListener (this);
 
-    btnDelete2->setBounds (96, 536, 48, 24);
+    btnParamDelete->setBounds (96, 536, 48, 24);
 
-    btnCmdUp2.reset (new juce::TextButton ("btnCmdUp"));
-    addAndMakeVisible (btnCmdUp2.get());
-    btnCmdUp2->setButtonText (TRANS("Up"));
-    btnCmdUp2->setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnBottom);
-    btnCmdUp2->addListener (this);
+    btnParamUp.reset (new juce::TextButton ("btnParamUp"));
+    addAndMakeVisible (btnParamUp.get());
+    btnParamUp->setButtonText (TRANS("Up"));
+    btnParamUp->setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnBottom);
+    btnParamUp->addListener (this);
 
-    btnCmdUp2->setBounds (96, 584, 48, 24);
+    btnParamUp->setBounds (96, 584, 48, 24);
 
-    btnCmdDown2.reset (new juce::TextButton ("btnCmdDown"));
-    addAndMakeVisible (btnCmdDown2.get());
-    btnCmdDown2->setButtonText (TRANS("Dn"));
-    btnCmdDown2->setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnTop);
-    btnCmdDown2->addListener (this);
+    btnParamDown.reset (new juce::TextButton ("btnParamDown"));
+    addAndMakeVisible (btnParamDown.get());
+    btnParamDown->setButtonText (TRANS("Dn"));
+    btnParamDown->setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnTop);
+    btnParamDown->addListener (this);
 
-    btnCmdDown2->setBounds (96, 608, 48, 24);
+    btnParamDown->setBounds (96, 608, 48, 24);
 
-    lblCmdDataSize.reset (new juce::Label ("lblCmdDataSize",
-                                           TRANS("(none)")));
-    addAndMakeVisible (lblCmdDataSize.get());
-    lblCmdDataSize->setFont (juce::Font (15.00f, juce::Font::plain));
-    lblCmdDataSize->setJustificationType (juce::Justification::centredLeft);
-    lblCmdDataSize->setEditable (false, false, false);
-    lblCmdDataSize->setColour (juce::TextEditor::textColourId, juce::Colours::black);
-    lblCmdDataSize->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+    lblDataLen.reset (new juce::Label ("lblDataLen",
+                                       TRANS("(none)")));
+    addAndMakeVisible (lblDataLen.get());
+    lblDataLen->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblDataLen->setJustificationType (juce::Justification::centredLeft);
+    lblDataLen->setEditable (false, false, false);
+    lblDataLen->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblDataLen->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblCmdDataSize->setBounds (360, 588, 64, 24);
+    lblDataLen->setBounds (360, 588, 64, 24);
 
     txtDataLen.reset (new juce::TextEditor ("txtDataLen"));
     addAndMakeVisible (txtDataLen.get());
@@ -464,6 +464,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lstParams.reset(new TextListBox(this));
     addAndMakeVisible(lstParams.get());
     lstParams->setBounds(8, 512, 88, 120);
+    lstParams->setSelectAddedItems(false);
 
     //[/UserPreSize]
 
@@ -542,11 +543,11 @@ SeqABIEditor::~SeqABIEditor()
     optDataSrcOffset = nullptr;
     optDataSrcFixed = nullptr;
     optDataSrcVariable = nullptr;
-    btnCmdAdd2 = nullptr;
-    btnDelete2 = nullptr;
-    btnCmdUp2 = nullptr;
-    btnCmdDown2 = nullptr;
-    lblCmdDataSize = nullptr;
+    btnParamAdd = nullptr;
+    btnParamDelete = nullptr;
+    btnParamUp = nullptr;
+    btnParamDown = nullptr;
+    lblDataLen = nullptr;
     txtDataLen = nullptr;
     lblDataSrc = nullptr;
     btnSave = nullptr;
@@ -603,72 +604,166 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     if (buttonThatWasClicked == btnCmdAdd.get())
     {
         //[UserButtonCode_btnCmdAdd] -- add your button handler code here..
+        selcmd = ValueTree("command");
+        selcmd.setProperty("cmd", 0, nullptr);
+        selcmd.setProperty("name", "Unnamed", nullptr);
+        selcmd.setProperty("action", "No Action", nullptr);
+        int r = lstCmds->getLastRowSelected();
+        abi.addChild(selcmd, r, nullptr);
+        lstCmds->insert(r, getCmdDescription(selcmd));
+        lstCmds->selectRow(r >= 0 ? r : abi.getNumChildren()-1);
         //[/UserButtonCode_btnCmdAdd]
     }
     else if (buttonThatWasClicked == btnDelete.get())
     {
         //[UserButtonCode_btnDelete] -- add your button handler code here..
+        if(!selcmd.isValid()) return;
+        abi.removeChild(selcmd, nullptr);
+        selcmd = ValueTree();
+        lstCmds->remove(lstCmds->getLastRowSelected());
+        fillCmdInfo();
         //[/UserButtonCode_btnDelete]
     }
     else if (buttonThatWasClicked == btnCmdUp.get())
     {
         //[UserButtonCode_btnCmdUp] -- add your button handler code here..
+        int pos = lstCmds->getLastRowSelected();
+        if(pos <= 0) return;
+        abi.moveChild(pos, pos-1, nullptr);
+        String temp = lstCmds->get(pos);
+        lstCmds->remove(pos);
+        lstCmds->insert(pos-1, temp);
+        lstCmds->selectRow(pos-1);
         //[/UserButtonCode_btnCmdUp]
     }
     else if (buttonThatWasClicked == btnCmdDown.get())
     {
         //[UserButtonCode_btnCmdDown] -- add your button handler code here..
+        int pos = lstCmds->getLastRowSelected();
+        if(pos < 0 || pos >= abi.getNumChildren()-1) return;
+        abi.moveChild(pos, pos+1, nullptr);
+        String temp = lstCmds->get(pos);
+        lstCmds->remove(pos);
+        lstCmds->insert(pos+1, temp);
+        lstCmds->selectRow(pos+1);
         //[/UserButtonCode_btnCmdDown]
     }
     else if (buttonThatWasClicked == chkValidInSeq.get())
     {
         //[UserButtonCode_chkValidInSeq] -- add your button handler code here..
+        if(!selcmd.isValid()) return;
+        if(buttonThatWasClicked->getToggleState()){
+            selcmd.setProperty("validinseq", 1, nullptr);
+        }else{
+            selcmd.removeProperty("validinseq", nullptr);
+        }
+        lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
         //[/UserButtonCode_chkValidInSeq]
     }
     else if (buttonThatWasClicked == chkValidInChn.get())
     {
         //[UserButtonCode_chkValidInChn] -- add your button handler code here..
+        if(!selcmd.isValid()) return;
+        if(buttonThatWasClicked->getToggleState()){
+            selcmd.setProperty("validinchn", 1, nullptr);
+        }else{
+            selcmd.removeProperty("validinchn", nullptr);
+        }
+        lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
         //[/UserButtonCode_chkValidInChn]
     }
     else if (buttonThatWasClicked == chkValidInTrk.get())
     {
         //[UserButtonCode_chkValidInTrk] -- add your button handler code here..
+        if(!selcmd.isValid()) return;
+        if(buttonThatWasClicked->getToggleState()){
+            selcmd.setProperty("validintrk", 1, nullptr);
+        }else{
+            selcmd.removeProperty("validintrk", nullptr);
+        }
+        lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
         //[/UserButtonCode_chkValidInTrk]
     }
     else if (buttonThatWasClicked == optDataSrcOffset.get())
     {
         //[UserButtonCode_optDataSrcOffset] -- add your button handler code here..
+        if(!selparam.isValid()) return;
+        selparam.setProperty("datasrc", "offset", nullptr);
+        selparam.setProperty("datalen", 0, nullptr);
+        lblDataLen->setText("(none)", dontSendNotification);
+        txtDataLen->setText("");
         //[/UserButtonCode_optDataSrcOffset]
     }
     else if (buttonThatWasClicked == optDataSrcFixed.get())
     {
         //[UserButtonCode_optDataSrcFixed] -- add your button handler code here..
+        if(!selparam.isValid()) return;
+        selparam.setProperty("datasrc", "fixed", nullptr);
+        if((int)selparam.getProperty("datalen", 0) < 1) selparam.setProperty("datalen", 1, nullptr);
+        lblDataLen->setText("length", dontSendNotification);
+        txtDataLen->setText(selparam.getProperty("datalen", 0));
         //[/UserButtonCode_optDataSrcFixed]
     }
     else if (buttonThatWasClicked == optDataSrcVariable.get())
     {
         //[UserButtonCode_optDataSrcVariable] -- add your button handler code here..
+        if(!selparam.isValid()) return;
+        selparam.setProperty("datasrc", "variable", nullptr);
+        if((int)selparam.getProperty("datalen", 0) < 1) selparam.setProperty("datalen", 2, nullptr);
+        lblDataLen->setText("up to", dontSendNotification);
+        txtDataLen->setText(selparam.getProperty("datalen", 0));
         //[/UserButtonCode_optDataSrcVariable]
     }
-    else if (buttonThatWasClicked == btnCmdAdd2.get())
+    else if (buttonThatWasClicked == btnParamAdd.get())
     {
-        //[UserButtonCode_btnCmdAdd2] -- add your button handler code here..
-        //[/UserButtonCode_btnCmdAdd2]
+        //[UserButtonCode_btnParamAdd] -- add your button handler code here..
+        if(!selcmd.isValid()) return;
+        selparam = ValueTree("parameter");
+        selparam.setProperty("name", "Unnamed", nullptr);
+        selparam.setProperty("meaning", "None", nullptr);
+        selparam.setProperty("datasrc", "fixed", nullptr);
+        selparam.setProperty("datalen", 1, nullptr);
+        int r = lstParams->getLastRowSelected();
+        selcmd.addChild(selparam, r, nullptr);
+        lstParams->insert(r, "Unnamed");
+        lstParams->selectRow(r >= 0 ? r : selcmd.getNumChildren()-1);
+        //[/UserButtonCode_btnParamAdd]
     }
-    else if (buttonThatWasClicked == btnDelete2.get())
+    else if (buttonThatWasClicked == btnParamDelete.get())
     {
-        //[UserButtonCode_btnDelete2] -- add your button handler code here..
-        //[/UserButtonCode_btnDelete2]
+        //[UserButtonCode_btnParamDelete] -- add your button handler code here..
+        if(!selcmd.isValid() || !selparam.isValid()) return;
+        selcmd.removeChild(selparam, nullptr);
+        selparam = ValueTree();
+        lstParams->remove(lstParams->getLastRowSelected());
+        fillParamInfo();
+        //[/UserButtonCode_btnParamDelete]
     }
-    else if (buttonThatWasClicked == btnCmdUp2.get())
+    else if (buttonThatWasClicked == btnParamUp.get())
     {
-        //[UserButtonCode_btnCmdUp2] -- add your button handler code here..
-        //[/UserButtonCode_btnCmdUp2]
+        //[UserButtonCode_btnParamUp] -- add your button handler code here..
+        if(!selcmd.isValid()) return;
+        int pos = lstParams->getLastRowSelected();
+        if(pos <= 0) return;
+        selcmd.moveChild(pos, pos-1, nullptr);
+        String temp = lstParams->get(pos);
+        lstParams->remove(pos);
+        lstParams->insert(pos-1, temp);
+        lstParams->selectRow(pos-1);
+        //[/UserButtonCode_btnParamUp]
     }
-    else if (buttonThatWasClicked == btnCmdDown2.get())
+    else if (buttonThatWasClicked == btnParamDown.get())
     {
-        //[UserButtonCode_btnCmdDown2] -- add your button handler code here..
-        //[/UserButtonCode_btnCmdDown2]
+        //[UserButtonCode_btnParamDown] -- add your button handler code here..
+        if(!selcmd.isValid()) return;
+        int pos = lstParams->getLastRowSelected();
+        if(pos < 0 || pos >= selcmd.getNumChildren()-1) return;
+        selcmd.moveChild(pos, pos+1, nullptr);
+        String temp = lstParams->get(pos);
+        lstParams->remove(pos);
+        lstParams->insert(pos+1, temp);
+        lstParams->selectRow(pos+1);
+        //[/UserButtonCode_btnParamDown]
     }
     else if (buttonThatWasClicked == btnSave.get())
     {
@@ -713,6 +808,13 @@ void SeqABIEditor::rowSelected(TextListBox* parent, int row){
         }
         selcmd = abi.getChild(row);
         fillCmdInfo();
+    }else if(parent == lstParams.get()){
+        if(!selcmd.isValid() || row < 0 || row >= selcmd.getNumChildren()){
+            selparam = ValueTree();
+            return;
+        }
+        selparam = selcmd.getChild(row);
+        fillParamInfo();
     }
 }
 void SeqABIEditor::textEditorTextChanged(TextEditor& editorThatWasChanged){
@@ -755,7 +857,7 @@ void SeqABIEditor::fillCmdInfo(){
     chkValidInChn->setToggleState((int)selcmd.getProperty("validinchn", 0) == 1, dontSendNotification);
     chkValidInTrk->setToggleState((int)selcmd.getProperty("validintrk", 0) == 1, dontSendNotification);
     txtCmd->setText(hex((uint8_t)(int)selcmd.getProperty("cmd")));
-    txtCmdEnd->setText(selcmd.hasProperty("cmdend") ? ":" + hex((uint8_t)(int)selcmd.getProperty("cmdend")) : "");
+    txtCmdEnd->setText(selcmd.hasProperty("cmdend") ? hex((uint8_t)(int)selcmd.getProperty("cmdend")) : "");
     cbxAction->setText(selcmd.getProperty("action", "No Action"));
     txtComments->setText(selcmd.getProperty("comments", ""));
     lstParams->clear();
@@ -764,7 +866,24 @@ void SeqABIEditor::fillCmdInfo(){
     }
 }
 void SeqABIEditor::fillParamInfo(){
-        
+    if(!selparam.isValid()){
+        txtParamName->setText("");
+        cbxMeaning->setText("");
+        optDataSrcOffset->setToggleState(false, dontSendNotification);
+        optDataSrcFixed->setToggleState(false, dontSendNotification);
+        optDataSrcVariable->setToggleState(false, dontSendNotification);
+        lblDataLen->setText("(none)", dontSendNotification);
+        txtDataLen->setText("");
+        return;
+    }
+    txtParamName->setText(selparam.getProperty("name", ""));
+    cbxMeaning->setText(selparam.getProperty("meaning", ""));
+    String datasrc = selparam.getProperty("datasrc");
+    optDataSrcOffset  ->setToggleState(datasrc == "offset",   dontSendNotification);
+    optDataSrcFixed   ->setToggleState(datasrc == "fixed",    dontSendNotification);
+    optDataSrcVariable->setToggleState(datasrc == "variable", dontSendNotification);
+    lblDataLen->setText(datasrc == "offset" ? "(none)" : datasrc == "fixed" ? "length" : "up to", dontSendNotification);
+    txtDataLen->setText(datasrc == "offset" ? "" : selparam.getProperty("datalen", "").toString());
 }
 
 void SeqABIEditor::save(){
@@ -927,19 +1046,19 @@ BEGIN_JUCER_METADATA
   <TOGGLEBUTTON name="optDataSrcVariable" id="42ca25208a198bdc" memberName="optDataSrcVariable"
                 virtualName="" explicitFocusOrder="0" pos="272 600 88 24" buttonText="Variable"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
-  <TEXTBUTTON name="btnCmdAdd" id="e312c3498c139489" memberName="btnCmdAdd2"
+  <TEXTBUTTON name="btnParamAdd" id="e312c3498c139489" memberName="btnParamAdd"
               virtualName="" explicitFocusOrder="0" pos="96 512 48 24" buttonText="Add"
               connectedEdges="9" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="btnDelete" id="721bde56ba3afa97" memberName="btnDelete2"
+  <TEXTBUTTON name="btnParamDelete" id="721bde56ba3afa97" memberName="btnParamDelete"
               virtualName="" explicitFocusOrder="0" pos="96 536 48 24" buttonText="Del"
               connectedEdges="5" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="btnCmdUp" id="df4481fd55603121" memberName="btnCmdUp2"
+  <TEXTBUTTON name="btnParamUp" id="df4481fd55603121" memberName="btnParamUp"
               virtualName="" explicitFocusOrder="0" pos="96 584 48 24" buttonText="Up"
               connectedEdges="9" needsCallback="1" radioGroupId="0"/>
-  <TEXTBUTTON name="btnCmdDown" id="3532da6e8caf739d" memberName="btnCmdDown2"
+  <TEXTBUTTON name="btnParamDown" id="3532da6e8caf739d" memberName="btnParamDown"
               virtualName="" explicitFocusOrder="0" pos="96 608 48 24" buttonText="Dn"
               connectedEdges="5" needsCallback="1" radioGroupId="0"/>
-  <LABEL name="lblCmdDataSize" id="1e1a075250c48074" memberName="lblCmdDataSize"
+  <LABEL name="lblDataLen" id="1e1a075250c48074" memberName="lblDataLen"
          virtualName="" explicitFocusOrder="0" pos="360 588 64 24" edTextCol="ff000000"
          edBkgCol="0" labelText="(none)" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
