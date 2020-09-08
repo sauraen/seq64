@@ -11,6 +11,10 @@
       <FILE id="WSf21a" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="OGNDST" name="SeqFile.cpp" compile="1" resource="0" file="Source/SeqFile.cpp"/>
       <FILE id="eyOSW3" name="SeqFile.hpp" compile="0" resource="0" file="Source/SeqFile.hpp"/>
+      <FILE id="zXPmKU" name="SeqABIEditor.cpp" compile="1" resource="0"
+            file="Source/SeqABIEditor.cpp"/>
+      <FILE id="lSZ2ip" name="SeqABIEditor.hpp" compile="0" resource="0"
+            file="Source/SeqABIEditor.hpp"/>
       <FILE id="tzGmAf" name="SeqEditor.cpp" compile="1" resource="0" file="Source/SeqEditor.cpp"/>
       <FILE id="vbdwgV" name="SeqEditor.hpp" compile="0" resource="0" file="Source/SeqEditor.hpp"/>
       <FILE id="xoE3xr" name="TextListBox.cpp" compile="1" resource="0" file="Source/TextListBox.cpp"/>

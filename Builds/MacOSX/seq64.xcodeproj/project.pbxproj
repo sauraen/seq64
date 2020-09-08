@@ -41,6 +41,10 @@
 			isa = PBXBuildFile;
 			fileRef = 2F84167D426D118E12B1E635;
 		};
+		DCEAF2A6FC5964A332B39051 = {
+			isa = PBXBuildFile;
+			fileRef = 8E073D7848D6723B129C6618;
+		};
 		7D5D08E91909D6FB9E7879A3 = {
 			isa = PBXBuildFile;
 			fileRef = 1AB2A017C8917D9F029A4FD6;
@@ -171,6 +175,13 @@
 			path = System/Library/Frameworks/IOKit.framework;
 			sourceTree = SDKROOT;
 		};
+		8E073D7848D6723B129C6618 = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = SeqABIEditor.cpp;
+			path = ../../Source/SeqABIEditor.cpp;
+			sourceTree = "SOURCE_ROOT";
+		};
 		9F616DBC94B93058BD3588E6 = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.c.h;
@@ -190,6 +201,13 @@
 			lastKnownFileType = sourcecode.cpp.objcpp;
 			name = "include_juce_graphics.mm";
 			path = "../../JuceLibraryCode/include_juce_graphics.mm";
+			sourceTree = "SOURCE_ROOT";
+		};
+		CF5639206E5A4DF9799594BF = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.c.h;
+			name = SeqABIEditor.hpp;
+			path = ../../Source/SeqABIEditor.hpp;
 			sourceTree = "SOURCE_ROOT";
 		};
 		E095C2CE894BCE0537C0BDDE = {
@@ -248,6 +266,8 @@
 				6C761EA4F54968A4CB0E51F3,
 				2F84167D426D118E12B1E635,
 				5C6D044F189B5B4CBC46EA28,
+				8E073D7848D6723B129C6618,
+				CF5639206E5A4DF9799594BF,
 				1AB2A017C8917D9F029A4FD6,
 				6C8262C2A4D3D92C419150E6,
 				61EFCD40569ABE9307280924,
@@ -538,6 +558,7 @@
 			files = (
 				BB7BE789445FB621108D1C48,
 				38ACF4CD6FFD6BABA34FA8E6,
+				DCEAF2A6FC5964A332B39051,
 				7D5D08E91909D6FB9E7879A3,
 				A8EE48369A8C0D1D865CD7FC,
 				FD0F1E1AD95750094B72F937,

@@ -2,7 +2,7 @@
  * ============================================================================
  *
  * SeqFile.cpp
- * Class to hold/import/export a Nintendo Music Macro Language (Audioseq) 
+ * Class to hold/import/export a Nintendo 64 Music Macro Language (Audioseq) 
  * format sequence file
  * 
  * From seq64 - Sequenced music editor for first-party N64 games

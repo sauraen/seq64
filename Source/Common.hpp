@@ -112,6 +112,9 @@ inline String hex(uint16_t i) { return hex(i, 16); }
 inline String hex(uint32_t i) { return hex(i, 32); }
 inline String hexauto(int i) { return hex(i, i >= 0x10000 ? 32 : i >= 0x100 ? 16 : 8); }
 
+#define NULLSTATEMENT ((void)0)
+#define REQUIRESEMICOLON do{NULLSTATEMENT;} while(false)
+
 #define FROMLOOKANDFEEL(colorType) \
     LookAndFeel::getDefaultLookAndFeel().findColour(colorType)
 
@@ -120,6 +123,34 @@ inline Colour LFWindowColor(){
 }
 inline Colour LFWidgetColor(){
     return FROMLOOKANDFEEL(TextEditor::backgroundColourId);
+}
+
+#undef FROMLOOKANDFEEL
+
+#define TEXTCHANGEDHANDLER_PRE \
+    bool turnRed = false; \
+    String text = editorThatWasChanged.getText(); \
+    bool isint = isInt(text); \
+    int intval = text.getIntValue(); \
+    bool ishex = isHex(text); \
+    int hexval = text.getHexValue32(); \
+    REQUIRESEMICOLON
+
+#define TEXTCHANGEDHANDLER_POST \
+    TurnRed(&editorThatWasChanged, turnRed); \
+    ignoreUnused(isint); \
+    ignoreUnused(intval); \
+    ignoreUnused(ishex); \
+    ignoreUnused(hexval); \
+    REQUIRESEMICOLON
+
+inline void TurnRed(TextEditor *ed, bool turnRed = true){
+    ed->setColour(TextEditor::backgroundColourId,
+        turnRed ? Colours::red : LFWidgetColor());
+    ed->repaint();
+}
+inline void TurnRed(const std::unique_ptr<TextEditor> &ed, bool turnRed = true){
+    TurnRed(ed.get(), turnRed);
 }
 
 inline File findFile(String relpath){
@@ -131,5 +162,3 @@ inline File findFile(String relpath){
         f = f.getParentDirectory();
     }
 }
-
-#undef FROMLOOKANDFEEL

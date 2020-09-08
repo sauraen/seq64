@@ -22,7 +22,7 @@
  * ============================================================================
  *
  * SeqEditor.cpp
- * GUI component to edit a Nintendo Music Macro Language (Audioseq)
+ * GUI component to edit a Nintendo 64 Music Macro Language (Audioseq)
  * format sequence file
  *
  * From seq64 - Sequenced music editor for first-party N64 games
@@ -42,6 +42,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ============================================================================
 */
+#include "SeqABIEditor.hpp"
 //[/Headers]
 
 #include "SeqEditor.hpp"
@@ -586,9 +587,9 @@ SeqEditor::SeqEditor ()
     lstABI.reset(new TextListBox(this));
     addAndMakeVisible(lstABI.get());
     lstABI->setBounds(16, 16, 232, 48);
-    
+
     txtDebug->setEnabled(false);
-    
+
     //[/UserPreSize]
 
     setSize (800, 800);
@@ -809,6 +810,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnEditABI.get())
     {
         //[UserButtonCode_btnEditABI] -- add your button handler code here..
+        abieditor.reset(new SeqABIEditor(lstABI->get(lstABI->getLastRowSelected())));
         //[/UserButtonCode_btnEditABI]
     }
     else if (buttonThatWasClicked == chkRel.get())
@@ -857,14 +859,14 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     {
         //[UserButtonCode_btnExportMIDI] -- add your button handler code here..
         if(!checkSeqPresence(true)) return;
-        
+
         ValueTree midiopts("midiopts");
         midiopts.setProperty("bendrange", txtBend->getText().getFloatValue(), nullptr);
         midiopts.setProperty("ppqnmultiplier", txtPPQN->getText().getFloatValue(), nullptr);
         midiopts.setProperty("exportformat",
             optInstOrig->getToggleState() ? "original" :
             optInstGM10->getToggleState() ? "gm_ch10" : "gm_multi", nullptr);
-        
+
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("midifolder");
         FileChooser box("Save MIDI", savelocation, "*.mid", true);
         if(!box.browseForFileToSave(true)) return;
@@ -1215,3 +1217,4 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
+

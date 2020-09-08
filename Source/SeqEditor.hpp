@@ -24,7 +24,7 @@
  * ============================================================================
  *
  * SeqEditor.hpp
- * GUI component to edit a Nintendo Music Macro Language (Audioseq)
+ * GUI component to edit a Nintendo 64 Music Macro Language (Audioseq)
  * format sequence file
  *
  * From seq64 - Sequenced music editor for first-party N64 games
@@ -47,6 +47,7 @@
 #include "Common.hpp"
 #include "SeqFile.hpp"
 #include "TextListBox.hpp"
+#include "SeqABIEditor.hpp"
 
 #include <thread>
 //[/Headers]
@@ -85,10 +86,10 @@ private:
     //[UserVariables]   -- You can add your own custom variables in this section.
     void rowSelected(TextListBox* parent, int row) override;
     void timerCallback() override;
-    
+
     ValueTree getABI();
     bool checkSeqPresence(bool shouldExist);
-    
+
     template<class Fn, class... Args> void startSeqOperation(String desc, Fn&& fn, Args... args);
     template<class Fn, class... Args> void doSeqOperation(Fn&& fn, Args... args);
 
@@ -97,6 +98,8 @@ private:
     int opres;
     String opdesc;
     std::atomic_flag opnotdone;
+
+    std::unique_ptr<SeqABIEditor> abieditor;
 
     std::unique_ptr<TextListBox> lstABI;
     //[/UserVariables]
@@ -166,3 +169,4 @@ private:
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
+

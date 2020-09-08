@@ -19,6 +19,9 @@
     <ClCompile Include="..\..\Source\SeqFile.cpp">
       <Filter>seq64\Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\SeqABIEditor.cpp">
+      <Filter>seq64\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\SeqEditor.cpp">
       <Filter>seq64\Source</Filter>
     </ClCompile>
@@ -49,6 +52,9 @@
       <Filter>seq64\Source</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\SeqFile.hpp">
+      <Filter>seq64\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\SeqABIEditor.hpp">
       <Filter>seq64\Source</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\SeqEditor.hpp">
