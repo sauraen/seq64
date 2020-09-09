@@ -235,6 +235,32 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     cbxAction->setJustificationType (juce::Justification::centredLeft);
     cbxAction->setTextWhenNothingSelected (juce::String());
     cbxAction->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
+    cbxAction->addItem (TRANS("No Action"), 1);
+    cbxAction->addItem (TRANS("End of Data"), 2);
+    cbxAction->addItem (TRANS("Timestamp"), 3);
+    cbxAction->addItem (TRANS("Jump Same Level"), 4);
+    cbxAction->addItem (TRANS("Call Same Level"), 5);
+    cbxAction->addItem (TRANS("Loop Start"), 6);
+    cbxAction->addItem (TRANS("Loop End"), 7);
+    cbxAction->addItem (TRANS("Ptr Channel Header"), 8);
+    cbxAction->addItem (TRANS("Ptr Track Data"), 9);
+    cbxAction->addItem (TRANS("Sequence Format"), 10);
+    cbxAction->addItem (TRANS("Sequence Type"), 11);
+    cbxAction->addItem (TRANS("Channel Enable"), 12);
+    cbxAction->addItem (TRANS("Channel Disable"), 13);
+    cbxAction->addItem (TRANS("Master Volume"), 14);
+    cbxAction->addItem (TRANS("Tempo"), 15);
+    cbxAction->addItem (TRANS("Chn Reset"), 16);
+    cbxAction->addItem (TRANS("Chn Priority"), 17);
+    cbxAction->addItem (TRANS("Chn Volume"), 18);
+    cbxAction->addItem (TRANS("Chn Pan"), 19);
+    cbxAction->addItem (TRANS("Chn Effects"), 20);
+    cbxAction->addItem (TRANS("Chn Vibrato"), 21);
+    cbxAction->addItem (TRANS("Chn Pitch Bend"), 22);
+    cbxAction->addItem (TRANS("Chn Instrument"), 23);
+    cbxAction->addItem (TRANS("Chn Transpose"), 24);
+    cbxAction->addItem (TRANS("Layer Transpose"), 25);
+    cbxAction->addItem (TRANS("Track Note"), 26);
     cbxAction->addListener (this);
 
     cbxAction->setBounds (232, 416, 240, 24);
@@ -466,6 +492,15 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lstParams->setBounds(8, 512, 88, 120);
     lstParams->setSelectAddedItems(false);
 
+    txtCmdNameCmm->addListener(this);
+    txtCmdNameCanon->addListener(this);
+    txtCmdNameOld->addListener(this);
+    txtCmd->addListener(this);
+    txtCmdEnd->addListener(this);
+    txtComments->addListener(this);
+    txtParamName->addListener(this);
+    txtDataLen->addListener(this);
+    
     //[/UserPreSize]
 
     setSize (480, 640);
@@ -784,11 +819,18 @@ void SeqABIEditor::comboBoxChanged (juce::ComboBox* comboBoxThatHasChanged)
     if (comboBoxThatHasChanged == cbxAction.get())
     {
         //[UserComboBoxCode_cbxAction] -- add your combo box handling code here..
+        if(!selcmd.isValid()) return;
+        String action = cbxAction->getText();
+        selcmd.setProperty("action", action, nullptr);
+        lstParams->selectRow(-1);
+        fillMeaningsBox(action);
         //[/UserComboBoxCode_cbxAction]
     }
     else if (comboBoxThatHasChanged == cbxMeaning.get())
     {
         //[UserComboBoxCode_cbxMeaning] -- add your combo box handling code here..
+        if(!selparam.isValid()) return;
+        selparam.setProperty("meaning", cbxMeaning->getText(), nullptr);
         //[/UserComboBoxCode_cbxMeaning]
     }
 
@@ -818,7 +860,61 @@ void SeqABIEditor::rowSelected(TextListBox* parent, int row){
     }
 }
 void SeqABIEditor::textEditorTextChanged(TextEditor& editorThatWasChanged){
-
+    TEXTCHANGEDHANDLER_PRE;
+    if(&editorThatWasChanged == txtCmdNameCmm.get()){
+        if(!selcmd.isValid()) return;
+        turnRed = text.isEmpty();
+        selcmd.setProperty("name", text.isEmpty() ? "Unknown" : text, nullptr);
+        lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
+    }else if(&editorThatWasChanged == txtCmdNameCanon.get()){
+        if(!selcmd.isValid()) return;
+        if(text.isEmpty()) selcmd.removeProperty("cname", nullptr);
+        else selcmd.setProperty("cname", text, nullptr);
+        lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
+    }else if(&editorThatWasChanged == txtCmdNameOld.get()){
+        if(!selcmd.isValid()) return;
+        if(text.isEmpty()) selcmd.removeProperty("oname", nullptr);
+        else selcmd.setProperty("oname", text, nullptr);
+        lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
+    }else if(&editorThatWasChanged == txtCmd.get()){
+        if(!selcmd.isValid()) return;
+        turnRed = !ishex || hexval < 0 || hexval > 0xFF;
+        if(!turnRed){
+            selcmd.setProperty("cmd", hexval, nullptr);
+            if((int)selcmd.getProperty("cmdend", -1) < hexval){
+                selcmd.removeProperty("cmdend", nullptr);
+                txtCmdEnd->setText("");
+            }
+            lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
+        }
+    }else if(&editorThatWasChanged == txtCmdEnd.get()){
+        if(!selcmd.isValid()) return;
+        if(text == ""){
+            selcmd.removeProperty("cmdend", nullptr);
+        }else{
+            turnRed = !ishex || hexval < 0 || hexval > 0xFF || (int)selcmd.getProperty("cmd", 0) >= hexval;
+            if(!turnRed) selcmd.setProperty("cmdend", hexval, nullptr);
+        }
+        lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
+    }else if(&editorThatWasChanged == txtComments.get()){
+        if(!selcmd.isValid()) return;
+        if(text.isEmpty()) selcmd.removeProperty("comments", nullptr);
+        else selcmd.setProperty("comments", text, nullptr);
+    }else if(&editorThatWasChanged == txtParamName.get()){
+        if(!selparam.isValid()) return;
+        turnRed = text.isEmpty();
+        selparam.setProperty("name", text.isEmpty() ? "Unnamed" : text, nullptr);
+        lstParams->set(lstParams->getLastRowSelected(), text);
+    }else if(&editorThatWasChanged == txtDataLen.get()){
+        if(!selparam.isValid()) return;
+        if(selparam.getProperty("datasrc", "fixed").toString() == "offset"){
+            intval = 0;
+        }else{
+            turnRed = !isint || intval > 2 || intval <= 0;
+        }
+        selparam.setProperty("datalen", intval, nullptr);
+    }
+    TEXTCHANGEDHANDLER_POST;
 }
 
 String SeqABIEditor::getCmdDescription(ValueTree cmd){
@@ -846,6 +942,7 @@ void SeqABIEditor::fillCmdInfo(){
         txtCmd->setText("");
         txtCmdEnd->setText("");
         cbxAction->setText("");
+        fillMeaningsBox("No Action");
         txtComments->setText("(No command selected)");
         lstParams->clear();
         return;
@@ -858,12 +955,16 @@ void SeqABIEditor::fillCmdInfo(){
     chkValidInTrk->setToggleState((int)selcmd.getProperty("validintrk", 0) == 1, dontSendNotification);
     txtCmd->setText(hex((uint8_t)(int)selcmd.getProperty("cmd")));
     txtCmdEnd->setText(selcmd.hasProperty("cmdend") ? hex((uint8_t)(int)selcmd.getProperty("cmdend")) : "");
-    cbxAction->setText(selcmd.getProperty("action", "No Action"));
+    String action = selcmd.getProperty("action", "No Action");
+    cbxAction->setText(action);
+    fillMeaningsBox(action);
     txtComments->setText(selcmd.getProperty("comments", ""));
     lstParams->clear();
     for(int i=0; i<selcmd.getNumChildren(); ++i){
         lstParams->add(selcmd.getChild(i).getProperty("name", "Unnamed"));
     }
+    selparam = ValueTree();
+    fillParamInfo();
 }
 void SeqABIEditor::fillParamInfo(){
     if(!selparam.isValid()){
@@ -885,6 +986,79 @@ void SeqABIEditor::fillParamInfo(){
     lblDataLen->setText(datasrc == "offset" ? "(none)" : datasrc == "fixed" ? "length" : "up to", dontSendNotification);
     txtDataLen->setText(datasrc == "offset" ? "" : selparam.getProperty("datalen", "").toString());
 }
+
+void SeqABIEditor::fillMeaningsBox(String action){
+    cbxMeaning->clear(dontSendNotification);
+    cbxMeaning->addItem("None", cbxMeaning->getNumItems()+1);
+    cbxMeaning->addItem("Delay", cbxMeaning->getNumItems()+1);
+    if(action == "No Action"){
+        //None
+    }else if(action == "End of Data"){
+        //None
+    }else if(action == "Timestamp"){
+        //None--use Delay
+    }else if(action == "Jump Same Level"){
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
+    }else if(action == "Call Same Level"){
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
+    }else if(action == "Loop Start"){
+        cbxMeaning->addItem("Loop Count", cbxMeaning->getNumItems()+1);
+    }else if(action == "Loop End"){
+        //None
+    }else if(action == "Ptr Channel Header"){
+        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
+    }else if(action == "Ptr Track Data"){
+        cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
+    }else if(action == "Sequence Format"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Sequence Type"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Channel Enable"){
+        cbxMeaning->addItem("Bitfield", cbxMeaning->getNumItems()+1);
+    }else if(action == "Channel Disable"){
+        cbxMeaning->addItem("Bitfield", cbxMeaning->getNumItems()+1);
+    }else if(action == "Master Volume"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Tempo"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Reset"){
+        //None
+    }else if(action == "Chn Priority"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Volume"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Pan"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Effects"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Vibrato"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Pitch Bend"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Transpose"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Layer Transpose"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Chn Instrument"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Track Note"){
+        cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Note", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Velocity", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Gate Time", cbxMeaning->getNumItems()+1);
+    }else{
+        cbxMeaning->clear(dontSendNotification);
+        cbxMeaning->addItem("ERROR fillMeaningsBox", cbxMeaning->getNumItems()+1);
+    }
+    cbxMeaning->setText("");
+}
+
 
 void SeqABIEditor::save(){
     if(!abi.isValid()) return;
@@ -989,7 +1163,8 @@ BEGIN_JUCER_METADATA
               caret="1" popupmenu="1"/>
   <COMBOBOX name="cbxAction" id="e2a97de7a0a41ac7" memberName="cbxAction"
             virtualName="" explicitFocusOrder="0" pos="232 416 240 24" editable="0"
-            layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
+            layout="33" items="No Action&#10;End of Data&#10;Timestamp&#10;Jump Same Level&#10;Call Same Level&#10;Loop Start&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Track Data&#10;Sequence Format&#10;Sequence Type&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Chn Reset&#10;Chn Priority&#10;Chn Volume&#10;Chn Pan&#10;Chn Effects&#10;Chn Vibrato&#10;Chn Pitch Bend&#10;Chn Instrument&#10;Chn Transpose&#10;Layer Transpose&#10;Track Note"
+            textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="chkValidInSeq" id="e629b15d1c633dc3" memberName="chkValidInSeq"
                 virtualName="" explicitFocusOrder="0" pos="272 328 200 24" buttonText="Seq Header / Group Track"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>

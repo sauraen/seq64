@@ -90,6 +90,7 @@ private:
     String getCmdDescription(ValueTree cmd);
     void fillCmdInfo();
     void fillParamInfo();
+    void fillMeaningsBox(String action);
 
     String abiname;
     ValueTree abi, selcmd, selparam;
