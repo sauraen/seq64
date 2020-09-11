@@ -94,6 +94,7 @@ private:
 
     String abiname;
     ValueTree abi, selcmd, selparam;
+    bool needssaving;
 
     std::unique_ptr<TextListBox> lstCmds;
     std::unique_ptr<TextListBox> lstParams;

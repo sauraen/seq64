@@ -34,6 +34,7 @@ public:
     
     static StringArray getAvailABIs();
     static ValueTree loadABI(String name);
+    static bool saveABI(String name, ValueTree abi_);
     
     //Results are 0 okay, 1 warnings, 2+ errors.
     int importMIDI(File midifile, ValueTree midiopts);

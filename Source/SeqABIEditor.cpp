@@ -500,7 +500,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     txtComments->addListener(this);
     txtParamName->addListener(this);
     txtDataLen->addListener(this);
-    
+
     //[/UserPreSize]
 
     setSize (480, 640);
@@ -537,6 +537,8 @@ SeqABIEditor::SeqABIEditor (String abi_name)
             Point<int>(tlw->getWidth()/2, tlw->getHeight()/2));
     }
 
+    needssaving = false;
+    
     //[/Constructor]
 }
 
@@ -647,6 +649,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         abi.addChild(selcmd, r, nullptr);
         lstCmds->insert(r, getCmdDescription(selcmd));
         lstCmds->selectRow(r >= 0 ? r : abi.getNumChildren()-1);
+        needssaving = true;
         //[/UserButtonCode_btnCmdAdd]
     }
     else if (buttonThatWasClicked == btnDelete.get())
@@ -657,6 +660,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         selcmd = ValueTree();
         lstCmds->remove(lstCmds->getLastRowSelected());
         fillCmdInfo();
+        needssaving = true;
         //[/UserButtonCode_btnDelete]
     }
     else if (buttonThatWasClicked == btnCmdUp.get())
@@ -669,6 +673,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         lstCmds->remove(pos);
         lstCmds->insert(pos-1, temp);
         lstCmds->selectRow(pos-1);
+        needssaving = true;
         //[/UserButtonCode_btnCmdUp]
     }
     else if (buttonThatWasClicked == btnCmdDown.get())
@@ -681,6 +686,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         lstCmds->remove(pos);
         lstCmds->insert(pos+1, temp);
         lstCmds->selectRow(pos+1);
+        needssaving = true;
         //[/UserButtonCode_btnCmdDown]
     }
     else if (buttonThatWasClicked == chkValidInSeq.get())
@@ -693,6 +699,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
             selcmd.removeProperty("validinseq", nullptr);
         }
         lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
+        needssaving = true;
         //[/UserButtonCode_chkValidInSeq]
     }
     else if (buttonThatWasClicked == chkValidInChn.get())
@@ -705,6 +712,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
             selcmd.removeProperty("validinchn", nullptr);
         }
         lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
+        needssaving = true;
         //[/UserButtonCode_chkValidInChn]
     }
     else if (buttonThatWasClicked == chkValidInTrk.get())
@@ -717,6 +725,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
             selcmd.removeProperty("validintrk", nullptr);
         }
         lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
+        needssaving = true;
         //[/UserButtonCode_chkValidInTrk]
     }
     else if (buttonThatWasClicked == optDataSrcOffset.get())
@@ -726,7 +735,8 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         selparam.setProperty("datasrc", "offset", nullptr);
         selparam.setProperty("datalen", 0, nullptr);
         lblDataLen->setText("(none)", dontSendNotification);
-        txtDataLen->setText("");
+        txtDataLen->setText("", false);
+        needssaving = true;
         //[/UserButtonCode_optDataSrcOffset]
     }
     else if (buttonThatWasClicked == optDataSrcFixed.get())
@@ -736,7 +746,8 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         selparam.setProperty("datasrc", "fixed", nullptr);
         if((int)selparam.getProperty("datalen", 0) < 1) selparam.setProperty("datalen", 1, nullptr);
         lblDataLen->setText("length", dontSendNotification);
-        txtDataLen->setText(selparam.getProperty("datalen", 0));
+        txtDataLen->setText(selparam.getProperty("datalen", 0), false);
+        needssaving = true;
         //[/UserButtonCode_optDataSrcFixed]
     }
     else if (buttonThatWasClicked == optDataSrcVariable.get())
@@ -746,7 +757,8 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         selparam.setProperty("datasrc", "variable", nullptr);
         if((int)selparam.getProperty("datalen", 0) < 1) selparam.setProperty("datalen", 2, nullptr);
         lblDataLen->setText("up to", dontSendNotification);
-        txtDataLen->setText(selparam.getProperty("datalen", 0));
+        txtDataLen->setText(selparam.getProperty("datalen", 0), false);
+        needssaving = true;
         //[/UserButtonCode_optDataSrcVariable]
     }
     else if (buttonThatWasClicked == btnParamAdd.get())
@@ -762,6 +774,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         selcmd.addChild(selparam, r, nullptr);
         lstParams->insert(r, "Unnamed");
         lstParams->selectRow(r >= 0 ? r : selcmd.getNumChildren()-1);
+        needssaving = true;
         //[/UserButtonCode_btnParamAdd]
     }
     else if (buttonThatWasClicked == btnParamDelete.get())
@@ -772,6 +785,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         selparam = ValueTree();
         lstParams->remove(lstParams->getLastRowSelected());
         fillParamInfo();
+        needssaving = true;
         //[/UserButtonCode_btnParamDelete]
     }
     else if (buttonThatWasClicked == btnParamUp.get())
@@ -785,6 +799,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         lstParams->remove(pos);
         lstParams->insert(pos-1, temp);
         lstParams->selectRow(pos-1);
+        needssaving = true;
         //[/UserButtonCode_btnParamUp]
     }
     else if (buttonThatWasClicked == btnParamDown.get())
@@ -798,6 +813,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         lstParams->remove(pos);
         lstParams->insert(pos+1, temp);
         lstParams->selectRow(pos+1);
+        needssaving = true;
         //[/UserButtonCode_btnParamDown]
     }
     else if (buttonThatWasClicked == btnSave.get())
@@ -821,7 +837,10 @@ void SeqABIEditor::comboBoxChanged (juce::ComboBox* comboBoxThatHasChanged)
         //[UserComboBoxCode_cbxAction] -- add your combo box handling code here..
         if(!selcmd.isValid()) return;
         String action = cbxAction->getText();
-        selcmd.setProperty("action", action, nullptr);
+        if(selcmd.getProperty("action", "No Action").toString() != action){
+            selcmd.setProperty("action", action, nullptr);
+            needssaving = true;
+        }
         lstParams->selectRow(-1);
         fillMeaningsBox(action);
         //[/UserComboBoxCode_cbxAction]
@@ -830,7 +849,11 @@ void SeqABIEditor::comboBoxChanged (juce::ComboBox* comboBoxThatHasChanged)
     {
         //[UserComboBoxCode_cbxMeaning] -- add your combo box handling code here..
         if(!selparam.isValid()) return;
-        selparam.setProperty("meaning", cbxMeaning->getText(), nullptr);
+        String meaning = cbxMeaning->getText();
+        if(selparam.getProperty("meaning", "None").toString() != meaning){
+            selparam.setProperty("meaning", meaning, nullptr);
+            needssaving = true;
+        }
         //[/UserComboBoxCode_cbxMeaning]
     }
 
@@ -883,7 +906,7 @@ void SeqABIEditor::textEditorTextChanged(TextEditor& editorThatWasChanged){
             selcmd.setProperty("cmd", hexval, nullptr);
             if((int)selcmd.getProperty("cmdend", -1) < hexval){
                 selcmd.removeProperty("cmdend", nullptr);
-                txtCmdEnd->setText("");
+                txtCmdEnd->setText("", false);
             }
             lstCmds->set(lstCmds->getLastRowSelected(), getCmdDescription(selcmd));
         }
@@ -914,6 +937,7 @@ void SeqABIEditor::textEditorTextChanged(TextEditor& editorThatWasChanged){
         }
         selparam.setProperty("datalen", intval, nullptr);
     }
+    needssaving = true;
     TEXTCHANGEDHANDLER_POST;
 }
 
@@ -933,32 +957,32 @@ String SeqABIEditor::getCmdDescription(ValueTree cmd){
 
 void SeqABIEditor::fillCmdInfo(){
     if(!selcmd.isValid()){
-        txtCmdNameCmm->setText("");
-        txtCmdNameCanon->setText("");
-        txtCmdNameOld->setText("");
+        txtCmdNameCmm->setText("", false);
+        txtCmdNameCanon->setText("", false);
+        txtCmdNameOld->setText("", false);
         chkValidInSeq->setToggleState(false, dontSendNotification);
         chkValidInChn->setToggleState(false, dontSendNotification);
         chkValidInTrk->setToggleState(false, dontSendNotification);
-        txtCmd->setText("");
-        txtCmdEnd->setText("");
+        txtCmd->setText("", false);
+        txtCmdEnd->setText("", false);
         cbxAction->setText("");
         fillMeaningsBox("No Action");
-        txtComments->setText("(No command selected)");
+        txtComments->setText("(No command selected)", false);
         lstParams->clear();
         return;
     }
-    txtCmdNameCmm->setText(selcmd.getProperty("name", ""));
-    txtCmdNameCanon->setText(selcmd.getProperty("cname", ""));
-    txtCmdNameOld->setText(selcmd.getProperty("oname", ""));
+    txtCmdNameCmm->setText(selcmd.getProperty("name", ""), false);
+    txtCmdNameCanon->setText(selcmd.getProperty("cname", ""), false);
+    txtCmdNameOld->setText(selcmd.getProperty("oname", ""), false);
     chkValidInSeq->setToggleState((int)selcmd.getProperty("validinseq", 0) == 1, dontSendNotification);
     chkValidInChn->setToggleState((int)selcmd.getProperty("validinchn", 0) == 1, dontSendNotification);
     chkValidInTrk->setToggleState((int)selcmd.getProperty("validintrk", 0) == 1, dontSendNotification);
-    txtCmd->setText(hex((uint8_t)(int)selcmd.getProperty("cmd")));
-    txtCmdEnd->setText(selcmd.hasProperty("cmdend") ? hex((uint8_t)(int)selcmd.getProperty("cmdend")) : "");
+    txtCmd->setText(hex((uint8_t)(int)selcmd.getProperty("cmd")), false);
+    txtCmdEnd->setText(selcmd.hasProperty("cmdend") ? hex((uint8_t)(int)selcmd.getProperty("cmdend")) : "", false);
     String action = selcmd.getProperty("action", "No Action");
     cbxAction->setText(action);
     fillMeaningsBox(action);
-    txtComments->setText(selcmd.getProperty("comments", ""));
+    txtComments->setText(selcmd.getProperty("comments", ""), false);
     lstParams->clear();
     for(int i=0; i<selcmd.getNumChildren(); ++i){
         lstParams->add(selcmd.getChild(i).getProperty("name", "Unnamed"));
@@ -968,23 +992,23 @@ void SeqABIEditor::fillCmdInfo(){
 }
 void SeqABIEditor::fillParamInfo(){
     if(!selparam.isValid()){
-        txtParamName->setText("");
+        txtParamName->setText("", false);
         cbxMeaning->setText("");
         optDataSrcOffset->setToggleState(false, dontSendNotification);
         optDataSrcFixed->setToggleState(false, dontSendNotification);
         optDataSrcVariable->setToggleState(false, dontSendNotification);
         lblDataLen->setText("(none)", dontSendNotification);
-        txtDataLen->setText("");
+        txtDataLen->setText("", false);
         return;
     }
-    txtParamName->setText(selparam.getProperty("name", ""));
+    txtParamName->setText(selparam.getProperty("name", ""), false);
     cbxMeaning->setText(selparam.getProperty("meaning", ""));
     String datasrc = selparam.getProperty("datasrc");
     optDataSrcOffset  ->setToggleState(datasrc == "offset",   dontSendNotification);
     optDataSrcFixed   ->setToggleState(datasrc == "fixed",    dontSendNotification);
     optDataSrcVariable->setToggleState(datasrc == "variable", dontSendNotification);
     lblDataLen->setText(datasrc == "offset" ? "(none)" : datasrc == "fixed" ? "length" : "up to", dontSendNotification);
-    txtDataLen->setText(datasrc == "offset" ? "" : selparam.getProperty("datalen", "").toString());
+    txtDataLen->setText(datasrc == "offset" ? "" : selparam.getProperty("datalen", "").toString(), false);
 }
 
 void SeqABIEditor::fillMeaningsBox(String action){
@@ -1062,10 +1086,16 @@ void SeqABIEditor::fillMeaningsBox(String action){
 
 void SeqABIEditor::save(){
     if(!abi.isValid()) return;
-    std::cout << "TODO saving\n";
+    if(!SeqFile::saveABI(abiname, abi)){
+        NativeMessageBox::showMessageBoxAsync(AlertWindow::WarningIcon, "seq64",
+            "Saving ABI to " + abiname + " failed!");
+        return;
+    }
+    std::cout << "ABI saved to " << abiname << "\n";
+    needssaving = false;
 }
 void SeqABIEditor::userTriedToCloseWindow(){
-    if(abi.isValid()){
+    if(abi.isValid() && needssaving){
         int res = NativeMessageBox::showYesNoCancelBox(AlertWindow::WarningIcon, "seq64",
                 "Save ABI before closing window?");
         if(res == 0) return;

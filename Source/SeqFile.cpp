@@ -130,17 +130,39 @@ StringArray SeqFile::getAvailABIs(){
     return ret;
 }
 ValueTree SeqFile::loadABI(String name){
-    File abi = findFile("abi/" + name + ".xml");
-    if(!abi.existsAsFile()){
-        std::cout << "Could not find file " + abi.getFullPathName() + "!";
+    File abifile = findFile("abi/" + name + ".xml");
+    if(!abifile.existsAsFile()){
+        std::cout << "Could not find file " + abifile.getFullPathName() + "!";
         return ValueTree();
     }
-    std::unique_ptr<XmlElement> xml = parseXML(abi);
-    if(xml == nullptr){
-        std::cout << "Error parsing XML of " + abi.getFullPathName() + "!";
+    std::unique_ptr<XmlElement> xml = parseXML(abifile);
+    if(!xml){
+        std::cout << "Error parsing XML of " + abifile.getFullPathName() + "!";
         return ValueTree();
     }
     return ValueTree::fromXml(*xml);
+}
+bool SeqFile::saveABI(String name, ValueTree abi_){
+    File abifile = findFile("abi/" + name + ".xml");
+    if(!abifile.existsAsFile()){
+        std::cout << "Could not find file " + abifile.getFullPathName() + "!";
+        return false;
+    }
+    std::unique_ptr<XmlElement> xml = abi_.createXml();
+    if(!xml){
+        std::cout << "Error creating XML for currently loaded ABI!";
+        return false;
+    }
+    FileOutputStream fos(abifile);
+    if(fos.failedToOpen()){
+        std::cout << "Couldn't open file " + abifile.getFullPathName() + " for writing!";
+        return false;
+    }
+    fos.setPosition(0);
+    fos.truncate();
+    xml->writeTo(fos);
+    fos.flush();
+    return true;
 }
 
 void SeqFile::dbgmsg(String s, bool newline){
@@ -806,6 +828,24 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 sec = i;
                 //Clear layer state since we're in a new section
                 for(layer=0; layer<max_layers; layer++){
+                    if(ls[layer]->isInUse()){
+                        //TODO test this, see if it actually works correctly
+                        dbgmsg("Section boundary (e.g. loop point) in the middle of a note, note "
+                            + String(ls[layer]->curNote()) + " channel " + String(channel) + "! Cutting off the note!");
+                        int j;
+                        for(j=m+1; j<trk->getNumEvents(); ++j){
+                            MidiMessage msg2 = trk->getEventPointer(j)->message;
+                            if(msg2.isNoteOff() && ls[layer]->curNote() == msg2.getNoteNumber()){
+                                layertracks[(max_layers*channel)+layer]->addEvent(msg2);
+                                trk->deleteEvent(j, false);
+                                j = -2;
+                                break;
+                            }
+                        }
+                        if(j >= 0){
+                            dbgmsg("Trying to fix section boundary in middle of note failed, broken sequence!");
+                        }
+                    }
                     ls[layer]->clear();
                 }
             }
@@ -1926,14 +1966,13 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
         dbgmsg("No write access to " + midifile.getFullPathName() + "!");
         return 2;
     }
-    if(midifile.exists()){
-        midifile.deleteFile();
-    }
     FileOutputStream fos(midifile);
     if(fos.failedToOpen()){
         dbgmsg("Couldn't open file " + midifile.getFullPathName() + " for writing!");
         return 2;
     }
+    fos.setPosition(0);
+    fos.truncate();
 	//Program options
 	ValueTree progoptions("progoptions");
 	const int progoptionscc = 117, progoptionsnullcc = 116;
@@ -3063,14 +3102,13 @@ int SeqFile::exportCom(File comfile){
         dbgmsg("No write access to " + comfile.getFullPathName() + "!");
         return 2;
     }
-    if(comfile.exists()){
-        comfile.deleteFile();
-    }
     FileOutputStream fos(comfile);
     if(fos.failedToOpen()){
         dbgmsg("Couldn't open file " + comfile.getFullPathName() + " for writing!");
         return 2;
     }
+    fos.setPosition(0);
+    fos.truncate();
     dbgmsg("Rendering sequence structure to binary data...");
     importresult = 0;
     Array<uint8_t> data;
