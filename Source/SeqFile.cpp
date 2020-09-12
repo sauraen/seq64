@@ -220,26 +220,23 @@ MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
 }
 
 //Probably OK
-int SeqFile::getCommandRange(ValueTree command, String meaning){
-    if(!command.isValid()) return 0;
+void SeqFile::getCommandRange(ValueTree command, String meaning, int &range_min, int &range_max){
+    range_min = range_max = 0;
+    if(!command.isValid()) return;
     ValueTree param = command.getChildWithProperty(idMeaning, meaning);
-    if(!param.isValid()) return 0;
+    if(!param.isValid()) return;
     String datasrc = param.getProperty(idDataSrc, "fixed");
     int datalen = param.getProperty(idDataLen, 0);
     if(datasrc == "fixed"){
-        return 1 << (datalen << 3); //2^number of bytes
+        range_max = 1 << (datalen << 3); //2^number of bytes
     }else if(datasrc == "variable"){
-        if(datalen == 1){
-            return 0x80;
-        }else if(datalen == 2){
-            return 0x8000;
-        }else{
-            return 0;
-        }
+        range_max = (datalen == 2) ? 0x8000 : 0x80;
     }else if(datasrc == "offset"){
-        return (int)command.getProperty(idCmdEnd) - (int)command.getProperty(idCmd) + 1;
+        range_max = (int)command.getProperty(idCmdEnd) - (int)command.getProperty(idCmd) + 1;
+    }else if(datasrc == "constant"){
+        range_min = datalen;
+        range_max = datalen+1;
     }
-    return 0;
 }
 
 //Probably OK
@@ -254,8 +251,10 @@ int SeqFile::getLargestCommandRange(int stype, String action, String meaning){
         if(test.getProperty(idAction).toString() != action) continue;
         param = test.getChildWithProperty(idMeaning, meaning);
         if(!param.isValid()) continue;
-        range = getCommandRange(test, meaning);
-        if(range > maxrange) maxrange = range;
+        int rmin, rmax;
+        getCommandRange(test, meaning, rmin, rmax);
+        rmax -= rmin;
+        if(rmax > maxrange) maxrange = rmax;
     }
     return maxrange;
 }
@@ -299,7 +298,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     ValueTree test, param, param2;
     ValueTree possibleCmdsList("possiblecmdslist");
     bool flag;
-    int i, j, range, value;
+    int i, j, value;
     for(i=0; i<abi.getNumChildren(); i++){
         test = abi.getChild(i);
         if(!isCommandValidIn(test, stype)) continue;
@@ -315,8 +314,9 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
             }
             //Check range
             value = want.getChild(j).getProperty(idValue);
-            range = getCommandRange(test, meaning);
-            if(value >= range){
+            int rmin, rmax;
+            getCommandRange(test, meaning, rmin, rmax);
+            if(value < rmin || value >= rmax){
                 //dbgmsg("--Looking for " + action + " command, meaning " + meaning 
                 //        + ", throwing out due to range " + String(range) + " vs. value " + String(value));
                 flag = false;
@@ -358,7 +358,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
             }else{
                 value = 0;
             }
-            if(datasrc == "offset"){
+            if(datasrc == "offset" || datasrc == "constant"){
                 //do nothing
             }else if(datasrc == "fixed"){
                 cmdlen += datalen;
@@ -395,10 +395,10 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
 
 //Probably OK
 void SeqFile::advanceToTimestamp(ValueTree section, int stype, int &cmd, int &t, int newt){
-    int maxdelay = getLargestCommandRange(stype, "Timestamp", "Delay") - 1;
+    int maxdelay = getLargestCommandRange(stype, "Delay", "Delay") - 1;
     while(t < newt){
         int dt = std::min(newt - t, maxdelay);
-    	ValueTree want = wantAction("Timestamp", stype);
+    	ValueTree want = wantAction("Delay", stype);
     	wantProperty(want, "Delay", dt);
     	section.addChild(createCommand(want), cmd, nullptr);
         ++cmd;
@@ -427,7 +427,7 @@ int SeqFile::getNewCommandLength(ValueTree command){
         datasrc = param.getProperty(idDataSrc, "fixed");
         datalen = param.getProperty(idDataLen, 1);
         value = param.getProperty(idValue, 0);
-        if(datasrc == "offset"){
+        if(datasrc == "offset" || datasrc == "constant"){
             //do nothing
         }else if(datasrc == "fixed"){
             cmdlen += datalen;
@@ -448,7 +448,7 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCC
     String action = command1.getProperty(idAction, "No Action1");
     if(action != command2.getProperty(idAction, "No Action2").toString()) return false;
     ValueTree param1, param2;
-    if(action == "Timestamp"){
+    if(action == "Delay"){
         param1 = command1.getChildWithProperty(idMeaning, "Delay");
         param2 = command2.getChildWithProperty(idMeaning, "Delay");
         if(!param1.isValid() || !param2.isValid()) return false;
@@ -553,13 +553,13 @@ int SeqFile::getTotalSectionTime(ValueTree section){
             }
         }else if(action == "Loop End"){
             loopmult = 1;
-        }else if(action == "Timestamp"){
+        }else if(action == "Delay"){
             ValueTree param = command.getChildWithProperty(idMeaning, "Delay");
             if(param.isValid()){
                 t = param.getProperty(idValue, 0);
             }
             if(t == 0){
-                dbgmsg("Timestamp without delay!");
+                dbgmsg("Delay command without delay parameter!");
                 importresult |= 2;
             }
         }
@@ -1447,7 +1447,7 @@ void SeqFile::optimize(ValueTree midiopts){
         section1 = structure.getChild(sec1);
         if((int)section1.getProperty(idSType, -1) != 1) continue;
         if(section1.getNumChildren() != 2) continue;
-        if(section1.getChild(0).getProperty(idAction, "No Action").toString() != "Timestamp") continue;
+        if(section1.getChild(0).getProperty(idAction, "No Action").toString() != "Delay") continue;
         if(section1.getChild(1).getProperty(idAction, "No Action").toString() != "End of Data") continue;
         //Found it, delete this section
         deleteSection(sec1);
@@ -1524,7 +1524,7 @@ void SeqFile::optimize(ValueTree midiopts){
                         for(cmd3=cmd1; cmd3<cmd2; ++cmd3){
                             command3 = section1.getChild(cmd3);
                             action3 = command3.getProperty(idAction, "No Action");
-                            if(action3 == "Timestamp"){
+                            if(action3 == "Delay"){
                                 //do nothing
                             }else if(action3 == "Chn Volume" || action3 == "Chn Pan" 
                                     || action3 == "Chn Effects" || action3 == "Chn Pitch Bend"){
@@ -2075,7 +2075,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             //do nothing
         }else if(action == "Channel Disable"){
             //do nothing
-        }else if(action == "Timestamp"){
+        }else if(action == "Delay"){
             //Time difference taken care of by delay (after this if action)
             if(stype == 0){
                 willBeNewTSec = true; //Next Ptr Chan Hdr will be a new section
@@ -2683,6 +2683,10 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
             paramvalue = cmdoffset;
             param.setProperty(idDataAddr, 0, nullptr);
             param.setProperty(idDataActualLen, 1, nullptr);
+        }else if(datasrc == "constant"){
+            paramvalue = datalen;
+            param.setProperty(idDataAddr, -100000, nullptr);
+            param.setProperty(idDataActualLen, 0, nullptr);
         }else if(datasrc == "fixed"){
             for(i=0; i<datalen; i++){
                 len++;
@@ -3055,6 +3059,11 @@ void SeqFile::writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree com
         value = param.getProperty(idValue, 0);
         if(datasrc == "offset"){
             //do nothing
+        }else if(datasrc == "constant"){
+            if(datalen != value){
+                dbgmsg("Internal error with constant command value in cmd " 
+                    + command.getProperty(idName, "Error").toString() + "!");
+            }
         }else if(datasrc == "fixed"){
             for(i=datalen-1; i>=0; i--){
                 d = (value & 0x000000FF);

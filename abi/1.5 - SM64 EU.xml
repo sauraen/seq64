@@ -56,141 +56,67 @@
   <command cmd="202" name="tpan" action="No Action" validintrk="1" comments="Set the pan for this track (0&#8230;128).">
     <parameter name="Pan" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
+  <command cmd="203" name="loadenv" action="No Action" validintrk="1" comments="Load envelope data from the sequence.">
+    <parameter name="Address" meaning="None" datasrc="fixed" datalen="2"/>
+    <parameter name="Release Rate" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="204" name="ignoredrumpan" action="No Action" comments="Sets the ignoreDrumPan track variable. (Not sure how to clear this.)"
+           validintrk="1"/>
   <command cmd="208" name="shortnotevelocityfromtable" action="No Action"
            comments="Set the velocity for future short notes to table[N], where table defaults to {12, 25, 38, 51, 57, 64, 71, 76, 83, 89, 96, 102, 109, 115, 121, 127} and can be set by shortnotevelocitytable."
            cmdend="223" validintrk="1"/>
   <command cmd="224" name="shortnotedurationfromtable" action="No Action"
            cmdend="239" validintrk="1" comments="Set the duration for future short notes to table[N], where table defaults to {229, 203, 177, 151, 139, 126, 113, 100, 87, 74, 61, 48, 36, 23, 10, 0} and can be set by shortnotedurationtable."/>
-  <command cmd="0" name="testlayerfinished" action="No Action" cmdend="15"
-           comments="Set Q to 1 or 0, depending on whether layer N has been disabled (either forcibly or by finishing its script)."
-           validinchn="1"/>
-  <command cmd="16" name="startchan" action="Ptr Channel Header" cmdend="31"
-           validinchn="1" comments="Start channel N for the parent sequence, with channel script starting at address X.">
-    <parameter name="Channel" meaning="None" datasrc="offset" datalen="0"/>
-    <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
-  </command>
-  <command cmd="32" name="stopchan" action="No Action" cmdend="47" validinchn="1"
-           comments="Disable channel N for the parent sequence.">
-    <parameter name="Channel" meaning="None" datasrc="offset" datalen="0"/>
-  </command>
-  <command cmd="48" name="stcio" action="No Action" cmdend="63" comments="IOn[X] = Q, where IOn is the IO array for channel N."
+  <command cmd="120" name="Relative Trk Ptr" action="Ptr Track Data" cmdend="123"
            validinchn="1">
-    <parameter name="N (channel)" meaning="None" datasrc="offset" datalen="0"/>
-    <parameter name="X (IO address)" meaning="None" datasrc="fixed" datalen="1"/>
+    <parameter datasrc="offset" datalen="0" name="Layer" meaning="Note Layer"/>
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Relative Address"/>
   </command>
-  <command cmd="64" name="ldcio" action="No Action" cmdend="79" validinchn="1"
-           comments="Q = IOn[X], where IOn is the IO array for channel N.">
-    <parameter name="N (channel)" meaning="None" datasrc="offset" datalen="0"/>
-    <parameter name="X (IO address)" meaning="None" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="96" name="notepriority" action="No Action" cmdend="111"
-           validinchn="1" comments="Set note priority for later notes played on this channel to N. When the game wants to play a note and there aren&#8217;t any free notes available, a note with smaller or equal priority is discarded. Should be &gt;= 2; 0 and 1 have internal meaning. Defaults to 3.">
-    <parameter datasrc="offset" datalen="0" name="Priority" meaning="None"/>
-  </command>
-  <command cmd="144" name="starttrack" action="Ptr Track Data" cmdend="159"
-           validinchn="1" comments="Start note track N, with script starting at address X.">
+  <command cmd="144" name="Absolute Trk Ptr" action="Ptr Track Data" cmdend="147"
+           validinchn="1">
     <parameter datasrc="offset" datalen="0" name="Note Layer" meaning="Note Layer"/>
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
   </command>
-  <command cmd="160" name="stoptrack" action="No Action" cmdend="175" validinchn="1"
-           comments="Stop note track N.">
-    <parameter name="Note Layer" meaning="None" datasrc="offset" datalen="0"/>
+  <command cmd="96" name="Unknown (Volume 2nd byte?)" action="No Action"
+           cmdend="111" validinchn="1">
+    <parameter datasrc="offset" datalen="0" name="Value" meaning="None"/>
   </command>
-  <command cmd="176" name="dynstarttrack" action="No Action" cmdend="191"
-           validinchn="1" comments="If Q != -1, start layer N, with layer script given by dyntable[Q].">
-    <parameter name="Note Layer" meaning="None" datasrc="offset" datalen="0"/>
-  </command>
-  <command cmd="193" name="instr" action="Chn Instrument" validinchn="1"
-           comments="Set instrument (program?) within bank. 0x80-0x83 set raw waves (sawtooth, triangle, sine, square), 0x7f is special, otherwise 0-indexed.">
+  <command cmd="193" name="Instrument" action="Chn Instrument" validinchn="1">
     <parameter datasrc="fixed" datalen="1" name="Instrument" meaning="Value"/>
   </command>
-  <command cmd="194" name="dyntable" action="No Action" validinchn="1" comments="Set dyntable to point to a given u16 array from the sequence data.">
-    <parameter name="Address" meaning="None" datasrc="fixed" datalen="2"/>
+  <command cmd="194" name="Transposition" action="Chn Transpose" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Value" meaning="Value"/>
   </command>
-  <command cmd="195" name="largenotesoff" action="No Action" comments="Set notes for this channel to use &#8220;short notes&#8221; format."
-           validinchn="1"/>
-  <command cmd="196" name="largenoteson" action="Chn Reset" validinchn="1"
-           comments="Set notes for this channel to use &#8220;large notes&#8221; format. SM64 does this for all channels."/>
-  <command cmd="197" name="dynsetdyntable" action="No Action" validinchn="1"
-           comments="If Q != -1, set dyntable to point to position dyntable[Q] in the sequence data."/>
-  <command cmd="198" name="setbank" action="No Action" comments="Switch bank within instrument bank sets, to the X&#8217;th bank, 0-indexed, counting from the end."
-           validinchn="1">
-    <parameter name="Unnamed" meaning="None" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="202" name="mutebhv" action="No Action" comments="Set mute behavior for this channel."
-           validinchn="1">
-    <parameter name="Behavior" meaning="None" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="208" name="stereoheadseteffects" action="No Action" comments="Enable (1) or disable (0) some pan/volume effects related to stereo/headset. I don&#8217;t know which ones precisely &#8211; pan is still taken into account even with this disabled. With this disabled, stereo/headset gets the same output."
-           validinchn="1">
-    <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="209" name="noteallocationpolicy" action="No Action" validinchn="1"
-           comments="Set note allocation policy (bitmask). If bit 0x1 is set, it will try to steal notes back from what was previously played on the same layer. If bit 0x2 is set, notes will be allocated exclusively from the channel&#8217;s reserved notes, else if 0x4 is set, from the channel&#8217;s or sequence&#8217;s reserved notes, else if 0x8 is set, from unreserved notes, otherwise from all sources."/>
-  <command cmd="210" name="sustain" action="No Action" validinchn="1" comments="Set envelope sustain volume">
-    <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="211" name="pitchbend" action="Chn Pitch Bend" validinchn="1"
-           comments="Pitch bend by &lt;= 1 octave in either direction (-127&#8230;127).">
+  <command cmd="196" name="Channel Start" action="Chn Reset" validinchn="1"/>
+  <command cmd="211" name="Pitch Bend" action="Chn Pitch Bend" validinchn="1">
     <parameter datasrc="fixed" datalen="1" name="Bend" meaning="Value"/>
   </command>
-  <command cmd="212" name="reverb" action="Chn Effects" validinchn="1" comments="Set amount of reverb (dry/wet mix).">
-    <parameter datasrc="fixed" datalen="1" name="Depth" meaning="Value"/>
+  <command cmd="212" name="Effect Level" action="Chn Effects" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Value" meaning="Value"/>
   </command>
-  <command cmd="214" name="updatesperframe" action="No Action" comments="Seems like it was meant to set the number of updates per frame? But it doesn&#8217;t actually do anything."
-           validinchn="1">
-    <parameter name="Updates per frame" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="216" name="Vibrato (Chn)" action="Chn Vibrato" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Vibrato" meaning="Value"/>
   </command>
-  <command cmd="215" name="vibfreq" action="No Action" validinchn="1" comments="Set vibrato frequency / rate.">
-    <parameter name="Frequency" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="218" name="Unknown" action="No Action" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Unnamed" meaning="None"/>
   </command>
-  <command cmd="216" name="vibdepth" action="Chn Vibrato" validinchn="1"
-           comments="Set vibrato depth.">
-    <parameter datasrc="fixed" datalen="1" name="Depth" meaning="Value"/>
-  </command>
-  <command cmd="217" name="release" action="No Action" validinchn="1" comments="Set envelope release rate.">
-    <parameter name="Release" meaning="None" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="218" name="cenvelope" action="No Action" validinchn="1"
-           comments="Load channel envelope from sequence data.">
-    <parameter datasrc="fixed" datalen="2" name="Unnamed" meaning="None"/>
-  </command>
-  <command cmd="219" name="ctp" action="Chn Transpose" comments="Channel transposition in semitones."
-           validinchn="1">
-    <parameter name="Transpose" meaning="Value" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="220" name="panmix" action="No Action" validinchn="1" comments="How much to weight channel pan vs. note pan. The pan for each note will be computed as W * channel pan + (1 - W) * note pan. This sets W (0&#8230;128 maps to 0&#8230;1). W defaults to 1.0.">
-    <parameter datasrc="fixed" datalen="1" name="W" meaning="None"/>
-  </command>
-  <command cmd="221" name="cpan" action="Chn Pan" validinchn="1" comments="Set the pan for this channel (0&#8230;128)">
-    <parameter datasrc="fixed" datalen="1" name="Pan" meaning="Value"/>
-  </command>
-  <command cmd="222" name="freqscale" action="No Action" validinchn="1"
-           comments="Pitch bend using a raw frequency multiplier X/2&#94;15.">
-    <parameter name="Unnamed" meaning="None" datasrc="fixed" datalen="2"/>
-  </command>
-  <command cmd="223" name="cvol" action="Chn Volume" validinchn="1" comments="Set channel volume scale factor (MIDI range 0-127, but accepts through 255 and will go louder). This corresponds to MIDI volume (CC 7).">
-    <parameter datasrc="fixed" datalen="1" name="Volume" meaning="Value"/>
-  </command>
-  <command cmd="224" name="cexp" action="No Action" validinchn="1" comments="Set channel expression (second volume scale factor) (MIDI range 0-127, but accepts through 255 and will go louder). This corresponds to MIDI expression (CC 11).">
+  <command cmd="220" name="Drumset?" action="No Action" validinchn="1">
     <parameter datasrc="fixed" datalen="1" name="Unknown" meaning="None"/>
   </command>
-  <command cmd="225" name="vibfreqenv" action="No Action" validinchn="1"
-           comments="Set vibrato frequency for each note as a function that starts at X, goes up linearly to Y over a time span given by Z, then stays there.">
-    <parameter name="Start" meaning="None" datasrc="fixed" datalen="1"/>
-    <parameter name="Target" meaning="None" datasrc="fixed" datalen="1"/>
-    <parameter name="Time" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="221" name="Chan Pan" action="Chn Pan" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Pan" meaning="Value"/>
   </command>
-  <command cmd="226" name="vibdepthenv" action="No Action" validinchn="1"
-           comments="Set vibrato depth for each note as a function that starts at X, goes up linearly to Y over a time span given by Z, then stays there.">
-    <parameter name="Start" meaning="None" datasrc="fixed" datalen="1"/>
-    <parameter name="Target" meaning="None" datasrc="fixed" datalen="1"/>
-    <parameter name="Time" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="223" name="Chan Volume (Chn)" action="Chn Volume" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Volume" meaning="Value"/>
   </command>
-  <command cmd="227" name="vibdelay" action="No Action" validinchn="1" comments="Set delay until vibrato starts for each note.">
-    <parameter name="Delay" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="224" name="Unknown" action="No Action" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Unknown" meaning="None"/>
   </command>
-  <command cmd="228" name="dyncall" action="No Action" validinchn="1" comments="If Q != -1, make a function call to position dyntable[Q], where dyntable is a channel-specific u16 array which can set by dyntable/dynsetdyntable."/>
+  <command cmd="233" name="Channel Priority" action="No Action" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Priority" meaning="None"/>
+  </command>
+  <command cmd="234" name="chalt" action="No Action" comments="Stop channel script"
+           validinchn="1"/>
   <command cmd="0" name="Load Chn Bit to Q" action="No Action" cmdend="15"
            validinseq="1">
     <parameter datasrc="offset" datalen="0" name="Channel" meaning="None"/>
@@ -201,23 +127,23 @@
            validinseq="1" validinchn="1">
     <parameter datasrc="offset" datalen="0" name="Channel" meaning="None"/>
   </command>
-  <command cmd="80" name="subio" action="No Action" cmdend="95" validinseq="1"
-           validinchn="1" comments="Decrease Q by IO[N].">
-    <parameter datasrc="offset" datalen="0" name="N" meaning="None"/>
+  <command cmd="80" name="Q -= var[C]" action="No Action" cmdend="95" validinseq="1"
+           validinchn="1">
+    <parameter datasrc="offset" datalen="0" name="C" meaning="None"/>
   </command>
   <command cmd="96" name="Load ??? DMA from var[C]" action="No Action" cmdend="111"
-           validinseq="1">
+           validinseq="1" validinchn="1">
     <parameter datasrc="offset" datalen="0" name="C" meaning="None"/>
     <parameter datasrc="fixed" datalen="1" name="Unknown 1" meaning="None"/>
     <parameter datasrc="fixed" datalen="1" name="Unknown 2" meaning="None"/>
   </command>
-  <command cmd="112" name="stio" action="No Action" cmdend="127" validinseq="1"
-           validinchn="1" comments="Set IO[N] to Q.">
-    <parameter datasrc="offset" datalen="0" name="N" meaning="None"/>
+  <command cmd="112" name="var[C] = Q" action="No Action" cmdend="127" validinseq="1"
+           validinchn="1">
+    <parameter datasrc="offset" datalen="0" name="C" meaning="None"/>
   </command>
-  <command cmd="128" name="ldio" action="No Action" cmdend="143" validinseq="1"
-           validinchn="1" comments="Set Q to IO[N], where IO is an array of bytes that can be read/written by both the game and the channel script. If N &lt; 4, IO[N] is then set to -1.">
-    <parameter datasrc="offset" datalen="0" name="N" meaning="None"/>
+  <command cmd="128" name="Q = var[C]; if(C&lt;2) var[C] = -1;" action="No Action"
+           cmdend="143" validinseq="1" validinchn="1">
+    <parameter datasrc="offset" datalen="0" name="Unnamed" meaning="None"/>
   </command>
   <command cmd="144" name="Absolute Chn Ptr" action="Ptr Channel Header"
            cmdend="159" validinseq="1">
@@ -245,24 +171,19 @@
     <parameter datasrc="fixed" datalen="2" name="Unknown" meaning="None"/>
   </command>
   <command cmd="198" name="Return from Sequence" action="End of Data" validinseq="1"/>
-  <command cmd="199" name="sts" action="No Action" validinseq="1" validinchn="1"
-           comments="Self-Modifying Code -- Overwrite the byte at the given position in the sequence script by (Q + X).">
-    <parameter datasrc="fixed" datalen="1" name="X" meaning="None"/>
-    <parameter datasrc="fixed" datalen="2" name="Address" meaning="None"/>
+  <command cmd="199" name="WIP" action="No Action" validinseq="1" validinchn="1">
+    <parameter datasrc="fixed" datalen="1" name="Unnamed" meaning="None"/>
+    <parameter datasrc="fixed" datalen="2" name="Unnamed" meaning="None"/>
   </command>
-  <command cmd="200" name="sub" action="No Action" validinseq="1" validinchn="1"
+  <command cmd="200" name="subtract" action="No Action" validinseq="1" validinchn="1"
            comments="Q -= val">
     <parameter datasrc="fixed" datalen="1" name="Value" meaning="None"/>
   </command>
-  <command cmd="201" name="and" action="No Action" validinseq="1" validinchn="1"
+  <command cmd="201" name="bitand" action="No Action" validinseq="1" validinchn="1"
            comments="Q &amp;= val">
     <parameter datasrc="fixed" datalen="1" name="Value" meaning="None"/>
   </command>
-  <command cmd="203" name="lds" action="No Action" validinchn="1" validinseq="1"
-           comments="Introspection -- Set Q to sequenceData[X + Q].">
-    <parameter name="Base address" meaning="None" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="204" name="imm" action="No Action" validinseq="1" validinchn="1"
+  <command cmd="204" name="setval" action="No Action" validinseq="1" validinchn="1"
            comments="Q = val">
     <parameter datasrc="fixed" datalen="1" name="Value" meaning="None"/>
   </command>
@@ -324,7 +245,8 @@
   <command cmd="241" name="unreservenotes" action="No Action" validinseq="1"
            comments="Drop all earlier reservations made by this sequence/channel."
            validinchn="1"/>
-  <command cmd="242" name="rbltz" action="Jump Same Level" comments="Branch Relative if Q &lt; 0">
+  <command cmd="242" name="rbltz" action="Jump Same Level" comments="Branch Relative if Q &lt; 0"
+           validinchn="1">
     <parameter name="Address (Relative)" meaning="Relative Address" datasrc="fixed"
                datalen="1"/>
   </command>
@@ -338,11 +260,11 @@
     <parameter name="Infinity" meaning="None" datasrc="constant" datalen="9999999"/>
   </command>
   <command cmd="243" name="rbeqz" action="Jump Same Level" validinseq="1"
-           comments="Branch Relative if Q == 0">
+           comments="Branch Relative if Q == 0" validinchn="1">
     <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="Relative Address"/>
   </command>
   <command cmd="244" name="rjump" action="Jump Same Level" validinseq="1"
-           comments="Branch Relative Always">
+           validinchn="1" validintrk="1" comments="Branch Relative Always">
     <parameter datasrc="fixed" datalen="1" name="Address (Relative)" meaning="Relative Address"/>
   </command>
   <command cmd="245" name="bgez" action="Jump Same Level" validinseq="1"

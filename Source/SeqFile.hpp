@@ -64,7 +64,7 @@ private:
     //For importMIDI
     MidiMessageSequence* ensureSimulMsgsInOrder(MidiMessageSequence &in);
     
-    int getCommandRange(ValueTree command, String meaning);
+    void getCommandRange(ValueTree command, String meaning, int &range_min, int &range_max);
     int getLargestCommandRange(int stype, String action, String meaning);
     bool isCommandValidIn(ValueTree command, int stype);
     

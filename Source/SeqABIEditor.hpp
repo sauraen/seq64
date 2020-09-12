@@ -132,6 +132,7 @@ private:
     std::unique_ptr<juce::TextEditor> txtParamName;
     std::unique_ptr<juce::ComboBox> cbxMeaning;
     std::unique_ptr<juce::ToggleButton> optDataSrcOffset;
+    std::unique_ptr<juce::ToggleButton> optDataSrcConstant;
     std::unique_ptr<juce::ToggleButton> optDataSrcFixed;
     std::unique_ptr<juce::ToggleButton> optDataSrcVariable;
     std::unique_ptr<juce::TextButton> btnParamAdd;
@@ -140,7 +141,6 @@ private:
     std::unique_ptr<juce::TextButton> btnParamDown;
     std::unique_ptr<juce::Label> lblDataLen;
     std::unique_ptr<juce::TextEditor> txtDataLen;
-    std::unique_ptr<juce::Label> lblDataSrc;
     std::unique_ptr<juce::TextButton> btnSave;
 
 

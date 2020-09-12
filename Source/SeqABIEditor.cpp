@@ -237,7 +237,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     cbxAction->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
     cbxAction->addItem (TRANS("No Action"), 1);
     cbxAction->addItem (TRANS("End of Data"), 2);
-    cbxAction->addItem (TRANS("Timestamp"), 3);
+    cbxAction->addItem (TRANS("Delay"), 3);
     cbxAction->addItem (TRANS("Jump Same Level"), 4);
     cbxAction->addItem (TRANS("Call Same Level"), 5);
     cbxAction->addItem (TRANS("Loop Start"), 6);
@@ -387,7 +387,15 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     optDataSrcOffset->setRadioGroupId (1);
     optDataSrcOffset->addListener (this);
 
-    optDataSrcOffset->setBounds (160, 600, 112, 24);
+    optDataSrcOffset->setBounds (160, 576, 112, 24);
+
+    optDataSrcConstant.reset (new juce::ToggleButton ("optDataSrcConstant"));
+    addAndMakeVisible (optDataSrcConstant.get());
+    optDataSrcConstant->setButtonText (TRANS("Constant"));
+    optDataSrcConstant->setRadioGroupId (1);
+    optDataSrcConstant->addListener (this);
+
+    optDataSrcConstant->setBounds (160, 600, 112, 24);
 
     optDataSrcFixed.reset (new juce::ToggleButton ("optDataSrcFixed"));
     addAndMakeVisible (optDataSrcFixed.get());
@@ -460,17 +468,6 @@ SeqABIEditor::SeqABIEditor (String abi_name)
 
     txtDataLen->setBounds (424, 588, 32, 24);
 
-    lblDataSrc.reset (new juce::Label ("lblDataSrc",
-                                       TRANS("Data source:")));
-    addAndMakeVisible (lblDataSrc.get());
-    lblDataSrc->setFont (juce::Font (15.00f, juce::Font::plain));
-    lblDataSrc->setJustificationType (juce::Justification::centredLeft);
-    lblDataSrc->setEditable (false, false, false);
-    lblDataSrc->setColour (juce::TextEditor::textColourId, juce::Colours::black);
-    lblDataSrc->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
-
-    lblDataSrc->setBounds (160, 576, 112, 24);
-
     btnSave.reset (new juce::TextButton ("btnSave"));
     addAndMakeVisible (btnSave.get());
     btnSave->setButtonText (TRANS("Save"));
@@ -538,7 +535,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     }
 
     needssaving = false;
-    
+
     //[/Constructor]
 }
 
@@ -578,6 +575,7 @@ SeqABIEditor::~SeqABIEditor()
     txtParamName = nullptr;
     cbxMeaning = nullptr;
     optDataSrcOffset = nullptr;
+    optDataSrcConstant = nullptr;
     optDataSrcFixed = nullptr;
     optDataSrcVariable = nullptr;
     btnParamAdd = nullptr;
@@ -586,7 +584,6 @@ SeqABIEditor::~SeqABIEditor()
     btnParamDown = nullptr;
     lblDataLen = nullptr;
     txtDataLen = nullptr;
-    lblDataSrc = nullptr;
     btnSave = nullptr;
 
 
@@ -738,6 +735,16 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         txtDataLen->setText("", false);
         needssaving = true;
         //[/UserButtonCode_optDataSrcOffset]
+    }
+    else if (buttonThatWasClicked == optDataSrcConstant.get())
+    {
+        //[UserButtonCode_optDataSrcConstant] -- add your button handler code here..
+        if(!selparam.isValid()) return;
+        selparam.setProperty("datasrc", "constant", nullptr);
+        lblDataLen->setText("const", dontSendNotification);
+        txtDataLen->setText(selparam.getProperty("datalen", 0), false);
+        needssaving = true;
+        //[/UserButtonCode_optDataSrcConstant]
     }
     else if (buttonThatWasClicked == optDataSrcFixed.get())
     {
@@ -930,8 +937,11 @@ void SeqABIEditor::textEditorTextChanged(TextEditor& editorThatWasChanged){
         lstParams->set(lstParams->getLastRowSelected(), text);
     }else if(&editorThatWasChanged == txtDataLen.get()){
         if(!selparam.isValid()) return;
-        if(selparam.getProperty("datasrc", "fixed").toString() == "offset"){
+        String datasrc = selparam.getProperty("datasrc", "fixed").toString();
+        if(datasrc == "offset"){
             intval = 0;
+        }else if(datasrc == "constant"){
+            turnRed = !isint;
         }else{
             turnRed = !isint || intval > 2 || intval <= 0;
         }
@@ -995,6 +1005,7 @@ void SeqABIEditor::fillParamInfo(){
         txtParamName->setText("", false);
         cbxMeaning->setText("");
         optDataSrcOffset->setToggleState(false, dontSendNotification);
+        optDataSrcConstant->setToggleState(false, dontSendNotification);
         optDataSrcFixed->setToggleState(false, dontSendNotification);
         optDataSrcVariable->setToggleState(false, dontSendNotification);
         lblDataLen->setText("(none)", dontSendNotification);
@@ -1005,9 +1016,11 @@ void SeqABIEditor::fillParamInfo(){
     cbxMeaning->setText(selparam.getProperty("meaning", ""));
     String datasrc = selparam.getProperty("datasrc");
     optDataSrcOffset  ->setToggleState(datasrc == "offset",   dontSendNotification);
+    optDataSrcConstant->setToggleState(datasrc == "constant", dontSendNotification);
     optDataSrcFixed   ->setToggleState(datasrc == "fixed",    dontSendNotification);
     optDataSrcVariable->setToggleState(datasrc == "variable", dontSendNotification);
-    lblDataLen->setText(datasrc == "offset" ? "(none)" : datasrc == "fixed" ? "length" : "up to", dontSendNotification);
+    lblDataLen->setText(datasrc == "offset" ? "(none)" : datasrc == "constant" ? "const" :
+        datasrc == "fixed" ? "length" : "up to", dontSendNotification);
     txtDataLen->setText(datasrc == "offset" ? "" : selparam.getProperty("datalen", "").toString(), false);
 }
 
@@ -1019,7 +1032,7 @@ void SeqABIEditor::fillMeaningsBox(String action){
         //None
     }else if(action == "End of Data"){
         //None
-    }else if(action == "Timestamp"){
+    }else if(action == "Delay"){
         //None--use Delay
     }else if(action == "Jump Same Level"){
         cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
@@ -1193,7 +1206,7 @@ BEGIN_JUCER_METADATA
               caret="1" popupmenu="1"/>
   <COMBOBOX name="cbxAction" id="e2a97de7a0a41ac7" memberName="cbxAction"
             virtualName="" explicitFocusOrder="0" pos="232 416 240 24" editable="0"
-            layout="33" items="No Action&#10;End of Data&#10;Timestamp&#10;Jump Same Level&#10;Call Same Level&#10;Loop Start&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Track Data&#10;Sequence Format&#10;Sequence Type&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Chn Reset&#10;Chn Priority&#10;Chn Volume&#10;Chn Pan&#10;Chn Effects&#10;Chn Vibrato&#10;Chn Pitch Bend&#10;Chn Instrument&#10;Chn Transpose&#10;Layer Transpose&#10;Track Note"
+            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump Same Level&#10;Call Same Level&#10;Loop Start&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Track Data&#10;Sequence Format&#10;Sequence Type&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Chn Reset&#10;Chn Priority&#10;Chn Volume&#10;Chn Pan&#10;Chn Effects&#10;Chn Vibrato&#10;Chn Pitch Bend&#10;Chn Instrument&#10;Chn Transpose&#10;Layer Transpose&#10;Track Note"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="chkValidInSeq" id="e629b15d1c633dc3" memberName="chkValidInSeq"
                 virtualName="" explicitFocusOrder="0" pos="272 328 200 24" buttonText="Seq Header / Group Track"
@@ -1243,7 +1256,10 @@ BEGIN_JUCER_METADATA
             virtualName="" explicitFocusOrder="0" pos="232 552 240 24" editable="0"
             layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="optDataSrcOffset" id="8a30282f44025f98" memberName="optDataSrcOffset"
-                virtualName="" explicitFocusOrder="0" pos="160 600 112 24" buttonText="Cmd Offset"
+                virtualName="" explicitFocusOrder="0" pos="160 576 112 24" buttonText="Cmd Offset"
+                connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
+  <TOGGLEBUTTON name="optDataSrcConstant" id="36bcae071bb015ce" memberName="optDataSrcConstant"
+                virtualName="" explicitFocusOrder="0" pos="160 600 112 24" buttonText="Constant"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="optDataSrcFixed" id="4e392b9e8a06d9fb" memberName="optDataSrcFixed"
                 virtualName="" explicitFocusOrder="0" pos="272 576 72 24" buttonText="Fixed"
@@ -1272,11 +1288,6 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="424 588 32 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
-  <LABEL name="lblDataSrc" id="b4893e2b4188cab9" memberName="lblDataSrc"
-         virtualName="" explicitFocusOrder="0" pos="160 576 112 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Data source:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTBUTTON name="btnSave" id="f1826d8815459bef" memberName="btnSave" virtualName=""
               explicitFocusOrder="0" pos="408 0 64 32" buttonText="Save" connectedEdges="0"
               needsCallback="1" radioGroupId="0"/>
