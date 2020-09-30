@@ -217,7 +217,7 @@
   </command>
   <command cmd="212" name="reverb" action="CC or CC Group" validinchn="1"
            comments="Set amount of reverb (dry/wet mix)." oname="FXMIX">
-    <parameter datasrc="fixed" datalen="1" name="Depth" meaning="CC" cc="91"/>
+    <parameter datasrc="fixed" datalen="1" name="Wet" meaning="CC" cc="91"/>
   </command>
   <command cmd="214" name="vibsomething" action="No Action" oname="VIBINT"
            validinchn="1" comments="Vibrato... intensity? (Isn't that the same as depth?)">
@@ -247,7 +247,7 @@
   <command cmd="220" name="panmix" action="CC or CC Group" validinchn="1"
            comments="How much to weight channel pan vs. note pan. The pan for each note will be computed as W * channel pan + (1 - W) * note pan. This sets W (0&#8230;128 maps to 0&#8230;1). W defaults to 1.0."
            oname="SPANPOW">
-    <parameter datasrc="fixed" datalen="1" name="W" meaning="CC" cc="9"/>
+    <parameter datasrc="fixed" datalen="1" name="W" meaning="CC" cc="8"/>
   </command>
   <command cmd="221" name="cpan" action="CC or CC Group" validinchn="1"
            comments="Set the pan for this channel (0&#8230;128)" oname="SPAN">
@@ -315,7 +315,7 @@
   </command>
   <command cmd="233" name="notepriority" action="CC or CC Group" validinchn="1"
            comments="Set priority for notes on this channel." oname="PRIORITY">
-    <parameter name="Priority" meaning="CC" datasrc="fixed" datalen="1" cc="25"/>
+    <parameter name="Priority" meaning="CC" datasrc="fixed" datalen="1" cc="9"/>
   </command>
   <command cmd="234" name="halt" action="Delay" comments="Infinite delay"
            validinchn="1" oname="HALT">
@@ -438,6 +438,17 @@
            validinchn="1" cname="ALLOCVOICE">
     <parameter datasrc="fixed" datalen="1" name="Notes to reserve" meaning="None"/>
   </command>
+  <command cmd="244" name="rjump" action="Jump Same Level" validintrk="1"
+           comments="Branch Relative Always" validinchn="1" validinseq="1"
+           cname="BRA">
+    <parameter name="Relative address" meaning="Relative Address" datasrc="fixed"
+               datalen="1"/>
+  </command>
+  <command cmd="251" name="jump" action="Jump Same Level" validinseq="1"
+           validinchn="1" validintrk="1" comments="Branch Absolute Always"
+           cname="JUMP">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
   <command cmd="242" name="rbltz" action="Jump Same Level" comments="Branch Relative if Q &lt; 0"
            validinchn="1" validinseq="1" cname="BRN">
     <parameter name="Address" meaning="Relative Address" datasrc="fixed" datalen="1"/>
@@ -445,12 +456,6 @@
   <command cmd="243" name="rbeqz" action="Jump Same Level" comments="Branch Relative if Q == 0"
            validinchn="1" validinseq="1" cname="BR0">
     <parameter name="Address" meaning="Relative Address" datasrc="fixed" datalen="1"/>
-  </command>
-  <command cmd="244" name="rjump" action="Jump Same Level" validintrk="1"
-           comments="Branch Relative Always" validinchn="1" validinseq="1"
-           cname="BRA">
-    <parameter name="Relative address" meaning="Relative Address" datasrc="fixed"
-               datalen="1"/>
   </command>
   <command cmd="245" name="bgez" action="Jump Same Level" validinseq="1"
            validinchn="1" comments="Branch Absolute if Q&gt;=0" cname="JUMPP">
@@ -470,11 +475,6 @@
   </command>
   <command cmd="250" name="beqz" action="Jump Same Level" validinseq="1"
            validinchn="1" comments="Branch Absolute if Q == 0" cname="JUMP0">
-    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
-  </command>
-  <command cmd="251" name="jump" action="Jump Same Level" validinseq="1"
-           validinchn="1" validintrk="1" comments="Branch Absolute Always"
-           cname="JUMP">
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
   </command>
   <command cmd="252" name="call" action="Call Same Level" validinseq="1"

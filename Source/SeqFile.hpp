@@ -36,6 +36,8 @@ public:
     static ValueTree loadABI(String name);
     static bool saveABI(String name, ValueTree abi_);
     
+    static bool isValidCC(int cc);
+    
     //Results are 0 okay, 1 warnings, 2+ errors.
     int importMIDI(File midifile, ValueTree midiopts);
     int exportMIDI(File midifile, ValueTree midiopts);
@@ -78,6 +80,7 @@ private:
     bool isCloseEnough(ValueTree command1, ValueTree command2, bool allowCCMerge, ValueTree midiopts);
     int getTotalSectionTime(ValueTree section);
     void deleteSection(int sectodelete);
+    void getExtendedCC(MidiMessage msg, int &cc, int &value);
     
     void optimize(ValueTree midiopts);
     void reduceTrackNotes();
@@ -108,8 +111,7 @@ private:
     static Identifier idCmdEnd;
     static Identifier idMeaning;
     static Identifier idValue;
-    static Identifier idAdd;
-    static Identifier idMultiply;
+    static Identifier idCC;
     static Identifier idDataSrc;
     static Identifier idDataLen;
     static Identifier idDataAddr;

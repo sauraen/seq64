@@ -903,7 +903,12 @@ void SeqABIEditor::comboBoxChanged (juce::ComboBox* comboBoxThatHasChanged)
         String meaning = cbxMeaning->getText();
         if(selparam.getProperty("meaning", "None").toString() != meaning){
             selparam.setProperty("meaning", meaning, nullptr);
-            if(meaning != "CC") selparam.removeProperty("cc", nullptr);
+            if(meaning != "CC"){
+                selparam.removeProperty("cc", nullptr);
+            }else if(!selparam.hasProperty("cc")){
+                selparam.setProperty("cc", 1, nullptr);
+                txtCC->setText("1", false);
+            }
             needssaving = true;
         }
         txtCC->setEnabled(meaning == "CC");
@@ -996,9 +1001,8 @@ void SeqABIEditor::textEditorTextChanged(TextEditor& editorThatWasChanged){
         selparam.setProperty("datalen", intval, nullptr);
     }else if(&editorThatWasChanged == txtCC.get()){
         if(!selparam.isValid()) return;
-        if(!isint || intval < 0 || intval > 129
-                || intval == 6 || intval == 32 || intval == 38
-                || (intval >= 96 && intval <= 101) || (intval >= 120 && intval <= 127)){
+        if(selparam.getProperty("meaning").toString() != "CC") return;
+        if(!isint || !SeqFile::isValidCC(intval)){
             turnRed = true;
         }else{
             selparam.setProperty("cc", intval, nullptr);
@@ -1365,4 +1369,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-

@@ -32,8 +32,7 @@ Identifier SeqFile::idCmd("cmd");
 Identifier SeqFile::idCmdEnd("cmdend");
 Identifier SeqFile::idMeaning("meaning");
 Identifier SeqFile::idValue("value");
-Identifier SeqFile::idAdd("add");
-Identifier SeqFile::idMultiply("multiply");
+Identifier SeqFile::idCC("cc");
 Identifier SeqFile::idDataSrc("datasrc");
 Identifier SeqFile::idDataLen("datalen");
 Identifier SeqFile::idDataAddr("dataaddr");
@@ -64,6 +63,12 @@ SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
 //TODO
 SeqFile::~SeqFile(){
     
+}
+
+bool SeqFile::isValidCC(int cc){
+    return !(cc < 0 || cc > 129
+            || cc == 6 || cc == 32 || cc == 38
+            || (cc >= 96 && cc <= 101) || (cc >= 120 && cc <= 127));
 }
 
 String SeqFile::getInternalString(){
@@ -453,33 +458,6 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCC
         param2 = command2.getChildWithProperty(idMeaning, "Delay");
         if(!param1.isValid() || !param2.isValid()) return false;
         return ((int)param1.getProperty(idValue, -1234) == (int)param2.getProperty(idValue, -8971));
-    }else if(action == "Jump Same Level"){
-        return false; //Don't loop jumps
-    }else if(action == "Call Same Level"){
-        //TODO this implementation will allow calls to arbitrary depth, not limited by stack!
-        /*
-        param1 = command1.getChildWithProperty(idMeaning, "Absolute Address");
-        if(param1.isValid()){
-            param2 = command2.getChildWithProperty(idMeaning, "Absolute Address");
-        }else{
-            param1 = command1.getChildWithProperty(idMeaning, "Relative Address");
-            param2 = command2.getChildWithProperty(idMeaning, "Relative Address");
-        }
-        if(!param1.isValid() || !param2.isValid()) return false;
-        return ((int)param1.getProperty(idValue, -1234) == (int)param2.getProperty(idValue, -8971));
-        */
-        return false; //No looping/calling calls
-    }else if(action == "Loop Start"){
-        return false;
-        /*
-        param1 = command1.getChildWithProperty(idMeaning, "Loop Count");
-        param2 = command2.getChildWithProperty(idMeaning, "Loop Count");
-        if(!param1.isValid() || !param2.isValid()) return false;
-        return ((int)param1.getProperty(idValue, -1234) == (int)param2.getProperty(idValue, -8971));
-        */
-    }else if(action == "Loop End"){
-        //return true;
-        return false;
     }else if(action == "Note"){
         //Compare notes
         param1 = command1.getChildWithProperty(idMeaning, "Note");
@@ -508,20 +486,29 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCC
         if(abs(v2 - v1) > delta) return false;
         //Finally
         return true;
-    }else{
-        //CCs, etc.
-        int delta;
-        if(action == "Chn Volume" || action == "Chn Pan" || action == "Chn Effects" || action == "Chn Pitch Bend"){
-            delta = midiopts.getProperty("delta_cc", 3);
-        }else{
-            delta = 0;
+    }else if(action == "CC or CC Group"){
+        int delta = allowCCMerge ? (int)midiopts.getProperty("delta_cc", 3) : 0;
+        if(command1.getNumChildren() != command2.getNumChildren()) return false;
+        for(int i=0; i<command1.getNumChildren(); ++i){
+            param1 = command1.getChild(i);
+            if(param1.getProperty(idMeaning).toString() != "CC") continue;
+            param2 = command2.getChild(i);
+            if((int)param1.getProperty(idCC, -1) != (int)param2.getProperty(idCC, -2)) return false;
+            if(abs((int)param1.getProperty(idValue, -1234) 
+                - (int)param2.getProperty(idValue, -8971)) > delta) return false;
         }
-        if(!allowCCMerge) delta = 0;
+        return true;
+    }else if(action == "Mute Behavior" || action == "Mute Scale"
+            || action == "Master Volume" || action == "Tempo" 
+            || action == "Chn Transpose" || action == "Layer Transpose"){
         param1 = command1.getChildWithProperty(idMeaning, "Value");
         param2 = command2.getChildWithProperty(idMeaning, "Value");
         if(!param1.isValid() || !param2.isValid()) return false;
-        return (abs((int)param1.getProperty(idValue, -1234) 
-                - (int)param2.getProperty(idValue, -8971)) <= delta);
+        return ((int)param1.getProperty(idValue, -1234) == (int)param2.getProperty(idValue, -8971));
+    }else if(action == "Enable Long Notes"){
+        return true;
+    }else{
+        return false;
     }
 }
 
@@ -599,6 +586,23 @@ void SeqFile::deleteSection(int sectodelete){
     structure.removeChild(sectodelete, nullptr);
 }
 
+void SeqFile::getExtendedCC(MidiMessage msg, int &cc, int &value){
+    cc = -1;
+    value = 0;
+    if(msg.isController()){
+        cc = msg.getControllerNumber();
+        value = msg.getControllerValue();
+    }else if(msg.isProgramChange()){
+        cc = 129;
+        value = msg.getProgramChangeNumber();
+    }else if(msg.isPitchWheel()){
+        cc = 128;
+        value = msg.getPitchWheelValue();
+        value -= 0x2000;
+        value >>= 6;
+        value &= 0x000000FF;
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// importMIDI objects ///////////////////////////////
@@ -645,13 +649,13 @@ private:
 //Probably OK
 struct CCTracker{
     CCTracker(){
-        action = "";
         q_time = lasttime = q_amp = lastvalue = 0;
         lastcmd = ValueTree();
+        warnedUnused = false;
     }
-    String action;
     int q_time, lasttime, q_amp, lastvalue;
     ValueTree lastcmd;
+    bool warnedUnused;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -670,10 +674,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     dbgmsg("IMPORTING MIDI FILE");
     importresult = 0;
     bool reladdr = (bool)midiopts.getProperty("reladdr", false);
-    //Changing these is no longer supported--I never heard of anyone using them
-    String chnvol = "CC7 (Volume)"; //midiopts.getProperty("chnvol", "CC7 (Volume)").toString();
-    String mtrvol = "SysEx MstrVol"; //midiopts.getProperty("mtrvol", "CC24 (None)").toString();
-    String chnpriority = "CC25 (None)"; //midiopts.getProperty("chnpriority", ).toString();
     const int midi_basenote = 21;
     MidiMessage msg;
     MidiMessage* msgptr;
@@ -949,13 +949,13 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //End of Data
     want = wantAction("End of Data", 0);
     section.addChild(createCommand(want), 0, nullptr);
-    //Not Sequence Format (D3 20)
+    //Mute Behavior (previously Sequence Format) (D3 20)
     value = (int)midiopts.getProperty("mutebhv", 0x20);
     want = wantAction("Mute Behavior", 0);
     wantProperty(want, "Value", value);
     section.addChild(createCommand(want), cmd, nullptr);
     cmd++;
-    //Not Sequence Type (D5 32)
+    //Mute Scale (previously Sequence Type) (D5 32)
     value = (int)midiopts.getProperty("mutescale", 0x32);
     want = wantAction("Mute Scale", 0);
     wantProperty(want, "Value", value);
@@ -1083,50 +1083,16 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     int cc;
     //CC Bandwidth Reduction setup
     OwnedArray<CCTracker> ccstates;
-    int qt, qa;
-    qt = 0;
-    qa = 0;
     for(cc=0; cc<130; cc++){ //128 is pitch, 129 is program
         ccstates.add(new CCTracker());
-        ccstates[cc]->q_time = qt;
-        ccstates[cc]->q_amp = qa;
+        ccstates[cc]->q_time = 0;
+        ccstates[cc]->q_amp = midiopts.getProperty("q_other_amp", 1);
     }
-    ccstates[128]->q_time = 0; //midiopts.getProperty("q_pitch_time", 1);
+    ccstates[0]->q_amp = 0; //bank
     ccstates[128]->q_amp = midiopts.getProperty("q_pitch_amp", 1);
-    qt = 0; //midiopts.getProperty("q_volpan_time", 3);
-    qa = midiopts.getProperty("q_volpan_amp", 2);
-    ccstates[7]->q_time = qt;
-    ccstates[7]->q_amp = qa;
-    ccstates[11]->q_time = qt;
-    ccstates[11]->q_amp = qa;
-    ccstates[10]->q_time = qt;
-    ccstates[10]->q_amp = qa;
-    qt = 0; //midiopts.getProperty("q_other_time", 1);
-    qa = midiopts.getProperty("q_other_amp", 1);
-    ccstates[91]->q_time = qt;
-    ccstates[91]->q_amp = qa;
-    ccstates[77]->q_time = qt;
-    ccstates[77]->q_amp = qa;
-    //CC actions setup
-    if(chnpriority == "CC17 (GPC2)"){
-        cc = 17;
-    }else if(chnpriority == "CC79 (SC10))"){
-        cc = 79;
-    }else{
-        cc = 25;
-    }
-    ccstates[cc]->action = "Chn Priority";
-    if(chnvol == "CC11 (Expr)"){
-        cc = 11;
-    }else{
-        cc = 7;
-    }
-    ccstates[cc]->action = "Chn Volume";
-    ccstates[10]->action = "Chn Pan";
-    ccstates[91]->action = "Chn Effects";
-    ccstates[77]->action = "Chn Vibrato";
-    ccstates[128]->action = "Chn Pitch Bend";
-    ccstates[129]->action = "Chn Instrument";
+    ccstates[129]->q_amp = 0; //program
+    ccstates[7]->q_amp = ccstates[11]->q_amp = ccstates[10]->q_amp = ccstates[9]->q_amp
+        = midiopts.getProperty("q_volpan_amp", 2); //volumes and pans
     //Channel data
     for(channel=0; channel<16; channel++){
         if(channelsused[channel] < 0) continue;
@@ -1195,46 +1161,90 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 //Only discard commands after section end if there's a section
                 //after this one
                 if(timestamp >= endtime && sectimeidx < num_tsections-1) continue;
-                //Determine command to execute
-                want = ValueTree(); //Invalidate
-                cc = -1;
-                value = 0;
-                if(msg.isController()){
-                    cc = msg.getControllerNumber();
-                    value = msg.getControllerValue();
-                }else if(msg.isProgramChange()){
-                    cc = 129;
-                    value = msg.getProgramChangeNumber();
-                }else if(msg.isPitchWheel()){
-                    cc = 128;
-                    value = msg.getPitchWheelValue();
-                    value -= 0x2000;
-                    value >>= 6;
-                    value &= 0x000000FF;
-                }
+                getExtendedCC(msg, cc, value);
                 if(cc < 0 || cc >= 130) continue;
-                if(abs(value - ccstates[cc]->lastvalue) <= ccstates[cc]->q_amp ||
-                        timestamp - ccstates[cc]->lasttime <= ccstates[cc]->q_time){
+                //Find command for this CC
+                ValueTree cccmd;
+                int numccs = 0;
+                for(int i=0; ; ++i){
+                    cccmd = abi.getChild(i);
+                    if(!cccmd.isValid()) break;
+                    if(!isCommandValidIn(cccmd, 1)) continue;
+                    if(cccmd.getProperty(idAction).toString() != "CC or CC Group") continue;
+                    bool wasrightcc = false;
+                    numccs = 0;
+                    for(int j=0; j<cccmd.getNumChildren(); ++j){
+                        ValueTree tmpparam = cccmd.getChild(j);
+                        if(tmpparam.getProperty(idMeaning).toString() != "CC") continue;
+                        if((int)tmpparam.getProperty(idCC) == cc) wasrightcc = true;
+                        ++numccs;
+                    }
+                    if(!wasrightcc) continue;
+                    break;
+                }
+                if(!cccmd.isValid()){
+                    if(!ccstates[cc]->warnedUnused && isValidCC(cc)){
+                        dbgmsg("MIDI uses CC " + String(cc) + " (first value " + String(value) 
+                            + "), not mapped to any command in Audioseq");
+                        ccstates[cc]->warnedUnused = true;
+                    }
+                    continue;
+                }
+                jassert(numccs >= 1);
+                if(numccs == 1 && (abs(value - ccstates[cc]->lastvalue) <= ccstates[cc]->q_amp ||
+                        timestamp - ccstates[cc]->lasttime <= ccstates[cc]->q_time)){
                     //This command is quantized out
                     //Update the last command's value, but don't update lastvalue
                     //(otherwise this would progressively quantize out any slow CC fade)
                     if(ccstates[cc]->lastcmd.isValid()){
                         //lastcmd will be invalid if this is an action we aren't tracking
-                        ccstates[cc]->lastcmd.setProperty("Value", value, nullptr);
+                        ValueTree tmpcmd = ccstates[cc]->lastcmd.getChildWithProperty(idCC, cc);
+                        if(tmpcmd.isValid()){
+                            tmpcmd.setProperty("Value", value, nullptr);
+                        }else{
+                            dbgmsg("Internal consistency error in CC quantization!");
+                            return 2;
+                        }
                     }
                     continue;
                 }
-                ccstates[cc]->lastvalue = value;
-                ccstates[cc]->lasttime = timestamp;
-                if(ccstates[cc]->action != ""){
-                    want = wantAction(ccstates[cc]->action, 1);
-                    wantProperty(want, "Value", value);
-                    advanceToTimestamp(section, 1, cmd, t, timestamp);
-                    ValueTree tmpcmd = createCommand(want);
-                    section.addChild(tmpcmd, cmd, nullptr);
-                    cmd++;
-                    ccstates[cc]->lastcmd = tmpcmd;
+                //Create CC command and search for values in next CCs
+                cccmd = cccmd.createCopy();
+                cccmd.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
+                for(int j=0; j<cccmd.getNumChildren(); ++j){
+                    ValueTree tmpparam = cccmd.getChild(i);
+                    if(tmpparam.getProperty(idMeaning).toString() != "CC") continue;
+                    int paramcc = tmpparam.getProperty(idCC, 0);
+                    //Find appropriate CC
+                    bool found = false;
+                    for(int i=m; i<trk->getNumEvents(); ++i){
+                        MidiMessage msg2 = trk->getEventPointer(i)->message;
+                        if(msg2.getTimeStamp() != timestamp) break;
+                        int cc2, value2;
+                        getExtendedCC(msg2, cc2, value2);
+                        if(cc2 != paramcc) continue;
+                        ccstates[paramcc]->lastvalue = value2;
+                        ccstates[paramcc]->lasttime = timestamp;
+                        ccstates[paramcc]->lastcmd = cccmd;
+                        tmpparam.setProperty(idValue, value2, nullptr);
+                        trk->deleteEvent(i, false);
+                        if(i == m) --m;
+                        --i;
+                        found = true;
+                        break;
+                    }
+                    if(!found){
+                        dbgmsg("Multiple CC command (channel " + String(channel)
+                            + " timestamp " + String(timestamp) + " first CC " + String(cc) 
+                            + ") missing required secondary CC " + String(paramcc)
+                            + ", setting to zero!");
+                        tmpparam.setProperty(idValue, 0, nullptr);
+                        importresult |= 1;
+                    }
                 }
+                advanceToTimestamp(section, 1, cmd, t, timestamp);
+                section.addChild(cccmd, cmd, nullptr);
+                cmd++;
             }
             //Get the time to the end
             advanceToTimestamp(section, 1, cmd, t, endtime);
@@ -1473,7 +1483,7 @@ void SeqFile::optimize(ValueTree midiopts){
     //
     ValueTree want, want2, param;
     int i;
-    int cclast, ccdir, ccthis;
+    int cctype, cclast, ccdir;
     if(useLoops){
         dbgmsg("\nLooking for data to loop");
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){
@@ -1518,53 +1528,40 @@ void SeqFile::optimize(ValueTree midiopts){
                         //Check if the contents of the loop are solely timestamps and one kind of CC,
                         //and the CC values are monotonically going in one direction
                         flag = true;
-                        action4 = "";
+                        cctype = -1;
                         ccdir = 0;
                         cclast = -1;
-                        for(cmd3=cmd1; cmd3<cmd2; ++cmd3){
+                        for(cmd3=cmd1; cmd3<cmd2 && flag; ++cmd3){
                             command3 = section1.getChild(cmd3);
                             action3 = command3.getProperty(idAction, "No Action");
                             if(action3 == "Delay"){
                                 //do nothing
-                            }else if(action3 == "Chn Volume" || action3 == "Chn Pan" 
-                                    || action3 == "Chn Effects" || action3 == "Chn Pitch Bend"){
-                                if(action4 == ""){
-                                    action4 = action3;
-                                    param = command3.getChildWithProperty(idMeaning, "Value");
-                                    if(!param.isValid()){
-                                        dbgmsg("Error, Chn CC command without value!");
-                                        importresult |= 2;
-                                        flag = false;
-                                        break;
-                                    }
-                                    cclast = param.getProperty(idValue, -1234);
-                                }else if(action3 != action4){
-                                    flag = false; //More than one type of CC detected
-                                    break;
-                                }else{
-                                    param = command3.getChildWithProperty(idMeaning, "Value");
-                                    if(!param.isValid()){
-                                        dbgmsg("Error, Chn CC command without value!");
-                                        importresult |= 2;
-                                        flag = false;
-                                        break;
-                                    }
-                                    ccthis = param.getProperty(idValue, -5678);
-                                    if(ccdir == 0){
-                                        if(ccthis < cclast) ccdir = -1;
-                                        else if(ccthis > cclast) ccdir = 1;
-                                    }else if(ccdir == 1){
-                                        if(ccthis < cclast){
-                                            //CCs were going up and now down, done
-                                            flag = false;
-                                            break;
+                            }else if(action3 == "CC or CC Group"){
+                                for(int j=0; j<command3.getNumChildren() && flag; ++j){
+                                    param = command3.getChild(j);
+                                    if(param.getProperty(idMeaning).toString() != "CC") continue;
+                                    int newcctype = param.getProperty(idCC);
+                                    if(cctype < 0){
+                                        cctype = newcctype;
+                                        cclast = param.getProperty(idValue, -1234);
+                                    }else if(cctype == newcctype){
+                                        int ccthis = param.getProperty(idValue, -5678);
+                                        if(ccdir == 0){
+                                            if(ccthis < cclast) ccdir = -1;
+                                            else if(ccthis > cclast) ccdir = 1;
+                                        }else if(ccdir == 1){
+                                            if(ccthis < cclast){
+                                                //CCs were going up and now down, done
+                                                flag = false;
+                                            }
+                                        }else if(ccdir == -1){
+                                            if(ccthis > cclast){
+                                                //CCs were going down and now up, done
+                                                flag = false;
+                                            }
                                         }
-                                    }else if(ccdir == -1){
-                                        if(ccthis > cclast){
-                                            //CCs were going down and now up, done
-                                            flag = false;
-                                            break;
-                                        }
+                                    }else{ //More than one type of CC detected
+                                        flag = false;
                                     }
                                 }
                             }else{
@@ -2276,51 +2273,153 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             for(notelayer=0; notelayer<max_layers; notelayer++){
                 transposes.set((channel*max_layers)+notelayer, 0);
             }
-        }else if(action == "Chn Priority" || action == "Chn Volume" || action == "Chn Pan"
-                || action == "Chn Effects" || action == "Chn Vibrato"){
+        }else if(action == "CC or CC Group"){
             if(stype != 1){
                 dbgmsg(action + " in somewhere other than channel header!");
                 importresult |= 1; continue;
             }
-            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
-            if(!param.isValid()){
-                dbgmsg(action + " event with no value!");
-                importresult |= 1; continue;
+            for(int i=0; i<command.getNumChildren(); ++i){
+                ValueTree param = command.getChild(i);
+                if(param.getProperty(idMeaning).toString() != "CC") continue;
+                int cc = param.getProperty(idCC, -1);
+                if(!isValidCC(cc)){
+                    dbgmsg("CC command mapped to invalid CC " + String(cc) + "!");
+                    importresult |= 1;
+                    continue;
+                }
+                int value = param.getProperty(idValue);
+                if(value < 0 || value > 0x7F){
+                    dbgmsg("CC " + String(cc) + " event with invalid value = " + String(value) + "!");
+                    importresult |= 1;
+                    value = value < 0 ? 0 : 0x7F;
+                }
+                if(cc == 128){
+                    //Pitch bend
+                    if(value >= 0x80) value -= 0x100;
+                    value = (1<<13) + (value << 7);
+                    if(value < 0) value = 0;
+                    if(value >= (1<<14)) value = (1<<14) - 1;
+                    //dbgmsg("Pitch Bend original value " + String(value) + " or " + hex((uint32_t)value));
+                    msg = MidiMessage::pitchWheel(channel+1, value);
+                    msg.setTimeStamp(t*ticks_multiplier);
+                    mtracks[channel]->addEvent(msg);
+                }else if(cc == 0){
+                    //TODO handle banks
+                    msg = MidiMessage::controllerEvent(channel+1, 0, value);
+                    msg.setTimeStamp(t*ticks_multiplier);
+                    mtracks[channel]->addEvent(msg);
+                }else if(cc == 129){
+                    //Program change
+                    dbgmsg("Program change (instrument) " + String(value) + " channel " + String(channel));
+                    //Cancel previous progoptions
+                    msg = MidiMessage::controllerEvent(channel+1, progoptionsnullcc, 0);
+                    msg.setTimeStamp(t*ticks_multiplier);
+                    mtracks[channel]->addEvent(msg);
+                    //Load MIDI equivalent instrument from bank
+                    int midiprogram = value;
+                    /*
+                    TODO bank integration
+                    do{
+                        if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "original"){
+                            dbgmsg("Not converting Chn Instrument because want original format export");
+                            break;
+                        }
+                        if(bank == nullptr){
+                            dbgmsg("Could not load MIDI instrument from bank: no bank specified");
+                            break;
+                        }
+                        ValueTree instlist = bank->d.getChildWithName("abbank").getChildWithProperty("name", "ABBank")
+                                .getChildWithProperty("meaning", "List of Ptrs to Insts");
+                        if(!instlist.isValid()){
+                            dbgmsg("Could not load MIDI instrument from bank: abbank invalid");
+                            break;
+                        }
+                        ValueTree instlistitem = instlist.getChild(value);
+                        if(!instlistitem.isValid()){
+                            dbgmsg("Could not load MIDI instrument from bank: no ABBank entry for inst #" + String(value) + " (usually means out of range)");
+                            break;
+                        }
+                        int instindex = instlistitem.getProperty("index", -1);
+                        if(instindex < 0){
+                            dbgmsg("Could not load MIDI instrument from bank: instrument is nullptr");
+                            break;
+                        }
+                        ValueTree instrument = bank->d.getChildWithName("instruments").getChild(instindex);
+                        if(!instrument.isValid()){
+                            dbgmsg("Could not load MIDI instrument from bank: could not load instrument #" + String(instindex));
+                            break;
+                        }
+                        String map = instrument.getProperty("map", "Error").toString();
+                        if(map == "program"){
+                            midiprogram = instrument.getProperty("program", 0);
+                            int tp = instrument.getProperty("transpose", 0);
+                            if(tp != 0){
+                                msg = MidiMessage::controllerEvent(channel+1, progoptionscc, progoptions.getNumChildren());
+                                msg.setTimeStamp(t*ticks_multiplier);
+                                mtracks[channel]->addEvent(msg);
+                                ValueTree tpopt("instrument");
+                                tpopt.setProperty("tp", tp, nullptr);
+                                progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
+                            }
+                            dbgmsg("Changed instrument " + String(value) + " to program " + String(midiprogram)
+                                     + ", transpose " + String(tp));
+                        }else if(map == "drum"){
+                            msg = MidiMessage::controllerEvent(channel+1, progoptionscc, progoptions.getNumChildren());
+                            msg.setTimeStamp(t*ticks_multiplier);
+                            mtracks[channel]->addEvent(msg);
+                            ValueTree tpopt("drum");
+                            tpopt.setProperty("drum1", instrument.getProperty("drumsplit1", 0), nullptr);
+                            tpopt.setProperty("drum2", instrument.getProperty("drumsplit2", 0), nullptr);
+                            tpopt.setProperty("drum3", instrument.getProperty("drumsplit3", 0), nullptr);
+                            ValueTree temp = instrument.getChildWithName("struct").getChildWithProperty("meaning", "Split Point 1");
+                            if(!temp.isValid()){
+                                dbgmsg("Instrument has no Split Point 1 field!");
+                                tpopt.setProperty("split1", -1, nullptr);
+                            }else{
+                                tpopt.setProperty("split1", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
+                            }
+                            temp = instrument.getChildWithName("struct").getChildWithProperty("meaning", "Split Point 2");
+                            if(!temp.isValid()){
+                                dbgmsg("Instrument has no Split Point 2 field!");
+                                tpopt.setProperty("split2", -1, nullptr);
+                            }else{
+                                tpopt.setProperty("split2", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
+                            }
+                            progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
+                            if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "gm_multi"){
+                                //Add multi-drum-channel hacks
+                                //GM2 mode on
+                                // uint8_t gm2modeonsysex[4] = {0x7E, 0x7F, 0x09, 0x03};
+                                // msg = MidiMessage::createSysExMessage(gm2modeonsysex, 4);
+                                // msg.setTimeStamp(t*ticks_multiplier);
+                                // mtracks[channel]->addEvent(msg);
+                                //GM2 bank 120,0 is percussion
+                                msg = MidiMessage(0xB0 | channel, 0, 120, t*ticks_multiplier);
+                                mtracks[channel]->addEvent(msg);
+                                msg = MidiMessage(0xB0 | channel, 32, 0, t*ticks_multiplier);
+                                mtracks[channel]->addEvent(msg);
+                                //Roland GS: SysEx to turn any channel to percussion mode
+                                uint8_t gssysex[9] = {0x41, 0x10, 0x42, 0x12, 0x40, (uint8_t)(0x10 + channel), 0x15, 0x02, (uint8_t)(0x19 - channel)};
+                                msg = MidiMessage::createSysExMessage(gssysex, 9);
+                                msg.setTimeStamp(t*ticks_multiplier);
+                                mtracks[channel]->addEvent(msg);
+                                //TODO none of this is ever turned off, in case the sequence turns this back from drum mode to an instrument!
+                            }
+                            continue; //Don't add program change message
+                        }
+                    }while(false);
+                    */
+                    //
+                    msg = MidiMessage::programChange(channel+1, midiprogram);
+                    msg.setTimeStamp(t*ticks_multiplier);
+                    mtracks[channel]->addEvent(msg);
+                }else{
+                    //Normal CC
+                    msg = MidiMessage::controllerEvent(channel+1, cc, value);
+                    msg.setTimeStamp(t*ticks_multiplier);
+                    mtracks[channel]->addEvent(msg);
+                }
             }
-            int value = param.getProperty(idValue);
-            if(value < 0 || value > 0x7F){
-                dbgmsg(action + " event with invalid value = " + String(value) + "!");
-                importresult |= 1; continue;
-            }
-            int cc = -1;
-                 if(action == "Chn Priority") cc = 25;
-            else if(action == "Chn Volume"  ) cc = 7;
-            else if(action == "Chn Pan"     ) cc = 10;
-            else if(action == "Chn Effects" ) cc = 91;
-            else if(action == "Chn Vibrato" ) cc = 77;
-            jassert(cc >= 0);
-            msg = MidiMessage::controllerEvent(channel+1, cc, value);
-            msg.setTimeStamp(t*ticks_multiplier);
-            mtracks[channel]->addEvent(msg);
-        }else if(action == "Chn Pitch Bend"){
-            if(stype != 1){
-                dbgmsg("Chn Pitch Bend in somewhere other than channel header!");
-                importresult |= 1; continue;
-            }
-            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
-            if(!param.isValid()){
-                dbgmsg("Chn Pitch Bend event with no value!");
-                importresult |= 1; continue;
-            }
-            int value = param.getProperty(idValue);
-            if(value >= 0x80) value -= 0x100;
-            value = (1<<13) + (value << 7);
-            if(value < 0) value = 0;
-            if(value >= (1<<14)) value = (1<<14) - 1;
-            //dbgmsg("Pitch Bend original value " + String(value) + " or " + hex((uint32_t)value));
-            msg = MidiMessage::pitchWheel(channel+1, value);
-            msg.setTimeStamp(t*ticks_multiplier);
-            mtracks[channel]->addEvent(msg);
         }else if(action == "Chn Transpose"){
             if(stype != 1){
                 dbgmsg("Chn Transpose in somewhere other than channel header!");
@@ -2350,120 +2449,6 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             int value = param.getProperty(idValue);
             if(value >= 0x80) value -= 0x100;
             transposes.set((channel*max_layers)+notelayer, value);
-        }else if(action == "Chn Instrument"){
-            if(stype != 1){
-                dbgmsg("Chn Instrument in somewhere other than channel header!");
-                importresult |= 1; continue;
-            }
-            ValueTree param = command.getChildWithProperty(idMeaning, "Value");
-            if(!param.isValid()){
-                dbgmsg("Chn Instrument event with no value!");
-                importresult |= 1; continue;
-            }
-            int value = param.getProperty(idValue);
-            dbgmsg("Chn Instrument " + String(value) + " channel " + String(channel));
-            //Cancel previous progoptions
-            msg = MidiMessage::controllerEvent(channel+1, progoptionsnullcc, 0);
-            msg.setTimeStamp(t*ticks_multiplier);
-            mtracks[channel]->addEvent(msg);
-            //Load MIDI equivalent instrument from bank
-            int midiprogram = value;
-            /*
-            TODO bank integration
-            do{
-                if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "original"){
-                    dbgmsg("Not converting Chn Instrument because want original format export");
-                    break;
-                }
-                if(bank == nullptr){
-                    dbgmsg("Could not load MIDI instrument from bank: no bank specified");
-                    break;
-                }
-                ValueTree instlist = bank->d.getChildWithName("abbank").getChildWithProperty("name", "ABBank")
-                        .getChildWithProperty("meaning", "List of Ptrs to Insts");
-                if(!instlist.isValid()){
-                    dbgmsg("Could not load MIDI instrument from bank: abbank invalid");
-                    break;
-                }
-                ValueTree instlistitem = instlist.getChild(value);
-                if(!instlistitem.isValid()){
-                    dbgmsg("Could not load MIDI instrument from bank: no ABBank entry for inst #" + String(value) + " (usually means out of range)");
-                    break;
-                }
-                int instindex = instlistitem.getProperty("index", -1);
-                if(instindex < 0){
-                    dbgmsg("Could not load MIDI instrument from bank: instrument is nullptr");
-                    break;
-                }
-                ValueTree instrument = bank->d.getChildWithName("instruments").getChild(instindex);
-                if(!instrument.isValid()){
-                    dbgmsg("Could not load MIDI instrument from bank: could not load instrument #" + String(instindex));
-                    break;
-                }
-                String map = instrument.getProperty("map", "Error").toString();
-                if(map == "program"){
-                    midiprogram = instrument.getProperty("program", 0);
-                    int tp = instrument.getProperty("transpose", 0);
-                    if(tp != 0){
-                        msg = MidiMessage::controllerEvent(channel+1, progoptionscc, progoptions.getNumChildren());
-                        msg.setTimeStamp(t*ticks_multiplier);
-                        mtracks[channel]->addEvent(msg);
-                        ValueTree tpopt("instrument");
-                        tpopt.setProperty("tp", tp, nullptr);
-                        progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
-                    }
-                    dbgmsg("Changed instrument " + String(value) + " to program " + String(midiprogram)
-                             + ", transpose " + String(tp));
-                }else if(map == "drum"){
-                    msg = MidiMessage::controllerEvent(channel+1, progoptionscc, progoptions.getNumChildren());
-                    msg.setTimeStamp(t*ticks_multiplier);
-                    mtracks[channel]->addEvent(msg);
-                    ValueTree tpopt("drum");
-                    tpopt.setProperty("drum1", instrument.getProperty("drumsplit1", 0), nullptr);
-                    tpopt.setProperty("drum2", instrument.getProperty("drumsplit2", 0), nullptr);
-                    tpopt.setProperty("drum3", instrument.getProperty("drumsplit3", 0), nullptr);
-                    ValueTree temp = instrument.getChildWithName("struct").getChildWithProperty("meaning", "Split Point 1");
-                    if(!temp.isValid()){
-                        dbgmsg("Instrument has no Split Point 1 field!");
-                        tpopt.setProperty("split1", -1, nullptr);
-                    }else{
-                        tpopt.setProperty("split1", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
-                    }
-                    temp = instrument.getChildWithName("struct").getChildWithProperty("meaning", "Split Point 2");
-                    if(!temp.isValid()){
-                        dbgmsg("Instrument has no Split Point 2 field!");
-                        tpopt.setProperty("split2", -1, nullptr);
-                    }else{
-                        tpopt.setProperty("split2", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
-                    }
-                    progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
-                    if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "gm_multi"){
-                        //Add multi-drum-channel hacks
-                        //GM2 mode on
-                        // uint8_t gm2modeonsysex[4] = {0x7E, 0x7F, 0x09, 0x03};
-                        // msg = MidiMessage::createSysExMessage(gm2modeonsysex, 4);
-                        // msg.setTimeStamp(t*ticks_multiplier);
-                        // mtracks[channel]->addEvent(msg);
-                        //GM2 bank 120,0 is percussion
-                        msg = MidiMessage(0xB0 | channel, 0, 120, t*ticks_multiplier);
-                        mtracks[channel]->addEvent(msg);
-                        msg = MidiMessage(0xB0 | channel, 32, 0, t*ticks_multiplier);
-                        mtracks[channel]->addEvent(msg);
-                        //Roland GS: SysEx to turn any channel to percussion mode
-                        uint8_t gssysex[9] = {0x41, 0x10, 0x42, 0x12, 0x40, (uint8_t)(0x10 + channel), 0x15, 0x02, (uint8_t)(0x19 - channel)};
-                        msg = MidiMessage::createSysExMessage(gssysex, 9);
-                        msg.setTimeStamp(t*ticks_multiplier);
-                        mtracks[channel]->addEvent(msg);
-                        //TODO none of this is ever turned off, in case the sequence turns this back from drum mode to an instrument!
-                    }
-                    continue; //Don't add program change message
-                }
-            }while(false);
-            */
-            //
-            msg = MidiMessage::programChange(channel+1, midiprogram);
-            msg.setTimeStamp(t*ticks_multiplier);
-            mtracks[channel]->addEvent(msg);
         }else if(action == "Note"){
             if(stype != 2){
                 dbgmsg("Note in somewhere other than track data!");
