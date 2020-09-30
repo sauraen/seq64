@@ -20,13 +20,13 @@
     <parameter datasrc="fixed" datalen="1" name="Velocity" meaning="Velocity"/>
     <parameter datasrc="fixed" datalen="1" name="Gate" meaning="Gate Time"/>
   </command>
-  <command cmd="192" name="tdelay" action="Delay" validintrk="1" comments="Delay for N ticks">
+  <command cmd="192" name="ldelay" action="Delay" validintrk="1" comments="Delay for N ticks">
     <parameter datasrc="variable" datalen="2" name="Delay" meaning="Delay"/>
   </command>
   <command cmd="193" name="shortvel" action="No Action" validintrk="1" comments="Set velocity for future short notes.">
     <parameter name="Velocity" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="194" name="ttp" action="Layer Transpose" validintrk="1"
+  <command cmd="194" name="ltp" action="Layer Transpose" validintrk="1"
            comments="Set note track transposition in semitones.">
     <parameter datasrc="fixed" datalen="1" name="Value" meaning="Value"/>
   </command>
@@ -37,7 +37,7 @@
   <command cmd="196" name="legatoon" action="No Action" validintrk="1" comments="Turn on legato (continuousNotes, i.e. envelope doesn't restart when next note happens)."/>
   <command cmd="197" name="legatooff" action="No Action" validintrk="1"
            comments="Turn off legato (continuousNotes, i.e. envelope restarts like normal when next note happens)."/>
-  <command cmd="198" name="tinst" action="No Action" validintrk="1" comments="Set instrument/program. Similar to the channel command, except arguments 0x7f and above are not supported.">
+  <command cmd="198" name="linst" action="No Action" validintrk="1" comments="Set instrument/program. Similar to the channel command, except arguments 0x7f and above are not supported.">
     <parameter name="Instrument (0-0x7E)" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
   <command cmd="199" name="portamento" action="No Action" comments="Enable portamento (aka glissando; continuously sliding pitch). X describes the mode of operation somehow using its 0x80 bit and a value 0-5 in its lower-order bits. (Probably 0x80 = set = fixed sweep rate, 0x80 = clear = fixed sweep time, or maybe vice versa.) Y describes the target pitch. Z gives the duration, and is a u8 if the 0x80 bit is set in X, otherwise a var. Note that parsing this data-dependent datatype is not supported by SEQ64!"
@@ -52,7 +52,7 @@
            comments="Set the gate length for future short notes.">
     <parameter name="Gate" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="202" name="tpan" action="No Action" validintrk="1" comments="Set the pan for this track (0&#8230;128).">
+  <command cmd="202" name="lpan" action="No Action" validintrk="1" comments="Set the pan for this layer (0&#8230;128).">
     <parameter name="Pan" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
   <command cmd="208" name="shorttablevel" action="No Action" comments="Set the velocity for future short notes to table[N], where table defaults to {12, 25, 38, 51, 57, 64, 71, 76, 83, 89, 96, 102, 109, 115, 121, 127} and can be set by shortnotevelocitytable."
@@ -103,12 +103,12 @@
     <parameter datasrc="offset" datalen="0" name="N" meaning="None"/>
   </command>
   <command cmd="144" name="startlayer" action="Ptr Track Data" cmdend="159"
-           validinchn="1" comments="Start note track N, with script starting at address X.">
+           validinchn="1" comments="Start note layer N, with script starting at address X.">
     <parameter datasrc="offset" datalen="0" name="Note Layer" meaning="Note Layer"/>
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
   </command>
   <command cmd="160" name="stoplayer" action="No Action" cmdend="175" validinchn="1"
-           comments="Stop note track N.">
+           comments="Stop note layer N.">
     <parameter name="Note Layer" meaning="None" datasrc="offset" datalen="0"/>
   </command>
   <command cmd="176" name="dynstartlayer" action="No Action" cmdend="191"
@@ -237,7 +237,7 @@
   <command cmd="203" name="lds" action="No Action" validinchn="1" comments="Introspection -- Set Q to sequenceData[X + Q].">
     <parameter name="Base address" meaning="None" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="204" name="imm" action="No Action" validinseq="1" validinchn="1"
+  <command cmd="204" name="ldi" action="No Action" validinseq="1" validinchn="1"
            comments="Q = val">
     <parameter datasrc="fixed" datalen="1" name="Value" meaning="None"/>
   </command>
@@ -302,7 +302,7 @@
   </command>
   <command cmd="243" name="hang" action="Delay" comments="Infinite delay"
            validinchn="1">
-    <parameter name="Infinity" meaning="None" datasrc="constant" datalen="9999999"/>
+    <parameter name="Infinity" meaning="Delay" datasrc="constant" datalen="9999999"/>
   </command>
   <command cmd="245" name="bgez" action="Jump Same Level" validinseq="1"
            validinchn="1" comments="Branch Absolute if Q&gt;=0">
