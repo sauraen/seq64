@@ -243,24 +243,19 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     cbxAction->addItem (TRANS("Loop Start"), 6);
     cbxAction->addItem (TRANS("Loop End"), 7);
     cbxAction->addItem (TRANS("Ptr Channel Header"), 8);
-    cbxAction->addItem (TRANS("Ptr Track Data"), 9);
-    cbxAction->addItem (TRANS("Sequence Format"), 10);
-    cbxAction->addItem (TRANS("Sequence Type"), 11);
-    cbxAction->addItem (TRANS("Channel Enable"), 12);
-    cbxAction->addItem (TRANS("Channel Disable"), 13);
-    cbxAction->addItem (TRANS("Master Volume"), 14);
-    cbxAction->addItem (TRANS("Tempo"), 15);
-    cbxAction->addItem (TRANS("Chn Reset"), 16);
-    cbxAction->addItem (TRANS("Chn Priority"), 17);
-    cbxAction->addItem (TRANS("Chn Volume"), 18);
-    cbxAction->addItem (TRANS("Chn Pan"), 19);
-    cbxAction->addItem (TRANS("Chn Effects"), 20);
-    cbxAction->addItem (TRANS("Chn Vibrato"), 21);
-    cbxAction->addItem (TRANS("Chn Pitch Bend"), 22);
-    cbxAction->addItem (TRANS("Chn Instrument"), 23);
-    cbxAction->addItem (TRANS("Chn Transpose"), 24);
-    cbxAction->addItem (TRANS("Layer Transpose"), 25);
-    cbxAction->addItem (TRANS("Track Note"), 26);
+    cbxAction->addItem (TRANS("Ptr Note Layer"), 9);
+    cbxAction->addItem (TRANS("Ptr Table Data"), 10);
+    cbxAction->addItem (TRANS("Mute Behavior"), 11);
+    cbxAction->addItem (TRANS("Mute Scale"), 12);
+    cbxAction->addItem (TRANS("Channel Enable"), 13);
+    cbxAction->addItem (TRANS("Channel Disable"), 14);
+    cbxAction->addItem (TRANS("Master Volume"), 15);
+    cbxAction->addItem (TRANS("Tempo"), 16);
+    cbxAction->addItem (TRANS("Enable Long Notes"), 17);
+    cbxAction->addItem (TRANS("CC or CC Group"), 18);
+    cbxAction->addItem (TRANS("Chn Transpose"), 19);
+    cbxAction->addItem (TRANS("Layer Transpose"), 20);
+    cbxAction->addItem (TRANS("Note"), 21);
     cbxAction->addListener (this);
 
     cbxAction->setBounds (232, 416, 240, 24);
@@ -379,7 +374,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     cbxMeaning->setTextWhenNoChoicesAvailable (TRANS("(no choices)"));
     cbxMeaning->addListener (this);
 
-    cbxMeaning->setBounds (232, 552, 240, 24);
+    cbxMeaning->setBounds (232, 552, 136, 24);
 
     optDataSrcOffset.reset (new juce::ToggleButton ("optDataSrcOffset"));
     addAndMakeVisible (optDataSrcOffset.get());
@@ -475,6 +470,37 @@ SeqABIEditor::SeqABIEditor (String abi_name)
 
     btnSave->setBounds (408, 0, 64, 32);
 
+    txtCC.reset (new juce::TextEditor ("txtCC"));
+    addAndMakeVisible (txtCC.get());
+    txtCC->setMultiLine (false);
+    txtCC->setReturnKeyStartsNewLine (false);
+    txtCC->setReadOnly (false);
+    txtCC->setScrollbarsShown (true);
+    txtCC->setCaretVisible (true);
+    txtCC->setPopupMenuEnabled (true);
+    txtCC->setText (juce::String());
+
+    txtCC->setBounds (408, 552, 40, 24);
+
+    lblCC.reset (new juce::Label ("lblCC",
+                                  TRANS("CC:")));
+    addAndMakeVisible (lblCC.get());
+    lblCC->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblCC->setJustificationType (juce::Justification::centredLeft);
+    lblCC->setEditable (false, false, false);
+    lblCC->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblCC->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblCC->setBounds (368, 552, 40, 24);
+
+    btnCCHelp.reset (new juce::TextButton ("btnCCHelp"));
+    addAndMakeVisible (btnCCHelp.get());
+    btnCCHelp->setButtonText (TRANS("?"));
+    btnCCHelp->setConnectedEdges (juce::Button::ConnectedOnLeft);
+    btnCCHelp->addListener (this);
+
+    btnCCHelp->setBounds (448, 552, 22, 24);
+
 
     //[UserPreSize]
 
@@ -497,6 +523,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     txtComments->addListener(this);
     txtParamName->addListener(this);
     txtDataLen->addListener(this);
+    txtCC->addListener(this);
 
     //[/UserPreSize]
 
@@ -585,6 +612,9 @@ SeqABIEditor::~SeqABIEditor()
     lblDataLen = nullptr;
     txtDataLen = nullptr;
     btnSave = nullptr;
+    txtCC = nullptr;
+    lblCC = nullptr;
+    btnCCHelp = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -829,6 +859,20 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         save();
         //[/UserButtonCode_btnSave]
     }
+    else if (buttonThatWasClicked == btnCCHelp.get())
+    {
+        //[UserButtonCode_btnCCHelp] -- add your button handler code here..
+        NativeMessageBox::showMessageBoxAsync(AlertWindow::InfoIcon, "seq64",
+            "CC help\n\nSpecial CC values are:\n"
+            "0: Bank\n"
+            "128: Pitch Bend\n"
+            "129: Program Change (instrument)\n\n"
+            "The following CC values are special in MIDI and may not be mapped to Audioseq commands:\n"
+            "32: Bank LSB\n"
+            "6, 38, 96-101: RPN/NRPN controls\n"
+            "120-127: Channel mode messages");
+        //[/UserButtonCode_btnCCHelp]
+    }
 
     //[UserbuttonClicked_Post]
     //[/UserbuttonClicked_Post]
@@ -859,8 +903,12 @@ void SeqABIEditor::comboBoxChanged (juce::ComboBox* comboBoxThatHasChanged)
         String meaning = cbxMeaning->getText();
         if(selparam.getProperty("meaning", "None").toString() != meaning){
             selparam.setProperty("meaning", meaning, nullptr);
+            if(meaning != "CC") selparam.removeProperty("cc", nullptr);
             needssaving = true;
         }
+        txtCC->setEnabled(meaning == "CC");
+        lblCC->setEnabled(meaning == "CC");
+        btnCCHelp->setEnabled(meaning == "CC");
         //[/UserComboBoxCode_cbxMeaning]
     }
 
@@ -946,6 +994,15 @@ void SeqABIEditor::textEditorTextChanged(TextEditor& editorThatWasChanged){
             turnRed = !isint || intval > 2 || intval <= 0;
         }
         selparam.setProperty("datalen", intval, nullptr);
+    }else if(&editorThatWasChanged == txtCC.get()){
+        if(!selparam.isValid()) return;
+        if(!isint || intval < 0 || intval > 129
+                || intval == 6 || intval == 32 || intval == 38
+                || (intval >= 96 && intval <= 101) || (intval >= 120 && intval <= 127)){
+            turnRed = true;
+        }else{
+            selparam.setProperty("cc", intval, nullptr);
+        }
     }
     needssaving = true;
     TEXTCHANGEDHANDLER_POST;
@@ -1010,10 +1067,16 @@ void SeqABIEditor::fillParamInfo(){
         optDataSrcVariable->setToggleState(false, dontSendNotification);
         lblDataLen->setText("(none)", dontSendNotification);
         txtDataLen->setText("", false);
+        txtCC->setText("", false);
         return;
     }
     txtParamName->setText(selparam.getProperty("name", ""), false);
-    cbxMeaning->setText(selparam.getProperty("meaning", ""));
+    String meaning = selparam.getProperty("meaning", "");
+    cbxMeaning->setText(meaning);
+    txtCC->setEnabled(meaning == "CC");
+    lblCC->setEnabled(meaning == "CC");
+    btnCCHelp->setEnabled(meaning == "CC");
+    txtCC->setText(selparam.getProperty("cc", ""));
     String datasrc = selparam.getProperty("datasrc");
     optDataSrcOffset  ->setToggleState(datasrc == "offset",   dontSendNotification);
     optDataSrcConstant->setToggleState(datasrc == "constant", dontSendNotification);
@@ -1048,13 +1111,16 @@ void SeqABIEditor::fillMeaningsBox(String action){
         cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
-    }else if(action == "Ptr Track Data"){
+    }else if(action == "Ptr Note Layer"){
         cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
-    }else if(action == "Sequence Format"){
+    }else if(action == "Ptr Table Data"){
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Size", cbxMeaning->getNumItems()+1);
+    }else if(action == "Mute Behavior"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Sequence Type"){
+    }else if(action == "Mute Scale"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Channel Enable"){
         cbxMeaning->addItem("Bitfield", cbxMeaning->getNumItems()+1);
@@ -1064,27 +1130,15 @@ void SeqABIEditor::fillMeaningsBox(String action){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Tempo"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Chn Reset"){
+    }else if(action == "Enable Long Notes"){
         //None
-    }else if(action == "Chn Priority"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Chn Volume"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Chn Pan"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Chn Effects"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Chn Vibrato"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Chn Pitch Bend"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "CC or CC Group"){
+        cbxMeaning->addItem("CC", cbxMeaning->getNumItems()+1);
     }else if(action == "Chn Transpose"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Layer Transpose"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Chn Instrument"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Track Note"){
+    }else if(action == "Note"){
         cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Note", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Velocity", cbxMeaning->getNumItems()+1);
@@ -1206,7 +1260,7 @@ BEGIN_JUCER_METADATA
               caret="1" popupmenu="1"/>
   <COMBOBOX name="cbxAction" id="e2a97de7a0a41ac7" memberName="cbxAction"
             virtualName="" explicitFocusOrder="0" pos="232 416 240 24" editable="0"
-            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump Same Level&#10;Call Same Level&#10;Loop Start&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Track Data&#10;Sequence Format&#10;Sequence Type&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Chn Reset&#10;Chn Priority&#10;Chn Volume&#10;Chn Pan&#10;Chn Effects&#10;Chn Vibrato&#10;Chn Pitch Bend&#10;Chn Instrument&#10;Chn Transpose&#10;Layer Transpose&#10;Track Note"
+            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump Same Level&#10;Call Same Level&#10;Loop Start&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Note Layer&#10;Ptr Table Data&#10;Mute Behavior&#10;Mute Scale&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Enable Long Notes&#10;CC or CC Group&#10;Chn Transpose&#10;Layer Transpose&#10;Note"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="chkValidInSeq" id="e629b15d1c633dc3" memberName="chkValidInSeq"
                 virtualName="" explicitFocusOrder="0" pos="272 328 200 24" buttonText="Seq Header / Group Track"
@@ -1253,7 +1307,7 @@ BEGIN_JUCER_METADATA
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <COMBOBOX name="cbxMeaning" id="110d66f6a036f77f" memberName="cbxMeaning"
-            virtualName="" explicitFocusOrder="0" pos="232 552 240 24" editable="0"
+            virtualName="" explicitFocusOrder="0" pos="232 552 136 24" editable="0"
             layout="33" items="" textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="optDataSrcOffset" id="8a30282f44025f98" memberName="optDataSrcOffset"
                 virtualName="" explicitFocusOrder="0" pos="160 576 112 24" buttonText="Cmd Offset"
@@ -1291,6 +1345,17 @@ BEGIN_JUCER_METADATA
   <TEXTBUTTON name="btnSave" id="f1826d8815459bef" memberName="btnSave" virtualName=""
               explicitFocusOrder="0" pos="408 0 64 32" buttonText="Save" connectedEdges="0"
               needsCallback="1" radioGroupId="0"/>
+  <TEXTEDITOR name="txtCC" id="b8805eeeec5929ac" memberName="txtCC" virtualName=""
+              explicitFocusOrder="0" pos="408 552 40 24" initialText="" multiline="0"
+              retKeyStartsLine="0" readonly="0" scrollbars="1" caret="1" popupmenu="1"/>
+  <LABEL name="lblCC" id="da5b4b4b524224c5" memberName="lblCC" virtualName=""
+         explicitFocusOrder="0" pos="368 552 40 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="CC:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TEXTBUTTON name="btnCCHelp" id="d5818054c15cd3a3" memberName="btnCCHelp"
+              virtualName="" explicitFocusOrder="0" pos="448 552 22 24" buttonText="?"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

@@ -446,10 +446,10 @@ SeqEditor::SeqEditor ()
 
     chkRel.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (chkRel.get());
-    chkRel->setButtonText (TRANS("Relative Addrs"));
+    chkRel->setButtonText (TRANS("Rel Addrs"));
     chkRel->addListener (this);
 
-    chkRel->setBounds (16, 160, 136, 24);
+    chkRel->setBounds (16, 160, 104, 24);
 
     btnImportMIDI.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnImportMIDI.get());
@@ -499,51 +499,51 @@ SeqEditor::SeqEditor ()
 
     btnExportCom->setBounds (8, 736, 152, 32);
 
-    lblD3.reset (new juce::Label ("new label",
-                                  TRANS("D3")));
-    addAndMakeVisible (lblD3.get());
-    lblD3->setFont (juce::Font (15.00f, juce::Font::plain));
-    lblD3->setJustificationType (juce::Justification::centredLeft);
-    lblD3->setEditable (false, false, false);
-    lblD3->setColour (juce::TextEditor::textColourId, juce::Colours::black);
-    lblD3->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+    lblMuteBhv.reset (new juce::Label ("new label",
+                                       TRANS("MuteB")));
+    addAndMakeVisible (lblMuteBhv.get());
+    lblMuteBhv->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblMuteBhv->setJustificationType (juce::Justification::centredLeft);
+    lblMuteBhv->setEditable (false, false, false);
+    lblMuteBhv->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblMuteBhv->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblD3->setBounds (160, 160, 40, 24);
+    lblMuteBhv->setBounds (120, 160, 56, 24);
 
-    txtD3.reset (new juce::TextEditor ("new text editor"));
-    addAndMakeVisible (txtD3.get());
-    txtD3->setMultiLine (false);
-    txtD3->setReturnKeyStartsNewLine (false);
-    txtD3->setReadOnly (false);
-    txtD3->setScrollbarsShown (false);
-    txtD3->setCaretVisible (true);
-    txtD3->setPopupMenuEnabled (true);
-    txtD3->setText (TRANS("20"));
+    txtMuteBhv.reset (new juce::TextEditor ("txtMuteBhv"));
+    addAndMakeVisible (txtMuteBhv.get());
+    txtMuteBhv->setMultiLine (false);
+    txtMuteBhv->setReturnKeyStartsNewLine (false);
+    txtMuteBhv->setReadOnly (false);
+    txtMuteBhv->setScrollbarsShown (false);
+    txtMuteBhv->setCaretVisible (true);
+    txtMuteBhv->setPopupMenuEnabled (true);
+    txtMuteBhv->setText (TRANS("20"));
 
-    txtD3->setBounds (192, 160, 40, 24);
+    txtMuteBhv->setBounds (176, 160, 40, 24);
 
-    lblD5.reset (new juce::Label ("new label",
-                                  TRANS("D5")));
-    addAndMakeVisible (lblD5.get());
-    lblD5->setFont (juce::Font (15.00f, juce::Font::plain));
-    lblD5->setJustificationType (juce::Justification::centredLeft);
-    lblD5->setEditable (false, false, false);
-    lblD5->setColour (juce::TextEditor::textColourId, juce::Colours::black);
-    lblD5->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+    lblMuteScale.reset (new juce::Label ("new label",
+                                         TRANS("Scale")));
+    addAndMakeVisible (lblMuteScale.get());
+    lblMuteScale->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblMuteScale->setJustificationType (juce::Justification::centredLeft);
+    lblMuteScale->setEditable (false, false, false);
+    lblMuteScale->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblMuteScale->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblD5->setBounds (240, 160, 40, 24);
+    lblMuteScale->setBounds (224, 160, 48, 24);
 
-    txtD5.reset (new juce::TextEditor ("new text editor"));
-    addAndMakeVisible (txtD5.get());
-    txtD5->setMultiLine (false);
-    txtD5->setReturnKeyStartsNewLine (false);
-    txtD5->setReadOnly (false);
-    txtD5->setScrollbarsShown (false);
-    txtD5->setCaretVisible (true);
-    txtD5->setPopupMenuEnabled (true);
-    txtD5->setText (TRANS("32"));
+    txtMuteScale.reset (new juce::TextEditor ("txtMuteScale"));
+    addAndMakeVisible (txtMuteScale.get());
+    txtMuteScale->setMultiLine (false);
+    txtMuteScale->setReturnKeyStartsNewLine (false);
+    txtMuteScale->setReadOnly (false);
+    txtMuteScale->setScrollbarsShown (false);
+    txtMuteScale->setCaretVisible (true);
+    txtMuteScale->setPopupMenuEnabled (true);
+    txtMuteScale->setText (TRANS("32"));
 
-    txtD5->setBounds (272, 160, 40, 24);
+    txtMuteScale->setBounds (272, 160, 40, 24);
 
     internalPath1.startNewSubPath (160.0f, 336.0f);
     internalPath1.lineTo (348.0f, 336.0f);
@@ -654,10 +654,10 @@ SeqEditor::~SeqEditor()
     btnExportMus = nullptr;
     btnImportCom = nullptr;
     btnExportCom = nullptr;
-    lblD3 = nullptr;
-    txtD3 = nullptr;
-    lblD5 = nullptr;
-    txtD5 = nullptr;
+    lblMuteBhv = nullptr;
+    txtMuteBhv = nullptr;
+    lblMuteScale = nullptr;
+    txtMuteScale = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -829,8 +829,8 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         midiopts.setProperty("smartloop", chkSmartLoop->getToggleState(), nullptr);
         midiopts.setProperty("addmstrvolval", txtMasterVol->getText().getHexValue32(), nullptr);
         midiopts.setProperty("reladdr", chkRel->getToggleState(), nullptr);
-        midiopts.setProperty("d3", txtD3->getText().getHexValue32(), nullptr);
-        midiopts.setProperty("d5", txtD5->getText().getHexValue32(), nullptr);
+        midiopts.setProperty("mutebhv", txtMuteBhv->getText().getHexValue32(), nullptr);
+        midiopts.setProperty("mutescale", txtMuteScale->getText().getHexValue32(), nullptr);
 
         midiopts.setProperty("usecalls", chkUseCalls->getToggleState(), nullptr);
         midiopts.setProperty("useloops", chkUseLoops->getToggleState(), nullptr);
@@ -1170,7 +1170,7 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="256 24 63 32" buttonText="Edit..."
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <TOGGLEBUTTON name="new toggle button" id="32dace4af418847d" memberName="chkRel"
-                virtualName="" explicitFocusOrder="0" pos="16 160 136 24" buttonText="Relative Addrs"
+                virtualName="" explicitFocusOrder="0" pos="16 160 104 24" buttonText="Rel Addrs"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <TEXTBUTTON name="new button" id="dda1a6799546c40" memberName="btnImportMIDI"
               virtualName="" explicitFocusOrder="0" pos="8 320 152 32" buttonText="Import MIDI"
@@ -1190,21 +1190,21 @@ BEGIN_JUCER_METADATA
   <TEXTBUTTON name="new button" id="e373bb4f6fe0c973" memberName="btnExportCom"
               virtualName="" explicitFocusOrder="0" pos="8 736 152 32" buttonText="Export .com/.aseq"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
-  <LABEL name="new label" id="f47463540eb17b52" memberName="lblD3" virtualName=""
-         explicitFocusOrder="0" pos="160 160 40 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="D3" editableSingleClick="0" editableDoubleClick="0"
+  <LABEL name="new label" id="f47463540eb17b52" memberName="lblMuteBhv"
+         virtualName="" explicitFocusOrder="0" pos="120 160 56 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="MuteB" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="eaf577117e5f825a" memberName="txtD3"
-              virtualName="" explicitFocusOrder="0" pos="192 160 40 24" initialText="20"
+  <TEXTEDITOR name="txtMuteBhv" id="eaf577117e5f825a" memberName="txtMuteBhv"
+              virtualName="" explicitFocusOrder="0" pos="176 160 40 24" initialText="20"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
-  <LABEL name="new label" id="f55d4d9dc7a4d940" memberName="lblD5" virtualName=""
-         explicitFocusOrder="0" pos="240 160 40 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="D5" editableSingleClick="0" editableDoubleClick="0"
+  <LABEL name="new label" id="f55d4d9dc7a4d940" memberName="lblMuteScale"
+         virtualName="" explicitFocusOrder="0" pos="224 160 48 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Scale" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="5781be6e6a4a3b3b" memberName="txtD5"
+  <TEXTEDITOR name="txtMuteScale" id="5781be6e6a4a3b3b" memberName="txtMuteScale"
               virtualName="" explicitFocusOrder="0" pos="272 160 40 24" initialText="32"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>

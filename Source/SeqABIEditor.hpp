@@ -142,6 +142,9 @@ private:
     std::unique_ptr<juce::Label> lblDataLen;
     std::unique_ptr<juce::TextEditor> txtDataLen;
     std::unique_ptr<juce::TextButton> btnSave;
+    std::unique_ptr<juce::TextEditor> txtCC;
+    std::unique_ptr<juce::Label> lblCC;
+    std::unique_ptr<juce::TextButton> btnCCHelp;
 
 
     //==============================================================================

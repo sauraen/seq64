@@ -480,7 +480,7 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCC
     }else if(action == "Loop End"){
         //return true;
         return false;
-    }else if(action == "Track Note"){
+    }else if(action == "Note"){
         //Compare notes
         param1 = command1.getChildWithProperty(idMeaning, "Note");
         param2 = command2.getChildWithProperty(idMeaning, "Note");
@@ -950,14 +950,14 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     want = wantAction("End of Data", 0);
     section.addChild(createCommand(want), 0, nullptr);
     //Not Sequence Format (D3 20)
-    value = (int)midiopts.getProperty("d3", 0x20);
-    want = wantAction("Sequence Format", 0);
+    value = (int)midiopts.getProperty("mutebhv", 0x20);
+    want = wantAction("Mute Behavior", 0);
     wantProperty(want, "Value", value);
     section.addChild(createCommand(want), cmd, nullptr);
     cmd++;
     //Not Sequence Type (D5 32)
-    value = (int)midiopts.getProperty("d5", 0x32);
-    want = wantAction("Sequence Type", 0);
+    value = (int)midiopts.getProperty("mutescale", 0x32);
+    want = wantAction("Mute Scale", 0);
     wantProperty(want, "Value", value);
     section.addChild(createCommand(want), cmd, nullptr);
     cmd++;
@@ -1151,9 +1151,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 break;
             }
             cmd = 0;
-            //Channel Reset (C4)
+            //Enable Long Notes, previously known as Chn Reset (C4)
             if(sectimeidx == 0){
-                want = wantAction("Chn Reset", 1);
+                want = wantAction("Enable Long Notes", 1);
                 section.addChild(createCommand(want), cmd, nullptr);
                 cmd++;
             }
@@ -1172,7 +1172,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 want = wantAction("End of Data", 2);
                 newsec.addChild(createCommand(want), -1, nullptr);
                 //Add Ptr Track Data command to channel
-                want = wantAction("Ptr Track Data", 1);
+                want = wantAction("Ptr Note Layer", 1);
                 wantProperty(want, "Note Layer", layer);
                 wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
@@ -1357,7 +1357,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                         continue;
                     }
                     //Create note command
-                    want = wantAction("Track Note", 2);
+                    want = wantAction("Note", 2);
                     wantProperty(want, "Velocity", msg.getVelocity());
                     //Note
                     note = msg.getNoteNumber() - transpose - midi_basenote;
@@ -1489,7 +1489,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 //dbgmsg("----Command " + String(cmd1) + "(" + action1 + ")");
                 //Don't loop pointers or no actions
                 if(action1 == "No Action" || action1 == "End of Data" || action1 == "Jump Same Level"
-                        || action1 == "Ptr Channel Header" || action1 == "Ptr Track Data"){
+                        || action1 == "Ptr Channel Header" || action1 == "Ptr Note Layer"){
                     continue;
                 }
                 //See if this command repeats later in the track, for loops
@@ -1657,14 +1657,14 @@ void SeqFile::optimize(ValueTree midiopts){
                 action1 = command1.getProperty(idAction, "No Action");
                 //dbgmsg("----Command " + String(cmd1) + "(" + action1 + ")");
                 if(action1 == "No Action" || action1 == "End of Data" || action1 == "Jump Same Level"
-                        || action1 == "Ptr Channel Header" || action1 == "Ptr Track Data"){
+                        || action1 == "Ptr Channel Header" || action1 == "Ptr Note Layer"){
                     continue;
                 }
                 //Consider next command too, there's no point in calling a section for 1 command
                 command3 = section1.getChild(cmd1+1);
                 action3 = command3.getProperty(idAction, "No Action");
                 if(action3 == "No Action" || action3 == "End of Data" || action3 == "Jump Same Level"
-                        || action3 == "Ptr Channel Header" || action3 == "Ptr Track Data"){
+                        || action3 == "Ptr Channel Header" || action3 == "Ptr Note Layer"){
                     continue;
                 }
                 //Find all the places, in any section of the same stype, where this string of two commands appears (including overlapping)
@@ -1705,7 +1705,7 @@ void SeqFile::optimize(ValueTree midiopts){
                     command3 = section1.getChild(cmd3);
                     action3 = command3.getProperty(idAction);
                     if(action3 == "No Action" || action3 == "End of Data" || action3 == "Jump Same Level"
-                            || action3 == "Ptr Channel Header" || action3 == "Ptr Track Data"){
+                            || action3 == "Ptr Channel Header" || action3 == "Ptr Note Layer"){
                         break;
                     }
                     //See if we can move all the others
@@ -1912,8 +1912,8 @@ void SeqFile::reduceTrackNotes(){
             if(action == "Loop Start" || action == "Call Same Level"){
                 lastdelay = -1234;
             }
-            if(action != "Track Note") continue;
-            newcommand = wantAction("Track Note", 2);
+            if(action != "Note") continue;
+            newcommand = wantAction("Note", 2);
             //Note
             paramd = command.getChildWithProperty(idMeaning, "Note");
             wantProperty(newcommand, "Note", paramd.getProperty(idValue));
@@ -2067,9 +2067,9 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                     + " in stype " + String(stype));
         }else if(action == "No Action"){
             //do nothing
-        }else if(action == "Sequence Format"){
+        }else if(action == "Mute Behavior"){
             //do nothing
-        }else if(action == "Sequence Type"){
+        }else if(action == "Mute Scale"){
             //do nothing
         }else if(action == "Channel Enable"){
             //do nothing
@@ -2187,7 +2187,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 msg.setTimeStamp(t*ticks_multiplier);
                 mastertrack.addEvent(msg);
             }
-        }else if(action == "Ptr Track Data"){
+        }else if(action == "Ptr Note Layer"){
             if(stype != 1){
                 dbgmsg("Ptr Track Data from somewhere other than channel header!");
                 return 2;
@@ -2266,9 +2266,9 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             msg = MidiMessage::tempoMetaEvent(tempovalue);
             msg.setTimeStamp(t*ticks_multiplier);
             mastertrack.addEvent(msg);
-        }else if(action == "Chn Reset"){
+        }else if(action == "Enable Long Notes"){
             if(stype != 1){
-                dbgmsg("Chn Reset in somewhere other than channel header!");
+                dbgmsg("Enable Long Notes in somewhere other than channel header!");
                 importresult |= 1; continue;
             }
             //Reset transposes for this channel
@@ -2333,6 +2333,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             }
             int value = param.getProperty(idValue);
             if(value >= 0x80) value -= 0x100;
+            //TODO this is not correct, it can change while the channel is playing
             for(int i = 0; i < max_layers; i++){
                 transposes.set((channel*max_layers)+i, value);
             }
@@ -2463,16 +2464,16 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             msg = MidiMessage::programChange(channel+1, midiprogram);
             msg.setTimeStamp(t*ticks_multiplier);
             mtracks[channel]->addEvent(msg);
-        }else if(action == "Track Note"){
+        }else if(action == "Note"){
             if(stype != 2){
-                dbgmsg("Track Note in somewhere other than track data!");
+                dbgmsg("Note in somewhere other than track data!");
                 importresult |= 1; continue;
             }
             //Delay already taken care of
             //Note
             ValueTree param = command.getChildWithProperty(idMeaning, "Note");
             if(!param.isValid()){
-                dbgmsg("Track Note event with no note!");
+                dbgmsg("Note event with no note!");
                 importresult |= 1; continue;
             }
             int value = param.getProperty(idValue);
@@ -2498,7 +2499,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 delay = param.getProperty(idValue);
             }else{
                 if(delay < 0){
-                    dbgmsg("Track Note command using previous delay, but not previously set!");
+                    dbgmsg("Note command using previous delay, but not previously set!");
                     importresult |= 1; continue;
                 }
                 //Add the delay to the current command so we actually do the delay after the note is written
@@ -2872,7 +2873,7 @@ int SeqFile::importCom(File comfile){
                 section.setProperty(idAddressEnd, (int)a, nullptr);
                 break;
             }else if(action == "Jump Same Level" || action == "Call Same Level" 
-                    || action == "Ptr Channel Header" || action == "Ptr Track Data"){
+                    || action == "Ptr Channel Header" || action == "Ptr Note Layer"){
                 int tgt_addr = getPtrAddress(command, a, data.size());
                 //dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
                 int tgt_stype = -1;
@@ -2884,7 +2885,7 @@ int SeqFile::importCom(File comfile){
                         return 2;
                     }
                     tgt_stype = 1;
-                }else if(action == "Ptr Track Data"){
+                }else if(action == "Ptr Note Layer"){
                     if(stype != 1){
                         dbgmsg("Got Ptr Track Data in something not channel header!");
                         return 2;

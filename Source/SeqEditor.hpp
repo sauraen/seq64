@@ -151,10 +151,10 @@ private:
     std::unique_ptr<juce::TextButton> btnExportMus;
     std::unique_ptr<juce::TextButton> btnImportCom;
     std::unique_ptr<juce::TextButton> btnExportCom;
-    std::unique_ptr<juce::Label> lblD3;
-    std::unique_ptr<juce::TextEditor> txtD3;
-    std::unique_ptr<juce::Label> lblD5;
-    std::unique_ptr<juce::TextEditor> txtD5;
+    std::unique_ptr<juce::Label> lblMuteBhv;
+    std::unique_ptr<juce::TextEditor> txtMuteBhv;
+    std::unique_ptr<juce::Label> lblMuteScale;
+    std::unique_ptr<juce::TextEditor> txtMuteScale;
     juce::Path internalPath1;
     juce::Path internalPath2;
     juce::Path internalPath3;
