@@ -26,29 +26,32 @@
 #include "SeqFile.hpp"
 
 Identifier SeqFile::idName("name");
-Identifier SeqFile::idLength("length");
-Identifier SeqFile::idAction("action");
+Identifier SeqFile::idCName("cname");
+Identifier SeqFile::idOName("oname");
 Identifier SeqFile::idCmd("cmd");
 Identifier SeqFile::idCmdEnd("cmdend");
+Identifier SeqFile::idAction("action");
 Identifier SeqFile::idMeaning("meaning");
 Identifier SeqFile::idValue("value");
 Identifier SeqFile::idCC("cc");
+Identifier SeqFile::idLength("length");
+Identifier SeqFile::idAddress("address");
+Identifier SeqFile::idAddressEnd("address_end");
 Identifier SeqFile::idDataSrc("datasrc");
 Identifier SeqFile::idDataLen("datalen");
 Identifier SeqFile::idDataAddr("dataaddr");
 Identifier SeqFile::idDataActualLen("dataactuallen");
+Identifier SeqFile::idSType("stype");
 Identifier SeqFile::idValidInSeq("validinseq");
 Identifier SeqFile::idValidInChn("validinchn");
 Identifier SeqFile::idValidInTrk("validintrk");
-
-Identifier SeqFile::idSType("stype");
 Identifier SeqFile::idChannel("channel");
 Identifier SeqFile::idLayer("layer");
 Identifier SeqFile::idTSection("tsection");
 Identifier SeqFile::idSection("section");
+Identifier SeqFile::idSectionName("sectionname");
 Identifier SeqFile::idOldSectionIdx("oldsectionidx");
-Identifier SeqFile::idAddress("address");
-Identifier SeqFile::idAddressEnd("address_end");
+Identifier SeqFile::idSrcCmdRef("callcmdref");
 Identifier SeqFile::idHash("hash");
 Identifier SeqFile::idTargetSection("targetsection");
 Identifier SeqFile::idTargetHash("targethash");
@@ -76,8 +79,11 @@ String SeqFile::getInternalString(){
     String ret;
     for(int i=0; i<structure.getNumChildren(); ++i){
         ValueTree section = structure.getChild(i);
-        ret += "Section " + String(i) + ": " + section.getType() 
-            + " (@" + hex((uint16_t)(int)section.getProperty(idAddress, -1)) + ")";
+        ret += "Section " + String(i);
+        if(section.hasProperty(idName)){
+            ret += " (\"" + section.getProperty(idName).toString() + "\")";
+        }
+        ret += ": " + section.getType() + " (@" + hex((uint16_t)(int)section.getProperty(idAddress, -1)) + ")";
         if((int)section.getProperty(idChannel, -1) >= 0){
             ret += ", chn " + section.getProperty(idChannel, -1).toString();
         }
@@ -95,9 +101,6 @@ String SeqFile::getInternalString(){
             }
             if(cmd.hasProperty(idTargetHash)){
                 cmddesc += " to hash " + cmd.getProperty(idTargetHash, "Error").toString();
-            }
-            if(cmdaction == "Marker"){
-                cmddesc += " hash " + cmd.getProperty(idHash, "Error").toString();
             }
             for(int k=0; k<cmd.getNumChildren(); ++k){
                 ValueTree param = cmd.getChild(k);
@@ -187,7 +190,6 @@ String SeqFile::getDebugOutput(){
 ///////////////////////////// importMIDI functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-//Probably OK
 MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
     in.updateMatchedPairs();
     in.sort();
@@ -224,7 +226,6 @@ MidiMessageSequence* SeqFile::ensureSimulMsgsInOrder(MidiMessageSequence &in){
     return out;
 }
 
-//Probably OK
 void SeqFile::getCommandRange(ValueTree command, String meaning, int &range_min, int &range_max){
     range_min = range_max = 0;
     if(!command.isValid()) return;
@@ -244,7 +245,6 @@ void SeqFile::getCommandRange(ValueTree command, String meaning, int &range_min,
     }
 }
 
-//Probably OK
 int SeqFile::getLargestCommandRange(int stype, String action, String meaning){
     ValueTree test, param, param2;
     ValueTree possibleCmdsList("possiblecmdslist");
@@ -264,7 +264,6 @@ int SeqFile::getLargestCommandRange(int stype, String action, String meaning){
     return maxrange;
 }
 
-//Probably OK
 bool SeqFile::isCommandValidIn(ValueTree command, int stype){
     if(!command.isValid()) return false;
     if(stype == 0){
@@ -278,7 +277,6 @@ bool SeqFile::isCommandValidIn(ValueTree command, int stype){
     }
 }
 
-//Probably OK
 ValueTree SeqFile::wantAction(String action, int stype){
     ValueTree ret("wantedcmd");
     ret.setProperty(idAction, action, nullptr);
@@ -286,7 +284,6 @@ ValueTree SeqFile::wantAction(String action, int stype){
     return ret;
 }
 
-//Probably OK
 void SeqFile::wantProperty(ValueTree want, String meaning, int value){
     ValueTree sub("wantedproperty");
     sub.setProperty(idMeaning, meaning, nullptr);
@@ -294,7 +291,6 @@ void SeqFile::wantProperty(ValueTree want, String meaning, int value){
     want.addChild(sub, -1, nullptr);
 }
 
-//Probably OK
 ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     if(!want.isValid()) return want;
     int stype = want.getProperty(idSType);
@@ -398,7 +394,6 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     return test;
 }
 
-//Probably OK
 void SeqFile::advanceToTimestamp(ValueTree section, int stype, int &cmd, int &t, int newt){
     int maxdelay = getLargestCommandRange(stype, "Delay", "Delay") - 1;
     while(t < newt){
@@ -411,18 +406,8 @@ void SeqFile::advanceToTimestamp(ValueTree section, int stype, int &cmd, int &t,
     }
 }
 
-//Probably OK
-ValueTree SeqFile::createMarker(){
-    ValueTree ret("marker");
-    ret.setProperty(idAction, "Marker", nullptr);
-    ret.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
-    return ret;
-}
-
-//Probably OK
 int SeqFile::getNewCommandLength(ValueTree command){
     if(!command.isValid()) return 0;
-    if(command.getProperty(idAction, "No Action").toString() == "Marker") return 0;
     int cmdlen = 1;
     ValueTree param;
     int p, datalen, value;
@@ -448,7 +433,6 @@ int SeqFile::getNewCommandLength(ValueTree command){
     return cmdlen;
 }
 
-//Probably OK
 bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCCMerge, ValueTree midiopts){
     String action = command1.getProperty(idAction, "No Action1");
     if(action != command2.getProperty(idAction, "No Action2").toString()) return false;
@@ -512,7 +496,6 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCC
     }
 }
 
-//Probably OK
 int SeqFile::getTotalSectionTime(ValueTree section){
     int totaltime = 0, t, loopmult = 1;
     for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
@@ -555,7 +538,6 @@ int SeqFile::getTotalSectionTime(ValueTree section){
     return totaltime;
 }
 
-//Probably OK
 void SeqFile::deleteSection(int sectodelete){
     ValueTree dsection = structure.getChild(sectodelete);
     /*
@@ -608,7 +590,6 @@ void SeqFile::getExtendedCC(MidiMessage msg, int &cc, int &value){
 ///////////////////////////// importMIDI objects ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-//Probably OK
 class LayerState{
 public:
     LayerState(int historylen) : histl(historylen) { clear(); }
@@ -646,7 +627,6 @@ private:
     int histl;
 };
 
-//Probably OK
 struct CCTracker{
     CCTracker(){
         q_time = lasttime = q_amp = lastvalue = 0;
@@ -698,7 +678,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             msgptr = &trk.getEventPointer(i)->message;
             if(msgptr->isNoteOn()){
                 if((trk.getTimeOfMatchingKeyUp(i) - msgptr->getTimeStamp()) 
-                        * ticks_multiplier < 2.0){
+                        * ticks_multiplier < 1.0){
                     dbgmsg("Warning, extremely short note (pitch " 
                         + String(msgptr->getNoteNumber()) + ", chn "
                         + String(msgptr->getChannel()) + ", quarter note ~" 
@@ -988,13 +968,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             dbgmsg(".", false);
             //Get up to the time
             advanceToTimestamp(section, 0, cmd, t, sectiontimes[sectimeidx]);
-            //Section marker (for pointer later)
-            if(num_tsections == 1 || sectimeidx == 1){
-                want = createMarker();
-                loopStartHash = want.getProperty(idHash);
-                section.addChild(want, cmd, nullptr);
-                cmd++;
-            }
             //Channel pointers for new section
             for(channel=0; channel<16; channel++){
                 if(channelsused[channel] < 0) continue;
@@ -1015,6 +988,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 want.setProperty(idTargetSection, structure.getNumChildren() - 1, nullptr);
                 section.addChild(want, cmd, nullptr);
                 cmd++;
+                if((num_tsections == 1 || sectimeidx == 1) && loopStartHash == -1){
+                    loopStartHash = want.getProperty(idHash);
+                }
             }
         }
         if(done) break;
@@ -1053,6 +1029,10 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     advanceToTimestamp(section, 0, cmd, t, last_timestamp);
     //Loop to start
     if((bool)midiopts.getProperty("smartloop", false)){
+        if(loopStartHash == -1){
+            dbgmsg("Smart loop consistency error!");
+            return 2;
+        }
         want = wantAction("Jump Same Level", 0);
         wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
         want = createCommand(want);
@@ -1083,16 +1063,20 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     int cc;
     //CC Bandwidth Reduction setup
     OwnedArray<CCTracker> ccstates;
+    int qa = midiopts.getProperty("q_other_amp", 1);
     for(cc=0; cc<130; cc++){ //128 is pitch, 129 is program
         ccstates.add(new CCTracker());
         ccstates[cc]->q_time = 0;
-        ccstates[cc]->q_amp = midiopts.getProperty("q_other_amp", 1);
+        ccstates[cc]->q_amp = qa;
     }
     ccstates[0]->q_amp = 0; //bank
     ccstates[128]->q_amp = midiopts.getProperty("q_pitch_amp", 1);
     ccstates[129]->q_amp = 0; //program
-    ccstates[7]->q_amp = ccstates[11]->q_amp = ccstates[10]->q_amp = ccstates[9]->q_amp
-        = midiopts.getProperty("q_volpan_amp", 2); //volumes and pans
+    qa = midiopts.getProperty("q_volpan_amp", 2);
+    ccstates[7]->q_amp = qa; //volume
+    ccstates[11]->q_amp = qa; //expression
+    ccstates[10]->q_amp = qa; //pan
+    ccstates[8]->q_amp = qa; //pan mix
     //Channel data
     for(channel=0; channel<16; channel++){
         if(channelsused[channel] < 0) continue;
@@ -1196,6 +1180,11 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     //This command is quantized out
                     //Update the last command's value, but don't update lastvalue
                     //(otherwise this would progressively quantize out any slow CC fade)
+                    /*
+                    dbgmsg("Chn " + String(channel) + " quantized out CC " + String(cc) 
+                        + " value " + String(value) + " lastvalue " + String(ccstates[cc]->lastvalue)
+                        + " timestamp " + String(timestamp) + " lasttime " + String(ccstates[cc]->lasttime));
+                    */
                     if(ccstates[cc]->lastcmd.isValid()){
                         //lastcmd will be invalid if this is an action we aren't tracking
                         ValueTree tmpcmd = ccstates[cc]->lastcmd.getChildWithProperty(idCC, cc);
@@ -1784,6 +1773,13 @@ void SeqFile::optimize(ValueTree midiopts){
                 secN = structure.getNumChildren();
                 sectionN = ValueTree(section1.getType());
                 sectionN.setProperty(idSType, stype1, nullptr);
+                if(stype1 == 1 || stype1 == 2){
+                    sectionN.setProperty(idChannel, section1.getProperty(idChannel), nullptr);
+                }
+                if(stype1 == 2){
+                    sectionN.setProperty(idLayer, section1.getProperty(idLayer), nullptr);
+                }
+                sectionN.setProperty(idSrcCmdRef, cmd1, nullptr);
                 structure.addChild(sectionN, secN, nullptr);
                 //Copy all data to new section
                 for(i=0; i<hooklength; i++){
@@ -2609,6 +2605,172 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// exportMus functions /////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+void SeqFile::assignTSection(ValueTree sec, int tsecnum){
+    if(!sec.isValid()){
+        dbgmsg("Invalid section in assignTSection for tsecnum = " + String(tsecnum) + "!");
+        importresult |= 2;
+        return;
+    }
+    if(!sec.hasProperty(idTSection)){
+        sec.setProperty(idTSection, tsecnum, nullptr);
+    }else{
+        return;
+    }
+    for(int i=0; i<sec.getNumChildren(); ++i){
+        ValueTree command = sec.getChild(i);
+        if(command.hasProperty(idTargetSection)){
+            assignTSection(structure.getChild((int)command.getProperty(idTargetSection)), tsecnum);
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////// exportMus //////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+int SeqFile::exportMus(File musfile, int dialect){
+    if(!musfile.hasWriteAccess()){
+        dbgmsg("No write access to " + musfile.getFullPathName() + "!");
+        return 2;
+    }
+    FileOutputStream fos(musfile);
+    if(fos.failedToOpen()){
+        dbgmsg("Couldn't open file " + musfile.getFullPathName() + " for writing!");
+        return 2;
+    }
+    fos.setPosition(0);
+    fos.truncate();
+    importresult = 0;
+    //Assign tsections to all sections
+    int sec, cmd;
+    ValueTree section, command;
+    section = structure.getChild(0);
+    int tsecnum = -1; bool readyfornewtsec = true;
+    section.setProperty(idTSection, -1, nullptr);
+    section.setProperty(idName, dialect >= 1 ? "_" + musfile.getFileNameWithoutExtension() : "_start", nullptr);
+    for(cmd=0; cmd<section.getNumChildren(); ++cmd){
+        command = section.getChild(cmd);
+        if(readyfornewtsec && command.getProperty(idAction).toString() == "Ptr Channel Header"){
+            ++tsecnum;
+            readyfornewtsec = false;
+        }else if(!readyfornewtsec && command.getChildWithProperty(idMeaning, "Delay").isValid()){
+            readyfornewtsec = true;
+        }
+        if(command.hasProperty(idTargetSection)){
+            assignTSection(structure.getChild((int)command.getProperty(idTargetSection)), tsecnum);
+        }
+    }
+    int num_tsections = tsecnum + 1;
+    //Assign names to all sections
+    for(sec=1; sec<structure.getNumChildren(); sec++){
+        section = structure.getChild(sec);
+        if(section.hasProperty(idName)) continue;
+        tsecnum = section.getProperty(idTSection);
+        int stype = section.getProperty(idSType);
+        String name;
+        if(dialect >= 1){
+            name = "_" + musfile.getFileNameWithoutExtension() + "_";
+            if(num_tsections == 1){
+                name += "A";
+            }else{
+                name += (tsecnum == 0) ? String("intro") : String('A' + tsecnum - 1);
+            }
+        }else{
+            name = "tsec" + String(tsecnum);
+        }
+        if(stype == 1 || stype == 2){
+            name += "_" + String(dialect >= 1 ? "sub" : "chn") + section.getProperty(idChannel).toString();
+        }
+        if(stype == 2){
+            name += "_" + String(dialect >= 1 ? "note" : "ly") + section.getProperty(idLayer).toString();
+        }
+        if(section.hasProperty(idSrcCmdRef)){
+            name += "_" + String(dialect >= 1 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
+        }
+        section.setProperty(idName, name, nullptr);
+    }
+    /*
+    //Write data
+    address = 0;
+    int ptraddr = -1, ptrsec, ptrhash, cmd2;
+    ValueTree section2, command2, param;
+    for(sec=0; sec<structure.getNumChildren(); sec++){
+        //dbgmsg("----Section " + String(sec));
+        section = structure.getChild(sec);
+        for(cmd=0; cmd<section.getNumChildren(); cmd++){
+            command = section.getChild(cmd);
+            action = command.getProperty(idAction, "No Action");
+            len = command.getProperty(idLength, 1);
+            //Get addresses of pointers
+            if(command.hasProperty(idTargetSection)){
+                ptrsec = command.getProperty(idTargetSection);
+                if(ptrsec < 0 || ptrsec >= structure.getNumChildren()){
+                    dbgmsg("Pointer to undefined section!");
+                    importresult |= 2;
+                }else{
+                    section2 = structure.getChild(ptrsec);
+                    if(command.hasProperty(idTargetHash)){
+                        //Search for command with that hash
+                        ptrhash = command.getProperty(idTargetHash);
+                        ptraddr = -1;
+                        for(cmd2=0; cmd2<section2.getNumChildren(); cmd2++){
+                            command2 = section2.getChild(cmd2);
+                            if((int)command2.getProperty(idHash) == ptrhash){
+                                ptraddr = command2.getProperty(idAddress);
+                                break;
+                            }
+                        }
+                        if(ptraddr < 0){
+                            dbgmsg("Could not find command with correct hash!");
+                            ptraddr = 0;
+                            importresult |= 2;
+                        }
+                    }else{
+                        ptraddr = section2.getProperty(idAddress);
+                    }
+                }
+                //Put in relative/absolute address
+                param = command.getChildWithProperty(idMeaning, "Absolute Address");
+                if(param.isValid()){
+                    param.setProperty(idValue, ptraddr, nullptr);
+                }else{
+                    param = command.getChildWithProperty(idMeaning, "Relative Address");
+                    if(param.isValid()){
+                        param.setProperty(idValue, (int)(ptraddr - (address + len)), nullptr);
+                    }else{
+                        dbgmsg("Command had idTargetSection but no parameters with absolute or relative address!");
+                        importresult |= 2;
+                    }
+                }
+            }
+            writeCommand(data, address, command);
+            address += len;
+            //Enlarge data if necessary
+            if(address >= (maxseqsize - 0x100)){
+                dbgmsg("Warning, sequence extremely large, probably bug!");
+                importresult |= 1;
+                data.ensureStorageAllocated(maxseqsize * 2);
+                data.insertMultiple(maxseqsize, 0, maxseqsize);
+                maxseqsize *= 2;
+            }
+        }
+    }
+    //Shrink data
+    data.removeRange(address, data.size() - address);
+    //Write file
+    for(int i=0; i<data.size(); ++i){
+        fos.writeByte(data[i]);
+    }
+    fos.flush();
+    dbgmsg("Saved " + String(data.size()) + " bytes from sequence to " + comfile.getFullPathName());
+    */
+    return importresult;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// importCom functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -2927,6 +3089,9 @@ int SeqFile::importCom(File comfile){
                     ValueTree newsec(tgt_stype == 0 ? "seqhdr" : tgt_stype == 1 ? "chanhdr" : "trackdata");
                     newsec.setProperty(idSType, tgt_stype, nullptr);
                     newsec.setProperty(idAddress, tgt_addr, nullptr);
+                    if(action == "Call Same Level"){
+                        newsec.setProperty(idSrcCmdRef, section.getNumChildren()-1, nullptr);
+                    }
                     if(tgt_stype == 1){
                         int channel = -1;
                         if(stype == 1){
@@ -3025,7 +3190,6 @@ int SeqFile::importCom(File comfile){
  //Overwrite whatever is at address, don't resize
 void SeqFile::writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree command){
     if(!command.isValid()) return;
-    if(command.getProperty(idAction, "No Action").toString() == "Marker") return;
     ValueTree param;
     int i, p, datalen, value;
     String datasrc;

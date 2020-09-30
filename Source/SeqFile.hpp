@@ -43,8 +43,8 @@ public:
     int exportMIDI(File midifile, ValueTree midiopts);
     #if 0
     int importMus(File musfile, int dialect);
-    int exportMus(File musfile, int dialect);
     #endif
+    int exportMus(File musfile, int dialect);
     int importCom(File comfile);
     int exportCom(File comfile);
     
@@ -85,6 +85,10 @@ private:
     void optimize(ValueTree midiopts);
     void reduceTrackNotes();
     
+    //For exportMus
+    
+    void assignTSection(ValueTree sec, int tsecnum);
+    
     //For importCom
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
     ValueTree getCommand(Array<uint8_t> &data, uint32_t address, int stype);
@@ -105,29 +109,32 @@ private:
     //Identifiers
     
     static Identifier idName;
-    static Identifier idLength;
-    static Identifier idAction;
+    static Identifier idCName;
+    static Identifier idOName;
     static Identifier idCmd;
     static Identifier idCmdEnd;
+    static Identifier idAction;
     static Identifier idMeaning;
     static Identifier idValue;
     static Identifier idCC;
+    static Identifier idLength;
+    static Identifier idAddress;
+    static Identifier idAddressEnd;
     static Identifier idDataSrc;
     static Identifier idDataLen;
     static Identifier idDataAddr;
     static Identifier idDataActualLen;
+    static Identifier idSType;
     static Identifier idValidInSeq;
     static Identifier idValidInChn;
     static Identifier idValidInTrk;
-    
-    static Identifier idSType;
     static Identifier idChannel;
     static Identifier idLayer;
     static Identifier idTSection;
     static Identifier idSection;
+    static Identifier idSectionName;
     static Identifier idOldSectionIdx;
-    static Identifier idAddress;
-    static Identifier idAddressEnd;
+    static Identifier idSrcCmdRef;
     static Identifier idHash;
     static Identifier idTargetSection;
     static Identifier idTargetHash;

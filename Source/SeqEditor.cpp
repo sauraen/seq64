@@ -882,6 +882,13 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnExportMus.get())
     {
         //[UserButtonCode_btnExportMus] -- add your button handler code here..
+        if(!checkSeqPresence(true)) return;
+        File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
+        FileChooser box("Save .mus", savelocation, "*.mus", true);
+        if(!box.browseForFileToSave(true)) return;
+        savelocation = box.getResult();
+        int dialect = optMusCommunity->getToggleState() ? 0 : optMusCanon->getToggleState() ? 1 : 2;
+        startSeqOperation(".mus export", &SeqFile::exportMus, savelocation, dialect);
         //[/UserButtonCode_btnExportMus]
     }
     else if (buttonThatWasClicked == btnImportCom.get())
@@ -1217,4 +1224,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-
