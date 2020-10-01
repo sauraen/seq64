@@ -25,6 +25,8 @@
 
 #include "SeqFile.hpp"
 
+#include <ctime>
+
 Identifier SeqFile::idName("name");
 Identifier SeqFile::idCName("cname");
 Identifier SeqFile::idOName("oname");
@@ -51,7 +53,8 @@ Identifier SeqFile::idTSection("tsection");
 Identifier SeqFile::idSection("section");
 Identifier SeqFile::idSectionName("sectionname");
 Identifier SeqFile::idOldSectionIdx("oldsectionidx");
-Identifier SeqFile::idSrcCmdRef("callcmdref");
+Identifier SeqFile::idLabelName("labelname");
+Identifier SeqFile::idSrcCmdRef("srccmdref");
 Identifier SeqFile::idHash("hash");
 Identifier SeqFile::idTargetSection("targetsection");
 Identifier SeqFile::idTargetHash("targethash");
@@ -79,10 +82,10 @@ String SeqFile::getInternalString(){
     String ret;
     for(int i=0; i<structure.getNumChildren(); ++i){
         ValueTree section = structure.getChild(i);
-        ret += "Section " + String(i);
-        if(section.hasProperty(idName)){
-            ret += " (\"" + section.getProperty(idName).toString() + "\")";
+        if(section.hasProperty(idLabelName)){
+            ret += "[" + section.getProperty(idLabelName).toString() + "] ";
         }
+        ret += "Section " + String(i);
         ret += ": " + section.getType() + " (@" + hex((uint16_t)(int)section.getProperty(idAddress, -1)) + ")";
         if((int)section.getProperty(idChannel, -1) >= 0){
             ret += ", chn " + section.getProperty(idChannel, -1).toString();
@@ -112,6 +115,7 @@ String SeqFile::getInternalString(){
                 if(paramdesc == "None") paramdesc = parammeaning;
                 cmddesc += ", " + paramdesc + " " + hexauto((int)param.getProperty(idValue, 0x1337));
             }
+            if(cmd.hasProperty(idLabelName)) cmddesc = "[" + cmd.getProperty(idLabelName).toString() + "] " + cmddesc;
             if(cmd.hasProperty(idAddress)) cmddesc = hex((int)cmd.getProperty(idAddress),16) + " " + cmddesc;
             ret += "  " + cmddesc;
             //ret += " (" + cmd.getProperty(idHash, 0).toString() + ")";
@@ -2626,6 +2630,23 @@ void SeqFile::assignTSection(ValueTree sec, int tsecnum){
         }
     }
 }
+String SeqFile::getTSectionName(File musfile, int dialect, int num_tsections, ValueTree parent){
+    int tsecnum = parent.getProperty(idTSection);
+    if(dialect >= 1){
+        String name;
+        if(!musfile.getFullPathName().isEmpty()){
+            name = "_" + musfile.getFileNameWithoutExtension() + "_";
+        }
+        if(num_tsections == 1){
+            name += "A";
+        }else{
+            name += (tsecnum == 0) ? String("intro") : String('A' + tsecnum - 1);
+        }
+        return name;
+    }else{
+        return "tsec" + String(tsecnum);
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// exportMus //////////////////////////////////
@@ -2645,16 +2666,18 @@ int SeqFile::exportMus(File musfile, int dialect){
     fos.truncate();
     importresult = 0;
     //Assign tsections to all sections
-    int sec, cmd;
-    ValueTree section, command;
+    int sec, cmd, p;
+    ValueTree section, command, param;
     section = structure.getChild(0);
     int tsecnum = -1; bool readyfornewtsec = true;
     section.setProperty(idTSection, -1, nullptr);
-    section.setProperty(idName, dialect >= 1 ? "_" + musfile.getFileNameWithoutExtension() : "_start", nullptr);
+    section.setProperty(idLabelName, 
+        dialect >= 1 ? "_" + musfile.getFileNameWithoutExtension() : "_start", nullptr);
     for(cmd=0; cmd<section.getNumChildren(); ++cmd){
         command = section.getChild(cmd);
         if(readyfornewtsec && command.getProperty(idAction).toString() == "Ptr Channel Header"){
             ++tsecnum;
+            command.setProperty(idTSection, tsecnum, nullptr);
             readyfornewtsec = false;
         }else if(!readyfornewtsec && command.getChildWithProperty(idMeaning, "Delay").isValid()){
             readyfornewtsec = true;
@@ -2667,20 +2690,9 @@ int SeqFile::exportMus(File musfile, int dialect){
     //Assign names to all sections
     for(sec=1; sec<structure.getNumChildren(); sec++){
         section = structure.getChild(sec);
-        if(section.hasProperty(idName)) continue;
-        tsecnum = section.getProperty(idTSection);
+        if(section.hasProperty(idLabelName)) continue;
         int stype = section.getProperty(idSType);
-        String name;
-        if(dialect >= 1){
-            name = "_" + musfile.getFileNameWithoutExtension() + "_";
-            if(num_tsections == 1){
-                name += "A";
-            }else{
-                name += (tsecnum == 0) ? String("intro") : String('A' + tsecnum - 1);
-            }
-        }else{
-            name = "tsec" + String(tsecnum);
-        }
+        String name = getTSectionName(musfile, dialect, num_tsections, section);
         if(stype == 1 || stype == 2){
             name += "_" + String(dialect >= 1 ? "sub" : "chn") + section.getProperty(idChannel).toString();
         }
@@ -2690,83 +2702,136 @@ int SeqFile::exportMus(File musfile, int dialect){
         if(section.hasProperty(idSrcCmdRef)){
             name += "_" + String(dialect >= 1 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
         }
-        section.setProperty(idName, name, nullptr);
+        section.setProperty(idLabelName, name, nullptr);
     }
-    /*
-    //Write data
-    address = 0;
-    int ptraddr = -1, ptrsec, ptrhash, cmd2;
-    ValueTree section2, command2, param;
-    for(sec=0; sec<structure.getNumChildren(); sec++){
-        //dbgmsg("----Section " + String(sec));
+    //Assign names to all commands which are pointed at
+    Array<int> targethashes;
+    for(sec=0; sec<structure.getNumChildren(); ++sec){
         section = structure.getChild(sec);
-        for(cmd=0; cmd<section.getNumChildren(); cmd++){
+        for(cmd=0; cmd<section.getNumChildren(); ++cmd){
             command = section.getChild(cmd);
-            action = command.getProperty(idAction, "No Action");
-            len = command.getProperty(idLength, 1);
-            //Get addresses of pointers
-            if(command.hasProperty(idTargetSection)){
-                ptrsec = command.getProperty(idTargetSection);
-                if(ptrsec < 0 || ptrsec >= structure.getNumChildren()){
-                    dbgmsg("Pointer to undefined section!");
-                    importresult |= 2;
-                }else{
-                    section2 = structure.getChild(ptrsec);
-                    if(command.hasProperty(idTargetHash)){
-                        //Search for command with that hash
-                        ptrhash = command.getProperty(idTargetHash);
-                        ptraddr = -1;
-                        for(cmd2=0; cmd2<section2.getNumChildren(); cmd2++){
-                            command2 = section2.getChild(cmd2);
-                            if((int)command2.getProperty(idHash) == ptrhash){
-                                ptraddr = command2.getProperty(idAddress);
-                                break;
-                            }
-                        }
-                        if(ptraddr < 0){
-                            dbgmsg("Could not find command with correct hash!");
-                            ptraddr = 0;
-                            importresult |= 2;
-                        }
-                    }else{
-                        ptraddr = section2.getProperty(idAddress);
-                    }
-                }
-                //Put in relative/absolute address
-                param = command.getChildWithProperty(idMeaning, "Absolute Address");
-                if(param.isValid()){
-                    param.setProperty(idValue, ptraddr, nullptr);
-                }else{
-                    param = command.getChildWithProperty(idMeaning, "Relative Address");
-                    if(param.isValid()){
-                        param.setProperty(idValue, (int)(ptraddr - (address + len)), nullptr);
-                    }else{
-                        dbgmsg("Command had idTargetSection but no parameters with absolute or relative address!");
-                        importresult |= 2;
-                    }
-                }
-            }
-            writeCommand(data, address, command);
-            address += len;
-            //Enlarge data if necessary
-            if(address >= (maxseqsize - 0x100)){
-                dbgmsg("Warning, sequence extremely large, probably bug!");
-                importresult |= 1;
-                data.ensureStorageAllocated(maxseqsize * 2);
-                data.insertMultiple(maxseqsize, 0, maxseqsize);
-                maxseqsize *= 2;
+            if(command.hasProperty(idTargetHash)){
+                targethashes.addIfNotAlreadyThere(command.getProperty(idTargetHash));
             }
         }
     }
-    //Shrink data
-    data.removeRange(address, data.size() - address);
-    //Write file
-    for(int i=0; i<data.size(); ++i){
-        fos.writeByte(data[i]);
+    for(sec=0; sec<structure.getNumChildren(); ++sec){
+        section = structure.getChild(sec);
+        for(cmd=0; cmd<section.getNumChildren(); ++cmd){
+            command = section.getChild(cmd);
+            if(command.hasProperty(idLabelName)) continue;
+            if(!targethashes.contains(command.getProperty(idHash))) continue;
+            command.setProperty(idLabelName, command.hasProperty(idTSection)
+                ? getTSectionName(musfile, dialect, num_tsections, command) 
+                : section.getProperty(idLabelName).toString() + "_" + String(cmd), nullptr);
+        }
     }
+    //Write data
+    String out;
+    out += ";****************************************\n";
+    out += ";\tmusic data (format : mus)\n";
+    out += ";\tconverted by SEQ64 Ver 2.0, https://github.com/sauraen/seq64\n";
+    out += ";\t"; { time_t t = time(nullptr); struct tm *curtime = localtime(&t); out += asctime(curtime); }
+    out += ";****************************************\n\n\n";
+    tsecnum = -1;
+    int sectiongroup = -1;
+    for(sec=0; sec<structure.getNumChildren(); ++sec){
+        section = structure.getChild(sec);
+        int stype = section.getProperty(idSType);
+        if(sectiongroup == -1){
+            sectiongroup = 0;
+            if(dialect >= 1){
+                out += ";***************\n;* GROOP TRACK *\n;***************\n\n";
+            }else{
+                out += "; Sequence Header\n\n";
+            }
+        }else if(sectiongroup == 0 && stype == 1){
+            sectiongroup = 1;
+            if(dialect >= 1){
+                out += ";***************\n;* SUB TRACK   *\n;***************\n\n";
+            }else{
+                out += "; Channel Headers\n\n";
+            }
+        }else if(sectiongroup == 1 && stype == 2){
+            sectiongroup = 2;
+            if(dialect >= 1){
+                out += ";***************\n;* NOTE TRACK  *\n;***************\n\n";
+            }else{
+                out += "; Note Layers\n\n";
+            }
+        }else if(sectiongroup == 2 && section.hasProperty(idSrcCmdRef)){
+            sectiongroup = 3;
+            if(dialect >= 1){
+                out += ";*************\n;*  PATTERN  *\n;*************\n\n";
+            }else{
+                out += "; Calls\n\n";
+            }
+        }
+        if(sec != 0 && !section.hasProperty(idSrcCmdRef) 
+                && (int)section.getProperty(idTSection) != tsecnum){
+            if(dialect >= 1){
+                out += ";*** block:" + getTSectionName(File(), dialect, num_tsections, section) + " ***\n\n";
+            }else{
+                out += "; tsec" + section.getProperty(idTSection).toString() + "\n\n";
+            }
+            tsecnum = section.getProperty(idTSection);
+        }
+        if(sec != 0 || dialect == 0){
+            out += section.getProperty(idLabelName).toString() + "\n";
+        }
+        for(cmd=0; cmd<section.getNumChildren(); ++cmd){
+            command = section.getChild(cmd);
+            if(command.hasProperty(idLabelName)){
+                out += command.getProperty(idLabelName).toString() + "\n";
+            }
+            out += "    ";
+            String name = command.getProperty(idName, "Error");
+            if(dialect == 1){
+                name = command.getProperty(idCName, command.getProperty(idOName, name));
+            }else if(dialect == 2){
+                name = command.getProperty(idOName, command.getProperty(idCName, name));
+            }
+            name = name.toLowerCase();
+            String params;
+            for(p=0; p<command.getNumChildren(); ++p){
+                param = command.getChild(p);
+                String meaning = param.getProperty(idMeaning, "None");
+                String datasrc = param.getProperty(idDataSrc).toString();
+                int datalen = param.getProperty(idDataLen, -1);
+                int value = param.getProperty(idValue, 8888);
+                if(meaning == "Absolute Address" || meaning == "Relative Address"){
+                    ValueTree target = structure.getChild(command.getProperty(idTargetSection, -1));
+                    if(!target.isValid()){
+                        dbgmsg(name + " cmd (sec " + String(sec) + " pointing to invalid section "
+                            + command.getProperty(idTargetSection, -1).toString() + "!");
+                        return 2;
+                    }
+                    if(command.hasProperty(idTargetHash)){
+                        target = target.getChildWithProperty(idHash, command.getProperty(idTargetHash));
+                        if(!target.isValid()){
+                            dbgmsg(name + " cmd (sec " + String(sec) + " pointing to section "
+                                + command.getProperty(idTargetSection, -1).toString() + " invalid cmd hash!");
+                            return 2;
+                        }
+                    }
+                    params += ", " + target.getProperty(idLabelName).toString();
+                }else if(datasrc == "fixed" && datalen == 2){
+                    params += ", $" + hex((uint16_t)value);
+                }else{
+                    if(datasrc == "variable" && datalen == 2 && value >= 0x80){
+                        name += "w";
+                    }
+                    params += ", " + String(value);
+                }
+            }
+            out += name + "\t" + params + "\n";
+        }
+        out += "\n";
+    }
+    //Write file
+    fos.writeText(out, false, false, nullptr);
     fos.flush();
-    dbgmsg("Saved " + String(data.size()) + " bytes from sequence to " + comfile.getFullPathName());
-    */
+    dbgmsg("Saved sequence to " + musfile.getFullPathName());
     return importresult;
 }
 
