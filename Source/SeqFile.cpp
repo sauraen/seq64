@@ -1287,7 +1287,8 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 //Init transpose
                 want = wantAction("Layer Transpose", 2);
                 wantProperty(want, "Value", transpose);
-                section.addChild(createCommand(want), cmd, nullptr);
+                ValueTree transposecmd = createCommand(want);
+                section.addChild(transposecmd, cmd, nullptr);
                 cmd++;
                 //Get first note on
                 timestamp3 = 0;
@@ -1371,10 +1372,14 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                             transpose += 12 * (((note - 0x40) / 12) + 1);
                         }
                         note = msg.getNoteNumber() - transpose - midi_basenote;
-                        want2 = wantAction("Layer Transpose", 2);
-                        wantProperty(want2, "Value", transpose);
-                        section.addChild(createCommand(want2), cmd, nullptr);
-                        cmd++;
+                        if(transposecmd.isValid()){
+                            transposecmd.getChildWithProperty(idMeaning, "Value").setProperty(idValue, transpose, nullptr);
+                        }else{
+                            want2 = wantAction("Layer Transpose", 2);
+                            wantProperty(want2, "Value", transpose);
+                            section.addChild(createCommand(want2), cmd, nullptr);
+                            cmd++;
+                        }
                     }
                     wantProperty(want, "Note", note);
                     //Delay
@@ -1409,6 +1414,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     }
                     //Count time
                     t += delay;
+                    transposecmd = ValueTree();
                 }
                 //Get the time to the end
                 advanceToTimestamp(section, 2, cmd, t, endtime);
@@ -2785,17 +2791,53 @@ int SeqFile::exportMus(File musfile, int dialect){
                 out += command.getProperty(idLabelName).toString() + "\n";
             }
             out += "    ";
-            String name = command.getProperty(idName, "Error");
-            if(dialect == 1){
-                name = command.getProperty(idCName, command.getProperty(idOName, name));
-            }else if(dialect == 2){
-                name = command.getProperty(idOName, command.getProperty(idCName, name));
+            String name;
+            bool noteandcanon = false;
+            if(command.getProperty(idAction).toString() == "Note" && dialect >= 1){
+                noteandcanon = true;
+                //Convert note to note name. smf2mus always outputted "sharp" notes only,
+                //but mml64.def supported import of sharp and flat notes (e.g. "CS" = "DF").
+                static const char *const notenames[12] = {
+                    "CN", "CS", "DN", "DS", "EN", "FN", "FS", "GN", "GS", "AN", "AS", "BN"
+                };
+                int n = 9 + (int)command.getChildWithProperty(idMeaning, "Note").getProperty(idValue);
+                int octave = n / 12;
+                n -= octave * 12;
+                name = notenames[n] + String(octave);
+                //Get mode
+                int bmode = 0;
+                param = command.getChildWithProperty(idMeaning, "Gate Time");
+                if(!param.isValid() || param.getProperty(idDataSrc).toString() == "constant"){
+                    //notedv, a.k.a. BMode 1, a.k.a. "gate 100%"
+                    bmode = 1;
+                }
+                param = command.getChildWithProperty(idMeaning, "Delay");
+                if(!param.isValid() || param.getProperty(idDataSrc).toString() == "constant"){
+                    //notevg, a.k.a. BMode 2.
+                    //Note that mml64.def incorrectly labels this as "velo before"
+                    //and has note definitions where the parameters are "wlen,byte"
+                    //meaning delay and gate length (velocity carried over from last note).
+                    //This is wrong. SM64 decomped source code, plus the fact that
+                    //SEQ64 has been using these notes for years and producing correct
+                    //results, proves that it's delay kept from the last note and 
+                    //velocity+gate specified in the command.
+                    jassert(bmode == 0); //Can't be both mode 1 and 2
+                    bmode = 2;
+                }
+                name += "B" + String(bmode);
+            }else{
+                name = command.getProperty(idName, "Error");
+                if(dialect == 1){
+                    name = command.getProperty(idCName, command.getProperty(idOName, name));
+                }else if(dialect == 2){
+                    name = command.getProperty(idOName, command.getProperty(idCName, name));
+                }
             }
-            name = name.toLowerCase();
             String params;
             for(p=0; p<command.getNumChildren(); ++p){
                 param = command.getChild(p);
                 String meaning = param.getProperty(idMeaning, "None");
+                if(meaning == "Note" && noteandcanon) continue;
                 String datasrc = param.getProperty(idDataSrc).toString();
                 int datalen = param.getProperty(idDataLen, -1);
                 int value = param.getProperty(idValue, 8888);
@@ -2824,6 +2866,7 @@ int SeqFile::exportMus(File musfile, int dialect){
                     params += ", " + String(value);
                 }
             }
+            name = noteandcanon ? name.toUpperCase() : name.toLowerCase();
             out += name + "\t" + params + "\n";
         }
         out += "\n";
