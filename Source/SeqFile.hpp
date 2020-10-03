@@ -57,6 +57,7 @@ private:
     //For all
     ValueTree abi;
     ValueTree structure;
+    StringArray tsecnames;
     int importresult;
     
     String debug_messages;
@@ -88,7 +89,7 @@ private:
     //For exportMus
     
     void assignTSection(ValueTree sec, int tsecnum);
-    String getTSectionName(File musfile, int dialect, int num_tsections, ValueTree parent);
+    String getSecNamePrefix(File musfile, int dialect, ValueTree parent);
     
     //For importCom
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
@@ -136,6 +137,7 @@ private:
     static Identifier idSectionName;
     static Identifier idOldSectionIdx;
     static Identifier idLabelName;
+    static Identifier idLabelNameAuto;
     static Identifier idSrcCmdRef;
     static Identifier idHash;
     static Identifier idTargetSection;

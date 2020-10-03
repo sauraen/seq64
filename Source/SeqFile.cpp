@@ -54,6 +54,7 @@ Identifier SeqFile::idSection("section");
 Identifier SeqFile::idSectionName("sectionname");
 Identifier SeqFile::idOldSectionIdx("oldsectionidx");
 Identifier SeqFile::idLabelName("labelname");
+Identifier SeqFile::idLabelNameAuto("labelnameauto");
 Identifier SeqFile::idSrcCmdRef("srccmdref");
 Identifier SeqFile::idHash("hash");
 Identifier SeqFile::idTargetSection("targetsection");
@@ -723,34 +724,39 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     }
     //Find sections
     dbgmsg("Finding sections...");
-    Array<int> sectiontimes;
-    sectiontimes.add(0);
-    String metatext; 
+    Array<int> tsectimes;
+    tsectimes.add(0);
+    tsecnames.clear();
+    tsecnames.add("start");
+    String metatext;
     int metatype;
     for(m=0; m<mastertrack->getNumEvents(); m++){
         msg = mastertrack->getEventPointer(m)->message;
         if(msg.isTextMetaEvent()){
             metatext = msg.getTextFromTextMetaEvent();
             metatype = msg.getMetaEventType();
-            if(metatype == 0x06 && (metatext.startsWithIgnoreCase("Section") ||
-                    metatext.startsWithIgnoreCase("loop"))){
+            if((metatype == 0x06 && (metatext.startsWithIgnoreCase("Section") ||
+                    metatext.startsWithIgnoreCase("loop")))
+                || (metatype == 0x01 && metatext.startsWithIgnoreCase("block:"))){
                 timestamp = msg.getTimeStamp();
-                for(i=0; i<sectiontimes.size(); i++){
-                    if(sectiontimes[i] == timestamp){
-                        timestamp = -1;
-                        break;
-                    }
-                }
-                if(timestamp > 0){
-                    sectiontimes.add(msg.getTimeStamp());
+                String secname = metatext.startsWithIgnoreCase("block:") ? metatext.substring(6)
+                    : metatext.startsWithIgnoreCase("Section") ? "tsec" + String(tsectimes.size())
+                    : metatext;
+                if(tsectimes[tsectimes.size()-1] == timestamp){
+                    tsecnames.set(tsectimes.size()-1, secname);
+                }else{
+                    tsectimes.add(msg.getTimeStamp());
+                    tsecnames.add(secname);
                 }
             }
         }
     }
-    if(sectiontimes.size() <= 1){
-        dbgmsg("MIDI file had no sections specified. (If you meant to do this, no problem.)");
-        dbgmsg("Use Marker meta events (text event type 6) with text 'Section <n>' (no quotes)");
-        dbgmsg("in your master track to define sections.");
+    if(tsectimes.size() != tsecnames.size()){
+        dbgmsg("tsections internal consistency error!");
+        return 2;
+    }
+    if(tsectimes.size() <= 1){
+        dbgmsg("MIDI file had no sections (blocks) specified.");
     }
     //See if there are any empty channels (i.e. with no note ons)
     dbgmsg("Empty channels: ", false);
@@ -801,9 +807,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         for(m=0; m<trk->getNumEvents(); m++){
             msg = trk->getEventPointer(m)->message;
             //See what section we're in, and clear LayerStates if it's a new section
-            for(i=sec; i<sectiontimes.size()-1; ++i){
-                if(sectiontimes[i+1] > msg.getTimeStamp() ||
-                        (sectiontimes[i+1] == msg.getTimeStamp() && msg.isNoteOff())){
+            for(i=sec; i<tsectimes.size()-1; ++i){
+                if(tsectimes[i+1] > msg.getTimeStamp() ||
+                        (tsectimes[i+1] == msg.getTimeStamp() && msg.isNoteOff())){
                     //We haven't moved to that section yet
                     break;
                 }
@@ -920,8 +926,8 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //Sequence header
     //=======================================================================
     dbgmsg("Creating sequence header", false);
-    int num_tsections = sectiontimes.size();
-    sectiontimes.add(last_timestamp);
+    int num_tsections = tsectimes.size();
+    tsectimes.add(last_timestamp);
     double newtempo;
     int tempolasttime = -100000, tempolastval = -100000;
     int t = 0;
@@ -950,9 +956,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     wantProperty(want, "Bitfield", chanBitfield);
     section.addChild(createCommand(want), cmd, nullptr);
     cmd++;
-    int addmstrvol_cmd = cmd;
+    int addmstrvol_cmd = -1;
     bool hadmastervol = false;
-    int loopStartHash = -1;
+    Array<int> tsechashes;
     //Add events from master track
     m=0;
     int sectimeidx = 0;
@@ -967,11 +973,11 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         //Insert channel pointers for each section
         //sectimeidx is the *upcoming* section boundary, not the current section time is in
         for(; sectimeidx < num_tsections; sectimeidx++){ //Don't execute this for the boundary at the end of the piece
-            if(!done && timestamp < sectiontimes[sectimeidx]) break; //Still more commands before section boundary
-            //dbgmsg("Section " + String(sectimeidx) + " starting at " + String(sectiontimes[sectimeidx]));
+            if(!done && timestamp < tsectimes[sectimeidx]) break; //Still more commands before section boundary
+            //dbgmsg("Section " + String(sectimeidx) + " starting at " + String(tsectimes[sectimeidx]));
             dbgmsg(".", false);
             //Get up to the time
-            advanceToTimestamp(section, 0, cmd, t, sectiontimes[sectimeidx]);
+            advanceToTimestamp(section, 0, cmd, t, tsectimes[sectimeidx]);
             //Channel pointers for new section
             for(channel=0; channel<16; channel++){
                 if(channelsused[channel] < 0) continue;
@@ -992,11 +998,13 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 want.setProperty(idTargetSection, structure.getNumChildren() - 1, nullptr);
                 section.addChild(want, cmd, nullptr);
                 cmd++;
-                if((num_tsections == 1 || sectimeidx == 1) && loopStartHash == -1){
-                    loopStartHash = want.getProperty(idHash);
+                if(tsechashes.size() < sectimeidx+1){
+                    tsechashes.add(want.getProperty(idHash));
+                    dbgmsg("tsec 0 chn cmd hash " + want.getProperty(idHash).toString());
                 }
             }
         }
+        if(addmstrvol_cmd < 0) addmstrvol_cmd = cmd;
         if(done) break;
         //Determine command to execute
         want = ValueTree(); //Invalidate
@@ -1008,6 +1016,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 tempolasttime = timestamp;
                 want = wantAction("Tempo", 0);
                 wantProperty(want, "Value", (int)newtempo);
+                want = createCommand(want);
             }
         }else if(msg.isSysEx()){
             if(msg.getSysExDataSize() == 6){
@@ -1016,32 +1025,53 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     //Master volume
                     want = wantAction("Master Volume", 0);
                     wantProperty(want, "Value", sysexdata[5]);
+                    want = createCommand(want);
                     hadmastervol = true;
+                }
+            }
+        }else if(msg.isTextMetaEvent()){
+            metatext = msg.getTextFromTextMetaEvent();
+            metatype = msg.getMetaEventType();
+            if(metatype == 0x01 && metatext.startsWithIgnoreCase("jump:")){
+                midiopts.setProperty("smartloop", false, nullptr);
+                String target = metatext.substring(5);
+                int tsec = tsecnames.indexOf(target, true);
+                if(tsec < 0){
+                    dbgmsg("MIDI file contained jump to nonexistent tsection (block) " + target + "!");
+                    importresult |= 1;
+                }else{
+                    want = wantAction("Jump Same Level", 0);
+                    wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
+                    want = createCommand(want);
+                    want.setProperty(idTargetSection, 0, nullptr);
+                    want.setProperty(idTargetHash, tsechashes[tsec], nullptr);
+                    dbgmsg("Canon MIDI jump to " + target + ", tsec " + String(tsec) 
+                        + ", hash " + String(tsechashes[tsec]));
                 }
             }
         }
         if(want.isValid()){
             advanceToTimestamp(section, 0, cmd, t, timestamp);
             //Write command
-            section.addChild(createCommand(want), cmd, nullptr);
+            section.addChild(want, cmd, nullptr);
             cmd++;
         }
         //Done
         m++;
     }
+    if(tsechashes.size() != num_tsections){
+        dbgmsg("tsections internal consistency error!");
+        return 2;
+    }
     //Get the time to the end
     advanceToTimestamp(section, 0, cmd, t, last_timestamp);
     //Loop to start
     if((bool)midiopts.getProperty("smartloop", false)){
-        if(loopStartHash == -1){
-            dbgmsg("Smart loop consistency error!");
-            return 2;
-        }
         want = wantAction("Jump Same Level", 0);
         wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
         want = createCommand(want);
         want.setProperty(idTargetSection, 0, nullptr);
-        want.setProperty(idTargetHash, loopStartHash, nullptr);
+        want.setProperty(idTargetHash, tsechashes[num_tsections == 1 ? 0 : 1], nullptr);
         section.addChild(want, cmd, nullptr);
         cmd++;
     }
@@ -1086,8 +1116,8 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         if(channelsused[channel] < 0) continue;
         trk = chantracks[channel];
         for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
-            starttime = sectiontimes[sectimeidx];
-            endtime = sectiontimes[sectimeidx+1];
+            starttime = tsectimes[sectimeidx];
+            endtime = tsectimes[sectimeidx+1];
             //dbgmsg("Chn " + String(channel) + " sec " + String(sectimeidx) + " starting at t" + String(starttime));
             dbgmsg(".", false);
             //Find channel header
@@ -1259,8 +1289,8 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             //dbgmsg("Layer " + String(layer) + " chn " + String(channel) + " with " + String(layertrk->getNumEvents()) + " events");
             dbgmsg(".", false);
             for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
-                starttime = sectiontimes[sectimeidx];
-                endtime = sectiontimes[sectimeidx+1];
+                starttime = tsectimes[sectimeidx];
+                endtime = tsectimes[sectimeidx+1];
                 //dbgmsg("Sec " + String(sectimeidx) + " starting at t" + String(starttime));
                 dbgmsg(".", false);
                 //Find track
@@ -2636,22 +2666,18 @@ void SeqFile::assignTSection(ValueTree sec, int tsecnum){
         }
     }
 }
-String SeqFile::getTSectionName(File musfile, int dialect, int num_tsections, ValueTree parent){
+String SeqFile::getSecNamePrefix(File musfile, int dialect, ValueTree parent){
     int tsecnum = parent.getProperty(idTSection);
-    if(dialect >= 1){
-        String name;
-        if(!musfile.getFullPathName().isEmpty()){
-            name = "_" + musfile.getFileNameWithoutExtension() + "_";
-        }
-        if(num_tsections == 1){
-            name += "A";
-        }else{
-            name += (tsecnum == 0) ? String("intro") : String('A' + tsecnum - 1);
-        }
-        return name;
-    }else{
-        return "tsec" + String(tsecnum);
+    if(tsecnum < 0 && tsecnum >= tsecnames.size()){
+        dbgmsg("Invalid tsecnum " + String(tsecnum) + "!");
+        importresult = 2;
+        return "Error";
     }
+    String name = tsecnames[tsecnum];
+    if(dialect >= 1 && !musfile.getFullPathName().isEmpty()){
+        name = "_" + musfile.getFileNameWithoutExtension() + "_" + name;
+    }
+    return name;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2677,8 +2703,11 @@ int SeqFile::exportMus(File musfile, int dialect){
     section = structure.getChild(0);
     int tsecnum = -1; bool readyfornewtsec = true;
     section.setProperty(idTSection, -1, nullptr);
-    section.setProperty(idLabelName, 
-        dialect >= 1 ? "_" + musfile.getFileNameWithoutExtension() : "_start", nullptr);
+    if(!section.hasProperty(idLabelName) || section.hasProperty(idLabelNameAuto)){
+        section.setProperty(idLabelName, 
+            dialect >= 1 ? "_" + musfile.getFileNameWithoutExtension() : "_start", nullptr);
+        section.setProperty(idLabelNameAuto, true, nullptr);
+    }
     for(cmd=0; cmd<section.getNumChildren(); ++cmd){
         command = section.getChild(cmd);
         if(readyfornewtsec && command.getProperty(idAction).toString() == "Ptr Channel Header"){
@@ -2693,12 +2722,29 @@ int SeqFile::exportMus(File musfile, int dialect){
         }
     }
     int num_tsections = tsecnum + 1;
+    //Check tsecnames and generated if needed
+    if(tsecnames.size() != num_tsections){
+        tsecnames.clear();
+        for(int i=0; i<num_tsections; ++i){
+            String name;
+            if(dialect >= 1){
+                if(num_tsections == 1){
+                    name = "A";
+                }else{
+                    name = (tsecnum == 0) ? String("intro") : String('A' + tsecnum - 1);
+                }
+            }else{
+                name = "tsec" + String(tsecnum);
+            }
+            tsecnames.add(name);
+        }
+    }
     //Assign names to all sections
     for(sec=1; sec<structure.getNumChildren(); sec++){
         section = structure.getChild(sec);
-        if(section.hasProperty(idLabelName)) continue;
+        if(section.hasProperty(idLabelName) && !section.hasProperty(idLabelNameAuto)) continue;
         int stype = section.getProperty(idSType);
-        String name = getTSectionName(musfile, dialect, num_tsections, section);
+        String name = getSecNamePrefix(musfile, dialect, section);
         if(stype == 1 || stype == 2){
             name += "_" + String(dialect >= 1 ? "sub" : "chn") + section.getProperty(idChannel).toString();
         }
@@ -2709,6 +2755,7 @@ int SeqFile::exportMus(File musfile, int dialect){
             name += "_" + String(dialect >= 1 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
         }
         section.setProperty(idLabelName, name, nullptr);
+        section.setProperty(idLabelNameAuto, true, nullptr);
     }
     //Assign names to all commands which are pointed at
     Array<int> targethashes;
@@ -2725,20 +2772,27 @@ int SeqFile::exportMus(File musfile, int dialect){
         section = structure.getChild(sec);
         for(cmd=0; cmd<section.getNumChildren(); ++cmd){
             command = section.getChild(cmd);
-            if(command.hasProperty(idLabelName)) continue;
+            if(command.hasProperty(idLabelName) && !command.hasProperty(idLabelNameAuto)) continue;
             if(!targethashes.contains(command.getProperty(idHash))) continue;
             command.setProperty(idLabelName, command.hasProperty(idTSection)
-                ? getTSectionName(musfile, dialect, num_tsections, command) 
+                ? getSecNamePrefix(musfile, dialect, command) 
                 : section.getProperty(idLabelName).toString() + "_" + String(cmd), nullptr);
+            command.setProperty(idLabelNameAuto, true, nullptr);
         }
     }
     //Write data
     String out;
-    out += ";****************************************\n";
-    out += ";\tmusic data (format : mus)\n";
-    out += ";\tconverted by SEQ64 Ver 2.0, https://github.com/sauraen/seq64\n";
-    out += ";\t"; { time_t t = time(nullptr); struct tm *curtime = localtime(&t); out += asctime(curtime); }
-    out += ";****************************************\n\n\n";
+    if(dialect >= 1){
+        out += ";****************************************\n";
+        out += ";\tmusic data (format : mus)\n";
+        out += ";\tconverted by SEQ64 Ver 2.0, https://github.com/sauraen/seq64\n";
+        out += ";\t"; { time_t t = time(nullptr); struct tm *curtime = localtime(&t); out += asctime(curtime); }
+        out += ";****************************************\n\n\n";
+    }else{
+        out += "; Nintendo 64 Music Macro Language (Audioseq) (.mus) sequence\n";
+        out += "; " + musfile.getFileName() + "\n";
+        out += "; Converted by SEQ64 V2.0 [https://github.com/sauraen/seq64]\n\n";
+    }
     tsecnum = -1;
     int sectiongroup = -1;
     for(sec=0; sec<structure.getNumChildren(); ++sec){
@@ -2747,6 +2801,7 @@ int SeqFile::exportMus(File musfile, int dialect){
         if(sectiongroup == -1){
             sectiongroup = 0;
             if(dialect >= 1){
+                //match incorrect spelling in smf2mus converted sequences
                 out += ";***************\n;* GROOP TRACK *\n;***************\n\n";
             }else{
                 out += "; Sequence Header\n\n";
@@ -2776,7 +2831,7 @@ int SeqFile::exportMus(File musfile, int dialect){
         if(sec != 0 && !section.hasProperty(idSrcCmdRef) 
                 && (int)section.getProperty(idTSection) != tsecnum){
             if(dialect >= 1){
-                out += ";*** block:" + getTSectionName(File(), dialect, num_tsections, section) + " ***\n\n";
+                out += ";*** block:" + tsecnames[(int)section.getProperty(idTSection)] + " ***\n\n";
             }else{
                 out += "; tsec" + section.getProperty(idTSection).toString() + "\n\n";
             }
