@@ -304,14 +304,13 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     ValueTree test, param, param2;
     ValueTree possibleCmdsList("possiblecmdslist");
     bool flag;
-    int i, j, value;
-    for(i=0; i<abi.getNumChildren(); i++){
+    for(int i=0; i<abi.getNumChildren(); i++){
         test = abi.getChild(i);
         if(!isCommandValidIn(test, stype)) continue;
         if(test.getProperty(idAction).toString() != action) continue;
         //See if it has ways to set all the meanings we want
         flag = true;
-        for(j=0; j<want.getNumChildren(); j++){
+        for(int j=0; j<want.getNumChildren(); j++){
             meaning = want.getChild(j).getProperty(idMeaning);
             param = test.getChildWithProperty(idMeaning, meaning);
             if(!param.isValid()){
@@ -319,7 +318,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
                 break;
             }
             //Check range
-            value = want.getChild(j).getProperty(idValue);
+            int value = want.getChild(j).getProperty(idValue);
             int rmin, rmax;
             getCommandRange(test, meaning, rmin, rmax);
             if(value < rmin || value >= rmax){
@@ -338,7 +337,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     if(possibleCmdsList.getNumChildren() == 0){
         if(warnIfImpossible){
             dbgmsg("No " + action + " command defined in stype " + String(stype) + " with all the needed parameters!");
-            for(j=0; j<want.getNumChildren(); j++){
+            for(int j=0; j<want.getNumChildren(); j++){
                 dbgmsg("----Want: " + want.getChild(j).getProperty(idMeaning).toString()
                         + " value " + want.getChild(j).getProperty(idValue).toString());
             }
@@ -350,20 +349,16 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     int lowestCmdIndex = 0;
     int cmdlen, datalen;
     String datasrc;
-    for(i=0; i<possibleCmdsList.getNumChildren(); i++){
+    for(int i=0; i<possibleCmdsList.getNumChildren(); i++){
         test = possibleCmdsList.getChild(i);
         //Determine length of this command with the given data
         cmdlen = 1;
-        for(j=0; j<test.getNumChildren(); j++){
+        for(int j=0; j<test.getNumChildren(); j++){
             param = test.getChild(j);
             datasrc = param.getProperty(idDataSrc, "fixed");
             datalen = param.getProperty(idDataLen, 1);
             param2 = want.getChildWithProperty(idMeaning, param.getProperty(idMeaning));
-            if(param.isValid()){
-                value = param2.getProperty(idValue);
-            }else{
-                value = 0;
-            }
+            int value = param2.isValid() ? (int)param2.getProperty(idValue) : 0;
             if(datasrc == "offset" || datasrc == "constant"){
                 //do nothing
             }else if(datasrc == "fixed"){
@@ -385,7 +380,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     //Get best one
     test = possibleCmdsList.getChild(lowestCmdIndex);
     //Set all values
-    for(j=0; j<test.getNumChildren(); j++){
+    for(int j=0; j<test.getNumChildren(); j++){
         param2 = test.getChild(j);
         param = want.getChildWithProperty(idMeaning, param2.getProperty(idMeaning));
         if(param.isValid()){
@@ -662,7 +657,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     const int midi_basenote = 21;
     MidiMessage msg;
     MidiMessage* msgptr;
-    int channel, track, layer, m, i;
+    int layer;
     int timestamp = 0;
     //Reorganize
     dbgmsg("Reorganizing MIDI file into master track and tracks for each channel...");
@@ -676,10 +671,10 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     }
     double ticks_multiplier = 48.0 / (double)master_ppqn;
     //Check for extremely short notes
-    for(track=0; track<mfile.getNumTracks(); track++){
+    for(int track=0; track<mfile.getNumTracks(); track++){
         MidiMessageSequence trk(*mfile.getTrack(track));
         trk.updateMatchedPairs();
-        for(i=0; i<trk.getNumEvents(); ++i){
+        for(int i=0; i<trk.getNumEvents(); ++i){
             msgptr = &trk.getEventPointer(i)->message;
             if(msgptr->isNoteOn()){
                 if((trk.getTimeOfMatchingKeyUp(i) - msgptr->getTimeStamp()) 
@@ -697,12 +692,12 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     double last_timestampd = mfile.getLastTimestamp();
     std::unique_ptr<MidiMessageSequence> mastertrack;
     mastertrack.reset(new MidiMessageSequence());
-    for(track=0; track<mfile.getNumTracks(); track++){
+    for(int track=0; track<mfile.getNumTracks(); track++){
         mastertrack->addSequence(*mfile.getTrack(track), 0.0, 0.0, last_timestampd + 1.0);
         mastertrack->updateMatchedPairs();
     }
     //Scale all events to N64 PPQN
-    for(m=mastertrack->getNumEvents()-1; m>=0; m--){
+    for(int m=mastertrack->getNumEvents()-1; m>=0; m--){
         msgptr = &mastertrack->getEventPointer(m)->message;
         msgptr->setTimeStamp(msgptr->getTimeStamp() * ticks_multiplier);
     }
@@ -715,7 +710,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             + " beats or " + String(last_timestamp / 192) + " measures 4/4");
     //Put channel events into chantracks
     OwnedArray<MidiMessageSequence> chantracks;
-    for(channel=0; channel<16; channel++){
+    for(int channel=0; channel<16; channel++){
         chantracks.add(new MidiMessageSequence());
         mastertrack->extractMidiChannelMessages(channel+1, *chantracks[channel], false);
         mastertrack->deleteMidiChannelMessages(channel+1);
@@ -730,7 +725,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     tsecnames.add("start");
     String metatext;
     int metatype;
-    for(m=0; m<mastertrack->getNumEvents(); m++){
+    for(int m=0; m<mastertrack->getNumEvents(); m++){
         msg = mastertrack->getEventPointer(m)->message;
         if(msg.isTextMetaEvent()){
             metatext = msg.getTextFromTextMetaEvent();
@@ -762,9 +757,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     dbgmsg("Empty channels: ", false);
     Array<int> channelsused;
     uint16_t chanBitfield = 0;
-    for(channel=0; channel<16; channel++){
+    for(int channel=0; channel<16; channel++){
         channelsused.add(-1);
-        for(m=0; m<chantracks[channel]->getNumEvents(); m++){
+        for(int m=0; m<chantracks[channel]->getNumEvents(); m++){
             msg = chantracks[channel]->getEventPointer(m)->message;
             if(msg.isNoteOn()){
                 channelsused.set(channel, channel);
@@ -785,7 +780,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     dbgmsg("Assigning notes to notelayers...");
     int max_layers = 4; //TODO investigate
     OwnedArray<MidiMessageSequence> layertracks;
-    for(channel=0; channel<16; channel++){
+    for(int channel=0; channel<16; channel++){
         for(layer=0; layer<max_layers; layer++){
             layertracks.add(new MidiMessageSequence());
         }
@@ -799,14 +794,15 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     int sec;
     int bestlayer;
     float bestlayermse, thislayermse;
-    for(channel=0; channel<16; channel++){
+    for(int channel=0; channel<16; channel++){
         trk = chantracks[channel];
         if(channelsused[channel] < 0) continue;
         too_many_notes = false;
         sec = -1;
-        for(m=0; m<trk->getNumEvents(); m++){
+        for(int m=0; m<trk->getNumEvents(); m++){
             msg = trk->getEventPointer(m)->message;
             //See what section we're in, and clear LayerStates if it's a new section
+            int i;
             for(i=sec; i<tsectimes.size()-1; ++i){
                 if(tsectimes[i+1] > msg.getTimeStamp() ||
                         (tsectimes[i+1] == msg.getTimeStamp() && msg.isNoteOff())){
@@ -960,10 +956,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     bool hadmastervol = false;
     Array<int> tsechashes;
     //Add events from master track
-    m=0;
     int sectimeidx = 0;
     bool done = false;
-    while(true){
+    for(int m=0; ; ++m){
         if(m >= mastertrack->getNumEvents()){
             done = true;
         }else{
@@ -979,7 +974,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             //Get up to the time
             advanceToTimestamp(section, 0, cmd, t, tsectimes[sectimeidx]);
             //Channel pointers for new section
-            for(channel=0; channel<16; channel++){
+            for(int channel=0; channel<16; channel++){
                 if(channelsused[channel] < 0) continue;
                 //Create section for channel
                 newsec = ValueTree("chanhdr");
@@ -1056,8 +1051,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             section.addChild(want, cmd, nullptr);
             cmd++;
         }
-        //Done
-        m++;
     }
     if(tsechashes.size() != num_tsections){
         dbgmsg("tsections internal consistency error!");
@@ -1083,11 +1076,13 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     //Master Volume
     if(!hadmastervol){
         uint8_t defaultval = (int)midiopts.getProperty("addmstrvolval", 0x58);
-        dbgmsg("No Master Volume sysex command in the MIDI, adding default 0x" + hex(defaultval));
-        want = wantAction("Master Volume", 0);
-        wantProperty(want, "Value", defaultval);
-        section.addChild(createCommand(want), addmstrvol_cmd, nullptr);
-        cmd++;
+        if(defaultval > 0){
+            dbgmsg("No Master Volume sysex command in the MIDI, adding default 0x" + hex(defaultval));
+            want = wantAction("Master Volume", 0);
+            wantProperty(want, "Value", defaultval);
+            section.addChild(createCommand(want), addmstrvol_cmd, nullptr);
+            cmd++;
+        }
     }
     //=======================================================================
     //Channels
@@ -1112,7 +1107,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     ccstates[10]->q_amp = qa; //pan
     ccstates[8]->q_amp = qa; //pan mix
     //Channel data
-    for(channel=0; channel<16; channel++){
+    for(int channel=0; channel<16; channel++){
         if(channelsused[channel] < 0) continue;
         trk = chantracks[channel];
         for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
@@ -1172,7 +1167,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             }
             //Parse all commands
             t = starttime;
-            for(m=0; m<trk->getNumEvents(); m++){
+            for(int m=0; m<trk->getNumEvents(); m++){
                 msg = trk->getEventPointer(m)->message;
                 timestamp = msg.getTimeStamp();
                 if(timestamp < starttime) continue;
@@ -1214,11 +1209,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     //This command is quantized out
                     //Update the last command's value, but don't update lastvalue
                     //(otherwise this would progressively quantize out any slow CC fade)
-                    /*
                     dbgmsg("Chn " + String(channel) + " quantized out CC " + String(cc) 
                         + " value " + String(value) + " lastvalue " + String(ccstates[cc]->lastvalue)
                         + " timestamp " + String(timestamp) + " lasttime " + String(ccstates[cc]->lasttime));
-                    */
                     if(ccstates[cc]->lastcmd.isValid()){
                         //lastcmd will be invalid if this is an action we aren't tracking
                         ValueTree tmpcmd = ccstates[cc]->lastcmd.getChildWithProperty(idCC, cc);
@@ -1235,7 +1228,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 cccmd = cccmd.createCopy();
                 cccmd.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
                 for(int j=0; j<cccmd.getNumChildren(); ++j){
-                    ValueTree tmpparam = cccmd.getChild(i);
+                    ValueTree tmpparam = cccmd.getChild(j);
                     if(tmpparam.getProperty(idMeaning).toString() != "CC") continue;
                     int paramcc = tmpparam.getProperty(idCC, 0);
                     //Find appropriate CC
@@ -1281,7 +1274,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     int timestamp2, timestamp3;
     int note, delay, transpose;
     trk = nullptr;
-    for(channel=0; channel<16; channel++){
+    for(int channel=0; channel<16; channel++){
         if(channelsused[channel] < 0) continue;
         for(layer=0; layer<max_layers; layer++){
             layertrk = layertracks[(max_layers*channel)+layer];
@@ -1310,10 +1303,11 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 }
                 cmd = 0;
                 //Parse all commands
+                int m;
                 t = starttime;
-                m = 0;
                 delay = -1;
                 transpose = 0;
+                timestamp3 = 0;
                 //Init transpose
                 want = wantAction("Layer Transpose", 2);
                 wantProperty(want, "Value", transpose);
@@ -1321,7 +1315,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 section.addChild(transposecmd, cmd, nullptr);
                 cmd++;
                 //Get first note on
-                timestamp3 = 0;
                 for(m=0; m<layertrk->getNumEvents(); m++){
                     msg3 = layertrk->getEventPointer(m)->message;
                     timestamp3 = msg3.getTimeStamp();
@@ -1496,6 +1489,7 @@ void SeqFile::optimize(ValueTree midiopts){
     bool reladdr = (bool)midiopts.getProperty("reladdr", false);
     int stacksize = 4; //TODO consider stack
     bool useCalls = midiopts.getProperty("usecalls", true);
+    bool callOnlyLayer = midiopts.getProperty("callonlylayer", false);
     bool useLoops = midiopts.getProperty("useloops", true);
     if(!useCalls && !useLoops){
         dbgmsg("\nNo loop or call optimization selected.");
@@ -1642,7 +1636,7 @@ void SeqFile::optimize(ValueTree midiopts){
                         //dbgmsg("Found loop at " + String(cmd1) + ", " + String(numCmdsDelete) + " commands"
                         //        + " long, which repeats " + String(loopCount) + " times" );
                         dbgmsg("*", false);
-                        for(i=0; i<numCmdsDelete; i++){
+                        for(int i=0; i<numCmdsDelete; i++){
                             section1.removeChild(cmd2, nullptr);
                         }
                         //Put in Loop Start command
@@ -1673,6 +1667,7 @@ void SeqFile::optimize(ValueTree midiopts){
         for(sec1=0; sec1<structure.getNumChildren(); sec1++){
             section1 = structure.getChild(sec1);
             stype1 = section1.getProperty(idSType, -1);
+            if(callOnlyLayer && stype1 != 2) continue;
             numcmds1 = section1.getNumChildren();
             int sec1time = getTotalSectionTime(section1);
             //dbgmsg("Examining section " + String(sec1) + " (stype == " + String(stype1) + "), " + String(numcmds1) + " commands");
@@ -1736,7 +1731,7 @@ void SeqFile::optimize(ValueTree midiopts){
                     }
                     //See if we can move all the others
                     list = origlist.createCopy();
-                    for(i=0; i<list.getNumChildren(); i++){
+                    for(int i=0; i<list.getNumChildren(); i++){
                         flag = false;
                         item = list.getChild(i);
                         sec2 = item.getProperty(idSection);
@@ -1789,7 +1784,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 //dbgmsg("Grew hook to " + String(hooklength) + ", now used " + String(bestlist.getNumChildren()) + " times");
                 //Calculate data savings, ensure it's a savings
                 j = 0;
-                for(i=0; i<hooklength; ++i){
+                for(int i=0; i<hooklength; ++i){
                     j += getNewCommandLength(section1.getChild(cmd1+i));
                 }
                 curdatalength = j*bestlist.getNumChildren();
@@ -1822,7 +1817,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 sectionN.setProperty(idSrcCmdRef, cmd1, nullptr);
                 structure.addChild(sectionN, secN, nullptr);
                 //Copy all data to new section
-                for(i=0; i<hooklength; i++){
+                for(int i=0; i<hooklength; i++){
                     sectionN.addChild(section1.getChild(cmd1+i).createCopy(), -1, nullptr);
                 }
                 //Add End of Data command to new section
@@ -1833,7 +1828,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, secN, nullptr);
-                for(i=bestlist.getNumChildren() - 1; i>=0; i--){ //Go in reverse order so the cmd numbers are never changed
+                for(int i=bestlist.getNumChildren() - 1; i>=0; i--){ //Go in reverse order so the cmd numbers are never changed
                     item = bestlist.getChild(i);
                     sec2 = item.getProperty(idSection);
                     cmd2 = item.getProperty(idCmd);
@@ -1852,12 +1847,12 @@ void SeqFile::optimize(ValueTree midiopts){
                 int sec1time_after = getTotalSectionTime(section1);
                 if(sec1time != sec1time_after){
                     dbgmsg("CRITICAL: Bug found when creating calls! Call data contained:");
-                    for(i=0; i<hooklength; ++i){
+                    for(int i=0; i<hooklength; ++i){
                         dbgmsg("--" + sectionN.getChild(i).getProperty(idAction).toString());
                     }
                     dbgmsg("Call was found at:");
                     dbgmsg("--Section " + String(sec1) + " cmd " + String(cmd1));
-                    for(i=0; i<bestlist.getNumChildren(); ++i){
+                    for(int i=0; i<bestlist.getNumChildren(); ++i){
                         dbgmsg("-- Section " + bestlist.getChild(i).getProperty(idSection).toString() 
                                        + " cmd " + bestlist.getChild(i).getProperty(idCmd).toString());
                     }

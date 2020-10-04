@@ -155,6 +155,9 @@ private:
     std::unique_ptr<juce::TextEditor> txtMuteBhv;
     std::unique_ptr<juce::Label> lblMuteScale;
     std::unique_ptr<juce::TextEditor> txtMuteScale;
+    std::unique_ptr<juce::ToggleButton> chkPref;
+    std::unique_ptr<juce::ToggleButton> chkCallOnlyLyr;
+    std::unique_ptr<juce::Label> lblCallOnlyLy;
     juce::Path internalPath1;
     juce::Path internalPath2;
     juce::Path internalPath3;

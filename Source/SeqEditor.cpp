@@ -93,7 +93,7 @@ SeqEditor::SeqEditor ()
                                                    TRANS("MIDI Import")));
     addAndMakeVisible (grpImportMIDI.get());
 
-    grpImportMIDI->setBounds (8, 120, 320, 192);
+    grpImportMIDI->setBounds (8, 96, 320, 216);
 
     chkSmartLoop.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (chkSmartLoop.get());
@@ -127,10 +127,10 @@ SeqEditor::SeqEditor ()
     txtMasterVol->setPopupMenuEnabled (true);
     txtMasterVol->setText (TRANS("58"));
 
-    txtMasterVol->setBounds (272, 136, 40, 24);
+    txtMasterVol->setBounds (280, 160, 40, 24);
 
     lblMasterVol.reset (new juce::Label ("new label",
-                                         TRANS("Default Master Vol:")));
+                                         TRANS("Default Mst.Vol.")));
     addAndMakeVisible (lblMasterVol.get());
     lblMasterVol->setFont (juce::Font (15.00f, juce::Font::plain));
     lblMasterVol->setJustificationType (juce::Justification::centredLeft);
@@ -138,7 +138,7 @@ SeqEditor::SeqEditor ()
     lblMasterVol->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMasterVol->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMasterVol->setBounds (136, 136, 136, 24);
+    lblMasterVol->setBounds (168, 160, 112, 24);
 
     chkUseLoops.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (chkUseLoops.get());
@@ -146,7 +146,7 @@ SeqEditor::SeqEditor ()
     chkUseLoops->addListener (this);
     chkUseLoops->setToggleState (true, dontSendNotification);
 
-    chkUseLoops->setBounds (24, 224, 80, 24);
+    chkUseLoops->setBounds (24, 264, 80, 24);
 
     txtMergeVel.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtMergeVel.get());
@@ -446,10 +446,10 @@ SeqEditor::SeqEditor ()
 
     chkRel.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (chkRel.get());
-    chkRel->setButtonText (TRANS("Rel Addrs"));
+    chkRel->setButtonText (TRANS("Relative Addrs"));
     chkRel->addListener (this);
 
-    chkRel->setBounds (16, 160, 104, 24);
+    chkRel->setBounds (16, 160, 128, 24);
 
     btnImportMIDI.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnImportMIDI.get());
@@ -500,7 +500,7 @@ SeqEditor::SeqEditor ()
     btnExportCom->setBounds (8, 736, 152, 32);
 
     lblMuteBhv.reset (new juce::Label ("new label",
-                                       TRANS("MuteB")));
+                                       TRANS("Mute Behav.")));
     addAndMakeVisible (lblMuteBhv.get());
     lblMuteBhv->setFont (juce::Font (15.00f, juce::Font::plain));
     lblMuteBhv->setJustificationType (juce::Justification::centredLeft);
@@ -508,7 +508,7 @@ SeqEditor::SeqEditor ()
     lblMuteBhv->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMuteBhv->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMuteBhv->setBounds (120, 160, 56, 24);
+    lblMuteBhv->setBounds (192, 112, 88, 24);
 
     txtMuteBhv.reset (new juce::TextEditor ("txtMuteBhv"));
     addAndMakeVisible (txtMuteBhv.get());
@@ -520,10 +520,10 @@ SeqEditor::SeqEditor ()
     txtMuteBhv->setPopupMenuEnabled (true);
     txtMuteBhv->setText (TRANS("20"));
 
-    txtMuteBhv->setBounds (176, 160, 40, 24);
+    txtMuteBhv->setBounds (280, 112, 40, 24);
 
     lblMuteScale.reset (new juce::Label ("new label",
-                                         TRANS("Scale")));
+                                         TRANS("Mute Scale")));
     addAndMakeVisible (lblMuteScale.get());
     lblMuteScale->setFont (juce::Font (15.00f, juce::Font::plain));
     lblMuteScale->setJustificationType (juce::Justification::centredLeft);
@@ -531,7 +531,7 @@ SeqEditor::SeqEditor ()
     lblMuteScale->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMuteScale->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMuteScale->setBounds (224, 160, 48, 24);
+    lblMuteScale->setBounds (192, 136, 88, 24);
 
     txtMuteScale.reset (new juce::TextEditor ("txtMuteScale"));
     addAndMakeVisible (txtMuteScale.get());
@@ -543,7 +543,33 @@ SeqEditor::SeqEditor ()
     txtMuteScale->setPopupMenuEnabled (true);
     txtMuteScale->setText (TRANS("32"));
 
-    txtMuteScale->setBounds (272, 160, 40, 24);
+    txtMuteScale->setBounds (280, 136, 40, 24);
+
+    chkPref.reset (new juce::ToggleButton ("chkPref"));
+    addAndMakeVisible (chkPref.get());
+    chkPref->setButtonText (TRANS("Use .pref file (if exist)"));
+    chkPref->addListener (this);
+    chkPref->setToggleState (true, dontSendNotification);
+
+    chkPref->setBounds (16, 112, 176, 24);
+
+    chkCallOnlyLyr.reset (new juce::ToggleButton ("chkCallOnlyLyr"));
+    addAndMakeVisible (chkCallOnlyLyr.get());
+    chkCallOnlyLyr->setButtonText (TRANS("Only"));
+    chkCallOnlyLyr->addListener (this);
+
+    chkCallOnlyLyr->setBounds (32, 224, 64, 24);
+
+    lblCallOnlyLy.reset (new juce::Label ("lblCallOnlyLy",
+                                          TRANS("NtLyr")));
+    addAndMakeVisible (lblCallOnlyLy.get());
+    lblCallOnlyLy->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblCallOnlyLy->setJustificationType (juce::Justification::centredLeft);
+    lblCallOnlyLy->setEditable (false, false, false);
+    lblCallOnlyLy->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblCallOnlyLy->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblCallOnlyLy->setBounds (54, 240, 48, 24);
 
     internalPath1.startNewSubPath (160.0f, 336.0f);
     internalPath1.lineTo (348.0f, 336.0f);
@@ -658,6 +684,9 @@ SeqEditor::~SeqEditor()
     txtMuteBhv = nullptr;
     lblMuteScale = nullptr;
     txtMuteScale = nullptr;
+    chkPref = nullptr;
+    chkCallOnlyLyr = nullptr;
+    lblCallOnlyLy = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -826,13 +855,15 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!checkSeqPresence(false)) return;
 
         ValueTree midiopts("midiopts");
+        midiopts.setProperty("pref", chkPref->getToggleState(), nullptr);
         midiopts.setProperty("smartloop", chkSmartLoop->getToggleState(), nullptr);
-        midiopts.setProperty("addmstrvolval", txtMasterVol->getText().getHexValue32(), nullptr);
         midiopts.setProperty("reladdr", chkRel->getToggleState(), nullptr);
         midiopts.setProperty("mutebhv", txtMuteBhv->getText().getHexValue32(), nullptr);
         midiopts.setProperty("mutescale", txtMuteScale->getText().getHexValue32(), nullptr);
+        midiopts.setProperty("addmstrvolval", txtMasterVol->getText().getHexValue32(), nullptr);
 
         midiopts.setProperty("usecalls", chkUseCalls->getToggleState(), nullptr);
+        midiopts.setProperty("callonlylayer", chkCallOnlyLy->getToggleState(), nullptr);
         midiopts.setProperty("useloops", chkUseLoops->getToggleState(), nullptr);
         midiopts.setProperty("delta_vel", txtMergeVel->getText().getFloatValue(), nullptr);
         midiopts.setProperty("delta_gate", txtMergeGates->getText().getFloatValue(), nullptr);
@@ -915,6 +946,16 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         savelocation = box.getResult();
         startSeqOperation(".com/.aseq export", &SeqFile::exportCom, savelocation);
         //[/UserButtonCode_btnExportCom]
+    }
+    else if (buttonThatWasClicked == chkPref.get())
+    {
+        //[UserButtonCode_chkPref] -- add your button handler code here..
+        //[/UserButtonCode_chkPref]
+    }
+    else if (buttonThatWasClicked == chkCallOnlyLyr.get())
+    {
+        //[UserButtonCode_chkCallOnlyLyr] -- add your button handler code here..
+        //[/UserButtonCode_chkCallOnlyLyr]
     }
 
     //[UserbuttonClicked_Post]
@@ -1038,7 +1079,7 @@ BEGIN_JUCER_METADATA
                 virtualName="" explicitFocusOrder="0" pos="208 624 112 24" buttonText="Canon (Old)"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <GROUPCOMPONENT name="new group" id="6c3ae9ab90971ff0" memberName="grpImportMIDI"
-                  virtualName="" explicitFocusOrder="0" pos="8 120 320 192" title="MIDI Import"/>
+                  virtualName="" explicitFocusOrder="0" pos="8 96 320 216" title="MIDI Import"/>
   <TOGGLEBUTTON name="new toggle button" id="298575bd077da219" memberName="chkSmartLoop"
                 virtualName="" explicitFocusOrder="0" pos="16 136 112 24" buttonText="Smart Loop"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
@@ -1048,16 +1089,16 @@ BEGIN_JUCER_METADATA
                 virtualName="" explicitFocusOrder="0" pos="24 200 80 24" buttonText="Calls"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TEXTEDITOR name="new text editor" id="154dd00d08a19a23" memberName="txtMasterVol"
-              virtualName="" explicitFocusOrder="0" pos="272 136 40 24" initialText="58"
+              virtualName="" explicitFocusOrder="0" pos="280 160 40 24" initialText="58"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="2f44836e853ff58e" memberName="lblMasterVol"
-         virtualName="" explicitFocusOrder="0" pos="136 136 136 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Default Master Vol:" editableSingleClick="0"
+         virtualName="" explicitFocusOrder="0" pos="168 160 112 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Default Mst.Vol." editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <TOGGLEBUTTON name="new toggle button" id="d41d23e2781f6f08" memberName="chkUseLoops"
-                virtualName="" explicitFocusOrder="0" pos="24 224 80 24" buttonText="Loops"
+                virtualName="" explicitFocusOrder="0" pos="24 264 80 24" buttonText="Loops"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TEXTEDITOR name="new text editor" id="78aaa4ed17c1daf0" memberName="txtMergeVel"
               virtualName="" explicitFocusOrder="0" pos="160 224 40 24" initialText="5"
@@ -1177,7 +1218,7 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="256 24 63 32" buttonText="Edit..."
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <TOGGLEBUTTON name="new toggle button" id="32dace4af418847d" memberName="chkRel"
-                virtualName="" explicitFocusOrder="0" pos="16 160 104 24" buttonText="Rel Addrs"
+                virtualName="" explicitFocusOrder="0" pos="16 160 128 24" buttonText="Relative Addrs"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <TEXTBUTTON name="new button" id="dda1a6799546c40" memberName="btnImportMIDI"
               virtualName="" explicitFocusOrder="0" pos="8 320 152 32" buttonText="Import MIDI"
@@ -1198,23 +1239,34 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="8 736 152 32" buttonText="Export .com/.aseq"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="f47463540eb17b52" memberName="lblMuteBhv"
-         virtualName="" explicitFocusOrder="0" pos="120 160 56 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="MuteB" editableSingleClick="0" editableDoubleClick="0"
-         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
-         kerning="0.0" bold="0" italic="0" justification="33"/>
+         virtualName="" explicitFocusOrder="0" pos="192 112 88 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Mute Behav." editableSingleClick="0"
+         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
+         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="txtMuteBhv" id="eaf577117e5f825a" memberName="txtMuteBhv"
-              virtualName="" explicitFocusOrder="0" pos="176 160 40 24" initialText="20"
+              virtualName="" explicitFocusOrder="0" pos="280 112 40 24" initialText="20"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="f55d4d9dc7a4d940" memberName="lblMuteScale"
-         virtualName="" explicitFocusOrder="0" pos="224 160 48 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Scale" editableSingleClick="0" editableDoubleClick="0"
+         virtualName="" explicitFocusOrder="0" pos="192 136 88 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Mute Scale" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="txtMuteScale" id="5781be6e6a4a3b3b" memberName="txtMuteScale"
-              virtualName="" explicitFocusOrder="0" pos="272 160 40 24" initialText="32"
+              virtualName="" explicitFocusOrder="0" pos="280 136 40 24" initialText="32"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
+  <TOGGLEBUTTON name="chkPref" id="dc2a1a56e93490e" memberName="chkPref" virtualName=""
+                explicitFocusOrder="0" pos="16 112 176 24" buttonText="Use .pref file (if exist)"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
+  <TOGGLEBUTTON name="chkCallOnlyLyr" id="4d62bd8a13f76fa4" memberName="chkCallOnlyLyr"
+                virtualName="" explicitFocusOrder="0" pos="32 224 64 24" buttonText="Only"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
+  <LABEL name="lblCallOnlyLy" id="1eae0080342723a0" memberName="lblCallOnlyLy"
+         virtualName="" explicitFocusOrder="0" pos="54 240 48 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="NtLyr" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA
@@ -1224,3 +1276,4 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
+
