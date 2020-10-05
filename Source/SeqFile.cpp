@@ -1241,12 +1241,12 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     ccstates[10]->q_amp = qa; //pan
     ccstates[8]->q_amp = qa; //pan mix
     //Channel data
-    for(int channel=0; channel<16; channel++){
-        if(channelsused[channel] < 0) continue;
-        trk = chantracks[channel];
-        for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
-            starttime = tsectimes[sectimeidx];
-            endtime = tsectimes[sectimeidx+1];
+    for(sectimeidx=0; sectimeidx<num_tsections; sectimeidx++){
+        starttime = tsectimes[sectimeidx];
+        endtime = tsectimes[sectimeidx+1];
+        for(int channel=0; channel<16; channel++){
+            if(channelsused[channel] < 0) continue;
+            trk = chantracks[channel];
             //dbgmsg("Chn " + String(channel) + " sec " + String(sectimeidx) + " starting at t" + String(starttime));
             dbgmsg(".", false);
             //Find channel header
@@ -1280,24 +1280,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 newsec.setProperty(idChannel, channel, nullptr);
                 newsec.setProperty(idLayer, layer, nullptr);
                 newsec.setProperty(idTSection, sectimeidx, nullptr);
-                //Add to structure, ordered by tsec (block)
-                int addidx;
-                for(addidx=0; addidx<structure.getNumChildren(); ++addidx){
-                    ValueTree addsec = structure.getChild(addidx);
-                    if((int)addsec.getProperty(idSType) < 2) continue;
-                    int other_tsec = addsec.getProperty(idTSection);
-                    int other_chan = addsec.getProperty(idChannel);
-                    if(other_tsec < sectimeidx) continue;
-                    else if(other_tsec > sectimeidx) break;
-                    else{
-                        if(other_chan < channel) continue;
-                        else if(other_chan > channel) break;
-                        else{
-                            if((int)addsec.getProperty(idLayer) > layer) break;
-                        }
-                    }
-                }
-                structure.addChild(newsec, addidx, nullptr);
+                structure.addChild(newsec, -1, nullptr);
                 //Add End of Data command to layer
                 want = wantAction("End of Data", 2);
                 newsec.addChild(createCommand(want), -1, nullptr);
@@ -1306,7 +1289,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 wantProperty(want, "Note Layer", layer);
                 wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
-                want.setProperty(idTargetSection, addidx, nullptr);
+                want.setProperty(idTargetSection, structure.getNumChildren() - 1, nullptr);
                 section.addChild(want, cmd, nullptr);
                 cmd++;
             }
@@ -1360,9 +1343,11 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     //This command is quantized out
                     //Update the last command's value, but don't update lastvalue
                     //(otherwise this would progressively quantize out any slow CC fade)
+                    /*
                     dbgmsg("Chn " + String(channel) + " quantized out CC " + String(cc) 
                         + " value " + String(value) + " lastvalue " + String(ccstates[cc]->lastvalue)
                         + " timestamp " + String(timestamp) + " lasttime " + String(ccstates[cc]->lasttime));
+                    */
                     if(ccstates[cc]->lastcmd.isValid()){
                         //lastcmd will be invalid if this is an action we aren't tracking
                         ValueTree tmpcmd = ccstates[cc]->lastcmd.getChildWithProperty(idCC, cc);
@@ -3107,6 +3092,12 @@ int SeqFile::exportMus(File musfile, int dialect){
                     params += ", " + target.getProperty(idLabelName).toString();
                 }else if(datasrc == "fixed" && datalen == 2){
                     params += ", $" + hex((uint16_t)value);
+                }else if(datasrc == "fixed" && datalen == 1){
+                    if(value >= 0x80 && (action == "CC or CC Group" 
+                            || action == "Chn Transpose" || action == "Ly Transpose")){
+                        value -= 0x100;
+                    }
+                    params += ", " + String(value);
                 }else{
                     if(datasrc == "variable" && datalen == 2 && value >= 0x80){
                         name += noteandcanon ? "W" : "w";
