@@ -860,10 +860,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         midiopts.setProperty("reladdr", chkRel->getToggleState(), nullptr);
         midiopts.setProperty("mutebhv", txtMuteBhv->getText().getHexValue32(), nullptr);
         midiopts.setProperty("mutescale", txtMuteScale->getText().getHexValue32(), nullptr);
-        midiopts.setProperty("addmstrvolval", txtMasterVol->getText().getHexValue32(), nullptr);
+        midiopts.setProperty("mastervol", txtMasterVol->getText().getHexValue32(), nullptr);
 
         midiopts.setProperty("usecalls", chkUseCalls->getToggleState(), nullptr);
-        midiopts.setProperty("callonlylayer", chkCallOnlyLy->getToggleState(), nullptr);
+        midiopts.setProperty("callonlylayer", chkCallOnlyLyr->getToggleState(), nullptr);
         midiopts.setProperty("useloops", chkUseLoops->getToggleState(), nullptr);
         midiopts.setProperty("delta_vel", txtMergeVel->getText().getFloatValue(), nullptr);
         midiopts.setProperty("delta_gate", txtMergeGates->getText().getFloatValue(), nullptr);
@@ -1276,4 +1276,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-

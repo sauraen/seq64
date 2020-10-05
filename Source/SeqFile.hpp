@@ -51,7 +51,7 @@ public:
     String getInternalString();
     String getDebugOutput();
     
-    String name;
+    String seqname;
     
 private:
     //For all
@@ -65,6 +65,10 @@ private:
     void dbgmsg(String s, bool newline = true);
     
     //For importMIDI
+    void prefSetBool(ValueTree midiopts, Identifier opt, String value, String prefline);
+    void prefSetInt(ValueTree midiopts, Identifier opt, int max, String value, String prefline);
+    void prefSetHex(ValueTree midiopts, Identifier opt, int max, String value, String prefline);
+    
     MidiMessageSequence* ensureSimulMsgsInOrder(MidiMessageSequence &in);
     
     void getCommandRange(ValueTree command, String meaning, int &range_min, int &range_max);
@@ -89,7 +93,8 @@ private:
     //For exportMus
     
     void assignTSection(ValueTree sec, int tsecnum);
-    String getSecNamePrefix(File musfile, int dialect, ValueTree parent);
+    int countTicks(ValueTree sec);
+    String getSecNamePrefix(int dialect, ValueTree parent);
     
     //For importCom
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
@@ -136,6 +141,7 @@ private:
     static Identifier idSection;
     static Identifier idSectionName;
     static Identifier idOldSectionIdx;
+    static Identifier idTicks;
     static Identifier idLabelName;
     static Identifier idLabelNameAuto;
     static Identifier idSrcCmdRef;

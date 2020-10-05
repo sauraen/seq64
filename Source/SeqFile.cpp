@@ -53,6 +53,7 @@ Identifier SeqFile::idTSection("tsection");
 Identifier SeqFile::idSection("section");
 Identifier SeqFile::idSectionName("sectionname");
 Identifier SeqFile::idOldSectionIdx("oldsectionidx");
+Identifier SeqFile::idTicks("ticks");
 Identifier SeqFile::idLabelName("labelname");
 Identifier SeqFile::idLabelNameAuto("labelnameauto");
 Identifier SeqFile::idSrcCmdRef("srccmdref");
@@ -61,13 +62,10 @@ Identifier SeqFile::idTargetSection("targetsection");
 Identifier SeqFile::idTargetHash("targethash");
 Identifier SeqFile::idWillDrop("willdrop");
 
-//TODO
 SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
-    //data.clearQuick();
-    //data.ensureStorageAllocated(0x8000); //Should be enough
+    
 }
 
-//TODO
 SeqFile::~SeqFile(){
     
 }
@@ -586,6 +584,37 @@ void SeqFile::getExtendedCC(MidiMessage msg, int &cc, int &value){
     }
 }
 
+void SeqFile::prefSetBool(ValueTree midiopts, Identifier opt, String value, String prefline){
+    bool truthy = value.equalsIgnoreCase("on") || value == "1" || value.equalsIgnoreCase("true") || value.equalsIgnoreCase("yes");
+    bool falsey = value.equalsIgnoreCase("off") || value == "1" || value.equalsIgnoreCase("false") || value.equalsIgnoreCase("no");
+    if(truthy) midiopts.setProperty(opt, true, nullptr);
+    else if(falsey) midiopts.setProperty(opt, false, nullptr);
+    else{
+        dbgmsg(".pref: Invalid value " + prefline);
+        importresult |= 1;
+    }
+}
+void SeqFile::prefSetInt(ValueTree midiopts, Identifier opt, int max, String value, String prefline){
+    int v = value.getIntValue();
+    if(isInt(value) && v >= 0 && v <= max){
+        midiopts.setProperty(opt, v, nullptr);
+    }else{
+        dbgmsg(".pref: Invalid " + opt + " value " + value);
+        importresult |= 1;
+    }
+}
+void SeqFile::prefSetHex(ValueTree midiopts, Identifier opt, int max, String value, String prefline){
+    if(value.startsWithIgnoreCase("0x")) value = value.substring(2);
+    else if(value.startsWith("$")) value = value.substring(1);
+    int v = value.getHexValue32();
+    if(isHex(value) && v >= 0 && v <= 255){
+        midiopts.setProperty(opt, v, nullptr);
+    }else{
+        dbgmsg(".pref: Invalid " + opt + " value " + value);
+        importresult |= 1;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// importMIDI objects ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -650,7 +679,112 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     FileInputStream fis(midifile);
     MidiFile mfile;
     mfile.readFrom(fis);
-    name = midifile.getFileNameWithoutExtension();
+    seqname = midifile.getFileNameWithoutExtension();
+    //Read pref
+    do{
+        if(!(bool)midiopts.getProperty("pref")) break;
+        File preffile = midifile.getSiblingFile(seqname + ".pref");
+        if(!preffile.existsAsFile()){
+            dbgmsg("Requested reading .pref file, but " + preffile.getFullPathName() + " does not exist!");
+            importresult |= 1;
+            break;
+        }
+        std::vector<String> mergequantcmds{"delta_vel", "delta_gate", "delta_cc",
+            "q_volpan_amp", "q_pitch_amp", "q_other_amp"};
+        for(String s : mergequantcmds) midiopts.setProperty(s, 0, nullptr);
+        FileInputStream preffis(preffile);
+        while(!preffis.isExhausted()){
+            String prefline = preffis.readNextLine().trim();
+            if(prefline.startsWith(";") || prefline.isEmpty()) continue;
+            if(prefline.startsWith("END")) break;
+            String key = prefline.upToFirstOccurrenceOf(":", false, false).trim();
+            String value = prefline.fromFirstOccurrenceOf(":", false, false).trim();
+            if(key.isEmpty() || value.isEmpty()){
+                dbgmsg("Invalid syntax in .pref file: " + prefline);
+                importresult |= 1;
+                continue;
+            }
+            if(key.equalsIgnoreCase("notemode")){
+                if(!value.equalsIgnoreCase("b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b")){
+                    dbgmsg(".pref: Unsupported notemode (non large notes): " + value);
+                    importresult |= 1;
+                }
+            }else if(key.equalsIgnoreCase("backupmake") || key.equalsIgnoreCase("bar_write") 
+                    || key.equalsIgnoreCase("forthed_noteon")){
+                dbgmsg(".pref: seq64 does not support canon \"" + key + "\" pref command");
+            }else if(key.equalsIgnoreCase("initwait_cut") || key.equalsIgnoreCase("cutdelay")){
+                prefSetBool(midiopts, "cutdelay", value, prefline);
+            }else if(key.equalsIgnoreCase("mus_timebase")){
+                if(value != "48"){
+                    dbgmsg(".pref: Incorrect MIDI timebase " + value + "!");
+                    return 2;
+                }
+            }else if(key.equalsIgnoreCase("total_poli")){
+                dbgmsg(".pref: info: requested polyphony " + value);
+            }else if(key.equalsIgnoreCase("groop_volume") || key.equalsIgnoreCase("mastervol")){
+                prefSetInt(midiopts, "mastervol", 255, value, prefline);
+            }else if(key.equalsIgnoreCase("init_dummywait") || key.equalsIgnoreCase("extradelay")){
+                prefSetInt(midiopts, "extradelay", 0x7FFF, value, prefline);
+            }else if(key.equalsIgnoreCase("pause_set") || key.equalsIgnoreCase("mutebhv")){
+                value.replaceCharacter('\t', ' ');
+                String bhv = value.upToFirstOccurrenceOf(" ", false, false).trim();
+                String scale = value.fromFirstOccurrenceOf(" ", false, false).trim();
+                if(bhv.equalsIgnoreCase("stop") || bhv.equalsIgnoreCase("SEQSTOP")){
+                    midiopts.setProperty("mutebhv", 0x80, nullptr);
+                }else if(bhv.equalsIgnoreCase("VOICECUT")){
+                    midiopts.setProperty("mutebhv", 0x40, nullptr);
+                }else if(bhv.equalsIgnoreCase("gaindown") || bhv.equalsIgnoreCase("VOLDOWN")){
+                    midiopts.setProperty("mutebhv", 0x20, nullptr);
+                }else if(bhv.equalsIgnoreCase("ENTRYOFF")){
+                    midiopts.setProperty("mutebhv", 0x10, nullptr);
+                }else if(bhv.equalsIgnoreCase("FREEZE")){
+                    midiopts.setProperty("mutebhv", 0x08, nullptr);
+                }else{
+                    prefSetHex(midiopts, "mutebhv", 255, bhv, prefline);
+                }
+                if(scale.isEmpty()){
+                    dbgmsg(".pref: Missing mute scale: " + prefline);
+                    importresult |= 1;
+                }else{
+                    prefSetInt(midiopts, "mutescale", 255, scale, prefline);
+                }
+            }else if(key.equalsIgnoreCase("compress")){
+                midiopts.setProperty("callonlylayer", true, nullptr);
+                midiopts.setProperty("useloops", false, nullptr);
+                if(value == "0"){
+                    midiopts.setProperty("usecalls", false, nullptr);
+                }else if(value == "1"){
+                    midiopts.setProperty("usecalls", true, nullptr);
+                }else{
+                    dbgmsg(".pref: Unknown compress setting: " + value);
+                    importresult |= 1;
+                }
+            }else{
+                std::vector<String> boolparams{"smartloop", "reladdr", 
+                    "usecalls", "callonlylayer", "useloops"};
+                bool done = false;
+                for(String s : boolparams){
+                    if(key.equalsIgnoreCase(s)){
+                        prefSetBool(midiopts, s, value, prefline);
+                        done = true;
+                        break;
+                    }
+                }
+                if(done) continue;
+                for(String s : mergequantcmds){
+                    if(key.equalsIgnoreCase(s)){
+                        prefSetInt(midiopts, s, 20, value, prefline);
+                        done = true;
+                        break;
+                    }
+                }
+                if(done) continue;
+                dbgmsg(".pref: Unknown command: " + prefline);
+                importresult |= 1;
+            }
+        }
+    }while(false);
+    //
     dbgmsg("IMPORTING MIDI FILE");
     importresult = 0;
     bool reladdr = (bool)midiopts.getProperty("reladdr", false);
@@ -1075,7 +1209,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     cmd++;
     //Master Volume
     if(!hadmastervol){
-        uint8_t defaultval = (int)midiopts.getProperty("addmstrvolval", 0x58);
+        uint8_t defaultval = (int)midiopts.getProperty("mastervol", 0x58);
         if(defaultval > 0){
             dbgmsg("No Master Volume sysex command in the MIDI, adding default 0x" + hex(defaultval));
             want = wantAction("Master Volume", 0);
@@ -1146,7 +1280,24 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 newsec.setProperty(idChannel, channel, nullptr);
                 newsec.setProperty(idLayer, layer, nullptr);
                 newsec.setProperty(idTSection, sectimeidx, nullptr);
-                structure.addChild(newsec, -1, nullptr);
+                //Add to structure, ordered by tsec (block)
+                int addidx;
+                for(addidx=0; addidx<structure.getNumChildren(); ++addidx){
+                    ValueTree addsec = structure.getChild(addidx);
+                    if((int)addsec.getProperty(idSType) < 2) continue;
+                    int other_tsec = addsec.getProperty(idTSection);
+                    int other_chan = addsec.getProperty(idChannel);
+                    if(other_tsec < sectimeidx) continue;
+                    else if(other_tsec > sectimeidx) break;
+                    else{
+                        if(other_chan < channel) continue;
+                        else if(other_chan > channel) break;
+                        else{
+                            if((int)addsec.getProperty(idLayer) > layer) break;
+                        }
+                    }
+                }
+                structure.addChild(newsec, addidx, nullptr);
                 //Add End of Data command to layer
                 want = wantAction("End of Data", 2);
                 newsec.addChild(createCommand(want), -1, nullptr);
@@ -1155,7 +1306,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 wantProperty(want, "Note Layer", layer);
                 wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
-                want.setProperty(idTargetSection, structure.getNumChildren() - 1, nullptr);
+                want.setProperty(idTargetSection, addidx, nullptr);
                 section.addChild(want, cmd, nullptr);
                 cmd++;
             }
@@ -1225,6 +1376,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     continue;
                 }
                 //Create CC command and search for values in next CCs
+                //TODO: automatically add panpow after drum program change 127
                 cccmd = cccmd.createCopy();
                 cccmd.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
                 for(int j=0; j<cccmd.getNumChildren(); ++j){
@@ -2661,7 +2813,42 @@ void SeqFile::assignTSection(ValueTree sec, int tsecnum){
         }
     }
 }
-String SeqFile::getSecNamePrefix(File musfile, int dialect, ValueTree parent){
+int SeqFile::countTicks(ValueTree sec){
+    if(!sec.isValid()){
+        dbgmsg("Invalid section in countTicks!");
+        importresult |= 2;
+        return 0;
+    }
+    if(sec.hasProperty(idTicks)){
+        return sec.getProperty(idTicks);
+    }
+    int ticks = 0;
+    int lastnotedelay = -1;
+    int stype = sec.getProperty(idSType);
+    for(int i=0; i<sec.getNumChildren(); ++i){
+        ValueTree command = sec.getChild(i);
+        String action = command.getProperty(idAction).toString();
+        ValueTree delayparam = command.getChildWithProperty(idMeaning, "Delay");
+        if(delayparam.isValid()){
+            int delay = delayparam.getProperty(idValue);
+            ticks += delay;
+            if(action == "Note") lastnotedelay = delay;
+        }else if(action == "Note"){
+            if(stype != 2 || lastnotedelay < 0){
+                dbgmsg("Internal error in countTicks()!");
+                importresult |= 2;
+                return 0;
+            }
+            ticks += lastnotedelay;
+        }
+        if(action == "Call Same Level"){
+            ticks += countTicks(structure.getChild((int)command.getProperty(idTargetSection)));
+            lastnotedelay = -1;
+        }
+    }
+    return ticks;
+}
+String SeqFile::getSecNamePrefix(int dialect, ValueTree parent){
     int tsecnum = parent.getProperty(idTSection);
     if(tsecnum < 0 && tsecnum >= tsecnames.size()){
         dbgmsg("Invalid tsecnum " + String(tsecnum) + "!");
@@ -2669,8 +2856,8 @@ String SeqFile::getSecNamePrefix(File musfile, int dialect, ValueTree parent){
         return "Error";
     }
     String name = tsecnames[tsecnum];
-    if(dialect >= 1 && !musfile.getFullPathName().isEmpty()){
-        name = "_" + musfile.getFileNameWithoutExtension() + "_" + name;
+    if(dialect >= 1){
+        name = "_" + seqname + "_" + name;
     }
     return name;
 }
@@ -2718,7 +2905,9 @@ int SeqFile::exportMus(File musfile, int dialect){
     }
     int num_tsections = tsecnum + 1;
     //Check tsecnames and generated if needed
+    bool generated_tsecnames = false;
     if(tsecnames.size() != num_tsections){
+        generated_tsecnames = true;
         tsecnames.clear();
         for(int i=0; i<num_tsections; ++i){
             String name;
@@ -2726,10 +2915,10 @@ int SeqFile::exportMus(File musfile, int dialect){
                 if(num_tsections == 1){
                     name = "A";
                 }else{
-                    name = (tsecnum == 0) ? String("intro") : String('A' + tsecnum - 1);
+                    name = (i == 0) ? String("intro") : String::charToString('A' + i - 1);
                 }
             }else{
-                name = "tsec" + String(tsecnum);
+                name = "tsec" + String(i);
             }
             tsecnames.add(name);
         }
@@ -2739,7 +2928,7 @@ int SeqFile::exportMus(File musfile, int dialect){
         section = structure.getChild(sec);
         if(section.hasProperty(idLabelName) && !section.hasProperty(idLabelNameAuto)) continue;
         int stype = section.getProperty(idSType);
-        String name = getSecNamePrefix(musfile, dialect, section);
+        String name = getSecNamePrefix(dialect, section);
         if(stype == 1 || stype == 2){
             name += "_" + String(dialect >= 1 ? "sub" : "chn") + section.getProperty(idChannel).toString();
         }
@@ -2768,10 +2957,13 @@ int SeqFile::exportMus(File musfile, int dialect){
         for(cmd=0; cmd<section.getNumChildren(); ++cmd){
             command = section.getChild(cmd);
             if(command.hasProperty(idLabelName) && !command.hasProperty(idLabelNameAuto)) continue;
-            if(!targethashes.contains(command.getProperty(idHash))) continue;
-            command.setProperty(idLabelName, command.hasProperty(idTSection)
-                ? getSecNamePrefix(musfile, dialect, command) 
-                : section.getProperty(idLabelName).toString() + "_" + String(cmd), nullptr);
+            if(command.hasProperty(idTSection)){
+                command.setProperty(idLabelName, getSecNamePrefix(dialect, command), nullptr);
+            }else if(targethashes.contains(command.getProperty(idHash))){
+                command.setProperty(idLabelName, section.getProperty(idLabelName).toString() + "_" + String(cmd), nullptr);
+            }else{
+                continue;
+            }
             command.setProperty(idLabelNameAuto, true, nullptr);
         }
     }
@@ -2784,8 +2976,7 @@ int SeqFile::exportMus(File musfile, int dialect){
         out += ";\t"; { time_t t = time(nullptr); struct tm *curtime = localtime(&t); out += asctime(curtime); }
         out += ";****************************************\n\n\n";
     }else{
-        out += "; Nintendo 64 Music Macro Language (Audioseq) (.mus) sequence\n";
-        out += "; " + musfile.getFileName() + "\n";
+        out += "; Nintendo 64 Music Macro Language (Audioseq) (.mus) sequence: " + seqname + "\n";
         out += "; Converted by SEQ64 V2.0 [https://github.com/sauraen/seq64]\n\n";
     }
     tsecnum = -1;
@@ -2818,7 +3009,7 @@ int SeqFile::exportMus(File musfile, int dialect){
         }else if(sectiongroup == 2 && section.hasProperty(idSrcCmdRef)){
             sectiongroup = 3;
             if(dialect >= 1){
-                out += ";*************\n;*  PATTERN  *\n;*************\n\n";
+                out += ";*************\n;*  PATTERN  *\n;*************\n\n\n";
             }else{
                 out += "; Calls\n\n";
             }
@@ -2840,10 +3031,17 @@ int SeqFile::exportMus(File musfile, int dialect){
             if(command.hasProperty(idLabelName)){
                 out += command.getProperty(idLabelName).toString() + "\n";
             }
+            String action = command.getProperty(idAction);
+            if(action == "End of Data"){
+                if(dialect == 0 || (stype == 2 && !section.hasProperty(idSrcCmdRef))){
+                    int ticks = countTicks(section);
+                    out += (dialect == 0 ? "; Section total ticks: " : ";steps: ") + String(ticks) + "\n";
+                }
+            }
             out += "    ";
             String name;
             bool noteandcanon = false;
-            if(command.getProperty(idAction).toString() == "Note" && dialect >= 1){
+            if(action == "Note" && dialect >= 1){
                 noteandcanon = true;
                 //Convert note to note name. smf2mus always outputted "sharp" notes only,
                 //but mml64.def supported import of sharp and flat notes (e.g. "CS" = "DF").
@@ -2911,16 +3109,16 @@ int SeqFile::exportMus(File musfile, int dialect){
                     params += ", $" + hex((uint16_t)value);
                 }else{
                     if(datasrc == "variable" && datalen == 2 && value >= 0x80){
-                        name += "w";
+                        name += noteandcanon ? "W" : "w";
                     }
                     params += ", " + String(value);
                 }
             }
-            name = noteandcanon ? name.toUpperCase() : name.toLowerCase();
             out += name + "\t" + params + "\n";
         }
         out += "\n";
     }
+    if(generated_tsecnames) tsecnames.clear();
     //Write file
     fos.writeText(out, false, false, nullptr);
     fos.flush();
@@ -3096,7 +3294,7 @@ int SeqFile::importCom(File comfile){
     for(int i=0; i<len; ++i){
         data.add(fis.readByte());
     }
-    name = comfile.getFileNameWithoutExtension();
+    seqname = comfile.getFileNameWithoutExtension();
     dbgmsg("Sequence starts with " 
             + hex(data[0]) + hex(data[1]) + hex(data[2]) + hex(data[3])
             + hex(data[4]) + hex(data[5]) + hex(data[6]) + hex(data[7]));
