@@ -23,6 +23,20 @@
  * ============================================================================
 */
 
+/*
+TODO
+Canon hash commands actually used:
+#define TOKEN value
+#include "path/to/file.mus"
+#label label_name, label_name_2, ...
+#lprinton
+#msg "Blah blah"
+#evenw //probably means align to 2 bytes?
+#word value16,value16
+Note that envelopes aren't always 16 bytes! They're pairs of uint16_t's until the first is -1.
+*/
+
+
 #include "SeqFile.hpp"
 
 #include <ctime>
@@ -500,10 +514,10 @@ int SeqFile::getTotalSectionTime(ValueTree section){
         ValueTree command = section.getChild(cmd);
         String action = command.getProperty(idAction, "No Action");
         t = 0;
-        if(action == "Call Same Level"){
+        if(action == "Call"){
             int s = command.getProperty(idTargetSection, -1);
             if(s < 0 || s >= structure.getNumChildren()){
-                dbgmsg("getTotalSectionTime: Call Same Level to invalid target section!");
+                dbgmsg("getTotalSectionTime: Call to invalid target section!");
                 importresult |= 2;
                 continue;
             }
@@ -912,7 +926,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     MidiMessageSequence* trk;
     MidiMessageSequence* layertrk;
     dbgmsg("Assigning notes to notelayers...");
-    int max_layers = 4; //TODO investigate
+    const int max_layers = 4;
     OwnedArray<MidiMessageSequence> layertracks;
     for(int channel=0; channel<16; channel++){
         for(layer=0; layer<max_layers; layer++){
@@ -1169,7 +1183,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     dbgmsg("MIDI file contained jump to nonexistent tsection (block) " + target + "!");
                     importresult |= 1;
                 }else{
-                    want = wantAction("Jump Same Level", 0);
+                    want = wantAction("Jump", 0);
                     wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                     want = createCommand(want);
                     want.setProperty(idTargetSection, 0, nullptr);
@@ -1194,7 +1208,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     advanceToTimestamp(section, 0, cmd, t, last_timestamp);
     //Loop to start
     if((bool)midiopts.getProperty("smartloop", false)){
-        want = wantAction("Jump Same Level", 0);
+        want = wantAction("Jump", 0);
         wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
         want = createCommand(want);
         want.setProperty(idTargetSection, 0, nullptr);
@@ -1275,7 +1289,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 layertrk = layertracks[(max_layers*channel)+layer];
                 if(layertrk->getNumEvents() == 0) continue;
                 //Create SeqData for layer
-                newsec = ValueTree("trackdata");
+                newsec = ValueTree("notelayer");
                 newsec.setProperty(idSType, 2, nullptr);
                 newsec.setProperty(idChannel, channel, nullptr);
                 newsec.setProperty(idLayer, layer, nullptr);
@@ -1284,7 +1298,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 //Add End of Data command to layer
                 want = wantAction("End of Data", 2);
                 newsec.addChild(createCommand(want), -1, nullptr);
-                //Add Ptr Track Data command to channel
+                //Add Ptr Note Layer command to channel
                 want = wantAction("Ptr Note Layer", 1);
                 wantProperty(want, "Note Layer", layer);
                 wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
@@ -1658,7 +1672,8 @@ void SeqFile::optimize(ValueTree midiopts){
                 action1 = command1.getProperty(idAction, "No Action");
                 //dbgmsg("----Command " + String(cmd1) + "(" + action1 + ")");
                 //Don't loop pointers or no actions
-                if(action1 == "No Action" || action1 == "End of Data" || action1 == "Jump Same Level"
+                if(action1 == "No Action" || action1 == "End of Data" 
+                        || action1 == "Jump" || action1 == "Branch"
                         || action1 == "Ptr Channel Header" || action1 == "Ptr Note Layer"){
                     continue;
                 }
@@ -1814,14 +1829,16 @@ void SeqFile::optimize(ValueTree midiopts){
                 command1 = section1.getChild(cmd1);
                 action1 = command1.getProperty(idAction, "No Action");
                 //dbgmsg("----Command " + String(cmd1) + "(" + action1 + ")");
-                if(action1 == "No Action" || action1 == "End of Data" || action1 == "Jump Same Level"
+                if(action1 == "No Action" || action1 == "End of Data" 
+                        || action1 == "Jump" || action1 == "Branch"
                         || action1 == "Ptr Channel Header" || action1 == "Ptr Note Layer"){
                     continue;
                 }
                 //Consider next command too, there's no point in calling a section for 1 command
                 command3 = section1.getChild(cmd1+1);
                 action3 = command3.getProperty(idAction, "No Action");
-                if(action3 == "No Action" || action3 == "End of Data" || action3 == "Jump Same Level"
+                if(action3 == "No Action" || action3 == "End of Data" 
+                        || action3 == "Jump" || action3 == "Branch"
                         || action3 == "Ptr Channel Header" || action3 == "Ptr Note Layer"){
                     continue;
                 }
@@ -1862,7 +1879,8 @@ void SeqFile::optimize(ValueTree midiopts){
                     }
                     command3 = section1.getChild(cmd3);
                     action3 = command3.getProperty(idAction);
-                    if(action3 == "No Action" || action3 == "End of Data" || action3 == "Jump Same Level"
+                    if(action3 == "No Action" || action3 == "End of Data" 
+                            || action3 == "Jump" || action3 == "Branch"
                             || action3 == "Ptr Channel Header" || action3 == "Ptr Note Layer"){
                         break;
                     }
@@ -1929,7 +1947,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 want = wantAction("End of Data", stype1);
                 want = createCommand(want);
                 calleddatalength += getNewCommandLength(want);
-                want = wantAction("Call Same Level", stype1);
+                want = wantAction("Call", stype1);
                 wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
                 calleddatalength += bestlist.getNumChildren() * getNewCommandLength(want);
@@ -1961,7 +1979,7 @@ void SeqFile::optimize(ValueTree midiopts){
                 want = wantAction("End of Data", stype1);
                 sectionN.addChild(createCommand(want), -1, nullptr);
                 //Replace all instances of data with pointer to new section
-                want = wantAction("Call Same Level", stype1);
+                want = wantAction("Call", stype1);
                 wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
                 want = createCommand(want);
                 want.setProperty(idTargetSection, secN, nullptr);
@@ -2014,7 +2032,7 @@ void SeqFile::optimize(ValueTree midiopts){
                     command3 = section1.getChild(cmd1+2);
                     if(command3.getProperty(idAction, "No Action").toString() != "Loop End") continue;
                     command2 = section1.getChild(cmd1+1);
-                    if(command2.getProperty(idAction, "No Action").toString() != "Call Same Level") continue;
+                    if(command2.getProperty(idAction, "No Action").toString() != "Call") continue;
                     //dbgmsg("----Converting 3-loop of 1-call to 3 calls in sec " + String(sec1) + " cmd " + String(cmd1));
                     dbgmsg("*", false);
                     //Remove loop start, replace with call
@@ -2026,7 +2044,7 @@ void SeqFile::optimize(ValueTree midiopts){
                     section1.addChild(command2.createCopy(), cmd1, nullptr);
                 }else if(loopCount == 2){
                     command2 = section1.getChild(cmd1+1);
-                    if(command2.getProperty(idAction, "No Action").toString() != "Call Same Level") continue;
+                    if(command2.getProperty(idAction, "No Action").toString() != "Call") continue;
                     command3 = section1.getChild(cmd1+2);
                     command4 = section1.getChild(cmd1+3);
                     if(command3.getProperty(idAction, "No Action").toString() == "Loop End"){
@@ -2040,7 +2058,7 @@ void SeqFile::optimize(ValueTree midiopts){
                         section1.removeChild(cmd1, nullptr);
                         cmd1--; //Go back so we hit the next command
                     }else if(command4.getProperty(idAction, "No Action").toString() == "Loop End"){
-                        if(command3.getProperty(idAction, "No Action").toString() != "Call Same Level") continue;
+                        if(command3.getProperty(idAction, "No Action").toString() != "Call") continue;
                         //dbgmsg("----Converting 2-loop of 2-calls to 4 calls in sec " + String(sec1) + " cmd " + String(cmd1));
                         dbgmsg("*", false);
                         //Remove loop start
@@ -2074,7 +2092,7 @@ void SeqFile::reduceTrackNotes(){
         for(cmd=0; cmd<section.getNumChildren(); cmd++){
             command = section.getChild(cmd);
             action = command.getProperty(idAction, "No Action");
-            if(action == "Loop Start" || action == "Call Same Level"){
+            if(action == "Loop Start" || action == "Call"){
                 lastdelay = -1234;
             }
             if(action != "Note") continue;
@@ -2271,19 +2289,21 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 channel = -1;
             }
             //dbgmsg("End of Data return to stype " + String(stype));
-        }else if(action == "Jump Same Level"){
-            dbgmsg("Ignoring Jump Same Level");
-        }else if(action == "Call Same Level"){
+        }else if(action == "Jump"){
+            dbgmsg("Ignoring Jump");
+        }else if(action == "Branch"){
+            dbgmsg("Ignoring Branch");
+        }else if(action == "Call"){
             if(!command.hasProperty(idTargetSection)){
-                dbgmsg("Call Same Level without target section!");
+                dbgmsg("Call without target section!");
                 return 2;
             }
             int newsec = command.getProperty(idTargetSection);
             if(newsec < 0 || newsec >= structure.getNumChildren()){
-                dbgmsg("Call Same Level to undefined section!");
+                dbgmsg("Call to undefined section!");
                 return 2;
             }
-            //dbgmsg("Call Same Level to section " + String(newsec));
+            //dbgmsg("Call to section " + String(newsec));
             stack.add(ExportStackEntry(section, cmd, stype, 0, 100000));
             cmd = -1;
             section = structure.getChild(newsec);
@@ -2354,34 +2374,34 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             }
         }else if(action == "Ptr Note Layer"){
             if(stype != 1){
-                dbgmsg("Ptr Track Data from somewhere other than channel header!");
+                dbgmsg("Ptr Note Layer from somewhere other than channel header!");
                 return 2;
             }
             if(!command.hasProperty(idTargetSection)){
-                dbgmsg("Ptr Track Data without target section!");
+                dbgmsg("Ptr Note Layer without target section!");
                 return 2;
             }
             int newsec = command.getProperty(idTargetSection);
             if(newsec < 0 || newsec >= structure.getNumChildren()){
-                dbgmsg("Ptr Track Data to undefined section!");
+                dbgmsg("Ptr Note Layer to undefined section!");
                 return 2;
             }
             ValueTree param = command.getChildWithProperty(idMeaning, "Note Layer");
             if(!param.isValid()){
-                dbgmsg("Ptr Track Data with no Note Layer!");
+                dbgmsg("Ptr Note Layer with no Note Layer!");
                 return 2;
             }
             notelayer = param.getProperty(idValue);
             if(notelayer < 0 || notelayer >= max_layers){
-                dbgmsg("Ptr Track Data with invalid note layer!");
+                dbgmsg("Ptr Note Layer with invalid note layer!");
                 return 2;
             }
-            //dbgmsg("Ptr Track Data (ch " + String(channel) + ", ly " 
+            //dbgmsg("Ptr Note Layer (ch " + String(channel) + ", ly " 
             //    + String(notelayer) + ") to section " + String(newsec));
             stack.add(ExportStackEntry(section, cmd, stype, 0, t));
             section = structure.getChild(newsec);
             if((int)section.getProperty(idSType, -1) != 2){
-                dbgmsg("Ptr Track Data to a section which isn't a track!");
+                dbgmsg("Ptr Note Layer to a section which isn't a track!");
                 return 2;
             }
             cmd = -1;
@@ -2826,7 +2846,7 @@ int SeqFile::countTicks(ValueTree sec){
             }
             ticks += lastnotedelay;
         }
-        if(action == "Call Same Level"){
+        if(action == "Call"){
             ticks += countTicks(structure.getChild((int)command.getProperty(idTargetSection)));
             lastnotedelay = -1;
         }
@@ -3294,7 +3314,7 @@ int SeqFile::importCom(File comfile){
     datause.insertMultiple(0, 0, len);
     structure = ValueTree("structure");
     Random::getSystemRandom().setSeedRandomly();
-    int max_layers = 4; //TODO investigate
+    const int max_layers = 4;
     importresult = 0;
     //
     ValueTree section = ValueTree("seqhdr");
@@ -3366,22 +3386,22 @@ int SeqFile::importCom(File comfile){
             if(action == "End of Data"){
                 section.setProperty(idAddressEnd, (int)a, nullptr);
                 break;
-            }else if(action == "Jump Same Level" || action == "Call Same Level" 
+            }else if(action == "Jump" || action == "Branch" || action == "Call" 
                     || action == "Ptr Channel Header" || action == "Ptr Note Layer"){
                 int tgt_addr = getPtrAddress(command, a, data.size());
                 //dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
                 int tgt_stype = -1;
-                if(action == "Jump Same Level" || action == "Call Same Level"){
+                if(action == "Jump" || action == "Branch" || action == "Call"){
                     tgt_stype = stype;
                 }else if(action == "Ptr Channel Header"){
-                    if(stype != 0){
-                        dbgmsg("Got Ptr Channel Header in something not seq header!");
+                    if(stype != 0 && stype != 1){
+                        dbgmsg("Got Ptr Channel Header in something not seq header or channel header!");
                         return 2;
                     }
                     tgt_stype = 1;
                 }else if(action == "Ptr Note Layer"){
                     if(stype != 1){
-                        dbgmsg("Got Ptr Track Data in something not channel header!");
+                        dbgmsg("Got Ptr Note Layer in something not channel header!");
                         return 2;
                     }
                     tgt_stype = 2;
@@ -3433,19 +3453,19 @@ int SeqFile::importCom(File comfile){
                 }
                 if(!found){
                     //New section
-                    ValueTree newsec(tgt_stype == 0 ? "seqhdr" : tgt_stype == 1 ? "chanhdr" : "trackdata");
+                    ValueTree newsec(tgt_stype == 0 ? "seqhdr" : tgt_stype == 1 ? "chanhdr" : "notelayer");
                     newsec.setProperty(idSType, tgt_stype, nullptr);
                     newsec.setProperty(idAddress, tgt_addr, nullptr);
-                    if(action == "Call Same Level"){
+                    if(action == "Call"){
                         newsec.setProperty(idSrcCmdRef, section.getNumChildren()-1, nullptr);
                     }
                     if(tgt_stype == 1){
                         int channel = -1;
-                        if(stype == 1){
-                            channel = section.getProperty(idChannel, -1);
-                        }else{
+                        if(action == "Ptr Channel Header"){
                             ValueTree param = command.getChildWithProperty(idMeaning, "Channel");
                             if(param.isValid()) channel = param.getProperty(idValue, -1);
+                        }else{
+                            channel = section.getProperty(idChannel, -1);
                         }
                         if(channel < 0 || channel >= 16){
                             dbgmsg("Error determining channel for new section from " + action + " @" + hex(a,16) + "!");
@@ -3456,11 +3476,11 @@ int SeqFile::importCom(File comfile){
                         int channel = section.getProperty(idChannel, -1);
                         jassert(channel >= 0 && channel < 16);
                         int layer = -1;
-                        if(stype == 2){
-                            layer = section.getProperty(idLayer, -1);
-                        }else{
+                        if(action == "Ptr Note Layer"){
                             ValueTree param = command.getChildWithProperty(idMeaning, "Note Layer");
                             if(param.isValid()) layer = param.getProperty(idValue, -1);
+                        }else{
+                            layer = section.getProperty(idLayer, -1);
                         }
                         if(layer < 0 || layer >= max_layers){
                             dbgmsg("Error determining note layer for new section from " + action + " @" + hex(a,16) + "!");
@@ -3471,8 +3491,13 @@ int SeqFile::importCom(File comfile){
                     }
                     structure.appendChild(newsec, nullptr);
                     command.setProperty(idTargetSection, structure.getNumChildren()-1, nullptr);
+                } //end !found (new section)
+                if(action == "Jump"){
+                    //Unconditional jump ends the section
+                    section.setProperty(idAddressEnd, (int)a, nullptr);
+                    break;
                 }
-            }
+            } //end is structural command
         }
     }
     //Check to make sure every byte was used
@@ -3484,6 +3509,22 @@ int SeqFile::importCom(File comfile){
                 if(data[i] != 0) zeroes = false;
                 ++i;
             }
+            ValueTree datasec("tabledata");
+            datasec.setProperty(idSType, 3);
+            datasec.setProperty(idAddress, unusedstart, nullptr);
+            datasec.setProperty(idAddressEnd, i, nullptr);
+            for(int j=unusedstart; j<i; ++j){
+                ValueTree datacmd("byte");
+                datacmd.setProperty(idLength, 1, nullptr);
+                datacmd.setProperty(idValue, data[j], nullptr);
+                datasec.appendChild(datacmd, nullptr);
+            }
+            int s;
+            for(s=0; s<structure.getNumChildren(); ++s){
+                if((int)structure.getChild(i).getProperty(idAddress) >= unusedstart) break;
+            }
+            structure.addChild(datasec, s, nullptr);
+            /*
             dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(i-1,16) + 
                 (zeroes ? " (all zero)" : " (nonzeros!!)") + " were not read as part of any command");
             if(i == data.size() && zeroes
@@ -3493,6 +3534,7 @@ int SeqFile::importCom(File comfile){
             }else{
                 importresult |= 1;
             }
+            */
         }
     }
     //Sort sections by address

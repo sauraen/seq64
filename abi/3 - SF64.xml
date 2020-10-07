@@ -438,27 +438,21 @@
            validinchn="1" cname="allocvoice">
     <parameter datasrc="fixed" datalen="1" name="Notes to reserve" meaning="None"/>
   </command>
-  <command cmd="244" name="rjump" action="Jump Same Level" validintrk="1"
-           comments="Branch Relative Always" validinchn="1" validinseq="1"
-           cname="bra">
-    <parameter name="Relative address" meaning="Relative Address" datasrc="fixed"
-               datalen="1"/>
-  </command>
-  <command cmd="251" name="jump" action="Jump Same Level" validinseq="1"
-           validinchn="1" validintrk="1" comments="Branch Absolute Always"
-           cname="jump">
-    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
-  </command>
-  <command cmd="242" name="rbltz" action="Jump Same Level" comments="Branch Relative if Q &lt; 0"
+  <command cmd="242" name="rbltz" action="Branch" comments="Branch Relative if Q &lt; 0"
            validinchn="1" validinseq="1" cname="brn">
     <parameter name="Address" meaning="Relative Address" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="243" name="rbeqz" action="Jump Same Level" comments="Branch Relative if Q == 0"
+  <command cmd="243" name="rbeqz" action="Branch" comments="Branch Relative if Q == 0"
            validinchn="1" validinseq="1" cname="br0">
     <parameter name="Address" meaning="Relative Address" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="245" name="bgez" action="Jump Same Level" validinseq="1"
-           validinchn="1" comments="Branch Absolute if Q&gt;=0" cname="jumpp">
+  <command cmd="244" name="rjump" action="Jump" validintrk="1" comments="Branch Relative Always"
+           validinchn="1" validinseq="1" cname="bra">
+    <parameter name="Relative address" meaning="Relative Address" datasrc="fixed"
+               datalen="1"/>
+  </command>
+  <command cmd="245" name="bgez" action="Branch" validinseq="1" validinchn="1"
+           comments="Branch Absolute if Q&gt;=0" cname="jumpp">
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
   </command>
   <command cmd="246" name="break" action="No Action" comments="Decrease loop/function stack depth by 1. Combine with a jump to break out of a loop. Only supported in channels."
@@ -469,16 +463,20 @@
            validintrk="1" comments="Loop Start" cname="loops">
     <parameter datasrc="fixed" datalen="1" name="Loop Count" meaning="Loop Count"/>
   </command>
-  <command cmd="249" name="bltz" action="Jump Same Level" validinseq="1"
-           validinchn="1" comments="Branch Absolute if Q &lt; 0" cname="jumpn">
+  <command cmd="249" name="bltz" action="Branch" validinseq="1" validinchn="1"
+           comments="Branch Absolute if Q &lt; 0" cname="jumpn">
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
   </command>
-  <command cmd="250" name="beqz" action="Jump Same Level" validinseq="1"
-           validinchn="1" comments="Branch Absolute if Q == 0" cname="jump0">
+  <command cmd="250" name="beqz" action="Branch" validinseq="1" validinchn="1"
+           comments="Branch Absolute if Q == 0" cname="jump0">
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
   </command>
-  <command cmd="252" name="call" action="Call Same Level" validinseq="1"
-           validinchn="1" validintrk="1" comments="Call Absolute" cname="call">
+  <command cmd="251" name="jump" action="Jump" validinseq="1" validinchn="1"
+           validintrk="1" comments="Branch Absolute Always" cname="jump">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="252" name="call" action="Call" validinseq="1" validinchn="1"
+           validintrk="1" comments="Call Absolute" cname="call">
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
   </command>
   <command cmd="253" name="delay" action="Delay" validinseq="1" validinchn="1"
