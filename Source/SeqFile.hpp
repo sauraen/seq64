@@ -152,6 +152,7 @@ private:
     static Identifier idWillDrop;
     static Identifier idDynTableSType;
     static Identifier idDynTableDynSType;
+    static Identifier idCurDynTableSec;
     static Identifier idMessage;
     
 };

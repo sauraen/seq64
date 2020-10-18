@@ -50,7 +50,7 @@
            validintrk="1" cname="sweepfrom" oname="sweep">
     <parameter name="Mode" meaning="None" datasrc="fixed" datalen="1"/>
     <parameter name="Target Pitch" meaning="None" datasrc="fixed" datalen="1"/>
-    <parameter name="Time/Rate" meaning="None" datasrc="variable" datalen="2"/>
+    <parameter name="Time/Rate" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
   <command cmd="200" name="portamentooff" action="No Action" comments="Disable portamento."
            validintrk="1" cname="sweepend"/>
