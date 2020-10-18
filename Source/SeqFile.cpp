@@ -30,7 +30,7 @@ Canon hash commands actually used:
 #include "path/to/file.mus"
 #label label_name, label_name_2, ...
 #lprinton
-#msg "Blah blah"
+#msg "Blah blah" //referenced by dprint. Number seen to be 0 or 3, definitely not string length.
 #evenw //probably means align to 2 bytes?
 #word value16,value16
 Note that envelopes aren't always 16 bytes! They're pairs of uint16_t's until the first is -1.
@@ -74,6 +74,7 @@ Identifier SeqFile::idSrcCmdRef("srccmdref");
 Identifier SeqFile::idHash("hash");
 Identifier SeqFile::idTargetSection("targetsection");
 Identifier SeqFile::idTargetHash("targethash");
+Identifier SeqFile::idTargetCmdByte("targetcmdbyte");
 Identifier SeqFile::idWillDrop("willdrop");
 
 SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
@@ -107,6 +108,10 @@ String SeqFile::getInternalString(){
             ret += ", layer " + section.getProperty(idLayer, -1).toString();
         }
         ret += "\n";
+        if(section.hasProperty(idMessage)){
+            ret += "  Message: " + section.getProperty(idMessage).toString() + "\n";
+            continue;
+        }
         for(int j=0; j<section.getNumChildren(); ++j){
             ValueTree cmd = section.getChild(j);
             String cmddesc = cmd.getProperty(idName, "None").toString();
@@ -305,7 +310,7 @@ void SeqFile::wantProperty(ValueTree want, String meaning, int value){
     ValueTree sub("wantedproperty");
     sub.setProperty(idMeaning, meaning, nullptr);
     sub.setProperty(idValue, value, nullptr);
-    want.addChild(sub, -1, nullptr);
+    want.appendChild(sub, nullptr);
 }
 
 ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
@@ -343,7 +348,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
         if(flag){
             //This might be the command we're looking for
             test = test.createCopy();
-            possibleCmdsList.addChild(test, -1, nullptr);
+            possibleCmdsList.appendChild(test, nullptr);
         }
     }
     if(possibleCmdsList.getNumChildren() == 0){
@@ -728,6 +733,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 dbgmsg(".pref: seq64 does not support canon \"" + key + "\" pref command");
             }else if(key.equalsIgnoreCase("initwait_cut") || key.equalsIgnoreCase("cutdelay")){
                 prefSetBool(midiopts, "cutdelay", value, prefline);
+                //TODO actually support this
             }else if(key.equalsIgnoreCase("mus_timebase")){
                 if(value != "48"){
                     dbgmsg(".pref: Incorrect MIDI timebase " + value + "!");
@@ -739,6 +745,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 prefSetInt(midiopts, "mastervol", 255, value, prefline);
             }else if(key.equalsIgnoreCase("init_dummywait") || key.equalsIgnoreCase("extradelay")){
                 prefSetInt(midiopts, "extradelay", 0x7FFF, value, prefline);
+                //TODO actually support this
             }else if(key.equalsIgnoreCase("pause_set") || key.equalsIgnoreCase("mutebhv")){
                 value.replaceCharacter('\t', ' ');
                 String bhv = value.upToFirstOccurrenceOf(" ", false, false).trim();
@@ -1079,7 +1086,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     int cmd = 0, value;
     section = ValueTree("seqhdr");
     section.setProperty(idSType, 0, nullptr);
-    structure.addChild(section, -1, nullptr);
+    structure.appendChild(section, nullptr);
     //End of Data
     want = wantAction("End of Data", 0);
     section.addChild(createCommand(want), 0, nullptr);
@@ -1129,10 +1136,10 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 newsec.setProperty(idSType, 1, nullptr);
                 newsec.setProperty(idChannel, channel, nullptr);
                 newsec.setProperty(idTSection, sectimeidx, nullptr);
-                structure.addChild(newsec, -1, nullptr);
+                structure.appendChild(newsec, nullptr);
                 //Add End of Data command to channel
                 want = wantAction("End of Data", 1);
-                newsec.addChild(createCommand(want), -1, nullptr);
+                newsec.appendChild(createCommand(want), nullptr);
                 //Add Ptr Channel Header to seq hdr
                 want = wantAction("Ptr Channel Header", 0);
                 wantProperty(want, "Channel", channel);
@@ -1294,10 +1301,10 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 newsec.setProperty(idChannel, channel, nullptr);
                 newsec.setProperty(idLayer, layer, nullptr);
                 newsec.setProperty(idTSection, sectimeidx, nullptr);
-                structure.addChild(newsec, -1, nullptr);
+                structure.appendChild(newsec, nullptr);
                 //Add End of Data command to layer
                 want = wantAction("End of Data", 2);
-                newsec.addChild(createCommand(want), -1, nullptr);
+                newsec.appendChild(createCommand(want), nullptr);
                 //Add Ptr Note Layer command to channel
                 want = wantAction("Ptr Note Layer", 1);
                 wantProperty(want, "Note Layer", layer);
@@ -1861,7 +1868,7 @@ void SeqFile::optimize(ValueTree midiopts){
                         item = ValueTree("item");
                         item.setProperty(idSection, sec2, nullptr);
                         item.setProperty(idCmd, cmd2, nullptr);
-                        origlist.addChild(item, -1, nullptr);
+                        origlist.appendChild(item, nullptr);
                         cmd2++;
                     }
                 }
@@ -1973,11 +1980,11 @@ void SeqFile::optimize(ValueTree midiopts){
                 structure.addChild(sectionN, secN, nullptr);
                 //Copy all data to new section
                 for(int i=0; i<hooklength; i++){
-                    sectionN.addChild(section1.getChild(cmd1+i).createCopy(), -1, nullptr);
+                    sectionN.appendChild(section1.getChild(cmd1+i).createCopy(), nullptr);
                 }
                 //Add End of Data command to new section
                 want = wantAction("End of Data", stype1);
-                sectionN.addChild(createCommand(want), -1, nullptr);
+                sectionN.appendChild(createCommand(want), nullptr);
                 //Replace all instances of data with pointer to new section
                 want = wantAction("Call", stype1);
                 wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
@@ -2248,16 +2255,17 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             //do nothing
             dbgmsg("Unknown Action " + hex((uint8_t)(int)command.getProperty(idCmd)) 
                     + " in stype " + String(stype));
-        }else if(action == "No Action"){
-            //do nothing
-        }else if(action == "Mute Behavior"){
-            //do nothing
-        }else if(action == "Mute Scale"){
-            //do nothing
-        }else if(action == "Channel Enable"){
-            //do nothing
-        }else if(action == "Channel Disable"){
-            //do nothing
+        }else if(action == "No Action" || action == "Mute Behavior" || action == "Mute Scale"
+                || action == "Channel Enable" || action == "Channel Disable"
+                || action == "Enable Long Notes"){
+            //silently ignore
+        }else if(action == "Jump" || action == "Branch" || action == "Ptr Dyn Table"
+                || action == "Dyn Table Channel" || action == "Dyn Table Layer"
+                || action == "Dyn Table Dyn Table" || action == "Ptr Envelope"
+                || action == "Ptr Self" || action == "Ptr Other Table"){
+            dbgmsg("Ignoring " + action);
+        }else if(action == "Ptr Message"){
+            //TODO print message from sequence
         }else if(action == "Delay"){
             //Time difference taken care of by delay (after this if action)
             if(stype == 0){
@@ -2289,10 +2297,6 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 channel = -1;
             }
             //dbgmsg("End of Data return to stype " + String(stype));
-        }else if(action == "Jump"){
-            dbgmsg("Ignoring Jump");
-        }else if(action == "Branch"){
-            dbgmsg("Ignoring Branch");
         }else if(action == "Call"){
             if(!command.hasProperty(idTargetSection)){
                 dbgmsg("Call without target section!");
@@ -2330,6 +2334,10 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 --stack.getReference(stack.size()-1).loopcount;
                 cmd = stack.getLast().cmd;
             }
+        }else if(action == "Loop Break"){
+            dbgmsg("Loop Break command not supported in MIDI export, useless anyway"
+                " without jump/branch and actual playback (Q tracking, etc.)!");
+            importresult |= 1;
         }else if(action == "Ptr Channel Header"){
             if(stype != 0){
                 dbgmsg("Ptr Channel Header from somewhere other than seq header!");
@@ -2451,16 +2459,6 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             msg = MidiMessage::tempoMetaEvent(tempovalue);
             msg.setTimeStamp(t*ticks_multiplier);
             mastertrack.addEvent(msg);
-        }else if(action == "Enable Long Notes"){
-            if(stype != 1){
-                dbgmsg("Enable Long Notes in somewhere other than channel header!");
-                importresult |= 1; continue;
-            }
-            //Reset transposes for this channel
-            //Pretty sure this is not what this command does...
-            for(notelayer=0; notelayer<max_layers; notelayer++){
-                transposes.set((channel*max_layers)+notelayer, 0);
-            }
         }else if(action == "CC or CC Group"){
             if(stype != 1){
                 dbgmsg(action + " in somewhere other than channel header!");
@@ -2547,7 +2545,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                                 mtracks[channel]->addEvent(msg);
                                 ValueTree tpopt("instrument");
                                 tpopt.setProperty("tp", tp, nullptr);
-                                progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
+                                progoptions.appendChild(tpopt, nullptr);
                             }
                             dbgmsg("Changed instrument " + String(value) + " to program " + String(midiprogram)
                                      + ", transpose " + String(tp));
@@ -2573,7 +2571,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                             }else{
                                 tpopt.setProperty("split2", (int)temp.getProperty("value", -1) + midi_basenote, nullptr);
                             }
-                            progoptions.addChild(tpopt, progoptions.getNumChildren(), nullptr);
+                            progoptions.appendChild(tpopt, nullptr);
                             if(midiopts.getProperty("exportformat", "gm_ch10").toString() == "gm_multi"){
                                 //Add multi-drum-channel hacks
                                 //GM2 mode on
@@ -2680,7 +2678,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 param.setProperty(idMeaning, "Delay", nullptr);
                 param.setProperty(idValue, delay, nullptr);
                 command = command.createCopy(); //don't change the actual sequence data
-                command.addChild(param, -1, nullptr);
+                command.appendChild(param, nullptr);
             }
             /*
             dbgmsg("@" + hex(a, 4) + " c " + hex((uint8_t)channel, 1) + " l " + hex((uint8_t)notelayer, 1)
@@ -2699,6 +2697,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             mtracks[channel]->addEvent(msg);
         }else{
             dbgmsg("Unknown command action " + action + "!");
+            importresult |= 1;
         }
         //Execute delay
         ValueTree param = command.getChildWithProperty(idMeaning, "Delay");
@@ -2909,7 +2908,7 @@ int SeqFile::exportMus(File musfile, int dialect){
         }
     }
     int num_tsections = tsecnum + 1;
-    //Check tsecnames and generated if needed
+    //Check tsecnames and generate if needed
     bool generated_tsecnames = false;
     if(tsecnames.size() != num_tsections){
         generated_tsecnames = true;
@@ -3273,7 +3272,7 @@ int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
     }
     if(address >= seqlen){
         dbgmsg("@" + hex(currentAddr,16) + ": Pointer off end of sequence to " 
-                + hex((uint32_t)address,16) + ", skipping!");
+                + hex((uint32_t)address,16) + "!");
         return -1;
     }
     return address;
@@ -3320,59 +3319,203 @@ int SeqFile::importCom(File comfile){
     ValueTree section = ValueTree("seqhdr");
     section.setProperty(idSType, 0, nullptr);
     section.setProperty(idAddress, 0, nullptr);
-    structure.addChild(section, -1, nullptr);
+    structure.appendChild(section, nullptr);
     //
+    //Parse sections one at a time.
     for(int s=0; s<structure.getNumChildren(); ++s){
         section = structure.getChild(s);
         uint32_t a = (int)section.getProperty(idAddress);
         int stype = section.getProperty(idSType);
-        while(true){
+        if(stype < 0){
+            //Unknown load-self or store-self memory--deal with this later
+            continue;
+        }else if(stype == 3){
+            //dyntable
+            if(!section.hasProperty(idDynTableSType)){
+                dbgmsg("dyntable defined @" + hex(a,16) + " of unknown data type!");
+                return 2;
+            }
+        }
+        int dyntablesec = -1;
+        //Parse commands.
+        bool secdone = false, secescape = false;
+        while(!secdone){
+            if(stype == 6 && a == (int)section.getProperty(idAddressEnd, -1)){
+                //Normal end of other table
+                break;
+            }
             if(a >= data.size()){
+                if(a == data.size() && stype == 3){
+                    dbgmsg("Stopping dyntable because end of sequence");
+                    break;
+                }
                 dbgmsg("@" + hex(a,16) + ": in section " + String(s) + ", ran off end of sequence!");
                 return 2;
             }
             //Need to get command here because have to use hash below
-            ValueTree command = getCommand(data, a, stype);
+            ValueTree command = ValueTree("command");
+            command.setProperty(idCmd, -1, nullptr);
+            command.setProperty(idAddress, (int)a, nullptr);
+            command.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
+            if(stype >= 0 && stype <= 2){
+                //Normal command types: sequence header, channel header, note layer
+                command = getCommand(data, a, stype);
+            }else if(stype == 3){
+                //Dynamic table
+                if(a+1 >= data.size()){
+                    dbgmsg("Dynamic table address ran off end of sequence!");
+                    return 2;
+                }
+                uint16_t tgt_addr = ((uint16_t)data[a] << 8) | data[a+1];
+                if(tgt_addr >= data.size()){
+                    dbgmsg("Stopping dyntable @" + hex(a,16) + " because pointer outside seq " + hex(tgt_addr));
+                    break;
+                }
+                command.setProperty(idLength, 2, nullptr);
+                ValueTree addrparam("parameter");
+                addrparam.setProperty(idMeaning, "Absolute Address", nullptr);
+                addrparam.setProperty(idValue, (int)tgt_addr, nullptr);
+                command.appendChild(addrparam, nullptr);
+                int dtstype = section.getProperty(idDynTableSType);
+                if(dtstype == 1){
+                    command.setProperty(idAction, "Ptr Channel Header", nullptr);
+                    ValueTree param("parameter");
+                    param.setProperty(idMeaning, "Channel", nullptr);
+                    param.setProperty(idValue, 0, nullptr);
+                    command.appendChild(param, nullptr);
+                }else if(dtstype == 2){
+                    command.setProperty(idAction, "Ptr Note Layer", nullptr);
+                    ValueTree param("parameter");
+                    param.setProperty(idMeaning, "Layer", nullptr);
+                    param.setProperty(idValue, 0, nullptr);
+                    command.appendChild(param, nullptr);
+                }else if(dtstype == 3){
+                    command.setProperty(idAction, "Ptr Dyn Table", nullptr);
+                    if(!section.hasProperty(idDynTableDynSType)){
+                        dbgmsg("dynsetdyntable section missing idDynTableDynSType, "
+                            "unrecognized double-dynamic command sequence! Aborting!");
+                        return 2;
+                    }
+                    command.setProperty(idDynTableSType, section.getProperty(idDynTableDynSType), nullptr);
+                }else{
+                    dbgmsg("Invalid dyntable stype target " + dtstype + "!");
+                    return 2;
+                }
+            }else if(stype == 4){
+                //Envelope
+                if(a+3 >= data.size()){
+                    dbgmsg("Envelope ran off end of sequence!");
+                    return 2;
+                }
+                int16_t rate = ((int16_t)data[a] << 8) | data[a+1];
+                uint16_t level = ((uint16_t)data[a+2] << 8) | data[a+3];
+                if(rate < 0){
+                    if(rate != -1) dbgmsg("Nonstandard envelope termination: rate " + String(rate));
+                    secdone = true;
+                }
+                command.setProperty(idLength, 4, nullptr);
+                command.setProperty(idAction, "Envelope Point", nullptr);
+                ValueTree param("parameter");
+                param.setProperty(idMeaning, "Rate", nullptr);
+                param.setProperty(idValue, (int)rate, nullptr);
+                command.appendChild(param, nullptr);
+                param = ValueTree("parameter");
+                param.setProperty(idMeaning, "Level", nullptr);
+                param.setProperty(idValue, (int)level, nullptr);
+                command.appendChild(param, nullptr);
+            }else if(stype == 5){
+                //Message
+                uint8_t c = data[a];
+                if(c == 0){
+                    secdone = true;
+                }else{
+                    section.setProperty(idMessage, section.getProperty(idMessage, "").toString() 
+                        + String::charToString(c), nullptr);
+                }
+                command.setProperty(idLength, 1, nullptr);
+                command.setProperty(idAction, "Message Character", nullptr);
+                ValueTree param("parameter");
+                param.setProperty(idMeaning, "Character", nullptr);
+                param.setProperty(idValue, (int)c, nullptr);
+                command.appendChild(param, nullptr);
+            }else if(stype == 6){
+                //Other table
+                uint8_t d = data[a];
+                command.setProperty(idLength, 1, nullptr);
+                command.setProperty(idAction, "Table Byte", nullptr);
+                ValueTree param("parameter");
+                param.setProperty(idMeaning, "Byte", nullptr);
+                param.setProperty(idValue, (int)d, nullptr);
+                command.appendChild(param, nullptr);
+            }else{
+                dbgmsg("Internal stype error!");
+                return 2;
+            }
+            int cmdlen = (int)command.getProperty(idLength, 1);
             //See if we just ran into any existing section
             for(int i=0; i<structure.getNumChildren(); ++i){
                 if(i == s) continue;
                 ValueTree tmpsec = structure.getChild(i);
-                if(i < s){
+                int sec_addr = (int)tmpsec.getProperty(idAddress);
+                int sec_stype = (int)tmpsec.getProperty(idSType);
+                if(a+cmdlen <= sec_addr) continue;
+                if(tmpsec.hasProperty(idAddressEnd)){
                     //Already read section
-                    jassert(tmpsec.hasProperty(idAddressEnd));
-                    if(a < (int)tmpsec.getProperty(idAddress)) continue;
                     if(a >= (int)tmpsec.getProperty(idAddressEnd)) continue;
+                    if(stype == 3){
+                        dbgmsg("@" + hex(a,16) + ": Stopping dyntable because ran into another section");
+                        if(a != sec_addr) dbgmsg("(only partially, warning!!!)");
+                        secescape = true;
+                        break;
+                    }
                     dbgmsg("@" + hex(a,16) + ": Reading new section " + String(s) 
                         + " ran into existing section " + String(i) + "!");
                     return 2;
-                }else{
-                    //Not yet read section
-                    if(a == (int)tmpsec.getProperty(idAddress)){
-                        if(stype != (int)tmpsec.getProperty(idSType)){
-                            dbgmsg("@" + hex(a,16) + ": Ran into start of previously-jumped-to section of DIFFERENT type!");
-                            return 2;
-                        }
+                }
+                //Not yet read section--target placeholder for some command
+                if(a > sec_addr) continue;
+                //Some part of the command is what the target address is referring to
+                if((a == sec_addr && stype == sec_stype) || sec_stype < 0){
+                    if(sec_stype < 0){
+                        //Section is target of self-modifying code or introspection
+                        dbgmsg("@" + hex(a,16) + ": Found target command for Ptr Self");
+                    }else{
+                        //Target address is beginning of command, and same stype
                         dbgmsg("@" + hex(a,16) + ": Ran into branch destination (normal)");
-                        //Update everywhere that referenced this not-yet-read section
-                        //to instead be the current section with the new command
-                        for(int j=0; j<structure.getNumChildren(); ++j){
-                            ValueTree tmpsec2 = structure.getChild(j);
-                            for(int k=0; k<tmpsec2.getNumChildren(); ++k){
-                                ValueTree cmd = tmpsec2.getChild(k);
-                                if((int)cmd.getProperty(idTargetSection, -1) == i){
-                                    cmd.setProperty(idTargetSection, s, nullptr);
-                                    cmd.setProperty(idTargetHash, command.getProperty(idHash), nullptr);
+                    }
+                    //Update everywhere that referenced this not-yet-read section
+                    //to instead be the current section with the new command
+                    for(int j=0; j<structure.getNumChildren(); ++j){
+                        ValueTree tmpsec2 = structure.getChild(j);
+                        for(int k=0; k<tmpsec2.getNumChildren(); ++k){
+                            ValueTree cmd = tmpsec2.getChild(k);
+                            if((int)cmd.getProperty(idTargetSection, -1) == i){
+                                cmd.setProperty(idTargetSection, s, nullptr);
+                                cmd.setProperty(idTargetHash, command.getProperty(idHash), nullptr);
+                                if(sec_stype < 0){
+                                    cmd.setProperty(idTargetCmdByte, sec_addr - a, nullptr);
                                 }
                             }
                         }
-                        structure.removeChild(i, nullptr);
-                        --i;
                     }
+                    structure.removeChild(i, nullptr);
+                    --i;
+                }else if(stype == 3){
+                    dbgmsg("@" + hex(a,16) + ": Stopping dyntable because ran into not-yet-parsed section");
+                    if(a != sec_addr) dbgmsg("(only partially, warning!!!)");
+                    secescape = true;
+                    break;
+                }else{
+                    dbgmsg("@" + hex(a,16) + " stype " + String(stype) 
+                        + " cmd " + command.getProperty(idAction, "No Action").toString()
+                        + " len " + String(cmdlen) + " ran into not-yet-parsed section @"
+                        + hex(sec_addr,16) + " stype " + String(sec_stype) + "!");
+                    return 2;
                 }
             }
+            if(secescape) break;
             //Store command
             section.appendChild(command, nullptr);
-            int cmdlen = (int)command.getProperty(idLength, 1);
             for(int i=a; i<a+cmdlen; ++i){
                 if(datause[i]){
                     dbgmsg("Internal error, multiple command data use @" + hex(a,16) + "!");
@@ -3384,13 +3527,17 @@ int SeqFile::importCom(File comfile){
             //Process structural commands
             String action = command.getProperty(idAction, "Unknown").toString();
             if(action == "End of Data"){
-                section.setProperty(idAddressEnd, (int)a, nullptr);
-                break;
+                secdone = true;
             }else if(action == "Jump" || action == "Branch" || action == "Call" 
-                    || action == "Ptr Channel Header" || action == "Ptr Note Layer"){
+                    || action == "Ptr Channel Header" || action == "Ptr Note Layer"
+                    || action == "Ptr Dyn Table" || action == "Ptr Self"
+                    || action == "Ptr Envelope" || action == "Ptr Message"
+                    || action == "Ptr Other Table"){
+                //Set up pointer and stype
                 int tgt_addr = getPtrAddress(command, a, data.size());
+                if(tgt_addr < 0) return 2;
                 //dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
-                int tgt_stype = -1;
+                int tgt_stype;
                 if(action == "Jump" || action == "Branch" || action == "Call"){
                     tgt_stype = stype;
                 }else if(action == "Ptr Channel Header"){
@@ -3405,6 +3552,16 @@ int SeqFile::importCom(File comfile){
                         return 2;
                     }
                     tgt_stype = 2;
+                }else if(action == "Ptr Dyn Table"){
+                    tgt_stype = 3;
+                }else if(action == "Ptr Envelope"){
+                    tgt_stype = 4;
+                }else if(action == "Ptr Message"){
+                    tgt_stype = 5;
+                }else if(action == "Ptr Other Table"){
+                    tgt_stype = 6;
+                }else{ //action == "Ptr Self"
+                    tgt_stype = -1;
                 }
                 //Find target command if it exists
                 bool found = false;
@@ -3414,10 +3571,18 @@ int SeqFile::importCom(File comfile){
                     if(tgt_addr < tmpaddr) continue;
                     if(tgt_addr == tmpaddr && tmpsec.getNumChildren() == 0){
                         //Pointer to existing empty section
-                        if((int)tmpsec.getProperty(idSType) != tgt_stype){
-                            dbgmsg("Tried to jump to addr " + hex(tgt_addr,16) + " empty section "
+                        if((int)tmpsec.getProperty(idSType) != tgt_stype && tgt_stype >= 0){
+                            dbgmsg(action + " to addr " + hex(tgt_addr,16) + " empty section "
                                 + String(i) + ": requested wrong stype " + String(tgt_stype)
                                 + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
+                            return 2;
+                        }
+                        if(tgt_stype == 3 && 
+                                tmpsec.hasProperty(idDynTableSType) && command.hasProperty(idDynTableSType) &&
+                                tmpsec.getProperty(idDynTableSType) != command.getProperty(idDynTableSType)){
+                            dbgmsg("dyntable @" + hex(a-2,16) + " pointer to " + hex(tgt_addr)
+                                + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType)
+                                + " vs. current double-dynamic stype " + command.getProperty(idDynTableSType) + "!");
                             return 2;
                         }
                         command.setProperty(idTargetSection, i, nullptr);
@@ -3425,40 +3590,60 @@ int SeqFile::importCom(File comfile){
                         break;
                     }
                     if(tmpsec.hasProperty(idAddressEnd) && tgt_addr >= (int)tmpsec.getProperty(idAddressEnd)) continue;
+                    //Pointer to existing command in the section
                     for(int j=0; !found && j<tmpsec.getNumChildren(); ++j){
                         ValueTree cmd = tmpsec.getChild(j);
                         uint32_t a = (int)cmd.getProperty(idAddress);
                         uint32_t l = (int)cmd.getProperty(idLength);
                         if(tgt_addr >= a+l) continue;
-                        if(tgt_addr > a){
-                            dbgmsg("Tried to jump to addr " + hex(tgt_addr,16) + " in middle of command "
+                        if(tgt_addr > a && tgt_stype >= 0){
+                            dbgmsg(action + " to addr " + hex(tgt_addr,16) + " in middle of command "
                                 + String(j) + " (" + cmd.getProperty(idName).toString() + ") in section "
                                 + String(i) + "!");
                             return 2;
                         }
-                        jassert(tgt_addr == a); //commands must be in addr order in section
-                        if((int)tmpsec.getProperty(idSType) != tgt_stype){
-                            dbgmsg("Tried to jump to addr " + hex(tgt_addr,16) + " command "
+                        jassert(tgt_addr >= a); //commands must be in addr order in section
+                        if((int)tmpsec.getProperty(idSType) != tgt_stype && action != "Ptr Self"){
+                            dbgmsg(action + " to addr " + hex(tgt_addr,16) + " command "
                                 + String(j) + " (" + cmd.getProperty(idName).toString() + ") in section "
                                 + String(i) + ": requested wrong stype " + String(tgt_stype)
                                 + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
+                            return 2;
+                        }
+                        if(tgt_stype == 3 && 
+                                tmpsec.hasProperty(idDynTableSType) && command.hasProperty(idDynTableSType) &&
+                                tmpsec.getProperty(idDynTableSType) != command.getProperty(idDynTableSType)){
+                            dbgmsg("dyntable @" + hex(a-2,16) + " pointer to " + hex(tgt_addr)
+                                + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType)
+                                + " vs. current double-dynamic stype " + command.getProperty(idDynTableSType) + "!");
                             return 2;
                         }
                         dbgmsg("Found target command: " + cmd.getProperty(idName).toString()
                             + " in section " + String(i) + " @" + hex(tgt_addr,16));
                         command.setProperty(idTargetSection, i, nullptr);
                         command.setProperty(idTargetHash, cmd.getProperty(idHash), nullptr);
+                        if(action == "Ptr Self"){
+                            command.setProperty(idTargetCmdByte, tgt_addr - a, nullptr);
+                        }
                         found = true;
                     }
                 }
                 if(!found){
-                    //New section
-                    ValueTree newsec(tgt_stype == 0 ? "seqhdr" : tgt_stype == 1 ? "chanhdr" : "notelayer");
+                    //Pointer is to new section
+                    ValueTree newsec(tgt_stype == 0 ? "seqhdr" 
+                                   : tgt_stype == 1 ? "chanhdr" 
+                                   : tgt_stype == 2 ? "notelayer"
+                                   : tgt_stype == 3 ? "dyntable"
+                                   : tgt_stype == 4 ? "envelope"
+                                   : tgt_stype == 5 ? "message"
+                                   : tgt_stype == 6 ? "table"
+                                   : "unknown");
                     newsec.setProperty(idSType, tgt_stype, nullptr);
                     newsec.setProperty(idAddress, tgt_addr, nullptr);
                     if(action == "Call"){
                         newsec.setProperty(idSrcCmdRef, section.getNumChildren()-1, nullptr);
                     }
+                    //Special handling for particular types
                     if(tgt_stype == 1){
                         int channel = -1;
                         if(action == "Ptr Channel Header"){
@@ -3488,16 +3673,120 @@ int SeqFile::importCom(File comfile){
                         }
                         newsec.setProperty(idChannel, channel, nullptr);
                         newsec.setProperty(idLayer, layer, nullptr);
+                    }else if(tgt_stype == 3){
+                        dbgmsg("New dyntable @" + hex(tgt_addr,16));
+                        newsec.setProperty(idChannel, 0, nullptr); //Note layer parsing dyntable will check for this
+                        if(command.hasProperty(idDynTableSType)){
+                            //Only if a dynamic table pointing to another dynamic table
+                            dbgmsg("with known dyntablestype " + command.getProperty(idDynTableSType).toString());
+                            newsec.setProperty(idDynTableSType, command.getProperty(idDynTableSType), nullptr);
+                        }
+                    }else if(tgt_stype == 6){
+                        ValueTree param = command.getChildWithProperty(idMeaning, "Size");
+                        if(!param.isValid()){
+                            dbgmsg(action + " with no size specified in command!");
+                            return 2;
+                        }
+                        newsec.setProperty(idAddressEnd, tgt_addr + param.getProperty(idValue), nullptr);
+                    }else if(tgt_stype < 0){
+                        ValueTree param = command.getChildWithProperty(idMeaning, "Size");
+                        if(param.isValid() && (int)param.getProperty(idValue) == 1){
+                            //Self write, no possible address offset, therefore length 1
+                            newsec.setProperty(idAddressEnd, tgt_addr + 1, nullptr);
+                        }
                     }
                     structure.appendChild(newsec, nullptr);
                     command.setProperty(idTargetSection, structure.getNumChildren()-1, nullptr);
                 } //end !found (new section)
+                //Special post handling for certain pointers
                 if(action == "Jump"){
                     //Unconditional jump ends the section
-                    section.setProperty(idAddressEnd, (int)a, nullptr);
-                    break;
+                    secdone = true;
+                }else if(action == "Ptr Dyn Table"){
+                    dyntablesec = command.getProperty(idTargetSection);
                 }
-            } //end is structural command
+            }else if(action == "Dyn Table Channel" || action == "Dyn Table Layer" 
+                    || action == "Dyn Table Dyn Table"){
+                //A dyntable command is followed by a command that uses the dynamic
+                //table for something. This determines the stype of the targets of
+                //the pointers in the dyntable.
+                //This is made trickier by the dynsetdyntable command, where the
+                //first dyntable holds other dyntable addresses. We still have to
+                //track the type of the doubly-pointed-to sections.
+                if(dyntablesec < 0){
+                    dbgmsg("@" + hex(a-1,16) + ": " + action + " without previous Ptr Dyn Table!");
+                    return 2;
+                }
+                int dtstype = action == "Dyn Table Channel" ? 1 : action == "Dyn Table Layer" ? 2 : 3;
+                ValueTree dtsec = structure.getChild(dyntablesec);
+                if(dtsec.hasProperty(idDynTableSType)){
+                    int sec_dtstype = dtsec.getProperty(idDynTableSType);
+                    if(sec_dtstype == 3){
+                        if(dtstype == 1 || dtstype == 2){
+                            dbgmsg("Registering dynamic dyntable @" + hex((int)dtsec.getProperty(idAddress),16) 
+                                + " target pointers' dyntablestype as " + String(dtstype));
+                            dtsec.setProperty(idDynTableDynSType, dtstype, nullptr);
+                        }else{
+                            dbgmsg("@" + hex(a-1,16) + ": code appears to be doing triple dynamic indirection"
+                                " (two dynsetdyntable), not supported, aborting!")
+                            return 2;
+                        }
+                    }else if(dtstype == sec_dtstype){
+                        dbgmsg("Reusing dyntable @" + hex((int)dtsec.getProperty(idAddress),16) 
+                            + " stype " + String(dtstype));
+                    }else{
+                        dbgmsg("@" + hex(a-1,16) + ": already defined dyntable stype " + String(sec_dtstype)
+                            + ", now trying to be used as stype " + String(dtstype) + "!");
+                        return 2;
+                    }
+                }else{
+                    dbgmsg("Registering dyntable @" + hex((int)dtsec.getProperty(idAddress),16) 
+                        + " as stype " + String(dtstype));
+                    dtsec.setProperty(idDynTableSType, dtstype, nullptr);
+                }
+            }
+        }
+        //End of section
+        section.setProperty(idAddressEnd, (int)a, nullptr);
+    }
+    //Go through structure again, and fill in any yet unknown Ptr Self tables.
+    for(int s=0; s<structure.getNumChildren(); ++s){
+        section = structure.getChild(s);
+        if(section.hasProperty(idAddressEnd)) continue;
+        int stype = section.getProperty(idSType);
+        if(stype >= 0){
+            dbgmsg("Section " + String(s) + " stype " + stype + " not filled in, internal error!");
+            return 2;
+        }
+        int a = section.getProperty(idAddress);
+        dbgmsg("Filling in unknown Ptr Self table @" + hex(a,16);
+        int a_end = data.size();
+        //End is the start of the next section after it
+        for(int j=0; j<structure.getNumChildren(); ++j){
+            if(j==s) continue;
+            ValueTree tmpsec = structure.getChild(j);
+            int sec_addr = tmpsec.getProperty(idAddress);
+            if(sec_addr < a) continue;
+            if(sec_addr >= a_end) continue;
+            if(sec_addr == a){
+                dbgmsg("Another section starts at same place as Ptr Self table, internal error!");
+                return 2;
+            }
+            a_end = sec_addr;
+        }
+        section.setProperty(idAddressEnd, a_end, nullptr);
+        for(; a<a_end; ++a){
+            ValueTree command("command");
+            command.setProperty(idCmd, -1, nullptr);
+            command.setProperty(idAddress, (int)a, nullptr);
+            command.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
+            command.setProperty(idLength, 1, nullptr);
+            command.setProperty(idAction, "Self Table Byte", nullptr);
+            ValueTree param("parameter");
+            param.setProperty(idMeaning, "Byte", nullptr);
+            param.setProperty(idValue, (int)d, nullptr);
+            command.appendChild(param, nullptr);
+            section.appendChild(command, nullptr);
         }
     }
     //Check to make sure every byte was used
@@ -3509,32 +3798,34 @@ int SeqFile::importCom(File comfile){
                 if(data[i] != 0) zeroes = false;
                 ++i;
             }
-            ValueTree datasec("tabledata");
-            datasec.setProperty(idSType, 3);
+            if(i == data.size() && zeroes && (    
+                       (!(i & 0xF) && i - unusedstart <= 0xF)    //padded to 16 bytes
+                    || (!(i & 0x3) && i - unusedstart <= 0x3))){ //padded to 4 bytes
+                dbgmsg("Ignoring a few unused zeros at end of file, probably padding");
+                break;
+            }
+            dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(i-1,16) + 
+                (zeroes ? " (all zero)" : " (nonzeros!!)") 
+                + " were not read as part of any command, converting to Other Table");
+            importresult |= 1;
+            ValueTree datasec("table");
+            datasec.setProperty(idSType, 6, nullptr);
             datasec.setProperty(idAddress, unusedstart, nullptr);
             datasec.setProperty(idAddressEnd, i, nullptr);
             for(int j=unusedstart; j<i; ++j){
-                ValueTree datacmd("byte");
-                datacmd.setProperty(idLength, 1, nullptr);
-                datacmd.setProperty(idValue, data[j], nullptr);
-                datasec.appendChild(datacmd, nullptr);
+                ValueTree command("command");
+                command.setProperty(idCmd, -1, nullptr);
+                command.setProperty(idAddress, (int)j, nullptr);
+                command.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
+                command.setProperty(idLength, 1, nullptr);
+                command.setProperty(idAction, "Table Byte", nullptr);
+                ValueTree param("parameter");
+                param.setProperty(idMeaning, "Byte", nullptr);
+                param.setProperty(idValue, (int)data[j], nullptr);
+                command.appendChild(param, nullptr);
+                datasec.appendChild(command, nullptr);
             }
-            int s;
-            for(s=0; s<structure.getNumChildren(); ++s){
-                if((int)structure.getChild(i).getProperty(idAddress) >= unusedstart) break;
-            }
-            structure.addChild(datasec, s, nullptr);
-            /*
-            dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(i-1,16) + 
-                (zeroes ? " (all zero)" : " (nonzeros!!)") + " were not read as part of any command");
-            if(i == data.size() && zeroes
-                    && (!(i & 0xF) && i - unusedstart <= 0xF) //padded to 16 bytes
-                    || (!(i & 0x3) && i - unusedstart <= 0x3)){ //padded to 4 bytes
-                dbgmsg("(not throwing warning because only a few zero bytes at end of file, probably padding)");
-            }else{
-                importresult |= 1;
-            }
-            */
+            structure.appendChild(datasec, nullptr);
         }
     }
     //Sort sections by address

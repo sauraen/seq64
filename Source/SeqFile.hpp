@@ -148,6 +148,10 @@ private:
     static Identifier idHash;
     static Identifier idTargetSection;
     static Identifier idTargetHash;
+    static Identifier idTargetCmdByte;
     static Identifier idWillDrop;
+    static Identifier idDynTableSType;
+    static Identifier idDynTableDynSType;
+    static Identifier idMessage;
     
 };

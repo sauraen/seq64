@@ -242,21 +242,29 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     cbxAction->addItem (TRANS("Branch"), 5);
     cbxAction->addItem (TRANS("Call"), 6);
     cbxAction->addItem (TRANS("Loop Start"), 7);
-    cbxAction->addItem (TRANS("Loop End"), 8);
-    cbxAction->addItem (TRANS("Ptr Channel Header"), 9);
-    cbxAction->addItem (TRANS("Ptr Note Layer"), 10);
-    cbxAction->addItem (TRANS("Ptr Table Data"), 11);
-    cbxAction->addItem (TRANS("Mute Behavior"), 12);
-    cbxAction->addItem (TRANS("Mute Scale"), 13);
-    cbxAction->addItem (TRANS("Channel Enable"), 14);
-    cbxAction->addItem (TRANS("Channel Disable"), 15);
-    cbxAction->addItem (TRANS("Master Volume"), 16);
-    cbxAction->addItem (TRANS("Tempo"), 17);
-    cbxAction->addItem (TRANS("Enable Long Notes"), 18);
-    cbxAction->addItem (TRANS("CC or CC Group"), 19);
-    cbxAction->addItem (TRANS("Chn Transpose"), 20);
-    cbxAction->addItem (TRANS("Layer Transpose"), 21);
-    cbxAction->addItem (TRANS("Note"), 22);
+    cbxAction->addItem (TRANS("Loop Break"), 8);
+    cbxAction->addItem (TRANS("Loop End"), 9);
+    cbxAction->addItem (TRANS("Ptr Channel Header"), 10);
+    cbxAction->addItem (TRANS("Ptr Note Layer"), 11);
+    cbxAction->addItem (TRANS("Ptr Dyn Table"), 12);
+    cbxAction->addItem (TRANS("Dyn Table Channel"), 13);
+    cbxAction->addItem (TRANS("Dyn Table Layer"), 14);
+    cbxAction->addItem (TRANS("Dyn Table Dyn Table"), 15);
+    cbxAction->addItem (TRANS("Ptr Self"), 16);
+    cbxAction->addItem (TRANS("Ptr Envelope"), 17);
+    cbxAction->addItem (TRANS("Ptr Message"), 18);
+    cbxAction->addItem (TRANS("Ptr Other Table"), 19);
+    cbxAction->addItem (TRANS("Mute Behavior"), 20);
+    cbxAction->addItem (TRANS("Mute Scale"), 21);
+    cbxAction->addItem (TRANS("Channel Enable"), 22);
+    cbxAction->addItem (TRANS("Channel Disable"), 23);
+    cbxAction->addItem (TRANS("Master Volume"), 24);
+    cbxAction->addItem (TRANS("Tempo"), 25);
+    cbxAction->addItem (TRANS("Enable Long Notes"), 26);
+    cbxAction->addItem (TRANS("CC or CC Group"), 27);
+    cbxAction->addItem (TRANS("Chn Transpose"), 28);
+    cbxAction->addItem (TRANS("Layer Transpose"), 29);
+    cbxAction->addItem (TRANS("Note"), 30);
     cbxAction->addListener (this);
 
     cbxAction->setBounds (232, 416, 240, 24);
@@ -1096,53 +1104,34 @@ void SeqABIEditor::fillMeaningsBox(String action){
     cbxMeaning->clear(dontSendNotification);
     cbxMeaning->addItem("None", cbxMeaning->getNumItems()+1);
     cbxMeaning->addItem("Delay", cbxMeaning->getNumItems()+1);
-    if(action == "No Action"){
+    bool add_addrs = false;
+    if(action == "No Action" || action == "End of Data" || action == "Delay"
+            || action == "Loop Break" || action == "Loop End" 
+            || action == "Enable Long Notes" || action == "Dyn Table Dyn Table"){
         //None
-    }else if(action == "End of Data"){
-        //None
-    }else if(action == "Delay"){
-        //None--use Delay
-    }else if(action == "Jump Same Level"){
-        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
-    }else if(action == "Call Same Level"){
-        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
+    }else if(action == "Mute Behavior" || action == "Mute Scale"
+            || action == "Master Volume" || action == "Tempo"
+            || action == "Chn Transpose" || action == "Layer Transpose"){
+        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
+    }else if(action == "Jump" || action == "Branch" || action == "Call"
+            || action == "Ptr Dyn Table" || action == "Ptr Envelope" 
+            || action == "Ptr Message"){
+        add_addrs = true;
+    }else if(action == "Ptr Channel Header" || action == "Dyn Table Channel"){
+        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
+        add_addrs = true;
+    }else if(action == "Ptr Note Layer" || action == "Dyn Table Layer"){
+        cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
+        add_addrs = true;
+    }else if(action == "Ptr Self" || action == "Ptr Other Table"){
+        cbxMeaning->addItem("Size", cbxMeaning->getNumItems()+1);
+        add_addrs = true;
     }else if(action == "Loop Start"){
         cbxMeaning->addItem("Loop Count", cbxMeaning->getNumItems()+1);
-    }else if(action == "Loop End"){
-        //None
-    }else if(action == "Ptr Channel Header"){
-        cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
-    }else if(action == "Ptr Note Layer"){
-        cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
-    }else if(action == "Ptr Table Data"){
-        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
-        cbxMeaning->addItem("Size", cbxMeaning->getNumItems()+1);
-    }else if(action == "Mute Behavior"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Mute Scale"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Channel Enable"){
+    }else if(action == "Channel Enable" || action == "Channel Disable"){
         cbxMeaning->addItem("Bitfield", cbxMeaning->getNumItems()+1);
-    }else if(action == "Channel Disable"){
-        cbxMeaning->addItem("Bitfield", cbxMeaning->getNumItems()+1);
-    }else if(action == "Master Volume"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Tempo"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Enable Long Notes"){
-        //None
     }else if(action == "CC or CC Group"){
         cbxMeaning->addItem("CC", cbxMeaning->getNumItems()+1);
-    }else if(action == "Chn Transpose"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
-    }else if(action == "Layer Transpose"){
-        cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Note"){
         cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Note", cbxMeaning->getNumItems()+1);
@@ -1151,6 +1140,10 @@ void SeqABIEditor::fillMeaningsBox(String action){
     }else{
         cbxMeaning->clear(dontSendNotification);
         cbxMeaning->addItem("ERROR fillMeaningsBox", cbxMeaning->getNumItems()+1);
+    }
+    if(add_addrs){
+        cbxMeaning->addItem("Absolute Address", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Relative Address", cbxMeaning->getNumItems()+1);
     }
     cbxMeaning->setText("");
 }
@@ -1265,7 +1258,7 @@ BEGIN_JUCER_METADATA
               caret="1" popupmenu="1"/>
   <COMBOBOX name="cbxAction" id="e2a97de7a0a41ac7" memberName="cbxAction"
             virtualName="" explicitFocusOrder="0" pos="232 416 240 24" editable="0"
-            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump&#10;Branch&#10;Call&#10;Loop Start&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Note Layer&#10;Ptr Table Data&#10;Mute Behavior&#10;Mute Scale&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Enable Long Notes&#10;CC or CC Group&#10;Chn Transpose&#10;Layer Transpose&#10;Note"
+            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump&#10;Branch&#10;Call&#10;Loop Start&#10;Loop Break&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Note Layer&#10;Ptr Dyn Table&#10;Dyn Table Channel&#10;Dyn Table Layer&#10;Dyn Table Dyn Table&#10;Ptr Self&#10;Ptr Envelope&#10;Ptr Message&#10;Ptr Other Table&#10;Mute Behavior&#10;Mute Scale&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Enable Long Notes&#10;CC or CC Group&#10;Chn Transpose&#10;Layer Transpose&#10;Note"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="chkValidInSeq" id="e629b15d1c633dc3" memberName="chkValidInSeq"
                 virtualName="" explicitFocusOrder="0" pos="272 328 200 24" buttonText="Seq Header / Group Track"
@@ -1370,4 +1363,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-
