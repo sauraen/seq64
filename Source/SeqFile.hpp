@@ -100,6 +100,8 @@ private:
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
     ValueTree getCommand(Array<uint8_t> &data, uint32_t address, int stype);
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
+    bool removeSection(int remove, int replace, int hash, int cmdbyte, int &curdyntablesec);
+    int actionTargetSType(String action, int stype, uint32_t a);
     
     struct SectionSorter {
         static int compareElements(const ValueTree &first, const ValueTree &second){

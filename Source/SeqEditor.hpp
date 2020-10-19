@@ -134,8 +134,6 @@ private:
     std::unique_ptr<juce::ToggleButton> optInstOrig;
     std::unique_ptr<juce::ToggleButton> optInstGM10;
     std::unique_ptr<juce::ToggleButton> optInstGMMulti;
-    std::unique_ptr<juce::Label> lblBend;
-    std::unique_ptr<juce::TextEditor> txtBend;
     std::unique_ptr<juce::Label> lblPPQN;
     std::unique_ptr<juce::TextEditor> txtPPQN;
     std::unique_ptr<juce::TextEditor> txtSeq;

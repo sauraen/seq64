@@ -2173,8 +2173,6 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
     //CC Setup
     int ticks_multiplier = midiopts.getProperty("ppqnmultiplier", 1);
     if(ticks_multiplier <= 0) ticks_multiplier = 1;
-    int bend_range = midiopts.getProperty("bendrange", 6);
-    if(bend_range <= 0) bend_range = 1;
     //MIDI file/tracks setup
     const int midi_basenote = 21;
     MidiMessage msg;
@@ -2184,14 +2182,14 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
     OwnedArray<MidiMessageSequence> mtracks;
     for(int channel=0; channel<16; channel++){
         mtracks.add(new MidiMessageSequence());
-        //Pitch bend range RPN
+        //Pitch bend range RPN--we think it's 12 always
         msg = MidiMessage::controllerEvent(channel+1, 101, 0);
         msg.setTimeStamp(0);
         mtracks[channel]->addEvent(msg);
         msg = MidiMessage::controllerEvent(channel+1, 100, 0);
         msg.setTimeStamp(0);
         mtracks[channel]->addEvent(msg);
-        msg = MidiMessage::controllerEvent(channel+1, 6, bend_range);
+        msg = MidiMessage::controllerEvent(channel+1, 6, 12);
         msg.setTimeStamp(0);
         mtracks[channel]->addEvent(msg);
         msg = MidiMessage::controllerEvent(channel+1, 38, 0);
@@ -2486,9 +2484,11 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 if(cc == 128){
                     //Pitch bend
                     if(value >= 0x80) value -= 0x100;
-                    value = (1<<13) + (value << 7);
-                    if(value < 0) value = 0;
-                    if(value >= (1<<14)) value = (1<<14) - 1;
+                    value = (1<<13) + (value << 6);
+                    if(value < 0 || value >= (1<<14)){
+                        dbgmsg("Invalid pitch bend " + String(value) + "!");
+                        importresult |= 1;
+                    }
                     //dbgmsg("Pitch Bend original value " + String(value) + " or " + hex((uint32_t)value));
                     msg = MidiMessage::pitchWheel(channel+1, value);
                     msg.setTimeStamp(t*ticks_multiplier);
@@ -3282,6 +3282,70 @@ int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
     return address;
 }
 
+bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte, int &curdyntablesec){
+    structure.removeChild(remove, nullptr);
+    for(int j=0; j<structure.getNumChildren(); ++j){
+        ValueTree tmpsec2 = structure.getChild(j);
+        for(int k=0; k<tmpsec2.getNumChildren(); ++k){
+            ValueTree cmd = tmpsec2.getChild(k);
+            int target = cmd.getProperty(idTargetSection, -1);
+            if(target == remove){
+                cmd.setProperty(idTargetSection, replace, nullptr);
+                if(hash != 0){
+                    cmd.setProperty(idTargetHash, hash, nullptr);
+                    if(cmdbyte >= 0){
+                        cmd.setProperty(idTargetCmdByte, cmdbyte, nullptr);
+                    }
+                }
+            }else if(target > remove){
+                cmd.setProperty(idTargetSection, target-1, nullptr);
+            }
+        }
+        int dts = tmpsec2.getProperty(idCurDynTableSec, -1);
+        if(dts == remove){
+            dbgmsg("Removing section " + String(remove) + " which is curdyntablesec for section " 
+                + String(j) + ", internal error or ridiculous sequence!");
+            return false;
+        }else if(dts > remove){
+            tmpsec2.setProperty(idCurDynTableSec, dts-1, nullptr);
+        }
+    }
+    if(curdyntablesec == remove){
+        dbgmsg("Removing section " + String(remove) + " which is curdyntablesec,"
+            " internal error or ridiculous sequence!");
+        return false;
+    }else if(curdyntablesec > remove){
+        --curdyntablesec;
+    }
+    return true;
+}
+
+int SeqFile::actionTargetSType(String action, int stype, uint32_t a){
+    if(action == "Jump" || action == "Branch" || action == "Call"){
+        return stype;
+    }else if(action == "Ptr Channel Header"){
+        if(stype != 0 && stype != 1 && stype != 3){
+            dbgmsg("@" + hex(a,16)+ ": " + action + " from invalid parent stype " + String(stype) + "!");
+            return -2;
+        }
+        return 1;
+    }else if(action == "Ptr Note Layer"){
+        if(stype != 1 && stype != 3){
+            dbgmsg("@" + hex(a,16)+ ": " + action + " from invalid parent stype " + String(stype) + "!");
+            return -2;
+        }
+        return 2;
+    }else if(action == "Ptr Dyn Table"){   return 3;
+    }else if(action == "Ptr Envelope"){    return 4;
+    }else if(action == "Ptr Message"){     return 5;
+    }else if(action == "Ptr Other Table"){ return 6;
+    }else if(action == "Ptr Self"){        return -1;
+    }else{
+        dbgmsg("Unknown action " + action + " for actionTargetSType!");
+        return -2;
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// importCom //////////////////////////////////
@@ -3497,12 +3561,21 @@ int SeqFile::importCom(File comfile){
                     if(stype == 3){
                         dbgmsg("@" + hex(a,16) + ": Stopping dyntable because ran into another section");
                         if(a != sec_addr) dbgmsg("(only partially, warning!!!)");
-                        secescape = true;
-                        break;
+                    }else if(stype == sec_stype && a == sec_addr){
+                        dbgmsg("@" + hex(a,16) + ": section " + String(s) 
+                            + " naturally ran into start of section " + String(s) + ", merging");
+                        for(int k=0; k<tmpsec.getNumChildren(); ++k){
+                            section.appendChild(tmpsec.getChild(k).createCopy(), nullptr);
+                        }
+                        if(!removeSection(i, s, 0, -1, curdyntablesec)) return 2;
+                    }else{
+                        dbgmsg("@" + hex(a,16) + ": Reading section " + String(s) 
+                            + " stype " + String(stype) + " ran into existing section " 
+                            + String(i) + " stype " + String(sec_stype) + "!");
+                        return 2;
                     }
-                    dbgmsg("@" + hex(a,16) + ": Reading new section " + String(s) 
-                        + " ran into existing section " + String(i) + "!");
-                    return 2;
+                    secescape = true;
+                    break;
                 }
                 //Not yet parsed section--target placeholder for some command
                 if(a > sec_addr) continue;
@@ -3515,22 +3588,8 @@ int SeqFile::importCom(File comfile){
                         //Target address is beginning of command, and same stype
                         dbgmsg("@" + hex(a,16) + ": Ran into branch destination (normal)");
                     }
-                    //Update everywhere that referenced this not-yet-read section
-                    //to instead be the current section with the new command
-                    for(int j=0; j<structure.getNumChildren(); ++j){
-                        ValueTree tmpsec2 = structure.getChild(j);
-                        for(int k=0; k<tmpsec2.getNumChildren(); ++k){
-                            ValueTree cmd = tmpsec2.getChild(k);
-                            if((int)cmd.getProperty(idTargetSection, -1) == i){
-                                cmd.setProperty(idTargetSection, s, nullptr);
-                                cmd.setProperty(idTargetHash, command.getProperty(idHash), nullptr);
-                                if(sec_stype < 0){
-                                    cmd.setProperty(idTargetCmdByte, (int)(sec_addr - a), nullptr);
-                                }
-                            }
-                        }
-                    }
-                    structure.removeChild(i, nullptr);
+                    if(!removeSection(i, s, command.getProperty(idHash), 
+                        sec_stype < 0 ? (sec_addr - a) : -1, curdyntablesec)) return 2;
                     --i;
                 }else if(stype == 3){
                     dbgmsg("@" + hex(a,16) + ": Stopping dyntable because ran into not-yet-parsed section");
@@ -3567,34 +3626,10 @@ int SeqFile::importCom(File comfile){
                     || action == "Ptr Other Table"){
                 //Set up pointer and stype
                 int tgt_addr = getPtrAddress(command, a, data.size());
-                if(tgt_addr < 0) return 2;
+                if(tgt_addr < 0) return 2; //Already printed error
                 //dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
-                int tgt_stype;
-                if(action == "Jump" || action == "Branch" || action == "Call"){
-                    tgt_stype = stype;
-                }else if(action == "Ptr Channel Header"){
-                    if(stype != 0 && stype != 1 && stype != 3){
-                        dbgmsg("@" + hex(a,16)+ ": " + action + " from invalid parent stype " + String(stype) + "!");
-                        return 2;
-                    }
-                    tgt_stype = 1;
-                }else if(action == "Ptr Note Layer"){
-                    if(stype != 1 && stype != 3){
-                        dbgmsg("@" + hex(a,16)+ ": " + action + " from invalid parent stype " + String(stype) + "!");
-                        return 2;
-                    }
-                    tgt_stype = 2;
-                }else if(action == "Ptr Dyn Table"){
-                    tgt_stype = 3;
-                }else if(action == "Ptr Envelope"){
-                    tgt_stype = 4;
-                }else if(action == "Ptr Message"){
-                    tgt_stype = 5;
-                }else if(action == "Ptr Other Table"){
-                    tgt_stype = 6;
-                }else{ //action == "Ptr Self"
-                    tgt_stype = -1;
-                }
+                int tgt_stype = actionTargetSType(action, stype, a);
+                if(tgt_stype < -1) return 2;
                 //Find target command if it exists
                 bool found = false;
                 for(int i=0; !found && i<structure.getNumChildren(); ++i){

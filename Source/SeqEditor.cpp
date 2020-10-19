@@ -339,29 +339,6 @@ SeqEditor::SeqEditor ()
 
     optInstGMMulti->setBounds (16, 456, 144, 24);
 
-    lblBend.reset (new juce::Label ("new label",
-                                    TRANS("Bend range:")));
-    addAndMakeVisible (lblBend.get());
-    lblBend->setFont (juce::Font (15.00f, juce::Font::plain));
-    lblBend->setJustificationType (juce::Justification::centredLeft);
-    lblBend->setEditable (false, false, false);
-    lblBend->setColour (juce::TextEditor::textColourId, juce::Colours::black);
-    lblBend->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
-
-    lblBend->setBounds (176, 408, 96, 24);
-
-    txtBend.reset (new juce::TextEditor ("new text editor"));
-    addAndMakeVisible (txtBend.get());
-    txtBend->setMultiLine (false);
-    txtBend->setReturnKeyStartsNewLine (false);
-    txtBend->setReadOnly (false);
-    txtBend->setScrollbarsShown (false);
-    txtBend->setCaretVisible (true);
-    txtBend->setPopupMenuEnabled (true);
-    txtBend->setText (TRANS("6"));
-
-    txtBend->setBounds (272, 408, 40, 24);
-
     lblPPQN.reset (new juce::Label ("new label",
                                     TRANS("PPQN 48x:")));
     addAndMakeVisible (lblPPQN.get());
@@ -371,7 +348,7 @@ SeqEditor::SeqEditor ()
     lblPPQN->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblPPQN->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblPPQN->setBounds (176, 432, 95, 24);
+    lblPPQN->setBounds (176, 408, 95, 24);
 
     txtPPQN.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtPPQN.get());
@@ -383,7 +360,7 @@ SeqEditor::SeqEditor ()
     txtPPQN->setPopupMenuEnabled (true);
     txtPPQN->setText (TRANS("4"));
 
-    txtPPQN->setBounds (272, 432, 40, 24);
+    txtPPQN->setBounds (272, 408, 40, 24);
 
     txtSeq.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtSeq.get());
@@ -663,8 +640,6 @@ SeqEditor::~SeqEditor()
     optInstOrig = nullptr;
     optInstGM10 = nullptr;
     optInstGMMulti = nullptr;
-    lblBend = nullptr;
-    txtBend = nullptr;
     lblPPQN = nullptr;
     txtPPQN = nullptr;
     txtSeq = nullptr;
@@ -892,7 +867,6 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!checkSeqPresence(true)) return;
 
         ValueTree midiopts("midiopts");
-        midiopts.setProperty("bendrange", txtBend->getText().getFloatValue(), nullptr);
         midiopts.setProperty("ppqnmultiplier", txtPPQN->getText().getFloatValue(), nullptr);
         midiopts.setProperty("exportformat",
             optInstOrig->getToggleState() ? "original" :
@@ -1175,22 +1149,13 @@ BEGIN_JUCER_METADATA
   <TOGGLEBUTTON name="new toggle button" id="974cd53f9babaa12" memberName="optInstGMMulti"
                 virtualName="" explicitFocusOrder="0" pos="16 456 144 24" buttonText="GM, drums multi"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
-  <LABEL name="new label" id="dd94b04b9d4171b8" memberName="lblBend" virtualName=""
-         explicitFocusOrder="0" pos="176 408 96 24" edTextCol="ff000000"
-         edBkgCol="0" labelText="Bend range:" editableSingleClick="0"
-         editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
-         fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
-  <TEXTEDITOR name="new text editor" id="f6451ae8871410f6" memberName="txtBend"
-              virtualName="" explicitFocusOrder="0" pos="272 408 40 24" initialText="6"
-              multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
-              caret="1" popupmenu="1"/>
   <LABEL name="new label" id="20b130cdc7fc8b6f" memberName="lblPPQN" virtualName=""
-         explicitFocusOrder="0" pos="176 432 95 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="176 408 95 24" edTextCol="ff000000"
          edBkgCol="0" labelText="PPQN 48x:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="7884c8ddfeb40a43" memberName="txtPPQN"
-              virtualName="" explicitFocusOrder="0" pos="272 432 40 24" initialText="4"
+              virtualName="" explicitFocusOrder="0" pos="272 408 40 24" initialText="4"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="6103737800c72a64" memberName="txtSeq"
