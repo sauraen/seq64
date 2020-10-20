@@ -100,8 +100,12 @@ private:
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
     ValueTree getCommand(Array<uint8_t> &data, uint32_t address, int stype);
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
-    bool removeSection(int remove, int replace, int hash, int cmdbyte, int &curdyntablesec);
+    bool removeSection(int remove, int replace, int hash, int cmdbyte/*, int &curdyntablesec*/);
     int actionTargetSType(String action, int stype, uint32_t a);
+    void clearRecurVisited();
+    bool findDynTableType(int dtsec);
+    int findNextDynTableType(int s, int c);
+    bool getSectionAndCmd(ValueTree command, int &s, int &c);
     
     struct SectionSorter {
         static int compareElements(const ValueTree &first, const ValueTree &second){
@@ -154,7 +158,8 @@ private:
     static Identifier idWillDrop;
     static Identifier idDynTableSType;
     static Identifier idDynTableDynSType;
-    static Identifier idCurDynTableSec;
+    //static Identifier idCurDynTableSec;
     static Identifier idMessage;
+    static Identifier idRecurVisited;
     
 };

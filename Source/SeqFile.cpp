@@ -78,8 +78,9 @@ Identifier SeqFile::idTargetCmdByte("targetcmdbyte");
 Identifier SeqFile::idWillDrop("willdrop");
 Identifier SeqFile::idDynTableSType("dyntablestype");
 Identifier SeqFile::idDynTableDynSType("dyntabledynstype");
-Identifier SeqFile::idCurDynTableSec("curdyntablesec");
+//Identifier SeqFile::idCurDynTableSec("curdyntablesec");
 Identifier SeqFile::idMessage("message");
+Identifier SeqFile::idRecurVisited("recurvisited");
 
 SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
     
@@ -3282,7 +3283,7 @@ int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
     return address;
 }
 
-bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte, int &curdyntablesec){
+bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte/*, int &curdyntablesec*/){
     structure.removeChild(remove, nullptr);
     for(int j=0; j<structure.getNumChildren(); ++j){
         ValueTree tmpsec2 = structure.getChild(j);
@@ -3301,6 +3302,7 @@ bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte, int 
                 cmd.setProperty(idTargetSection, target-1, nullptr);
             }
         }
+        /*
         int dts = tmpsec2.getProperty(idCurDynTableSec, -1);
         if(dts == remove){
             dbgmsg("Removing section " + String(remove) + " which is curdyntablesec for section " 
@@ -3309,7 +3311,9 @@ bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte, int 
         }else if(dts > remove){
             tmpsec2.setProperty(idCurDynTableSec, dts-1, nullptr);
         }
+        */
     }
+    /*
     if(curdyntablesec == remove){
         dbgmsg("Removing section " + String(remove) + " which is curdyntablesec,"
             " internal error or ridiculous sequence!");
@@ -3317,6 +3321,7 @@ bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte, int 
     }else if(curdyntablesec > remove){
         --curdyntablesec;
     }
+    */
     return true;
 }
 
@@ -3344,6 +3349,136 @@ int SeqFile::actionTargetSType(String action, int stype, uint32_t a){
         dbgmsg("Unknown action " + action + " for actionTargetSType!");
         return -2;
     }
+}
+
+void SeqFile::clearRecurVisited(){
+    for(int s=0; s<structure.getNumChildren(); ++s){
+        ValueTree tmpsec = structure.getChild(s);
+        for(int c=0; c<tmpsec.getNumChildren(); ++c){
+            ValueTree command = tmpsec.getChild(c);
+            if(command.hasProperty(idRecurVisited)) command.removeProperty(idRecurVisited, nullptr);
+        }
+    }
+}
+
+bool SeqFile::findDynTableType(int dtsec){
+    //Traverse the sequence, following structural commands, to find what is
+    //the type this dyntable is used as after each place it's defined.
+    ValueTree section = structure.getChild(dtsec);
+    StringArray refs = StringArray::fromTokens(section.getProperty(idSrcCmdRef).toString(), ",", "");
+    if(refs.size() == 0){
+        dbgmsg("Internal error, no references to dyntable!");
+        return false;
+    }
+    int dtstype = -1;
+    for(int r=0; r<refs.size(); ++r){
+        int hash = refs[r].getIntValue();
+        //Find this command
+        for(int s=0; s<structure.getNumChildren(); ++s){
+            if(s == dtsec) continue;
+            ValueTree tmpsec = structure.getChild(s);
+            for(int c=0; c<tmpsec.getNumChildren(); ++c){
+                ValueTree command = tmpsec.getChild(c);
+                if((int)command.getProperty(idHash) != hash) continue;
+                int res = findNextDynTableType(s, c+1);
+                if(res == -1){
+                    dbgmsg("No dyntable use after definition in sec " + String(s)
+                        + " cmd " + String(c) + "!");
+                    importresult |= 1;
+                }else if(res < 0){ //other error
+                    clearRecurVisited();
+                    return false;
+                }
+                if(dtstype < 0){
+                    dtstype = res;
+                    dbgmsg("dyntable sec " + String(dtsec) + " found stype " + String(dtstype));
+                }else if(dtstype == res){
+                    dbgmsg("and another use also stype " + String(dtstype));
+                }else{
+                    dbgmsg("dyntable sec " + String(dtsec) + ": previously found stype " 
+                        + String(dtstype) + ", just found another stype " + String(res)
+                        + " after ref at sec " + String(s) + " cmd " + String(c) + ", aborting!");
+                    return false;
+                }
+            }
+        }
+    }
+    if(dtstype < 0){
+        dbgmsg("dyntable sec " + String(dtsec) + ": could not find any uses of this table, so unknown stype! Can't continue!");
+        clearRecurVisited();
+        return false;
+    }
+    section.setProperty(idDynTableSType, dtstype, nullptr);
+    clearRecurVisited();
+    return true;
+}
+
+int SeqFile::findNextDynTableType(int s, int c){
+    ValueTree section = structure.getChild(s);
+    while(true){
+        if(c >= section.getNumChildren()) return -1;
+        ValueTree command = section.getChild(c);
+        if(command.hasProperty(idRecurVisited)) return -1;
+        command.setProperty(idRecurVisited, true, nullptr);
+        String action = command.getProperty(idAction);
+        if(action == "End of Data"){
+            return -1;
+        }else if(action == "Dyn Table Channel"){
+            return 1;
+        }else if(action == "Dyn Table Layer"){
+            return 2;
+        }else if(action == "Dyn Table Dyn Table"){
+            return 3;
+        }else if(action == "Jump"){
+            if(!getSectionAndCmd(command, s, c)) return -2;
+            section = structure.getChild(s);
+        }else if(action == "Call"){
+            int s2, c2, dtstype;
+            if(!getSectionAndCmd(command, s2, c2)) return -2;
+            dtstype = findNextDynTableType(s2, c2);
+            if(dtstype != -1) return dtstype; //either error -2 or found >= 0
+            ++c; //Was not found in call, move on to next command
+        }else if(action == "Branch"){
+            //Try both paths, compare results
+            int s2, c2, dtstype2, dtstype;
+            if(!getSectionAndCmd(command, s2, c2)) return -2;
+            dtstype2 = findNextDynTableType(s2, c2);
+            if(dtstype2 <= -2) return -2;
+            dtstype = findNextDynTableType(s, c+1);
+            if(dtstype <= -2) return -2;
+            if(dtstype < 0) return dtstype2; //whether -1 or found
+            if(dtstype2 < 0) return dtstype; //whether -1 or found
+            if(dtstype == dtstype2) return dtstype; //same
+            dbgmsg("findNextDynTableType branch paths different stype results from sec "
+                + String(s) + " cmd " + String(c) + ": taking branch gives " + String(dtstype2)
+                + " while not taking branch gives " + String(dtstype) + "!");
+            return -2;
+        }else{
+            ++c;
+        }
+    }
+    return -1; //This is unreachable code
+}
+
+bool SeqFile::getSectionAndCmd(ValueTree command, int &s, int &c){
+    int ts = command.getProperty(idTargetSection, -1);
+    if(ts < 0 || ts >= structure.getNumChildren()){
+        dbgmsg("Sec " + String(s) + " cmd " + String(c) + " jump to invalid section "
+            + String(ts) + "!");
+        return false;
+    }
+    s = ts;
+    c = 0;
+    if(command.hasProperty(idTargetHash)){
+        c = structure.getChild(s).indexOf(structure.getChild(s).getChildWithProperty(
+                idHash, command.getProperty(idTargetHash)));
+        if(c < 0){
+            dbgmsg("Cmd with hash " + command.getProperty(idTargetHash).toString()
+                + " not found in section " + String(s) + "!");
+            return false;
+        }
+    }
+    return true;
 }
 
 
@@ -3426,12 +3561,18 @@ int SeqFile::importCom(File comfile){
             return 2;
         }
         uint32_t a = (int)section.getProperty(idAddress);
-        if(stype == 3 && !section.hasProperty(idDynTableSType)){
-            dbgmsg("dyntable defined @" + hex(a,16) + " of unknown data type!");
-            return 2;
+        if(stype == 3){
+            if(!section.hasProperty(idDynTableSType)){
+                if(!findDynTableType(s)) return 2;
+            }
+            if((int)section.getProperty(idDynTableSType) == 3 && !section.hasProperty(idDynTableDynSType)){
+                dbgmsg("dynsetdyntable section missing idDynTableDynSType, "
+                    "double-dynamic commands not yet fully supported! Aborting!");
+                return 2;
+            }
         }
         int otheraddrend = a + (int)section.getProperty(idLength, 0); //Only for stype 6
-        int curdyntablesec = (int)section.getProperty(idCurDynTableSec, -1);
+        //int curdyntablesec = (int)section.getProperty(idCurDynTableSec, -1);
         //Parse commands.
         bool secdone = false, secescape = false;
         while(!secdone){
@@ -3487,11 +3628,6 @@ int SeqFile::importCom(File comfile){
                     command.appendChild(param, nullptr);
                 }else if(dtstype == 3){
                     command.setProperty(idAction, "Ptr Dyn Table", nullptr);
-                    if(!section.hasProperty(idDynTableDynSType)){
-                        dbgmsg("dynsetdyntable section missing idDynTableDynSType, "
-                            "unrecognized double-dynamic command sequence! Aborting!");
-                        return 2;
-                    }
                     command.setProperty(idDynTableSType, section.getProperty(idDynTableDynSType), nullptr);
                 }else{
                     dbgmsg("Invalid dyntable stype target " + String(dtstype) + "!");
@@ -3567,7 +3703,7 @@ int SeqFile::importCom(File comfile){
                         for(int k=0; k<tmpsec.getNumChildren(); ++k){
                             section.appendChild(tmpsec.getChild(k).createCopy(), nullptr);
                         }
-                        if(!removeSection(i, s, 0, -1, curdyntablesec)) return 2;
+                        if(!removeSection(i, s, 0, -1/*, curdyntablesec*/)) return 2;
                     }else{
                         dbgmsg("@" + hex(a,16) + ": Reading section " + String(s) 
                             + " stype " + String(stype) + " ran into existing section " 
@@ -3589,7 +3725,7 @@ int SeqFile::importCom(File comfile){
                         dbgmsg("@" + hex(a,16) + ": Ran into branch destination (normal)");
                     }
                     if(!removeSection(i, s, command.getProperty(idHash), 
-                        sec_stype < 0 ? (sec_addr - a) : -1, curdyntablesec)) return 2;
+                        sec_stype < 0 ? (sec_addr - a) : -1/*, curdyntablesec*/)) return 2;
                     --i;
                 }else if(stype == 3){
                     dbgmsg("@" + hex(a,16) + ": Stopping dyntable because ran into not-yet-parsed section");
@@ -3644,13 +3780,14 @@ int SeqFile::importCom(File comfile){
                                 + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
                             return 2;
                         }
-                        if(tgt_stype == 3 && 
-                                tmpsec.hasProperty(idDynTableSType) && command.hasProperty(idDynTableSType) &&
+                        if(tgt_stype == 3){
+                            if( tmpsec.hasProperty(idDynTableSType) && command.hasProperty(idDynTableSType) &&
                                 tmpsec.getProperty(idDynTableSType) != command.getProperty(idDynTableSType)){
-                            dbgmsg("dyntable @" + hex(a-2,16) + " pointer to " + hex(tgt_addr,16)
-                                + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType).toString()
-                                + " vs. current double-dynamic stype " + command.getProperty(idDynTableSType).toString() + "!");
-                            return 2;
+                                dbgmsg("dyntable @" + hex(a-2,16) + " pointer to " + hex(tgt_addr,16)
+                                    + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType).toString()
+                                    + " vs. current double-dynamic stype " + command.getProperty(idDynTableSType).toString() + "!");
+                                return 2;
+                            }
                         }
                         command.setProperty(idTargetSection, i, nullptr);
                         found = true;
@@ -3762,9 +3899,11 @@ int SeqFile::importCom(File comfile){
                             //TODO do we need to do anything with this info?
                         }
                     }
+                    /*
                     if(action == "Jump" || action == "Branch" || action == "Call"){
                         newsec.setProperty(idCurDynTableSec, curdyntablesec, nullptr);
                     }
+                    */
                     structure.appendChild(newsec, nullptr);
                     command.setProperty(idTargetSection, structure.getNumChildren()-1, nullptr);
                 } //end !found (new section)
@@ -3773,9 +3912,12 @@ int SeqFile::importCom(File comfile){
                     //Unconditional jump ends the section
                     secdone = true;
                 }else if(action == "Ptr Dyn Table"){
-                    curdyntablesec = command.getProperty(idTargetSection);
+                    ValueTree tmpsec = structure.getChild(command.getProperty(idTargetSection));
+                    tmpsec.setProperty(idSrcCmdRef, tmpsec.getProperty(idSrcCmdRef, "").toString() 
+                        + "," + command.getProperty(idHash).toString(), nullptr);
+                    //curdyntablesec = command.getProperty(idTargetSection);
                 }
-            }else if(action == "Dyn Table Channel" || action == "Dyn Table Layer" 
+            }/*else if(action == "Dyn Table Channel" || action == "Dyn Table Layer" 
                     || action == "Dyn Table Dyn Table"){
                 //A dyntable command is followed by a command that uses the dynamic
                 //table for something. This determines the stype of the targets of
@@ -3814,7 +3956,7 @@ int SeqFile::importCom(File comfile){
                         + " as stype " + String(dtstype));
                     dtsec.setProperty(idDynTableSType, dtstype, nullptr);
                 }
-            }
+            }*/
         }
         //End of section
         section.setProperty(idAddressEnd, (int)a, nullptr);
