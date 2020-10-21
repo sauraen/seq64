@@ -3550,6 +3550,7 @@ int SeqFile::importCom(File comfile){
         section = structure.getChild(s);
         if(section.hasProperty(idAddressEnd)) continue; //already parsed
         int stype = section.getProperty(idSType);
+        dbgmsg("Parsing section " + String(s) + " stype " + String(stype));
         if(stype < 0){
             //Unknown load-self or store-self memory--deal with this later
             continue;
@@ -3616,18 +3617,21 @@ int SeqFile::importCom(File comfile){
                 int dtstype = section.getProperty(idDynTableSType);
                 if(dtstype == 1){
                     command.setProperty(idAction, "Ptr Channel Header", nullptr);
+                    command.setProperty(idName, "[dyntable Ptr Channel Header]", nullptr);
                     ValueTree param("parameter");
                     param.setProperty(idMeaning, "Channel", nullptr);
                     param.setProperty(idValue, 0, nullptr);
                     command.appendChild(param, nullptr);
                 }else if(dtstype == 2){
                     command.setProperty(idAction, "Ptr Note Layer", nullptr);
+                    command.setProperty(idName, "[dyntable Ptr Note Layer]", nullptr);
                     ValueTree param("parameter");
                     param.setProperty(idMeaning, "Layer", nullptr);
                     param.setProperty(idValue, 0, nullptr);
                     command.appendChild(param, nullptr);
                 }else if(dtstype == 3){
                     command.setProperty(idAction, "Ptr Dyn Table", nullptr);
+                    command.setProperty(idName, "[dyntable Ptr Dyn Table]", nullptr);
                     command.setProperty(idDynTableSType, section.getProperty(idDynTableDynSType), nullptr);
                 }else{
                     dbgmsg("Invalid dyntable stype target " + String(dtstype) + "!");
@@ -3647,6 +3651,7 @@ int SeqFile::importCom(File comfile){
                 }
                 command.setProperty(idLength, 4, nullptr);
                 command.setProperty(idAction, "Envelope Point", nullptr);
+                command.setProperty(idName, "[envelope point]", nullptr);
                 ValueTree param("parameter");
                 param.setProperty(idMeaning, "Rate", nullptr);
                 param.setProperty(idValue, (int)rate, nullptr);
@@ -3666,6 +3671,7 @@ int SeqFile::importCom(File comfile){
                 }
                 command.setProperty(idLength, 1, nullptr);
                 command.setProperty(idAction, "Message Character", nullptr);
+                command.setProperty(idName, "[message character]", nullptr);
                 ValueTree param("parameter");
                 param.setProperty(idMeaning, "Character", nullptr);
                 param.setProperty(idValue, (int)c, nullptr);
@@ -3675,6 +3681,7 @@ int SeqFile::importCom(File comfile){
                 uint8_t d = data[a];
                 command.setProperty(idLength, 1, nullptr);
                 command.setProperty(idAction, "Table Byte", nullptr);
+                command.setProperty(idName, "[byte]", nullptr);
                 ValueTree param("parameter");
                 param.setProperty(idMeaning, "Byte", nullptr);
                 param.setProperty(idValue, (int)d, nullptr);
@@ -3704,6 +3711,7 @@ int SeqFile::importCom(File comfile){
                             section.appendChild(tmpsec.getChild(k).createCopy(), nullptr);
                         }
                         if(!removeSection(i, s, 0, -1/*, curdyntablesec*/)) return 2;
+                        restart_parsing = true;
                     }else{
                         dbgmsg("@" + hex(a,16) + ": Reading section " + String(s) 
                             + " stype " + String(stype) + " ran into existing section " 
@@ -3727,6 +3735,7 @@ int SeqFile::importCom(File comfile){
                     if(!removeSection(i, s, command.getProperty(idHash), 
                         sec_stype < 0 ? (sec_addr - a) : -1/*, curdyntablesec*/)) return 2;
                     --i;
+                    restart_parsing = true;
                 }else if(stype == 3){
                     dbgmsg("@" + hex(a,16) + ": Stopping dyntable because ran into not-yet-parsed section");
                     if(a != sec_addr) dbgmsg("(only partially, warning!!!)");
