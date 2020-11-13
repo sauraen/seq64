@@ -67,6 +67,7 @@ Identifier SeqFile::idTSection("tsection");
 Identifier SeqFile::idSection("section");
 Identifier SeqFile::idSectionName("sectionname");
 Identifier SeqFile::idOldSectionIdx("oldsectionidx");
+Identifier SeqFile::idSecDone("secdone");
 Identifier SeqFile::idTicks("ticks");
 Identifier SeqFile::idLabelName("labelname");
 Identifier SeqFile::idLabelNameAuto("labelnameauto");
@@ -3261,6 +3262,114 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
     return ret;
 }
 
+ValueTree SeqFile::initCommand(uint32_t address){
+    ValueTree command("command");
+    command.setProperty(idCmd, -1, nullptr);
+    command.setProperty(idAddress, (int)address, nullptr);
+    command.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
+    return command;
+}
+
+ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address){
+    ValueTree command = initCommand(address);
+    if(address+1 >= data.size()){
+        dbgmsg("Dynamic table address ran off end of sequence!");
+        return ValueTree();
+    }
+    uint16_t tgt_addr = ((uint16_t)data[address] << 8) | data[address+1];
+    if(tgt_addr >= data.size()){
+        dbgmsg("Stopping dyntable @" + hex(address,16) + " because pointer outside seq " + hex(tgt_addr));
+        return ValueTree("end");
+    }
+    command.setProperty(idLength, 2, nullptr);
+    ValueTree addrparam("parameter");
+    addrparam.setProperty(idMeaning, "Absolute Address", nullptr);
+    addrparam.setProperty(idValue, (int)tgt_addr, nullptr);
+    command.appendChild(addrparam, nullptr);
+    int dtstype = section.getProperty(idDynTableSType);
+    if(dtstype == 1){
+        command.setProperty(idAction, "Ptr Channel Header", nullptr);
+        command.setProperty(idName, "[dyntable Ptr Channel Header]", nullptr);
+        ValueTree param("parameter");
+        param.setProperty(idMeaning, "Channel", nullptr);
+        param.setProperty(idValue, 0, nullptr);
+        command.appendChild(param, nullptr);
+    }else if(dtstype == 2){
+        command.setProperty(idAction, "Ptr Note Layer", nullptr);
+        command.setProperty(idName, "[dyntable Ptr Note Layer]", nullptr);
+        ValueTree param("parameter");
+        param.setProperty(idMeaning, "Layer", nullptr);
+        param.setProperty(idValue, 0, nullptr);
+        command.appendChild(param, nullptr);
+    }else if(dtstype == 3){
+        command.setProperty(idAction, "Ptr Dyn Table", nullptr);
+        command.setProperty(idName, "[dyntable Ptr Dyn Table]", nullptr);
+        command.setProperty(idDynTableSType, section.getProperty(idDynTableDynSType), nullptr);
+    }else{
+        dbgmsg("Invalid dyntable stype target " + String(dtstype) + "!");
+        return ValueTree();
+    }
+    return command;
+}
+
+ValueTree SeqFile::getEnvelopeCommand(Array<uint8_t> &data, uint32_t address){
+    ValueTree command = initCommand(address);
+    if(address+3 >= data.size()){
+        dbgmsg("Envelope ran off end of sequence!");
+        return ValueTree();
+    }
+    int16_t rate = ((int16_t)data[address] << 8) | data[address+1];
+    uint16_t level = ((uint16_t)data[address+2] << 8) | data[address+3];
+    if(rate < 0){
+        if(rate != -1) dbgmsg("Nonstandard envelope termination: rate " + String(rate));
+        command.setProperty(idSecDone, true, nullptr);
+    }
+    command.setProperty(idLength, 4, nullptr);
+    command.setProperty(idAction, "Envelope Point", nullptr);
+    command.setProperty(idName, "[envelope point]", nullptr);
+    ValueTree param("parameter");
+    param.setProperty(idMeaning, "Rate", nullptr);
+    param.setProperty(idValue, (int)rate, nullptr);
+    command.appendChild(param, nullptr);
+    param = ValueTree("parameter");
+    param.setProperty(idMeaning, "Level", nullptr);
+    param.setProperty(idValue, (int)level, nullptr);
+    command.appendChild(param, nullptr);
+    return command;
+}
+
+ValueTree SeqFile::getMessageCommand(Array<uint8_t> &data, uint32_t address, ValueTree section){
+    ValueTree command = initCommand(address);
+    uint8_t c = data[address];
+    if(c == 0){
+        command.setProperty(idSecDone, true, nullptr);
+    }else{
+        section.setProperty(idMessage, section.getProperty(idMessage, "").toString() 
+            + String::charToString(c), nullptr);
+    }
+    command.setProperty(idLength, 1, nullptr);
+    command.setProperty(idAction, "Message Character", nullptr);
+    command.setProperty(idName, "[message character]", nullptr);
+    ValueTree param("parameter");
+    param.setProperty(idMeaning, "Character", nullptr);
+    param.setProperty(idValue, (int)c, nullptr);
+    command.appendChild(param, nullptr);
+    return command;
+}
+
+ValueTree SeqFile::getOtherTableCommand(Array<uint8_t> &data, uint32_t address){
+    ValueTree command = initCommand(address);
+    uint8_t d = data[address];
+    command.setProperty(idLength, 1, nullptr);
+    command.setProperty(idAction, "Table Byte", nullptr);
+    command.setProperty(idName, "[byte]", nullptr);
+    ValueTree param("parameter");
+    param.setProperty(idMeaning, "Byte", nullptr);
+    param.setProperty(idValue, (int)d, nullptr);
+    command.appendChild(param, nullptr);
+    return command;
+}
+
 int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
     int address;
     ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
@@ -3323,6 +3432,209 @@ bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte/*, in
     }
     */
     return true;
+}
+
+int SeqFile::checkRanIntoOtherSection(int parse_stype, int parse_s, uint32_t parse_addr, 
+        ValueTree parse_cmd){
+    int ret = 0;
+    for(int i=0; i<structure.getNumChildren(); ++i){
+        if(i == parse_s) continue;
+        ValueTree tmpsec = structure.getChild(i);
+        int sec_addr = (int)tmpsec.getProperty(idAddress);
+        int sec_stype = (int)tmpsec.getProperty(idSType);
+        if(parse_addr + (int)parse_cmd.getProperty(idLength, 1) <= sec_addr) continue;
+        if(tmpsec.hasProperty(idAddressEnd)){
+            //Already parsed section
+            if(parse_addr >= (int)tmpsec.getProperty(idAddressEnd)) continue;
+            if(parse_stype == 3){
+                dbgmsg("@" + hex(parse_addr,16) + ": Stopping dyntable because ran into another section");
+                if(parse_addr != sec_addr) dbgmsg("(only partially, warning!!!)");
+            }else if(parse_stype == sec_stype && parse_addr == sec_addr){
+                dbgmsg("@" + hex(parse_addr,16) + ": section " + String(parse_s) 
+                    + " naturally ran into start of section " + String(parse_s) + ", merging");
+                for(int k=0; k<tmpsec.getNumChildren(); ++k){
+                    structure.getChild(parse_s).appendChild(tmpsec.getChild(k).createCopy(), nullptr);
+                }
+                if(!removeSection(i, parse_s, 0, -1/*, curdyntablesec*/)) return -1;
+                ret |= 2; //restart_parsing
+            }else{
+                dbgmsg("@" + hex(parse_addr,16) + ": Reading section " + String(parse_s) 
+                    + " stype " + String(parse_stype) + " ran into existing section " 
+                    + String(i) + " stype " + String(sec_stype) + "!");
+                return -1;
+            }
+            ret |= 1; //section escape
+            return ret;
+        }
+        //Not yet parsed section--target placeholder for some command
+        if(parse_addr > sec_addr) continue;
+        //Some part of the command is what the target address is referring to
+        if((parse_addr == sec_addr && parse_stype == sec_stype) || sec_stype < 0){
+            if(sec_stype < 0){
+                //Section is target of self-modifying code or introspection
+                dbgmsg("@" + hex(parse_addr,16) + ": Found target command for Ptr Self");
+            }else{
+                //Target address is beginning of command, and same stype
+                dbgmsg("@" + hex(parse_addr,16) + ": Ran into branch destination (normal)");
+            }
+            if(!removeSection(i, parse_s, parse_cmd.getProperty(idHash), 
+                sec_stype < 0 ? (sec_addr - parse_addr) : -1/*, curdyntablesec*/)) return -1;
+            --i;
+            ret |= 2; //restart_parsing
+        }else if(parse_stype == 3){
+            dbgmsg("@" + hex(parse_addr,16) + ": Stopping dyntable because ran into not-yet-parsed section");
+            if(parse_addr != sec_addr) dbgmsg("(only partially, warning!!!)");
+            ret |= 1; //section escape
+            return ret;
+        }else{
+            dbgmsg("@" + hex(parse_addr,16) + " stype " + String(parse_stype) 
+                + " cmd " + parse_cmd.getProperty(idAction, "No Action").toString()
+                + " len " + parse_cmd.getProperty(idLength, 1).toString() 
+                + " ran into not-yet-parsed section @" + hex(sec_addr,16) 
+                + " stype " + String(sec_stype) + "!");
+            return -1;
+        }
+    }
+    return ret;
+}
+
+int SeqFile::findTargetCommand(uint32_t parse_addr, int tgt_addr, int tgt_stype, ValueTree parse_cmd){
+    for(int i=0; i<structure.getNumChildren(); ++i){
+        ValueTree tmpsec = structure.getChild(i);
+        int tmpaddr = tmpsec.getProperty(idAddress);
+        if(tgt_addr < tmpaddr) continue;
+        if(tgt_addr == tmpaddr && tmpsec.getNumChildren() == 0){
+            //Pointer to existing empty section
+            if((int)tmpsec.getProperty(idSType) != tgt_stype && tgt_stype >= 0){
+                dbgmsg(action + " to addr " + hex(tgt_addr,16) + " empty section "
+                    + String(i) + ": requested wrong stype " + String(tgt_stype)
+                    + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
+                return -1;
+            }
+            if(tgt_stype == 3){
+                if( tmpsec.hasProperty(idDynTableSType) && parse_cmd.hasProperty(idDynTableSType) &&
+                    tmpsec.getProperty(idDynTableSType) != parse_cmd.getProperty(idDynTableSType)){
+                    dbgmsg("dyntable @" + hex(parse_addr-2,16) + " pointer to " + hex(tgt_addr,16)
+                        + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType).toString()
+                        + " vs. current double-dynamic stype " + parse_cmd.getProperty(idDynTableSType).toString() + "!");
+                    return -1;
+                }
+            }
+            parse_cmd.setProperty(idTargetSection, i, nullptr);
+            return 1;
+        }
+        if(tmpsec.hasProperty(idAddressEnd) && tgt_addr >= (int)tmpsec.getProperty(idAddressEnd)) continue;
+        //Pointer to existing command in the section
+        for(int j=0; j<tmpsec.getNumChildren(); ++j){
+            ValueTree cmd = tmpsec.getChild(j);
+            uint32_t a = (int)cmd.getProperty(idAddress);
+            uint32_t l = (int)cmd.getProperty(idLength);
+            if(tgt_addr >= a+l) continue;
+            if(tgt_addr > a && tgt_stype >= 0){
+                dbgmsg(action + " to addr " + hex(tgt_addr,16) + " in middle of command "
+                    + String(j) + " (" + cmd.getProperty(idName).toString() + ") in section "
+                    + String(i) + "!");
+                return -1;
+            }
+            jassert(tgt_addr >= a); //commands must be in addr order in section
+            if((int)tmpsec.getProperty(idSType) != tgt_stype && action != "Ptr Self"){
+                dbgmsg(action + " to addr " + hex(tgt_addr,16) + " command "
+                    + String(j) + " (" + cmd.getProperty(idName).toString() + ") in section "
+                    + String(i) + ": requested wrong stype " + String(tgt_stype)
+                    + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
+                return -1;
+            }
+            if(tgt_stype == 3 && 
+                    tmpsec.hasProperty(idDynTableSType) && parse_cmd.hasProperty(idDynTableSType) &&
+                    tmpsec.getProperty(idDynTableSType) != parse_cmd.getProperty(idDynTableSType)){
+                dbgmsg("dyntable @" + hex(parse_addr-2,16) + " pointer to " + hex(tgt_addr,16)
+                    + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType).toString()
+                    + " vs. current double-dynamic stype " + parse_cmd.getProperty(idDynTableSType).toString() + "!");
+                return -1;
+            }
+            dbgmsg("Found target command: " + cmd.getProperty(idName).toString()
+                + " in section " + String(i) + " @" + hex(tgt_addr,16));
+            parse_cmd.setProperty(idTargetSection, i, nullptr);
+            parse_cmd.setProperty(idTargetHash, cmd.getProperty(idHash), nullptr);
+            if(action == "Ptr Self"){
+                parse_cmd.setProperty(idTargetCmdByte, (int)(tgt_addr - a), nullptr);
+            }
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, ValueTree parse_cmd,
+        ValueTree parse_section){
+    ValueTree newsec(tgt_stype == 0 ? "seqhdr" 
+                   : tgt_stype == 1 ? "chanhdr" 
+                   : tgt_stype == 2 ? "notelayer"
+                   : tgt_stype == 3 ? "dyntable"
+                   : tgt_stype == 4 ? "envelope"
+                   : tgt_stype == 5 ? "message"
+                   : tgt_stype == 6 ? "table"
+                   : "unknown");
+    newsec.setProperty(idSType, tgt_stype, nullptr);
+    newsec.setProperty(idAddress, tgt_addr, nullptr);
+    if(src_action == "Call"){
+        newsec.setProperty(idSrcCmdRef, parse_section.getNumChildren()-1, nullptr);
+    }
+    //Special handling for particular types
+    if(tgt_stype == 1){
+        int channel = -1;
+        if(src_action == "Ptr Channel Header"){
+            ValueTree param = parse_cmd.getChildWithProperty(idMeaning, "Channel");
+            if(param.isValid()) channel = param.getProperty(idValue, -1);
+        }else{
+            channel = parse_section.getProperty(idChannel, -1);
+        }
+        if(channel < 0 || channel >= 16){
+            dbgmsg("Error determining channel for new section from " + src_action + " @" + hex(a,16) + "!");
+            return -1;
+        }
+        newsec.setProperty(idChannel, channel, nullptr);
+    }else if(tgt_stype == 2){
+        int channel = parse_section.getProperty(idChannel, -1);
+        jassert(channel >= 0 && channel < 16);
+        int layer = -1;
+        if(src_action == "Ptr Note Layer"){
+            ValueTree param = parse_cmd.getChildWithProperty(idMeaning, "Note Layer");
+            if(param.isValid()) layer = param.getProperty(idValue, -1);
+        }else{
+            layer = parse_section.getProperty(idLayer, -1);
+        }
+        if(layer < 0 || layer >= max_layers){
+            dbgmsg("Error determining note layer for new section from " + src_action + " @" + hex(a,16) + "!");
+            return -1;
+        }
+        newsec.setProperty(idChannel, channel, nullptr);
+        newsec.setProperty(idLayer, layer, nullptr);
+    }else if(tgt_stype == 3){
+        dbgmsg("New dyntable @" + hex(tgt_addr,16));
+        newsec.setProperty(idChannel, 0, nullptr); //Note layer parsing dyntable will check for this
+        if(parse_cmd.hasProperty(idDynTableSType)){
+            //Only if a dynamic table pointing to another dynamic table
+            dbgmsg("with known dyntablestype " + parse_cmd.getProperty(idDynTableSType).toString());
+            newsec.setProperty(idDynTableSType, parse_cmd.getProperty(idDynTableSType), nullptr);
+        }
+    }else if(tgt_stype == 6){
+        ValueTree param = parse_cmd.getChildWithProperty(idMeaning, "Size");
+        if(!param.isValid()){
+            dbgmsg(src_action + " with no size specified in command!");
+            return -1;
+        }
+        newsec.setProperty(idLength, param.getProperty(idValue), nullptr);
+    }else if(tgt_stype < 0){
+        ValueTree param = parse_cmd.getChildWithProperty(idMeaning, "Size");
+        if(param.isValid() && (int)param.getProperty(idValue) == 1){
+            //Self write, no possible address offset, therefore length 1
+            //TODO do we need to do anything with this info?
+        }
+    }
+    structure.appendChild(newsec, nullptr);
+    parse_cmd.setProperty(idTargetSection, structure.getNumChildren()-1, nullptr);
+    return 0;
 }
 
 int SeqFile::actionTargetSType(String action, int stype, uint32_t a){
@@ -3572,12 +3884,11 @@ int SeqFile::importCom(File comfile){
                 return 2;
             }
         }
-        int otheraddrend = a + (int)section.getProperty(idLength, 0); //Only for stype 6
-        //int curdyntablesec = (int)section.getProperty(idCurDynTableSec, -1);
         //Parse commands.
-        bool secdone = false, secescape = false;
+        bool secdone = false;
         while(!secdone){
-            if(stype == 6 && a == otheraddrend){
+            if(stype == 6 && a == ((int)section.getProperty(idAddress) 
+                    + (int)section.getProperty(idLength, 0))){
                 //Normal end of other table
                 break;
             }
@@ -3591,165 +3902,34 @@ int SeqFile::importCom(File comfile){
             }
             //Need to get command before checking if run into existing commands,
             //because have to use command hash if ran into branch dest
-            ValueTree command = ValueTree("command");
-            command.setProperty(idCmd, -1, nullptr); //These defaults are for the stype >= 3 cmds
-            command.setProperty(idAddress, (int)a, nullptr);
-            command.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
+            ValueTree command;
             if(stype >= 0 && stype <= 2){
                 //Normal command types: sequence header, channel header, note layer
                 command = getCommand(data, a, stype);
             }else if(stype == 3){
-                //Dynamic table
-                if(a+1 >= data.size()){
-                    dbgmsg("Dynamic table address ran off end of sequence!");
-                    return 2;
-                }
-                uint16_t tgt_addr = ((uint16_t)data[a] << 8) | data[a+1];
-                if(tgt_addr >= data.size()){
-                    dbgmsg("Stopping dyntable @" + hex(a,16) + " because pointer outside seq " + hex(tgt_addr));
-                    break;
-                }
-                command.setProperty(idLength, 2, nullptr);
-                ValueTree addrparam("parameter");
-                addrparam.setProperty(idMeaning, "Absolute Address", nullptr);
-                addrparam.setProperty(idValue, (int)tgt_addr, nullptr);
-                command.appendChild(addrparam, nullptr);
-                int dtstype = section.getProperty(idDynTableSType);
-                if(dtstype == 1){
-                    command.setProperty(idAction, "Ptr Channel Header", nullptr);
-                    command.setProperty(idName, "[dyntable Ptr Channel Header]", nullptr);
-                    ValueTree param("parameter");
-                    param.setProperty(idMeaning, "Channel", nullptr);
-                    param.setProperty(idValue, 0, nullptr);
-                    command.appendChild(param, nullptr);
-                }else if(dtstype == 2){
-                    command.setProperty(idAction, "Ptr Note Layer", nullptr);
-                    command.setProperty(idName, "[dyntable Ptr Note Layer]", nullptr);
-                    ValueTree param("parameter");
-                    param.setProperty(idMeaning, "Layer", nullptr);
-                    param.setProperty(idValue, 0, nullptr);
-                    command.appendChild(param, nullptr);
-                }else if(dtstype == 3){
-                    command.setProperty(idAction, "Ptr Dyn Table", nullptr);
-                    command.setProperty(idName, "[dyntable Ptr Dyn Table]", nullptr);
-                    command.setProperty(idDynTableSType, section.getProperty(idDynTableDynSType), nullptr);
-                }else{
-                    dbgmsg("Invalid dyntable stype target " + String(dtstype) + "!");
-                    return 2;
-                }
+                command = getDynTableCommand(data, a);
             }else if(stype == 4){
-                //Envelope
-                if(a+3 >= data.size()){
-                    dbgmsg("Envelope ran off end of sequence!");
-                    return 2;
-                }
-                int16_t rate = ((int16_t)data[a] << 8) | data[a+1];
-                uint16_t level = ((uint16_t)data[a+2] << 8) | data[a+3];
-                if(rate < 0){
-                    if(rate != -1) dbgmsg("Nonstandard envelope termination: rate " + String(rate));
-                    secdone = true;
-                }
-                command.setProperty(idLength, 4, nullptr);
-                command.setProperty(idAction, "Envelope Point", nullptr);
-                command.setProperty(idName, "[envelope point]", nullptr);
-                ValueTree param("parameter");
-                param.setProperty(idMeaning, "Rate", nullptr);
-                param.setProperty(idValue, (int)rate, nullptr);
-                command.appendChild(param, nullptr);
-                param = ValueTree("parameter");
-                param.setProperty(idMeaning, "Level", nullptr);
-                param.setProperty(idValue, (int)level, nullptr);
-                command.appendChild(param, nullptr);
+                command = getEnvelopeCommand(data, a);
             }else if(stype == 5){
-                //Message
-                uint8_t c = data[a];
-                if(c == 0){
-                    secdone = true;
-                }else{
-                    section.setProperty(idMessage, section.getProperty(idMessage, "").toString() 
-                        + String::charToString(c), nullptr);
-                }
-                command.setProperty(idLength, 1, nullptr);
-                command.setProperty(idAction, "Message Character", nullptr);
-                command.setProperty(idName, "[message character]", nullptr);
-                ValueTree param("parameter");
-                param.setProperty(idMeaning, "Character", nullptr);
-                param.setProperty(idValue, (int)c, nullptr);
-                command.appendChild(param, nullptr);
+                command = getMessageCommand(data, a, section);
             }else if(stype == 6){
-                //Other table
-                uint8_t d = data[a];
-                command.setProperty(idLength, 1, nullptr);
-                command.setProperty(idAction, "Table Byte", nullptr);
-                command.setProperty(idName, "[byte]", nullptr);
-                ValueTree param("parameter");
-                param.setProperty(idMeaning, "Byte", nullptr);
-                param.setProperty(idValue, (int)d, nullptr);
-                command.appendChild(param, nullptr);
+                command = getOtherTableCommand(data, a);
             }else{
                 dbgmsg("Internal stype error!");
                 return 2;
             }
-            int cmdlen = (int)command.getProperty(idLength, 1);
-            //See if we just ran into any existing section
-            for(int i=0; i<structure.getNumChildren(); ++i){
-                if(i == s) continue;
-                ValueTree tmpsec = structure.getChild(i);
-                int sec_addr = (int)tmpsec.getProperty(idAddress);
-                int sec_stype = (int)tmpsec.getProperty(idSType);
-                if(a+cmdlen <= sec_addr) continue;
-                if(tmpsec.hasProperty(idAddressEnd)){
-                    //Already parsed section
-                    if(a >= (int)tmpsec.getProperty(idAddressEnd)) continue;
-                    if(stype == 3){
-                        dbgmsg("@" + hex(a,16) + ": Stopping dyntable because ran into another section");
-                        if(a != sec_addr) dbgmsg("(only partially, warning!!!)");
-                    }else if(stype == sec_stype && a == sec_addr){
-                        dbgmsg("@" + hex(a,16) + ": section " + String(s) 
-                            + " naturally ran into start of section " + String(s) + ", merging");
-                        for(int k=0; k<tmpsec.getNumChildren(); ++k){
-                            section.appendChild(tmpsec.getChild(k).createCopy(), nullptr);
-                        }
-                        if(!removeSection(i, s, 0, -1/*, curdyntablesec*/)) return 2;
-                        restart_parsing = true;
-                    }else{
-                        dbgmsg("@" + hex(a,16) + ": Reading section " + String(s) 
-                            + " stype " + String(stype) + " ran into existing section " 
-                            + String(i) + " stype " + String(sec_stype) + "!");
-                        return 2;
-                    }
-                    secescape = true;
-                    break;
-                }
-                //Not yet parsed section--target placeholder for some command
-                if(a > sec_addr) continue;
-                //Some part of the command is what the target address is referring to
-                if((a == sec_addr && stype == sec_stype) || sec_stype < 0){
-                    if(sec_stype < 0){
-                        //Section is target of self-modifying code or introspection
-                        dbgmsg("@" + hex(a,16) + ": Found target command for Ptr Self");
-                    }else{
-                        //Target address is beginning of command, and same stype
-                        dbgmsg("@" + hex(a,16) + ": Ran into branch destination (normal)");
-                    }
-                    if(!removeSection(i, s, command.getProperty(idHash), 
-                        sec_stype < 0 ? (sec_addr - a) : -1/*, curdyntablesec*/)) return 2;
-                    --i;
-                    restart_parsing = true;
-                }else if(stype == 3){
-                    dbgmsg("@" + hex(a,16) + ": Stopping dyntable because ran into not-yet-parsed section");
-                    if(a != sec_addr) dbgmsg("(only partially, warning!!!)");
-                    secescape = true;
-                    break;
-                }else{
-                    dbgmsg("@" + hex(a,16) + " stype " + String(stype) 
-                        + " cmd " + command.getProperty(idAction, "No Action").toString()
-                        + " len " + String(cmdlen) + " ran into not-yet-parsed section @"
-                        + hex(sec_addr,16) + " stype " + String(sec_stype) + "!");
-                    return 2;
-                }
+            if(!command.isValid()) return 2;
+            if(command.getType() == "end") break;
+            if(command.hasProperty(idSecDone)){
+                command.removeProperty(idSecDone, nullptr);
+                secdone = true;
             }
-            if(secescape) break;
+            int cmdlen = (int)command.getProperty(idLength, 1);
+            //Check if we ran into another section at this command
+            int ranIntoResult = checkRanIntoOtherSection(stype, s, a, command);
+            if(ranIntoResult < 0) return 2;
+            if((ranIntoResult & 2)) restart_parsing = true;
+            if((ranIntoResult & 1)) break; //section escape
             //Store command
             section.appendChild(command, nullptr);
             for(int i=a; i<a+cmdlen; ++i){
@@ -3776,146 +3956,13 @@ int SeqFile::importCom(File comfile){
                 int tgt_stype = actionTargetSType(action, stype, a);
                 if(tgt_stype < -1) return 2;
                 //Find target command if it exists
-                bool found = false;
-                for(int i=0; !found && i<structure.getNumChildren(); ++i){
-                    ValueTree tmpsec = structure.getChild(i);
-                    int tmpaddr = tmpsec.getProperty(idAddress);
-                    if(tgt_addr < tmpaddr) continue;
-                    if(tgt_addr == tmpaddr && tmpsec.getNumChildren() == 0){
-                        //Pointer to existing empty section
-                        if((int)tmpsec.getProperty(idSType) != tgt_stype && tgt_stype >= 0){
-                            dbgmsg(action + " to addr " + hex(tgt_addr,16) + " empty section "
-                                + String(i) + ": requested wrong stype " + String(tgt_stype)
-                                + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
-                            return 2;
-                        }
-                        if(tgt_stype == 3){
-                            if( tmpsec.hasProperty(idDynTableSType) && command.hasProperty(idDynTableSType) &&
-                                tmpsec.getProperty(idDynTableSType) != command.getProperty(idDynTableSType)){
-                                dbgmsg("dyntable @" + hex(a-2,16) + " pointer to " + hex(tgt_addr,16)
-                                    + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType).toString()
-                                    + " vs. current double-dynamic stype " + command.getProperty(idDynTableSType).toString() + "!");
-                                return 2;
-                            }
-                        }
-                        command.setProperty(idTargetSection, i, nullptr);
-                        found = true;
-                        break;
-                    }
-                    if(tmpsec.hasProperty(idAddressEnd) && tgt_addr >= (int)tmpsec.getProperty(idAddressEnd)) continue;
-                    //Pointer to existing command in the section
-                    for(int j=0; !found && j<tmpsec.getNumChildren(); ++j){
-                        ValueTree cmd = tmpsec.getChild(j);
-                        uint32_t a = (int)cmd.getProperty(idAddress);
-                        uint32_t l = (int)cmd.getProperty(idLength);
-                        if(tgt_addr >= a+l) continue;
-                        if(tgt_addr > a && tgt_stype >= 0){
-                            dbgmsg(action + " to addr " + hex(tgt_addr,16) + " in middle of command "
-                                + String(j) + " (" + cmd.getProperty(idName).toString() + ") in section "
-                                + String(i) + "!");
-                            return 2;
-                        }
-                        jassert(tgt_addr >= a); //commands must be in addr order in section
-                        if((int)tmpsec.getProperty(idSType) != tgt_stype && action != "Ptr Self"){
-                            dbgmsg(action + " to addr " + hex(tgt_addr,16) + " command "
-                                + String(j) + " (" + cmd.getProperty(idName).toString() + ") in section "
-                                + String(i) + ": requested wrong stype " + String(tgt_stype)
-                                + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
-                            return 2;
-                        }
-                        if(tgt_stype == 3 && 
-                                tmpsec.hasProperty(idDynTableSType) && command.hasProperty(idDynTableSType) &&
-                                tmpsec.getProperty(idDynTableSType) != command.getProperty(idDynTableSType)){
-                            dbgmsg("dyntable @" + hex(a-2,16) + " pointer to " + hex(tgt_addr,16)
-                                + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType).toString()
-                                + " vs. current double-dynamic stype " + command.getProperty(idDynTableSType).toString() + "!");
-                            return 2;
-                        }
-                        dbgmsg("Found target command: " + cmd.getProperty(idName).toString()
-                            + " in section " + String(i) + " @" + hex(tgt_addr,16));
-                        command.setProperty(idTargetSection, i, nullptr);
-                        command.setProperty(idTargetHash, cmd.getProperty(idHash), nullptr);
-                        if(action == "Ptr Self"){
-                            command.setProperty(idTargetCmdByte, (int)(tgt_addr - a), nullptr);
-                        }
-                        found = true;
-                    }
+                int res = findTargetCommand(a, tgt_addr, tgt_stype, command);
+                if(res < 0) return 2;
+                if(res == 0){
+                    //Not found
+                    res = createSection(action, tgt_addr, tgt_stype, command, section);
+                    if(res < 0) return 2;
                 }
-                if(!found){
-                    //Pointer is to new section
-                    ValueTree newsec(tgt_stype == 0 ? "seqhdr" 
-                                   : tgt_stype == 1 ? "chanhdr" 
-                                   : tgt_stype == 2 ? "notelayer"
-                                   : tgt_stype == 3 ? "dyntable"
-                                   : tgt_stype == 4 ? "envelope"
-                                   : tgt_stype == 5 ? "message"
-                                   : tgt_stype == 6 ? "table"
-                                   : "unknown");
-                    newsec.setProperty(idSType, tgt_stype, nullptr);
-                    newsec.setProperty(idAddress, tgt_addr, nullptr);
-                    if(action == "Call"){
-                        newsec.setProperty(idSrcCmdRef, section.getNumChildren()-1, nullptr);
-                    }
-                    //Special handling for particular types
-                    if(tgt_stype == 1){
-                        int channel = -1;
-                        if(action == "Ptr Channel Header"){
-                            ValueTree param = command.getChildWithProperty(idMeaning, "Channel");
-                            if(param.isValid()) channel = param.getProperty(idValue, -1);
-                        }else{
-                            channel = section.getProperty(idChannel, -1);
-                        }
-                        if(channel < 0 || channel >= 16){
-                            dbgmsg("Error determining channel for new section from " + action + " @" + hex(a,16) + "!");
-                            return 2;
-                        }
-                        newsec.setProperty(idChannel, channel, nullptr);
-                    }else if(tgt_stype == 2){
-                        int channel = section.getProperty(idChannel, -1);
-                        jassert(channel >= 0 && channel < 16);
-                        int layer = -1;
-                        if(action == "Ptr Note Layer"){
-                            ValueTree param = command.getChildWithProperty(idMeaning, "Note Layer");
-                            if(param.isValid()) layer = param.getProperty(idValue, -1);
-                        }else{
-                            layer = section.getProperty(idLayer, -1);
-                        }
-                        if(layer < 0 || layer >= max_layers){
-                            dbgmsg("Error determining note layer for new section from " + action + " @" + hex(a,16) + "!");
-                            return 2;
-                        }
-                        newsec.setProperty(idChannel, channel, nullptr);
-                        newsec.setProperty(idLayer, layer, nullptr);
-                    }else if(tgt_stype == 3){
-                        dbgmsg("New dyntable @" + hex(tgt_addr,16));
-                        newsec.setProperty(idChannel, 0, nullptr); //Note layer parsing dyntable will check for this
-                        if(command.hasProperty(idDynTableSType)){
-                            //Only if a dynamic table pointing to another dynamic table
-                            dbgmsg("with known dyntablestype " + command.getProperty(idDynTableSType).toString());
-                            newsec.setProperty(idDynTableSType, command.getProperty(idDynTableSType), nullptr);
-                        }
-                    }else if(tgt_stype == 6){
-                        ValueTree param = command.getChildWithProperty(idMeaning, "Size");
-                        if(!param.isValid()){
-                            dbgmsg(action + " with no size specified in command!");
-                            return 2;
-                        }
-                        newsec.setProperty(idLength, param.getProperty(idValue), nullptr);
-                    }else if(tgt_stype < 0){
-                        ValueTree param = command.getChildWithProperty(idMeaning, "Size");
-                        if(param.isValid() && (int)param.getProperty(idValue) == 1){
-                            //Self write, no possible address offset, therefore length 1
-                            //TODO do we need to do anything with this info?
-                        }
-                    }
-                    /*
-                    if(action == "Jump" || action == "Branch" || action == "Call"){
-                        newsec.setProperty(idCurDynTableSec, curdyntablesec, nullptr);
-                    }
-                    */
-                    structure.appendChild(newsec, nullptr);
-                    command.setProperty(idTargetSection, structure.getNumChildren()-1, nullptr);
-                } //end !found (new section)
                 //Special post handling for certain pointers
                 if(action == "Jump"){
                     //Unconditional jump ends the section
@@ -3924,48 +3971,8 @@ int SeqFile::importCom(File comfile){
                     ValueTree tmpsec = structure.getChild(command.getProperty(idTargetSection));
                     tmpsec.setProperty(idSrcCmdRef, tmpsec.getProperty(idSrcCmdRef, "").toString() 
                         + "," + command.getProperty(idHash).toString(), nullptr);
-                    //curdyntablesec = command.getProperty(idTargetSection);
                 }
-            }/*else if(action == "Dyn Table Channel" || action == "Dyn Table Layer" 
-                    || action == "Dyn Table Dyn Table"){
-                //A dyntable command is followed by a command that uses the dynamic
-                //table for something. This determines the stype of the targets of
-                //the pointers in the dyntable.
-                //This is made trickier by the dynsetdyntable command, where the
-                //first dyntable holds other dyntable addresses. We still have to
-                //track the type of the doubly-pointed-to sections.
-                if(curdyntablesec < 0){
-                    dbgmsg("@" + hex(a-1,16) + ": " + action + " without previous Ptr Dyn Table!");
-                    return 2;
-                }
-                int dtstype = action == "Dyn Table Channel" ? 1 : action == "Dyn Table Layer" ? 2 : 3;
-                ValueTree dtsec = structure.getChild(curdyntablesec);
-                if(dtsec.hasProperty(idDynTableSType)){
-                    int sec_dtstype = dtsec.getProperty(idDynTableSType);
-                    if(sec_dtstype == 3){
-                        if(dtstype == 1 || dtstype == 2){
-                            dbgmsg("Registering dynamic dyntable @" + hex((int)dtsec.getProperty(idAddress),16) 
-                                + " target pointers' dyntablestype as " + String(dtstype));
-                            dtsec.setProperty(idDynTableDynSType, dtstype, nullptr);
-                        }else{
-                            dbgmsg("@" + hex(a-1,16) + ": code appears to be doing triple dynamic indirection"
-                                " (two dynsetdyntable), not supported, aborting!");
-                            return 2;
-                        }
-                    }else if(dtstype == sec_dtstype){
-                        dbgmsg("Reusing dyntable @" + hex((int)dtsec.getProperty(idAddress),16) 
-                            + " stype " + String(dtstype));
-                    }else{
-                        dbgmsg("@" + hex(a-1,16) + ": already defined dyntable stype " + String(sec_dtstype)
-                            + ", now trying to be used as stype " + String(dtstype) + "!");
-                        return 2;
-                    }
-                }else{
-                    dbgmsg("Registering dyntable @" + hex((int)dtsec.getProperty(idAddress),16) 
-                        + " as stype " + String(dtstype));
-                    dtsec.setProperty(idDynTableSType, dtstype, nullptr);
-                }
-            }*/
+            }
         }
         //End of section
         section.setProperty(idAddressEnd, (int)a, nullptr);
