@@ -6,7 +6,7 @@
  * format sequence file
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2020 Sauraen
+ * Copyright (C) 2014-2021 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,6 +64,8 @@ private:
     CriticalSection debug_mutex;
     void dbgmsg(String s, bool newline = true);
     
+    static const int max_layers;
+    
     //For importMIDI
     void prefSetBool(ValueTree midiopts, Identifier opt, String value, String prefline);
     void prefSetInt(ValueTree midiopts, Identifier opt, int max, String value, String prefline);
@@ -100,22 +102,22 @@ private:
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
     ValueTree getCommand(Array<uint8_t> &data, uint32_t address, int stype);
     ValueTree initCommand(uint32_t address);
-    ValueTree getDynTableCommand(Array<uint8_t> &data, uint32_t address);
+    ValueTree getDynTableCommand(Array<uint8_t> &data, uint32_t address, ValueTree section);
     ValueTree getEnvelopeCommand(Array<uint8_t> &data, uint32_t address);
     ValueTree getMessageCommand(Array<uint8_t> &data, uint32_t address, ValueTree section);
     ValueTree getOtherTableCommand(Array<uint8_t> &data, uint32_t address);
     
     //<0: error, 1: section escape, 2: restart_parsing
-    int checkRanIntoOtherSection(int parse_stype, int parse_s, uint32_t parse_addr, 
+    int checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t parse_addr, 
         ValueTree parse_cmd);
     //<0: error, 0: not found, 1: found
-    int findTargetCommand(uint32_t parse_addr, int tgt_addr, int tgt_stype, ValueTree parse_cmd);
+    int findTargetCommand(String action, uint32_t parse_addr, int tgt_addr, int tgt_stype, ValueTree parse_cmd);
     //<0: error, 0: okay
     int createSection(String src_action, int tgt_addr, int tgt_stype, ValueTree parse_cmd,
         ValueTree parse_section);
     
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
-    bool removeSection(int remove, int replace, int hash, int cmdbyte/*, int &curdyntablesec*/);
+    bool removeSection(int remove, int &replace, int hash, int cmdbyte/*, int &curdyntablesec*/);
     int actionTargetSType(String action, int stype, uint32_t a);
     void clearRecurVisited();
     bool findDynTableType(int dtsec);

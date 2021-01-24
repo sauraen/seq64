@@ -6,7 +6,7 @@
  * format sequence file
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2020 Sauraen
+ * Copyright (C) 2014-2021 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,6 +83,8 @@ Identifier SeqFile::idDynTableDynSType("dyntabledynstype");
 Identifier SeqFile::idMessage("message");
 Identifier SeqFile::idRecurVisited("recurvisited");
 
+const int SeqFile::max_layers = 4;
+
 SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
     
 }
@@ -140,6 +142,7 @@ String SeqFile::getInternalString(){
                 cmddesc += ", " + paramdesc + " " + hexauto((int)param.getProperty(idValue, 0x1337));
             }
             if(cmd.hasProperty(idLabelName)) cmddesc = "[" + cmd.getProperty(idLabelName).toString() + "] " + cmddesc;
+            if(cmd.hasProperty(idHash)) cmddesc = cmd.getProperty(idHash).toString() + " " + cmddesc;
             if(cmd.hasProperty(idAddress)) cmddesc = hex((int)cmd.getProperty(idAddress),16) + " " + cmddesc;
             ret += "  " + cmddesc;
             //ret += " (" + cmd.getProperty(idHash, 0).toString() + ")";
@@ -939,7 +942,6 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     MidiMessageSequence* trk;
     MidiMessageSequence* layertrk;
     dbgmsg("Assigning notes to notelayers...");
-    const int max_layers = 4;
     OwnedArray<MidiMessageSequence> layertracks;
     for(int channel=0; channel<16; channel++){
         for(layer=0; layer<max_layers; layer++){
@@ -2234,7 +2236,6 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
     //Stack
     Array<ExportStackEntry> stack;
     //Transpose
-    const int max_layers = 4;
 	Array<int> transposes;
 	transposes.resize(16 * max_layers);
     //
@@ -3270,7 +3271,7 @@ ValueTree SeqFile::initCommand(uint32_t address){
     return command;
 }
 
-ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address){
+ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address, ValueTree section){
     ValueTree command = initCommand(address);
     if(address+1 >= data.size()){
         dbgmsg("Dynamic table address ran off end of sequence!");
@@ -3392,8 +3393,9 @@ int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
     return address;
 }
 
-bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte/*, int &curdyntablesec*/){
+bool SeqFile::removeSection(int remove, int &replace, int hash, int cmdbyte/*, int &curdyntablesec*/){
     structure.removeChild(remove, nullptr);
+    if(replace > remove) --replace; //By removing remove we've shifted down index of replace too
     for(int j=0; j<structure.getNumChildren(); ++j){
         ValueTree tmpsec2 = structure.getChild(j);
         for(int k=0; k<tmpsec2.getNumChildren(); ++k){
@@ -3434,7 +3436,7 @@ bool SeqFile::removeSection(int remove, int replace, int hash, int cmdbyte/*, in
     return true;
 }
 
-int SeqFile::checkRanIntoOtherSection(int parse_stype, int parse_s, uint32_t parse_addr, 
+int SeqFile::checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t parse_addr, 
         ValueTree parse_cmd){
     int ret = 0;
     for(int i=0; i<structure.getNumChildren(); ++i){
@@ -3451,7 +3453,7 @@ int SeqFile::checkRanIntoOtherSection(int parse_stype, int parse_s, uint32_t par
                 if(parse_addr != sec_addr) dbgmsg("(only partially, warning!!!)");
             }else if(parse_stype == sec_stype && parse_addr == sec_addr){
                 dbgmsg("@" + hex(parse_addr,16) + ": section " + String(parse_s) 
-                    + " naturally ran into start of section " + String(parse_s) + ", merging");
+                    + " naturally ran into start of section " + String(i) + ", merging");
                 for(int k=0; k<tmpsec.getNumChildren(); ++k){
                     structure.getChild(parse_s).appendChild(tmpsec.getChild(k).createCopy(), nullptr);
                 }
@@ -3498,7 +3500,7 @@ int SeqFile::checkRanIntoOtherSection(int parse_stype, int parse_s, uint32_t par
     return ret;
 }
 
-int SeqFile::findTargetCommand(uint32_t parse_addr, int tgt_addr, int tgt_stype, ValueTree parse_cmd){
+int SeqFile::findTargetCommand(String action, uint32_t parse_addr, int tgt_addr, int tgt_stype, ValueTree parse_cmd){
     for(int i=0; i<structure.getNumChildren(); ++i){
         ValueTree tmpsec = structure.getChild(i);
         int tmpaddr = tmpsec.getProperty(idAddress);
@@ -3590,7 +3592,8 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
             channel = parse_section.getProperty(idChannel, -1);
         }
         if(channel < 0 || channel >= 16){
-            dbgmsg("Error determining channel for new section from " + src_action + " @" + hex(a,16) + "!");
+            dbgmsg("Error determining channel for new section from " + src_action 
+                + " @" + hex((int)parse_cmd.getProperty(idAddress),16) + "!");
             return -1;
         }
         newsec.setProperty(idChannel, channel, nullptr);
@@ -3605,7 +3608,8 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
             layer = parse_section.getProperty(idLayer, -1);
         }
         if(layer < 0 || layer >= max_layers){
-            dbgmsg("Error determining note layer for new section from " + src_action + " @" + hex(a,16) + "!");
+            dbgmsg("Error determining note layer for new section from " + src_action 
+                + " @" + hex((int)parse_cmd.getProperty(idAddress),16) + "!");
             return -1;
         }
         newsec.setProperty(idChannel, channel, nullptr);
@@ -3828,7 +3832,6 @@ int SeqFile::importCom(File comfile){
     datause.insertMultiple(0, 0, len);
     structure = ValueTree("structure");
     Random::getSystemRandom().setSeedRandomly();
-    const int max_layers = 4;
     importresult = 0;
     //
     ValueTree section = ValueTree("seqhdr");
@@ -3907,7 +3910,7 @@ int SeqFile::importCom(File comfile){
                 //Normal command types: sequence header, channel header, note layer
                 command = getCommand(data, a, stype);
             }else if(stype == 3){
-                command = getDynTableCommand(data, a);
+                command = getDynTableCommand(data, a, section);
             }else if(stype == 4){
                 command = getEnvelopeCommand(data, a);
             }else if(stype == 5){
@@ -3919,7 +3922,7 @@ int SeqFile::importCom(File comfile){
                 return 2;
             }
             if(!command.isValid()) return 2;
-            if(command.getType() == "end") break;
+            if(command.getType().toString() == "end") break;
             if(command.hasProperty(idSecDone)){
                 command.removeProperty(idSecDone, nullptr);
                 secdone = true;
@@ -3956,7 +3959,7 @@ int SeqFile::importCom(File comfile){
                 int tgt_stype = actionTargetSType(action, stype, a);
                 if(tgt_stype < -1) return 2;
                 //Find target command if it exists
-                int res = findTargetCommand(a, tgt_addr, tgt_stype, command);
+                int res = findTargetCommand(action, a, tgt_addr, tgt_stype, command);
                 if(res < 0) return 2;
                 if(res == 0){
                     //Not found
@@ -4229,7 +4232,9 @@ int SeqFile::exportCom(File comfile){
                             }
                         }
                         if(ptraddr < 0){
-                            dbgmsg("Could not find command with correct hash!");
+                            dbgmsg("Could not find command with correct hash! Source sec "
+                                + String(sec) + " cmd " + String(cmd) + " action " + action 
+                                + " target section " + String(ptrsec) + " target hash " + String(ptrhash));
                             ptraddr = 0;
                             importresult |= 2;
                         }
