@@ -34,6 +34,11 @@ Canon hash commands actually used:
 #evenw //probably means align to 2 bytes?
 #word value16,value16
 Note that envelopes aren't always 16 bytes! They're pairs of uint16_t's until the first is -1.
+Other hash commands in bicon executable:
+#lprintoff
+#byte
+#wlen
+#evenl
 */
 
 
@@ -55,6 +60,7 @@ Identifier SeqFile::idAddress("address");
 Identifier SeqFile::idAddressEnd("address_end");
 Identifier SeqFile::idDataSrc("datasrc");
 Identifier SeqFile::idDataLen("datalen");
+Identifier SeqFile::idDataForce2("dataforce2");
 Identifier SeqFile::idDataAddr("dataaddr");
 Identifier SeqFile::idDataActualLen("dataactuallen");
 Identifier SeqFile::idSType("stype");
@@ -145,7 +151,6 @@ String SeqFile::getInternalString(){
             if(cmd.hasProperty(idHash)) cmddesc = cmd.getProperty(idHash).toString() + " " + cmddesc;
             if(cmd.hasProperty(idAddress)) cmddesc = hex((int)cmd.getProperty(idAddress),16) + " " + cmddesc;
             ret += "  " + cmddesc;
-            //ret += " (" + cmd.getProperty(idHash, 0).toString() + ")";
             ret += "\n";
         }
     }
@@ -267,7 +272,7 @@ void SeqFile::getCommandRange(ValueTree command, String meaning, int &range_min,
     if(datasrc == "fixed"){
         range_max = 1 << (datalen << 3); //2^number of bytes
     }else if(datasrc == "variable"){
-        range_max = (datalen == 2) ? 0x8000 : 0x80;
+        range_max = 0x8000;
     }else if(datasrc == "offset"){
         range_max = (int)command.getProperty(idCmdEnd) - (int)command.getProperty(idCmd) + 1;
     }else if(datasrc == "constant"){
@@ -382,7 +387,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
         for(int j=0; j<test.getNumChildren(); j++){
             param = test.getChild(j);
             datasrc = param.getProperty(idDataSrc, "fixed");
-            datalen = param.getProperty(idDataLen, 1);
+            datalen = param.getProperty(idDataLen, 0);
             param2 = want.getChildWithProperty(idMeaning, param.getProperty(idMeaning));
             int value = param2.isValid() ? (int)param2.getProperty(idValue) : 0;
             if(datasrc == "offset" || datasrc == "constant"){
@@ -390,12 +395,7 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
             }else if(datasrc == "fixed"){
                 cmdlen += datalen;
             }else if(datasrc == "variable"){
-                if(datalen == 1 && value > 0){
-                    cmdlen++;
-                }else if(datalen == 2){
-                    cmdlen++;
-                    if(value >= 0x80) cmdlen++;
-                }
+                cmdlen += (value >= 0x80) ? 2 : 1;
             }
         }
         if(cmdlen < lowestCmdLen){
@@ -434,26 +434,22 @@ void SeqFile::advanceToTimestamp(ValueTree section, int stype, int &cmd, int &t,
 
 int SeqFile::getNewCommandLength(ValueTree command){
     if(!command.isValid()) return 0;
-    int cmdlen = 1;
+    int cmdlen = 0;
+    if((int)command.getProperty(idCmd) >= 0) cmdlen++;
     ValueTree param;
     int p, datalen, value;
     String datasrc;
     for(p=0; p<command.getNumChildren(); p++){
         param = command.getChild(p);
         datasrc = param.getProperty(idDataSrc, "fixed");
-        datalen = param.getProperty(idDataLen, 1);
+        datalen = param.getProperty(idDataLen, 0);
         value = param.getProperty(idValue, 0);
         if(datasrc == "offset" || datasrc == "constant"){
             //do nothing
         }else if(datasrc == "fixed"){
             cmdlen += datalen;
         }else if(datasrc == "variable"){
-            if(datalen == 1 && value > 0){
-                cmdlen++;
-            }else if(datalen == 2){
-                cmdlen++;
-                if(value >= 0x80) cmdlen++;
-            }
+            cmdlen += (value >= 0x80 || param.hasProperty(idDataForce2)) ? 2 : 1;
         }
     }
     return cmdlen;
@@ -3093,12 +3089,13 @@ int SeqFile::exportMus(File musfile, int dialect){
                 }
             }
             String params;
+            String comment;
             for(p=0; p<command.getNumChildren(); ++p){
                 param = command.getChild(p);
                 String meaning = param.getProperty(idMeaning, "None");
                 if(meaning == "Note" && noteandcanon) continue;
                 String datasrc = param.getProperty(idDataSrc).toString();
-                int datalen = param.getProperty(idDataLen, -1);
+                int datalen = param.getProperty(idDataLen, 0);
                 int value = param.getProperty(idValue, 8888);
                 if(meaning == "Absolute Address" || meaning == "Relative Address"){
                     ValueTree target = structure.getChild(command.getProperty(idTargetSection, -1));
@@ -3116,22 +3113,35 @@ int SeqFile::exportMus(File musfile, int dialect){
                         }
                     }
                     params += ", " + target.getProperty(idLabelName).toString();
-                }else if(datasrc == "fixed" && datalen == 2){
-                    params += ", $" + hex((uint16_t)value);
-                }else if(datasrc == "fixed" && datalen == 1){
-                    if(value >= 0x80 && (action == "CC or CC Group" 
-                            || action == "Chn Transpose" || action == "Ly Transpose")){
-                        value -= 0x100;
+                }else if(datasrc == "fixed"){
+                    if(datalen == 2){
+                        params += ", $" + hex((uint16_t)value);
+                    }else{
+                        if(datalen == 1 && value >= 0x80 && (action == "CC or CC Group" 
+                                || action == "Chn Transpose" || action == "Ly Transpose")){
+                            value -= 0x100;
+                        }
+                        params += ", " + String(value);
+                    }
+                }else if(datasrc == "variable"){
+                    if(value >= 0x80 || param.hasProperty(idDataForce2)){
+                        if(dialect >= 1){
+                            name += (action == "Note") ? "W" : "w";
+                        }else{
+                            comment += " ; FORCE LEN 2";
+                        }
                     }
                     params += ", " + String(value);
+                }else if(datasrc == "offset"){
+                    params += ", " + String(value);
+                }else if(datasrc == "constant"){
+                    //do nothing
                 }else{
-                    if(datasrc == "variable" && datalen == 2 && value >= 0x80){
-                        name += noteandcanon ? "W" : "w";
-                    }
-                    params += ", " + String(value);
+                    dbgmsg("datasrc error!");
+                    return 2;
                 }
             }
-            out += name + "\t" + params + "\n";
+            out += name + "\t" + params + comment + "\n";
         }
         out += "\n";
     }
@@ -3218,30 +3228,19 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
             param.setProperty(idDataAddr, (int)(a-address), nullptr);
             param.setProperty(idDataActualLen, paramlen, nullptr);
         }else if(datasrc == "variable"){
-            if(datalen == 1){
-                d = (uint8_t)data[a];
-                if(d <= 0x7F){
-                    paramvalue = d;
-                    len++;
-                    paramlen++;
-                }
-            }else if(datalen == 2){
-                d = 0;
+            len++;
+            paramlen++;
+            paramvalue = (uint8_t)data[a];
+            if(paramvalue & 0x80){
+                paramvalue &= 0x7F;
+                paramvalue <<= 8;
+                paramvalue += (uint8_t)data[a+1];
                 len++;
                 paramlen++;
-                paramvalue = (uint8_t)data[a];
-                if(paramvalue & 0x80){
-                    paramvalue &= 0x7F;
-                    paramvalue <<= 8;
-                    paramvalue += (uint8_t)data[a+1];
-                    len++;
-                    paramlen++;
+                if(paramvalue < 0x80){
+                    //Was encoded as a 2-byte variable, but didn't have to be
+                    param.setProperty(idDataForce2, true, nullptr);
                 }
-            }else{
-                dbgmsg("Due to SeqFile variable length format, length > 2 not defined!");
-                paramvalue = 0;
-                len += datalen;
-                paramlen += datalen;
             }
             param.setProperty(idDataAddr, (int)(a-address), nullptr);
             param.setProperty(idDataActualLen, paramlen, nullptr);
@@ -3286,6 +3285,8 @@ ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address, Va
     ValueTree addrparam("parameter");
     addrparam.setProperty(idMeaning, "Absolute Address", nullptr);
     addrparam.setProperty(idValue, (int)tgt_addr, nullptr);
+    addrparam.setProperty(idDataSrc, "fixed", nullptr);
+    addrparam.setProperty(idDataLen, 2, nullptr);
     command.appendChild(addrparam, nullptr);
     int dtstype = section.getProperty(idDynTableSType);
     if(dtstype == 1){
@@ -3294,6 +3295,8 @@ ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address, Va
         ValueTree param("parameter");
         param.setProperty(idMeaning, "Channel", nullptr);
         param.setProperty(idValue, 0, nullptr);
+        param.setProperty(idDataSrc, "fixed", nullptr);
+        param.setProperty(idDataLen, 0, nullptr);
         command.appendChild(param, nullptr);
     }else if(dtstype == 2){
         command.setProperty(idAction, "Ptr Note Layer", nullptr);
@@ -3301,6 +3304,8 @@ ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address, Va
         ValueTree param("parameter");
         param.setProperty(idMeaning, "Layer", nullptr);
         param.setProperty(idValue, 0, nullptr);
+        param.setProperty(idDataSrc, "fixed", nullptr);
+        param.setProperty(idDataLen, 0, nullptr);
         command.appendChild(param, nullptr);
     }else if(dtstype == 3){
         command.setProperty(idAction, "Ptr Dyn Table", nullptr);
@@ -3331,10 +3336,14 @@ ValueTree SeqFile::getEnvelopeCommand(Array<uint8_t> &data, uint32_t address){
     ValueTree param("parameter");
     param.setProperty(idMeaning, "Rate", nullptr);
     param.setProperty(idValue, (int)rate, nullptr);
+    param.setProperty(idDataSrc, "fixed", nullptr);
+    param.setProperty(idDataLen, 2, nullptr);
     command.appendChild(param, nullptr);
     param = ValueTree("parameter");
     param.setProperty(idMeaning, "Level", nullptr);
     param.setProperty(idValue, (int)level, nullptr);
+    param.setProperty(idDataSrc, "fixed", nullptr);
+    param.setProperty(idDataLen, 2, nullptr);
     command.appendChild(param, nullptr);
     return command;
 }
@@ -3354,6 +3363,8 @@ ValueTree SeqFile::getMessageCommand(Array<uint8_t> &data, uint32_t address, Val
     ValueTree param("parameter");
     param.setProperty(idMeaning, "Character", nullptr);
     param.setProperty(idValue, (int)c, nullptr);
+    param.setProperty(idDataSrc, "fixed", nullptr);
+    param.setProperty(idDataLen, 1, nullptr);
     command.appendChild(param, nullptr);
     return command;
 }
@@ -3367,6 +3378,8 @@ ValueTree SeqFile::getOtherTableCommand(Array<uint8_t> &data, uint32_t address){
     ValueTree param("parameter");
     param.setProperty(idMeaning, "Byte", nullptr);
     param.setProperty(idValue, (int)d, nullptr);
+    param.setProperty(idDataSrc, "fixed", nullptr);
+    param.setProperty(idDataLen, 1, nullptr);
     command.appendChild(param, nullptr);
     return command;
 }
@@ -3393,7 +3406,7 @@ int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
     return address;
 }
 
-bool SeqFile::removeSection(int remove, int &replace, int hash, int cmdbyte/*, int &curdyntablesec*/){
+bool SeqFile::removeSection(int remove, int &replace, int hash, int cmdbyte){
     structure.removeChild(remove, nullptr);
     if(replace > remove) --replace; //By removing remove we've shifted down index of replace too
     for(int j=0; j<structure.getNumChildren(); ++j){
@@ -3403,11 +3416,12 @@ bool SeqFile::removeSection(int remove, int &replace, int hash, int cmdbyte/*, i
             int target = cmd.getProperty(idTargetSection, -1);
             if(target == remove){
                 cmd.setProperty(idTargetSection, replace, nullptr);
-                if(hash != 0){
+                if(!cmd.hasProperty(idTargetHash)){
+                    //Pointer to beginning of whole section--need to now point to target cmd
                     cmd.setProperty(idTargetHash, hash, nullptr);
-                    if(cmdbyte >= 0){
-                        cmd.setProperty(idTargetCmdByte, cmdbyte, nullptr);
-                    }
+                }
+                if(cmdbyte >= 0){
+                    cmd.setProperty(idTargetCmdByte, cmdbyte, nullptr);
                 }
             }else if(target > remove){
                 cmd.setProperty(idTargetSection, target-1, nullptr);
@@ -3454,10 +3468,11 @@ int SeqFile::checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t pa
             }else if(parse_stype == sec_stype && parse_addr == sec_addr){
                 dbgmsg("@" + hex(parse_addr,16) + ": section " + String(parse_s) 
                     + " naturally ran into start of section " + String(i) + ", merging");
+                int firstCmdHash = tmpsec.getChild(0).getProperty(idHash);
                 for(int k=0; k<tmpsec.getNumChildren(); ++k){
                     structure.getChild(parse_s).appendChild(tmpsec.getChild(k).createCopy(), nullptr);
                 }
-                if(!removeSection(i, parse_s, 0, -1/*, curdyntablesec*/)) return -1;
+                if(!removeSection(i, parse_s, firstCmdHash, -1)) return -1;
                 ret |= 2; //restart_parsing
             }else{
                 dbgmsg("@" + hex(parse_addr,16) + ": Reading section " + String(parse_s) 
@@ -3480,7 +3495,7 @@ int SeqFile::checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t pa
                 dbgmsg("@" + hex(parse_addr,16) + ": Ran into branch destination (normal)");
             }
             if(!removeSection(i, parse_s, parse_cmd.getProperty(idHash), 
-                sec_stype < 0 ? (sec_addr - parse_addr) : -1/*, curdyntablesec*/)) return -1;
+                sec_stype < 0 ? (sec_addr - parse_addr) : -1)) return -1;
             --i;
             ret |= 2; //restart_parsing
         }else if(parse_stype == 3){
@@ -4053,6 +4068,8 @@ int SeqFile::importCom(File comfile){
                 ValueTree param("parameter");
                 param.setProperty(idMeaning, "Byte", nullptr);
                 param.setProperty(idValue, (int)data[j], nullptr);
+                param.setProperty(idDataSrc, "fixed", nullptr);
+                param.setProperty(idDataLen, 1, nullptr);
                 command.appendChild(param, nullptr);
                 datasec.appendChild(command, nullptr);
             }
@@ -4105,18 +4122,21 @@ void SeqFile::writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree com
     int i, p, datalen, value;
     String datasrc;
     //Write command byte
-    uint8_t d = (int)command.getProperty(idCmd);
-    param = command.getChildWithProperty(idDataSrc, "offset");
-    if(param.isValid()){
-        d += (int)param.getProperty(idValue);
+    int d = (int)command.getProperty(idCmd);
+    if(d >= 0){
+        //If the command has a command byte (dyntable, message, etc. don't)
+        param = command.getChildWithProperty(idDataSrc, "offset");
+        if(param.isValid()){
+            d += (int)param.getProperty(idValue);
+        }
+        data.set(address, d);
+        address++;
     }
-    data.set(address, d);
-    address++;
     //Write parameters
     for(p=0; p<command.getNumChildren(); p++){
         param = command.getChild(p);
         datasrc = param.getProperty(idDataSrc, "fixed");
-        datalen = param.getProperty(idDataLen, 1);
+        datalen = param.getProperty(idDataLen, 0);
         value = param.getProperty(idValue, 0);
         if(datasrc == "offset"){
             //do nothing
@@ -4133,29 +4153,17 @@ void SeqFile::writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree com
             }
             address += datalen;
         }else if(datasrc == "variable"){
-            if(value < 0) value = 0;
-            if(datalen == 1){
-                if(value > 0){
-                    if(value > 0x7F) value = 0x7F;
-                    d = (value & 0x0000007F);
-                    data.set(address, d);
-                    address++;
-                }
-            }else if(datalen == 2){
-                if(value <= 0x7F){
-                    d = value;
-                    data.set(address, d);
-                    address++;
-                }else{
-                    d = (value & 0x000000FF);
-                    data.set(address+1, d);
-                    value >>= 8;
-                    d = (value & 0x0000007F) | 0x80;
-                    data.set(address, d);
-                    address += 2;
-                }
+            if(value >= 0x80 || param.getProperty(idDataForce2)){
+                d = (value & 0x000000FF);
+                data.set(address+1, d);
+                value >>= 8;
+                d = (value & 0x0000007F) | 0x80;
+                data.set(address, d);
+                address += 2;
             }else{
-                dbgmsg("Variable datalen only supported with length 1 or 2!");
+                d = value;
+                data.set(address, d);
+                address++;
             }
         }else{
             dbgmsg("Unknown datasrc: " + datasrc);
@@ -4228,6 +4236,9 @@ int SeqFile::exportCom(File comfile){
                             command2 = section2.getChild(cmd2);
                             if((int)command2.getProperty(idHash) == ptrhash){
                                 ptraddr = command2.getProperty(idAddress);
+                                if(command.hasProperty(idTargetCmdByte)){
+                                    ptraddr += (int)command.getProperty(idTargetCmdByte);
+                                }
                                 break;
                             }
                         }

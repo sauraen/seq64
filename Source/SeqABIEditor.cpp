@@ -769,9 +769,10 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_optDataSrcOffset] -- add your button handler code here..
         if(!selparam.isValid()) return;
         selparam.setProperty("datasrc", "offset", nullptr);
-        selparam.setProperty("datalen", 0, nullptr);
+        selparam.removeProperty("datalen", nullptr);
         lblDataLen->setText("(none)", dontSendNotification);
         txtDataLen->setText("", false);
+        txtDataLen->setEnabled(false);
         needssaving = true;
         //[/UserButtonCode_optDataSrcOffset]
     }
@@ -782,6 +783,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         selparam.setProperty("datasrc", "constant", nullptr);
         lblDataLen->setText("const", dontSendNotification);
         txtDataLen->setText(selparam.getProperty("datalen", 0), false);
+        txtDataLen->setEnabled(true);
         needssaving = true;
         //[/UserButtonCode_optDataSrcConstant]
     }
@@ -793,6 +795,7 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if((int)selparam.getProperty("datalen", 0) < 1) selparam.setProperty("datalen", 1, nullptr);
         lblDataLen->setText("length", dontSendNotification);
         txtDataLen->setText(selparam.getProperty("datalen", 0), false);
+        txtDataLen->setEnabled(true);
         needssaving = true;
         //[/UserButtonCode_optDataSrcFixed]
     }
@@ -801,9 +804,10 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_optDataSrcVariable] -- add your button handler code here..
         if(!selparam.isValid()) return;
         selparam.setProperty("datasrc", "variable", nullptr);
-        if((int)selparam.getProperty("datalen", 0) < 1) selparam.setProperty("datalen", 2, nullptr);
-        lblDataLen->setText("up to", dontSendNotification);
-        txtDataLen->setText(selparam.getProperty("datalen", 0), false);
+        selparam.removeProperty("datalen", nullptr);
+        lblDataLen->setText("1 or 2", dontSendNotification);
+        txtDataLen->setText("", false);
+        txtDataLen->setEnabled(false);
         needssaving = true;
         //[/UserButtonCode_optDataSrcVariable]
     }
@@ -1000,8 +1004,8 @@ void SeqABIEditor::textEditorTextChanged(TextEditor& editorThatWasChanged){
     }else if(&editorThatWasChanged == txtDataLen.get()){
         if(!selparam.isValid()) return;
         String datasrc = selparam.getProperty("datasrc", "fixed").toString();
-        if(datasrc == "offset"){
-            intval = 0;
+        if(datasrc == "offset" || datasrc == "variable"){
+            return;
         }else if(datasrc == "constant"){
             turnRed = !isint;
         }else{
@@ -1096,8 +1100,10 @@ void SeqABIEditor::fillParamInfo(){
     optDataSrcFixed   ->setToggleState(datasrc == "fixed",    dontSendNotification);
     optDataSrcVariable->setToggleState(datasrc == "variable", dontSendNotification);
     lblDataLen->setText(datasrc == "offset" ? "(none)" : datasrc == "constant" ? "const" :
-        datasrc == "fixed" ? "length" : "up to", dontSendNotification);
-    txtDataLen->setText(datasrc == "offset" ? "" : selparam.getProperty("datalen", "").toString(), false);
+        datasrc == "fixed" ? "length" : "1 or 2", dontSendNotification);
+    txtDataLen->setText(datasrc == "offset" || datasrc == "variable" ? "" 
+        : selparam.getProperty("datalen", "").toString(), false);
+    txtDataLen->setEnabled(datasrc == "fixed" || datasrc == "constant");
 }
 
 void SeqABIEditor::fillMeaningsBox(String action){

@@ -117,7 +117,7 @@ private:
         ValueTree parse_section);
     
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
-    bool removeSection(int remove, int &replace, int hash, int cmdbyte/*, int &curdyntablesec*/);
+    bool removeSection(int remove, int &replace, int hash, int cmdbyte);
     int actionTargetSType(String action, int stype, uint32_t a);
     void clearRecurVisited();
     bool findDynTableType(int dtsec);
@@ -152,6 +152,7 @@ private:
     static Identifier idAddressEnd;
     static Identifier idDataSrc;
     static Identifier idDataLen;
+    static Identifier idDataForce2;
     static Identifier idDataAddr;
     static Identifier idDataActualLen;
     static Identifier idSType;
