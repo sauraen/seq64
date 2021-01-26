@@ -91,7 +91,7 @@ Identifier SeqFile::idRecurVisited("recurvisited");
 
 const int SeqFile::max_layers = 4;
 
-SeqFile::SeqFile(ValueTree abi_) : abi(abi_){
+SeqFile::SeqFile(ValueTree abi_) : abi(abi_), tsecnames_generated(false){
     
 }
 
@@ -2820,6 +2820,151 @@ void SeqFile::assignTSection(ValueTree sec, int tsecnum){
         }
     }
 }
+
+int SeqFile::assignAllTSections(){
+    ValueTree section = structure.getChild(0);
+    section.setProperty(idTSection, -1, nullptr);
+    //Commands in main section
+    int tsecnum = -1; 
+    bool readyfornewtsec = true;
+    for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+        ValueTree command = section.getChild(cmd);
+        if(readyfornewtsec && command.getProperty(idAction).toString() == "Ptr Channel Header"){
+            ++tsecnum;
+            command.setProperty(idTSection, tsecnum, nullptr);
+            readyfornewtsec = false;
+        }else if(!readyfornewtsec && command.getChildWithProperty(idMeaning, "Delay").isValid()){
+            readyfornewtsec = true;
+        }
+        if(command.hasProperty(idTargetSection)){
+            assignTSection(structure.getChild((int)command.getProperty(idTargetSection)), tsecnum);
+        }
+    }
+    return tsecnum+1;
+}
+
+void SeqFile::generateTSecNames(){
+    tsecnames_generated = true;
+    tsecnames.clear();
+    for(int i=0; i<num_tsections; ++i){
+        String name;
+        if(dialect >= 1){
+            if(num_tsections == 1){
+                name = "A";
+            }else{
+                name = (i == 0) ? String("intro") : String::charToString('A' + i - 1);
+            }
+        }else{
+            name = "tsec" + String(i);
+        }
+        tsecnames.add(name);
+    }
+}
+
+String SeqFile::getSecNamePrefix(int dialect, ValueTree section){
+    int tsecnum = section.getProperty(idTSection, -1);
+    if(tsecnum < 0){
+        return (dialect >= 1) ? "_" : "";
+    }
+    if(tsecnum >= tsecnames.size()){
+        dbgmsg("Invalid tsecnum " + String(tsecnum) + "!");
+        importresult = 2;
+        return "Error";
+    }
+    String name = tsecnames[tsecnum];
+    if(dialect >= 1){
+        name = "_" + seqname + "_" + name;
+    }
+    return name;
+}
+
+void SeqFile::nameSections(){
+    StringArray allsecnames;
+    //Main section
+    ValueTree section = structure.getChild(0);
+    if(!section.hasProperty(idLabelName) || section.hasProperty(idLabelNameAuto)){
+        String name = dialect >= 1 ? "_" + seqname : "_start";
+        allsecnames.addIfNotAlreadyThere(name);
+        section.setProperty(idLabelName, name, nullptr);
+        section.setProperty(idLabelNameAuto, true, nullptr);
+    }
+    //Rest of sections
+    for(int sec=1; sec<structure.getNumChildren(); sec++){
+        section = structure.getChild(sec);
+        if(section.hasProperty(idLabelName) && !section.hasProperty(idLabelNameAuto)) continue;
+        int stype = section.getProperty(idSType);
+        String name = getSecNamePrefix(dialect, section);
+        if(stype == 1 || stype == 2){
+            name += "_" + String(dialect >= 1 ? "sub" : "chn") + section.getProperty(idChannel).toString();
+        }
+        if(stype == 2){
+            name += "_" + String(dialect >= 1 ? "note" : "ly") + section.getProperty(idLayer).toString();
+        }
+        if(stype == 3){
+            name += "_tbl_" + String(sec);
+        }else if(stype == 4){
+            if(dialect >= 1){
+                name = "ENVE_" + seqname + String(sec);
+            }else{
+                name += "_env" + String(sec);
+            }
+        }else if(stype == 5){
+            if(dialect >= 1){
+                name = "_message_" + String(sec);
+            }else{
+                name += "_msg" + String(sec);
+            }
+        }else if(stype == 6){
+            if(dialect >= 1){
+                name = "_extbl_" + String(sec);
+            }else{
+                name += "_ldstbl" + String(sec);
+            }
+        }else if(section.hasProperty(idSrcCmdRef)){
+            name += "_" + String(dialect >= 1 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
+        }
+        if(allsecnames.contains(name)){
+            dbgmsg("Name clash for section \"" + name + "\"\n");
+            name += "_" + String(sec);
+        }
+        allsecnames.addIfNotAlreadyThere(name);
+        section.setProperty(idLabelName, name, nullptr);
+        section.setProperty(idLabelNameAuto, true, nullptr);
+    }
+}
+
+void SeqFile::nameTargetCommands(){
+    //Find all commands pointed at
+    Array<int> targethashes;
+    for(int sec=0; sec<structure.getNumChildren(); ++sec){
+        ValueTree section = structure.getChild(sec);
+        for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+            ValueTree command = section.getChild(cmd);
+            if(command.hasProperty(idTargetHash)){
+                targethashes.addIfNotAlreadyThere(command.getProperty(idTargetHash));
+            }
+        }
+    }
+    //Name them
+    for(int sec=0; sec<structure.getNumChildren(); ++sec){
+        ValueTree section = structure.getChild(sec);
+        for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+            ValueTree command = section.getChild(cmd);
+            if(command.hasProperty(idLabelName) && !command.hasProperty(idLabelNameAuto)) continue;
+            if(command.hasProperty(idTSection)){
+                //In seq header, first command of each tsection
+                command.setProperty(idLabelName, getSecNamePrefix(dialect, command), nullptr);
+            }else if(targethashes.contains(command.getProperty(idHash))){
+                //Normal target command
+                command.setProperty(idLabelName, section.getProperty(idLabelName).toString() + "_" + String(cmd), nullptr);
+            }else{
+                continue;
+            }
+            command.setProperty(idLabelNameAuto, true, nullptr);
+        }
+    }
+}
+
 int SeqFile::countTicks(ValueTree sec){
     if(!sec.isValid()){
         dbgmsg("Invalid section in countTicks!");
@@ -2855,18 +3000,123 @@ int SeqFile::countTicks(ValueTree sec){
     }
     return ticks;
 }
-String SeqFile::getSecNamePrefix(int dialect, ValueTree parent){
-    int tsecnum = parent.getProperty(idTSection);
-    if(tsecnum < 0 && tsecnum >= tsecnames.size()){
-        dbgmsg("Invalid tsecnum " + String(tsecnum) + "!");
-        importresult = 2;
-        return "Error";
+
+String SeqFile::getCommandMusLine(ValueTree section, ValueTree command, 
+        int dialect, int stype, int secticks){
+    if(stype < 0 || stype >= 3){
+        dbgmsg("Internal error!");
+        importresult |= 2;
+        return "ERROR!\n";
     }
-    String name = tsecnames[tsecnum];
-    if(dialect >= 1){
-        name = "_" + seqname + "_" + name;
+    String ret;
+    if(command.hasProperty(idLabelName)){
+        ret += command.getProperty(idLabelName).toString() + "\n";
     }
-    return name;
+    String action = command.getProperty(idAction);
+    if(action == "End of Data" && dialect >= 1 && stype == 2 && !section.hasProperty(idSrcCmdRef)){
+        ret += ";steps: " + String(ticks) + "\n";
+    }
+    ret += "    ";
+    String name;
+    bool noteandcanon = false;
+    if(action == "Note" && dialect >= 1){
+        noteandcanon = true;
+        //Convert note to note name. smf2mus always outputted "sharp" notes only,
+        //but mml64.def supported import of sharp and flat notes (e.g. "CS" = "DF").
+        static const char *const notenames[12] = {
+            "CN", "CS", "DN", "DS", "EN", "FN", "FS", "GN", "GS", "AN", "AS", "BN"
+        };
+        int n = 9 + (int)command.getChildWithProperty(idMeaning, "Note").getProperty(idValue);
+        int octave = n / 12;
+        n -= octave * 12;
+        name = notenames[n] + String(octave);
+        //Get mode
+        int bmode = 0;
+        param = command.getChildWithProperty(idMeaning, "Gate Time");
+        if(!param.isValid() || param.getProperty(idDataSrc).toString() == "constant"){
+            //notedv, a.k.a. BMode 1, a.k.a. "gate 100%"
+            bmode = 1;
+        }
+        param = command.getChildWithProperty(idMeaning, "Delay");
+        if(!param.isValid() || param.getProperty(idDataSrc).toString() == "constant"){
+            //notevg, a.k.a. BMode 2.
+            //Note that mml64.def incorrectly labels this as "velo before"
+            //and has note definitions where the parameters are "wlen,byte"
+            //meaning delay and gate length (velocity carried over from last note).
+            //This is wrong. SM64 decomped source code, plus the fact that
+            //SEQ64 has been using these notes for years and producing correct
+            //results, proves that it's delay kept from the last note and 
+            //velocity+gate specified in the command.
+            jassert(bmode == 0); //Can't be both mode 1 and 2
+            bmode = 2;
+        }
+        name += "B" + String(bmode);
+    }else{
+        name = command.getProperty(idName, "Error");
+        if(dialect == 1){
+            name = command.getProperty(idCName, command.getProperty(idOName, name));
+        }else if(dialect == 2){
+            name = command.getProperty(idOName, command.getProperty(idCName, name));
+        }
+    }
+    String params;
+    String comment;
+    for(int p=0; p<command.getNumChildren(); ++p){
+        param = command.getChild(p);
+        String meaning = param.getProperty(idMeaning, "None");
+        if(meaning == "Note" && noteandcanon) continue;
+        String datasrc = param.getProperty(idDataSrc).toString();
+        int datalen = param.getProperty(idDataLen, 0);
+        int value = param.getProperty(idValue, 8888);
+        if(meaning == "Absolute Address" || meaning == "Relative Address"){
+            ValueTree target = structure.getChild(command.getProperty(idTargetSection, -1));
+            if(!target.isValid()){
+                dbgmsg(name + " cmd (sec " + String(sec) + " pointing to invalid section "
+                    + command.getProperty(idTargetSection, -1).toString() + "!");
+                return 2;
+            }
+            if(command.hasProperty(idTargetHash)){
+                target = target.getChildWithProperty(idHash, command.getProperty(idTargetHash));
+                if(!target.isValid()){
+                    dbgmsg(name + " cmd (sec " + String(sec) + " pointing to section "
+                        + command.getProperty(idTargetSection, -1).toString() + " invalid cmd hash!");
+                    return 2;
+                }
+            }
+            params += ", " + target.getProperty(idLabelName).toString();
+        }else if(datasrc == "fixed"){
+            if(datalen == 2){
+                params += ", $" + hex((uint16_t)value);
+            }else{
+                if(datalen == 1 && value >= 0x80 && (action == "CC or CC Group" 
+                        || action == "Chn Transpose" || action == "Ly Transpose")){
+                    value -= 0x100;
+                }
+                params += ", " + String(value);
+            }
+        }else if(datasrc == "variable"){
+            if(value >= 0x80 || param.hasProperty(idDataForce2)){
+                if(dialect >= 1){
+                    name += (action == "Note") ? "W" : "w";
+                }else{
+                    comment += " ; FORCE LEN 2";
+                }
+            }
+            params += ", " + String(value);
+        }else if(datasrc == "offset"){
+            params += ", " + String(value);
+        }else if(datasrc == "constant"){
+            //do nothing
+        }else{
+            dbgmsg("datasrc error!");
+            return 2;
+        }
+    }
+    ret += name + "\t" + params + comment + "\n";
+    if(action == "End of Data" && dialect == 0){
+        ret += "; Section total ticks: " + String(ticks) + "\n";
+    }
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2887,93 +3137,13 @@ int SeqFile::exportMus(File musfile, int dialect){
     fos.truncate();
     importresult = 0;
     //Assign tsections to all sections
-    int sec, cmd, p;
-    ValueTree section, command, param;
-    section = structure.getChild(0);
-    int tsecnum = -1; bool readyfornewtsec = true;
-    section.setProperty(idTSection, -1, nullptr);
-    if(!section.hasProperty(idLabelName) || section.hasProperty(idLabelNameAuto)){
-        section.setProperty(idLabelName, 
-            dialect >= 1 ? "_" + musfile.getFileNameWithoutExtension() : "_start", nullptr);
-        section.setProperty(idLabelNameAuto, true, nullptr);
-    }
-    for(cmd=0; cmd<section.getNumChildren(); ++cmd){
-        command = section.getChild(cmd);
-        if(readyfornewtsec && command.getProperty(idAction).toString() == "Ptr Channel Header"){
-            ++tsecnum;
-            command.setProperty(idTSection, tsecnum, nullptr);
-            readyfornewtsec = false;
-        }else if(!readyfornewtsec && command.getChildWithProperty(idMeaning, "Delay").isValid()){
-            readyfornewtsec = true;
-        }
-        if(command.hasProperty(idTargetSection)){
-            assignTSection(structure.getChild((int)command.getProperty(idTargetSection)), tsecnum);
-        }
-    }
-    int num_tsections = tsecnum + 1;
+    int num_tsections = assignAllTSections();
     //Check tsecnames and generate if needed
-    bool generated_tsecnames = false;
-    if(tsecnames.size() != num_tsections){
-        generated_tsecnames = true;
-        tsecnames.clear();
-        for(int i=0; i<num_tsections; ++i){
-            String name;
-            if(dialect >= 1){
-                if(num_tsections == 1){
-                    name = "A";
-                }else{
-                    name = (i == 0) ? String("intro") : String::charToString('A' + i - 1);
-                }
-            }else{
-                name = "tsec" + String(i);
-            }
-            tsecnames.add(name);
-        }
-    }
+    if(tsecnames.size() != num_tsections) generateTSecNames();
     //Assign names to all sections
-    for(sec=1; sec<structure.getNumChildren(); sec++){
-        section = structure.getChild(sec);
-        if(section.hasProperty(idLabelName) && !section.hasProperty(idLabelNameAuto)) continue;
-        int stype = section.getProperty(idSType);
-        String name = getSecNamePrefix(dialect, section);
-        if(stype == 1 || stype == 2){
-            name += "_" + String(dialect >= 1 ? "sub" : "chn") + section.getProperty(idChannel).toString();
-        }
-        if(stype == 2){
-            name += "_" + String(dialect >= 1 ? "note" : "ly") + section.getProperty(idLayer).toString();
-        }
-        if(section.hasProperty(idSrcCmdRef)){
-            name += "_" + String(dialect >= 1 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
-        }
-        section.setProperty(idLabelName, name, nullptr);
-        section.setProperty(idLabelNameAuto, true, nullptr);
-    }
+    nameSections();
     //Assign names to all commands which are pointed at
-    Array<int> targethashes;
-    for(sec=0; sec<structure.getNumChildren(); ++sec){
-        section = structure.getChild(sec);
-        for(cmd=0; cmd<section.getNumChildren(); ++cmd){
-            command = section.getChild(cmd);
-            if(command.hasProperty(idTargetHash)){
-                targethashes.addIfNotAlreadyThere(command.getProperty(idTargetHash));
-            }
-        }
-    }
-    for(sec=0; sec<structure.getNumChildren(); ++sec){
-        section = structure.getChild(sec);
-        for(cmd=0; cmd<section.getNumChildren(); ++cmd){
-            command = section.getChild(cmd);
-            if(command.hasProperty(idLabelName) && !command.hasProperty(idLabelNameAuto)) continue;
-            if(command.hasProperty(idTSection)){
-                command.setProperty(idLabelName, getSecNamePrefix(dialect, command), nullptr);
-            }else if(targethashes.contains(command.getProperty(idHash))){
-                command.setProperty(idLabelName, section.getProperty(idLabelName).toString() + "_" + String(cmd), nullptr);
-            }else{
-                continue;
-            }
-            command.setProperty(idLabelNameAuto, true, nullptr);
-        }
-    }
+    nameTargetCommands();
     //Write data
     String out;
     if(dialect >= 1){
@@ -2988,6 +3158,7 @@ int SeqFile::exportMus(File musfile, int dialect){
     }
     tsecnum = -1;
     int sectiongroup = -1;
+    int last_stype = -2;
     for(sec=0; sec<structure.getNumChildren(); ++sec){
         section = structure.getChild(sec);
         int stype = section.getProperty(idSType);
@@ -3033,119 +3204,20 @@ int SeqFile::exportMus(File musfile, int dialect){
         if(sec != 0 || dialect == 0){
             out += section.getProperty(idLabelName).toString() + "\n";
         }
+        if(stype == 3){
+            //TODO handle dyntables, envelopes, messages, and extables
+        }
+        int secticks = countTicks(section);
         for(cmd=0; cmd<section.getNumChildren(); ++cmd){
-            command = section.getChild(cmd);
-            if(command.hasProperty(idLabelName)){
-                out += command.getProperty(idLabelName).toString() + "\n";
-            }
-            String action = command.getProperty(idAction);
-            if(action == "End of Data"){
-                if(dialect == 0 || (stype == 2 && !section.hasProperty(idSrcCmdRef))){
-                    int ticks = countTicks(section);
-                    out += (dialect == 0 ? "; Section total ticks: " : ";steps: ") + String(ticks) + "\n";
-                }
-            }
-            out += "    ";
-            String name;
-            bool noteandcanon = false;
-            if(action == "Note" && dialect >= 1){
-                noteandcanon = true;
-                //Convert note to note name. smf2mus always outputted "sharp" notes only,
-                //but mml64.def supported import of sharp and flat notes (e.g. "CS" = "DF").
-                static const char *const notenames[12] = {
-                    "CN", "CS", "DN", "DS", "EN", "FN", "FS", "GN", "GS", "AN", "AS", "BN"
-                };
-                int n = 9 + (int)command.getChildWithProperty(idMeaning, "Note").getProperty(idValue);
-                int octave = n / 12;
-                n -= octave * 12;
-                name = notenames[n] + String(octave);
-                //Get mode
-                int bmode = 0;
-                param = command.getChildWithProperty(idMeaning, "Gate Time");
-                if(!param.isValid() || param.getProperty(idDataSrc).toString() == "constant"){
-                    //notedv, a.k.a. BMode 1, a.k.a. "gate 100%"
-                    bmode = 1;
-                }
-                param = command.getChildWithProperty(idMeaning, "Delay");
-                if(!param.isValid() || param.getProperty(idDataSrc).toString() == "constant"){
-                    //notevg, a.k.a. BMode 2.
-                    //Note that mml64.def incorrectly labels this as "velo before"
-                    //and has note definitions where the parameters are "wlen,byte"
-                    //meaning delay and gate length (velocity carried over from last note).
-                    //This is wrong. SM64 decomped source code, plus the fact that
-                    //SEQ64 has been using these notes for years and producing correct
-                    //results, proves that it's delay kept from the last note and 
-                    //velocity+gate specified in the command.
-                    jassert(bmode == 0); //Can't be both mode 1 and 2
-                    bmode = 2;
-                }
-                name += "B" + String(bmode);
-            }else{
-                name = command.getProperty(idName, "Error");
-                if(dialect == 1){
-                    name = command.getProperty(idCName, command.getProperty(idOName, name));
-                }else if(dialect == 2){
-                    name = command.getProperty(idOName, command.getProperty(idCName, name));
-                }
-            }
-            String params;
-            String comment;
-            for(p=0; p<command.getNumChildren(); ++p){
-                param = command.getChild(p);
-                String meaning = param.getProperty(idMeaning, "None");
-                if(meaning == "Note" && noteandcanon) continue;
-                String datasrc = param.getProperty(idDataSrc).toString();
-                int datalen = param.getProperty(idDataLen, 0);
-                int value = param.getProperty(idValue, 8888);
-                if(meaning == "Absolute Address" || meaning == "Relative Address"){
-                    ValueTree target = structure.getChild(command.getProperty(idTargetSection, -1));
-                    if(!target.isValid()){
-                        dbgmsg(name + " cmd (sec " + String(sec) + " pointing to invalid section "
-                            + command.getProperty(idTargetSection, -1).toString() + "!");
-                        return 2;
-                    }
-                    if(command.hasProperty(idTargetHash)){
-                        target = target.getChildWithProperty(idHash, command.getProperty(idTargetHash));
-                        if(!target.isValid()){
-                            dbgmsg(name + " cmd (sec " + String(sec) + " pointing to section "
-                                + command.getProperty(idTargetSection, -1).toString() + " invalid cmd hash!");
-                            return 2;
-                        }
-                    }
-                    params += ", " + target.getProperty(idLabelName).toString();
-                }else if(datasrc == "fixed"){
-                    if(datalen == 2){
-                        params += ", $" + hex((uint16_t)value);
-                    }else{
-                        if(datalen == 1 && value >= 0x80 && (action == "CC or CC Group" 
-                                || action == "Chn Transpose" || action == "Ly Transpose")){
-                            value -= 0x100;
-                        }
-                        params += ", " + String(value);
-                    }
-                }else if(datasrc == "variable"){
-                    if(value >= 0x80 || param.hasProperty(idDataForce2)){
-                        if(dialect >= 1){
-                            name += (action == "Note") ? "W" : "w";
-                        }else{
-                            comment += " ; FORCE LEN 2";
-                        }
-                    }
-                    params += ", " + String(value);
-                }else if(datasrc == "offset"){
-                    params += ", " + String(value);
-                }else if(datasrc == "constant"){
-                    //do nothing
-                }else{
-                    dbgmsg("datasrc error!");
-                    return 2;
-                }
-            }
-            out += name + "\t" + params + comment + "\n";
+            out += getCommandMusLine(section, section.getChild(cmd), dialect, stype, secticks);
         }
         out += "\n";
+        last_stype = stype;
     }
-    if(generated_tsecnames) tsecnames.clear();
+    if(tsecnames_generated){
+        tsecnames.clear();
+        tsecnames_generated = false;
+    }
     //Write file
     fos.writeText(out, false, false, nullptr);
     fos.flush();

@@ -58,6 +58,7 @@ private:
     ValueTree abi;
     ValueTree structure;
     StringArray tsecnames;
+    bool tsecnames_generated;
     int importresult;
     
     String debug_messages;
@@ -95,8 +96,14 @@ private:
     //For exportMus
     
     void assignTSection(ValueTree sec, int tsecnum);
+    int assignAllTSections();
+    void generateTSecNames();
+    String getSecNamePrefix(int dialect, ValueTree section);
+    void nameSections();
+    void nameTargetCommands();
     int countTicks(ValueTree sec);
-    String getSecNamePrefix(int dialect, ValueTree parent);
+    String getCommandMusLine(ValueTree section, ValueTree command, int dialect, 
+        int stype, int secticks);
     
     //For importCom
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
