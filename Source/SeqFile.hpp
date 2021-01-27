@@ -97,12 +97,12 @@ private:
     
     void assignTSection(ValueTree sec, int tsecnum);
     int assignAllTSections();
-    void generateTSecNames();
+    void generateTSecNames(int num_tsections, int dialect);
     String getSecNamePrefix(int dialect, ValueTree section);
-    void nameSections();
-    void nameTargetCommands();
+    void nameSections(int dialect);
+    void nameTargetCommands(int dialect);
     int countTicks(ValueTree sec);
-    String getCommandMusLine(ValueTree section, ValueTree command, int dialect, 
+    String getCommandMusLine(int sec, ValueTree section, ValueTree command, int dialect, 
         int stype, int secticks);
     
     //For importCom

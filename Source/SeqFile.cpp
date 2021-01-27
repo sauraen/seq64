@@ -2843,7 +2843,7 @@ int SeqFile::assignAllTSections(){
     return tsecnum+1;
 }
 
-void SeqFile::generateTSecNames(){
+void SeqFile::generateTSecNames(int num_tsections, int dialect){
     tsecnames_generated = true;
     tsecnames.clear();
     for(int i=0; i<num_tsections; ++i){
@@ -2878,7 +2878,7 @@ String SeqFile::getSecNamePrefix(int dialect, ValueTree section){
     return name;
 }
 
-void SeqFile::nameSections(){
+void SeqFile::nameSections(int dialect){
     StringArray allsecnames;
     //Main section
     ValueTree section = structure.getChild(0);
@@ -2924,7 +2924,7 @@ void SeqFile::nameSections(){
             name += "_" + String(dialect >= 1 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
         }
         if(allsecnames.contains(name)){
-            dbgmsg("Name clash for section \"" + name + "\"\n");
+            dbgmsg("Name clash for section " + String(sec) + " \"" + name + "\"");
             name += "_" + String(sec);
         }
         allsecnames.addIfNotAlreadyThere(name);
@@ -2933,7 +2933,7 @@ void SeqFile::nameSections(){
     }
 }
 
-void SeqFile::nameTargetCommands(){
+void SeqFile::nameTargetCommands(int dialect){
     //Find all commands pointed at
     Array<int> targethashes;
     for(int sec=0; sec<structure.getNumChildren(); ++sec){
@@ -2974,9 +2974,11 @@ int SeqFile::countTicks(ValueTree sec){
     if(sec.hasProperty(idTicks)){
         return sec.getProperty(idTicks);
     }
+    int stype = sec.getProperty(idSType);
+    if(stype >= 3) return 0;
+    sec.setProperty(idTicks, -1, nullptr);
     int ticks = 0;
     int lastnotedelay = -1;
-    int stype = sec.getProperty(idSType);
     for(int i=0; i<sec.getNumChildren(); ++i){
         ValueTree command = sec.getChild(i);
         String action = command.getProperty(idAction).toString();
@@ -2994,14 +2996,19 @@ int SeqFile::countTicks(ValueTree sec){
             ticks += lastnotedelay;
         }
         if(action == "Call"){
-            ticks += countTicks(structure.getChild((int)command.getProperty(idTargetSection)));
-            lastnotedelay = -1;
+            int t = countTicks(structure.getChild((int)command.getProperty(idTargetSection)));
+            //TODO this isn't always right, can call into middle of section
+            if(t >= 0){
+                ticks += t;
+                lastnotedelay = -1;
+            }
         }
     }
+    sec.setProperty(idTicks, ticks, nullptr);
     return ticks;
 }
 
-String SeqFile::getCommandMusLine(ValueTree section, ValueTree command, 
+String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command, 
         int dialect, int stype, int secticks){
     if(stype < 0 || stype >= 3){
         dbgmsg("Internal error!");
@@ -3014,7 +3021,7 @@ String SeqFile::getCommandMusLine(ValueTree section, ValueTree command,
     }
     String action = command.getProperty(idAction);
     if(action == "End of Data" && dialect >= 1 && stype == 2 && !section.hasProperty(idSrcCmdRef)){
-        ret += ";steps: " + String(ticks) + "\n";
+        ret += ";steps: " + String(secticks) + "\n";
     }
     ret += "    ";
     String name;
@@ -3032,7 +3039,7 @@ String SeqFile::getCommandMusLine(ValueTree section, ValueTree command,
         name = notenames[n] + String(octave);
         //Get mode
         int bmode = 0;
-        param = command.getChildWithProperty(idMeaning, "Gate Time");
+        ValueTree param = command.getChildWithProperty(idMeaning, "Gate Time");
         if(!param.isValid() || param.getProperty(idDataSrc).toString() == "constant"){
             //notedv, a.k.a. BMode 1, a.k.a. "gate 100%"
             bmode = 1;
@@ -3062,7 +3069,7 @@ String SeqFile::getCommandMusLine(ValueTree section, ValueTree command,
     String params;
     String comment;
     for(int p=0; p<command.getNumChildren(); ++p){
-        param = command.getChild(p);
+        ValueTree param = command.getChild(p);
         String meaning = param.getProperty(idMeaning, "None");
         if(meaning == "Note" && noteandcanon) continue;
         String datasrc = param.getProperty(idDataSrc).toString();
@@ -3073,14 +3080,14 @@ String SeqFile::getCommandMusLine(ValueTree section, ValueTree command,
             if(!target.isValid()){
                 dbgmsg(name + " cmd (sec " + String(sec) + " pointing to invalid section "
                     + command.getProperty(idTargetSection, -1).toString() + "!");
-                return 2;
+                return "ERROR\n";
             }
             if(command.hasProperty(idTargetHash)){
                 target = target.getChildWithProperty(idHash, command.getProperty(idTargetHash));
                 if(!target.isValid()){
                     dbgmsg(name + " cmd (sec " + String(sec) + " pointing to section "
                         + command.getProperty(idTargetSection, -1).toString() + " invalid cmd hash!");
-                    return 2;
+                    return "ERROR\n";
                 }
             }
             params += ", " + target.getProperty(idLabelName).toString();
@@ -3109,12 +3116,12 @@ String SeqFile::getCommandMusLine(ValueTree section, ValueTree command,
             //do nothing
         }else{
             dbgmsg("datasrc error!");
-            return 2;
+            return "ERROR\n";
         }
     }
     ret += name + "\t" + params + comment + "\n";
     if(action == "End of Data" && dialect == 0){
-        ret += "; Section total ticks: " + String(ticks) + "\n";
+        ret += "; Section total ticks: " + String(secticks) + "\n";
     }
     return ret;
 }
@@ -3139,11 +3146,11 @@ int SeqFile::exportMus(File musfile, int dialect){
     //Assign tsections to all sections
     int num_tsections = assignAllTSections();
     //Check tsecnames and generate if needed
-    if(tsecnames.size() != num_tsections) generateTSecNames();
+    if(tsecnames.size() != num_tsections) generateTSecNames(num_tsections, dialect);
     //Assign names to all sections
-    nameSections();
+    nameSections(dialect);
     //Assign names to all commands which are pointed at
-    nameTargetCommands();
+    nameTargetCommands(dialect);
     //Write data
     String out;
     if(dialect >= 1){
@@ -3156,11 +3163,11 @@ int SeqFile::exportMus(File musfile, int dialect){
         out += "; Nintendo 64 Music Macro Language (Audioseq) (.mus) sequence: " + seqname + "\n";
         out += "; Converted by SEQ64 V2.0 [https://github.com/sauraen/seq64]\n\n";
     }
-    tsecnum = -1;
+    int tsecnum = -1;
     int sectiongroup = -1;
     int last_stype = -2;
-    for(sec=0; sec<structure.getNumChildren(); ++sec){
-        section = structure.getChild(sec);
+    for(int sec=0; sec<structure.getNumChildren(); ++sec){
+        ValueTree section = structure.getChild(sec);
         int stype = section.getProperty(idSType);
         if(sectiongroup == -1){
             sectiongroup = 0;
@@ -3204,12 +3211,70 @@ int SeqFile::exportMus(File musfile, int dialect){
         if(sec != 0 || dialect == 0){
             out += section.getProperty(idLabelName).toString() + "\n";
         }
+        //TODO community versions of all of these outputs
         if(stype == 3){
-            //TODO handle dyntables, envelopes, messages, and extables
-        }
-        int secticks = countTicks(section);
-        for(cmd=0; cmd<section.getNumChildren(); ++cmd){
-            out += getCommandMusLine(section, section.getChild(cmd), dialect, stype, secticks);
+            //dyntable
+            int lblctr = 0;
+            for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+                out += !(lblctr & 7) ? "#label   " : ", ";
+                int tgt = section.getChild(cmd).getProperty(idTargetSection, -1);
+                if(tgt < 0 || tgt >= structure.getNumChildren()){
+                    dbgmsg("Invalid idTargetSection " + String(tgt) + " in dyntable!");
+                    return 2;
+                }
+                out += structure.getChild(tgt).getProperty(idLabelName).toString();
+                ++lblctr;
+                if(!(lblctr & 7)) out += "\n";
+                if(lblctr == 16){
+                    lblctr = 0;
+                    out += "\n"; //Extra newline every 16
+                }
+            }
+        }else if(stype == 4){
+            //envelope
+            if(last_stype != 4){
+                //Insert #evenw (align to 2 bytes) before section label
+                out = out.trimEnd().upToLastOccurrenceOf("\n", true, false) 
+                    + "#evenw\n\n" 
+                    + out.trimEnd().fromLastOccurrenceOf("\n", false, false) + "\n";
+            }
+            for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+                ValueTree p1 = section.getChild(cmd).getChildWithProperty(idMeaning, "Rate");
+                ValueTree p2 = section.getChild(cmd).getChildWithProperty(idMeaning, "Level");
+                if(!p1.isValid() || !p2.isValid()){
+                    dbgmsg("Invalid envelope point!\n");
+                    return 2;
+                }
+                out += "#word\t" + p1.getProperty(idValue, -1).toString() + "," 
+                    + p2.getProperty(idValue, 0).toString() + "\n";
+            }
+        }else if(stype == 5){
+            //message
+            out += "#msg \"" + section.getProperty(idMessage, "").toString() + "\"\n";
+        }else if(stype == 6){
+            //extable
+            int lblctr = 0;
+            for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+                out += !(lblctr & 15) ? "#byte    $" : ",$";
+                ValueTree param = section.getChild(cmd).getChildWithProperty(idMeaning, "Byte");
+                if(!param.isValid()){
+                    dbgmsg("Invalid other table / extable!");
+                    return 2;
+                }
+                out += hex((int)param.getProperty(idValue, 0x69), 8);
+                ++lblctr;
+                if(lblctr == 16){
+                    lblctr = 0;
+                    out += "\n";
+                }
+            }
+        }else{
+            //Seq header, channel, or layer command
+            int secticks = countTicks(section);
+            for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+                out += getCommandMusLine(sec, section, section.getChild(cmd), 
+                    dialect, stype, secticks);
+            }
         }
         out += "\n";
         last_stype = stype;
@@ -3424,6 +3489,10 @@ ValueTree SeqFile::getMessageCommand(Array<uint8_t> &data, uint32_t address, Val
     ValueTree command = initCommand(address);
     uint8_t c = data[address];
     if(c == 0){
+        if(!section.hasProperty(idMessage)){
+            dbgmsg("Warning, empty message at " + hex(address,16) + "!");
+            section.setProperty(idMessage, "", nullptr);
+        }
         command.setProperty(idSecDone, true, nullptr);
     }else{
         section.setProperty(idMessage, section.getProperty(idMessage, "").toString() 
