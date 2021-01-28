@@ -2848,7 +2848,7 @@ void SeqFile::generateTSecNames(int num_tsections, int dialect){
     tsecnames.clear();
     for(int i=0; i<num_tsections; ++i){
         String name;
-        if(dialect >= 1){
+        if(dialect >= 2){
             if(num_tsections == 1){
                 name = "A";
             }else{
@@ -2864,7 +2864,7 @@ void SeqFile::generateTSecNames(int num_tsections, int dialect){
 String SeqFile::getSecNamePrefix(int dialect, ValueTree section){
     int tsecnum = section.getProperty(idTSection, -1);
     if(tsecnum < 0){
-        return (dialect >= 1) ? "_" : "";
+        return (dialect >= 2) ? "_" : "";
     }
     if(tsecnum >= tsecnames.size()){
         dbgmsg("Invalid tsecnum " + String(tsecnum) + "!");
@@ -2872,7 +2872,7 @@ String SeqFile::getSecNamePrefix(int dialect, ValueTree section){
         return "Error";
     }
     String name = tsecnames[tsecnum];
-    if(dialect >= 1){
+    if(dialect >= 2){
         name = "_" + seqname + "_" + name;
     }
     return name;
@@ -2883,7 +2883,7 @@ void SeqFile::nameSections(int dialect){
     //Main section
     ValueTree section = structure.getChild(0);
     if(!section.hasProperty(idLabelName) || section.hasProperty(idLabelNameAuto)){
-        String name = dialect >= 1 ? "_" + seqname : "_start";
+        String name = dialect >= 2 ? "_" + seqname : "_start";
         allsecnames.addIfNotAlreadyThere(name);
         section.setProperty(idLabelName, name, nullptr);
         section.setProperty(idLabelNameAuto, true, nullptr);
@@ -2895,33 +2895,33 @@ void SeqFile::nameSections(int dialect){
         int stype = section.getProperty(idSType);
         String name = getSecNamePrefix(dialect, section);
         if(stype == 1 || stype == 2){
-            name += "_" + String(dialect >= 1 ? "sub" : "chn") + section.getProperty(idChannel).toString();
+            name += "_" + String(dialect >= 2 ? "sub" : "chn") + section.getProperty(idChannel).toString();
         }
         if(stype == 2){
-            name += "_" + String(dialect >= 1 ? "note" : "ly") + section.getProperty(idLayer).toString();
+            name += "_" + String(dialect >= 2 ? "note" : "ly") + section.getProperty(idLayer).toString();
         }
         if(stype == 3){
             name += "_tbl_" + String(sec);
         }else if(stype == 4){
-            if(dialect >= 1){
+            if(dialect >= 2){
                 name = "ENVE_" + seqname + String(sec);
             }else{
                 name += "_env" + String(sec);
             }
         }else if(stype == 5){
-            if(dialect >= 1){
+            if(dialect >= 2){
                 name = "_message_" + String(sec);
             }else{
                 name += "_msg" + String(sec);
             }
         }else if(stype == 6){
-            if(dialect >= 1){
+            if(dialect >= 2){
                 name = "_extbl_" + String(sec);
             }else{
                 name += "_ldstbl" + String(sec);
             }
         }else if(section.hasProperty(idSrcCmdRef)){
-            name += "_" + String(dialect >= 1 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
+            name += "_" + String(dialect >= 2 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
         }
         if(allsecnames.contains(name)){
             dbgmsg("Name clash for section " + String(sec) + " \"" + name + "\"");
@@ -3020,13 +3020,14 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
         ret += command.getProperty(idLabelName).toString() + "\n";
     }
     String action = command.getProperty(idAction);
-    if(action == "End of Data" && dialect >= 1 && stype == 2 && !section.hasProperty(idSrcCmdRef)){
+    if(action == "End of Data" && (dialect == 2 || dialect == 4) 
+            && stype == 2 && !section.hasProperty(idSrcCmdRef)){
         ret += ";steps: " + String(secticks) + "\n";
     }
     ret += "    ";
     String name;
     bool noteandcanon = false;
-    if(action == "Note" && dialect >= 1){
+    if(action == "Note" && dialect >= 2){
         noteandcanon = true;
         //Convert note to note name. smf2mus always outputted "sharp" notes only,
         //but mml64.def supported import of sharp and flat notes (e.g. "CS" = "DF").
@@ -3060,9 +3061,9 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
         name += "B" + String(bmode);
     }else{
         name = command.getProperty(idName, "Error");
-        if(dialect == 1){
+        if((dialect & ~1) == 2){
             name = command.getProperty(idCName, command.getProperty(idOName, name));
-        }else if(dialect == 2){
+        }else if((dialect & ~1) == 4){
             name = command.getProperty(idOName, command.getProperty(idCName, name));
         }
     }
@@ -3103,7 +3104,7 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
             }
         }else if(datasrc == "variable"){
             if(value >= 0x80 || param.hasProperty(idDataForce2)){
-                if(dialect >= 1){
+                if(dialect >= 2){
                     name += (action == "Note") ? "W" : "w";
                 }else{
                     comment += " ; FORCE LEN 2";
@@ -3120,10 +3121,24 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
         }
     }
     ret += name + "\t" + params + comment + "\n";
-    if(action == "End of Data" && dialect == 0){
+    if(action == "End of Data" && dialect < 2){
         ret += "; Section total ticks: " + String(secticks) + "\n";
     }
     return ret;
+}
+
+int SeqFile::findDynTableIndex(int sec){
+    for(int s=0; s<structure.getNumChildren(); ++s){
+        ValueTree section = structure.getChild(s);
+        if((int)section.getProperty(idSType, -1) != 3) continue;
+        if((int)section.getProperty(idDynTableSType, -1) != 1) continue;
+        for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+            if((int)section.getChild(cmd).getProperty(idTargetSection) == sec){
+                return cmd;
+            }
+        }
+    }
+    return -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3153,12 +3168,22 @@ int SeqFile::exportMus(File musfile, int dialect){
     nameTargetCommands(dialect);
     //Write data
     String out;
-    if(dialect >= 1){
+    time_t t = time(nullptr); 
+    struct tm *curtime = localtime(&t);
+    if(dialect == 2 || dialect == 4){
         out += ";****************************************\n";
         out += ";\tmusic data (format : mus)\n";
         out += ";\tconverted by SEQ64 Ver 2.0, https://github.com/sauraen/seq64\n";
-        out += ";\t"; { time_t t = time(nullptr); struct tm *curtime = localtime(&t); out += asctime(curtime); }
+        out += ";\t"; out += asctime(curtime);
         out += ";****************************************\n\n\n";
+    }else if(dialect == 3 || dialect == 5){
+        out += ";**********************************************\n";
+        out += ";\t\tGAME NAME\n";
+        out += ";\t\tSE SEQUENCE DATA\n";
+        out += ";\t\t" + seqname.toUpperCase() + "\n";
+        out += ";\t\t"; char s[100]; strftime(s, 100, "%Y.%m.%d(%a)\n", curtime); out += s;
+        out += ";\t\tYOUR NAME HERE\n"; //Could have read your system username but didn't want to dox you
+        out += ";**********************************************\n\n";
     }else{
         out += "; Nintendo 64 Music Macro Language (Audioseq) (.mus) sequence: " + seqname + "\n";
         out += "; Converted by SEQ64 V2.0 [https://github.com/sauraen/seq64]\n\n";
@@ -3171,44 +3196,69 @@ int SeqFile::exportMus(File musfile, int dialect){
         int stype = section.getProperty(idSType);
         if(sectiongroup == -1){
             sectiongroup = 0;
-            if(dialect >= 1){
+            if(dialect >= 2){
                 //match incorrect spelling in smf2mus converted sequences
                 out += ";***************\n;* GROOP TRACK *\n;***************\n\n";
             }else{
                 out += "; Sequence Header\n\n";
             }
-        }else if(sectiongroup == 0 && stype == 1){
+        }else if(sectiongroup != 1 && stype == 1){
             sectiongroup = 1;
-            if(dialect >= 1){
-                out += ";***************\n;* SUB TRACK   *\n;***************\n\n";
+            int dyntableindex = findDynTableIndex(sec);
+            if(dyntableindex < 0){
+                if(dialect >= 2){
+                    out += ";***************\n;* SUB TRACK   *\n;***************\n\n";
+                }else{
+                    out += (dialect & 1) ? "; Some Channel\n" : "; Channel Headers\n\n";
+                }
             }else{
-                out += "; Channel Headers\n\n";
+                out += (dialect >= 2) ? "\n;*** name of sfx  ***\n;" : "\n; Entry ";
+                out += hex(dyntableindex, 8);
+                out += (dialect >= 2) ? "\n" : ": some sfx\n";
             }
-        }else if(sectiongroup == 1 && stype == 2){
+        }else if(sectiongroup != 2 && stype == 2){
             sectiongroup = 2;
-            if(dialect >= 1){
-                out += ";***************\n;* NOTE TRACK  *\n;***************\n\n";
-            }else{
-                out += "; Note Layers\n\n";
+            if(!(dialect & 1)){
+                if(dialect >= 2){
+                    out += ";***************\n;* NOTE TRACK  *\n;***************\n\n";
+                }else{
+                    out += "; Note Layers\n\n";
+                }
             }
-        }else if(sectiongroup == 2 && section.hasProperty(idSrcCmdRef)){
+        }else if(sectiongroup == 2 && section.hasProperty(idSrcCmdRef) && !(dialect & 1)){
             sectiongroup = 3;
-            if(dialect >= 1){
+            if(dialect >= 2){
                 out += ";*************\n;*  PATTERN  *\n;*************\n\n\n";
             }else{
                 out += "; Calls\n\n";
             }
+        }else if(stype == 3 && (dialect & 1)){
+            sectiongroup = 4;
         }
         if(sec != 0 && !section.hasProperty(idSrcCmdRef) 
                 && (int)section.getProperty(idTSection) != tsecnum){
-            if(dialect >= 1){
+            if(dialect >= 2){
                 out += ";*** block:" + tsecnames[(int)section.getProperty(idTSection)] + " ***\n\n";
             }else{
                 out += "; tsec" + section.getProperty(idTSection).toString() + "\n\n";
             }
             tsecnum = section.getProperty(idTSection);
         }
-        if(sec != 0 || dialect == 0){
+        if(stype == 3){
+            //dyntable
+            if(dialect >= 2){
+                out += ";********************\n;   some table\n;********************\n";
+            }else{
+                out += "; Some Dyntable\n";
+            }
+        }else if(stype == 4){
+            //envelope
+            if(last_stype != 4){
+                out += "#evenw\n\n";
+            }
+        }
+        //Section label
+        if(sec != 0 || dialect < 2){
             out += section.getProperty(idLabelName).toString() + "\n";
         }
         //TODO community versions of all of these outputs
@@ -3232,12 +3282,6 @@ int SeqFile::exportMus(File musfile, int dialect){
             }
         }else if(stype == 4){
             //envelope
-            if(last_stype != 4){
-                //Insert #evenw (align to 2 bytes) before section label
-                out = out.trimEnd().upToLastOccurrenceOf("\n", true, false) 
-                    + "#evenw\n\n" 
-                    + out.trimEnd().fromLastOccurrenceOf("\n", false, false) + "\n";
-            }
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
                 ValueTree p1 = section.getChild(cmd).getChildWithProperty(idMeaning, "Rate");
                 ValueTree p2 = section.getChild(cmd).getChildWithProperty(idMeaning, "Level");

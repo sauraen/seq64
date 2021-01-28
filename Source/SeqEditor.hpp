@@ -156,6 +156,9 @@ private:
     std::unique_ptr<juce::ToggleButton> chkPref;
     std::unique_ptr<juce::ToggleButton> chkCallOnlyLyr;
     std::unique_ptr<juce::Label> lblCallOnlyLy;
+    std::unique_ptr<juce::Label> lblStyle;
+    std::unique_ptr<juce::ToggleButton> optStyleMusic;
+    std::unique_ptr<juce::ToggleButton> optStyleSFX;
     juce::Path internalPath1;
     juce::Path internalPath2;
     juce::Path internalPath3;

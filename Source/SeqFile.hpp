@@ -104,6 +104,7 @@ private:
     int countTicks(ValueTree sec);
     String getCommandMusLine(int sec, ValueTree section, ValueTree command, int dialect, 
         int stype, int secticks);
+    int findDynTableIndex(int sec);
     
     //For importCom
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data

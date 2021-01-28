@@ -62,7 +62,7 @@ SeqEditor::SeqEditor ()
                                                    TRANS(".mus dialect")));
     addAndMakeVisible (grpMusDialect.get());
 
-    grpMusDialect->setBounds (8, 609, 320, 47);
+    grpMusDialect->setBounds (8, 593, 320, 71);
 
     optMusCommunity.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optMusCommunity.get());
@@ -71,7 +71,7 @@ SeqEditor::SeqEditor ()
     optMusCommunity->addListener (this);
     optMusCommunity->setToggleState (true, dontSendNotification);
 
-    optMusCommunity->setBounds (16, 624, 112, 24);
+    optMusCommunity->setBounds (16, 608, 112, 24);
 
     optMusCanon.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optMusCanon.get());
@@ -79,7 +79,7 @@ SeqEditor::SeqEditor ()
     optMusCanon->setRadioGroupId (1);
     optMusCanon->addListener (this);
 
-    optMusCanon->setBounds (128, 624, 80, 24);
+    optMusCanon->setBounds (128, 608, 80, 24);
 
     optMusCanonOld.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optMusCanonOld.get());
@@ -87,7 +87,7 @@ SeqEditor::SeqEditor ()
     optMusCanonOld->setRadioGroupId (1);
     optMusCanonOld->addListener (this);
 
-    optMusCanonOld->setBounds (208, 624, 112, 24);
+    optMusCanonOld->setBounds (208, 608, 112, 24);
 
     grpImportMIDI.reset (new juce::GroupComponent ("new group",
                                                    TRANS("MIDI Import")));
@@ -450,7 +450,7 @@ SeqEditor::SeqEditor ()
     btnImportMus->setConnectedEdges (juce::Button::ConnectedOnBottom);
     btnImportMus->addListener (this);
 
-    btnImportMus->setBounds (8, 536, 152, 32);
+    btnImportMus->setBounds (8, 520, 152, 32);
 
     btnExportMus.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnExportMus.get());
@@ -458,7 +458,7 @@ SeqEditor::SeqEditor ()
     btnExportMus->setConnectedEdges (juce::Button::ConnectedOnTop);
     btnExportMus->addListener (this);
 
-    btnExportMus->setBounds (8, 568, 152, 32);
+    btnExportMus->setBounds (8, 552, 152, 32);
 
     btnImportCom.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnImportCom.get());
@@ -548,6 +548,34 @@ SeqEditor::SeqEditor ()
 
     lblCallOnlyLy->setBounds (54, 240, 48, 24);
 
+    lblStyle.reset (new juce::Label ("lblStyle",
+                                     TRANS("Style:")));
+    addAndMakeVisible (lblStyle.get());
+    lblStyle->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblStyle->setJustificationType (juce::Justification::centredLeft);
+    lblStyle->setEditable (false, false, false);
+    lblStyle->setColour (juce::TextEditor::textColourId, juce::Colours::black);
+    lblStyle->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+
+    lblStyle->setBounds (16, 632, 56, 24);
+
+    optStyleMusic.reset (new juce::ToggleButton ("optStyleMusic"));
+    addAndMakeVisible (optStyleMusic.get());
+    optStyleMusic->setButtonText (TRANS("Music"));
+    optStyleMusic->setRadioGroupId (3);
+    optStyleMusic->addListener (this);
+    optStyleMusic->setToggleState (true, dontSendNotification);
+
+    optStyleMusic->setBounds (72, 632, 80, 24);
+
+    optStyleSFX.reset (new juce::ToggleButton ("optStyleSFX"));
+    addAndMakeVisible (optStyleSFX.get());
+    optStyleSFX->setButtonText (TRANS("Technical / SFX"));
+    optStyleSFX->setRadioGroupId (3);
+    optStyleSFX->addListener (this);
+
+    optStyleSFX->setBounds (152, 632, 136, 24);
+
     internalPath1.startNewSubPath (160.0f, 336.0f);
     internalPath1.lineTo (348.0f, 336.0f);
     internalPath1.startNewSubPath (340.0f, 344.0f);
@@ -560,17 +588,17 @@ SeqEditor::SeqEditor ()
     internalPath2.lineTo (164.0f, 368.0f);
     internalPath2.lineTo (172.0f, 360.0f);
 
-    internalPath3.startNewSubPath (160.0f, 552.0f);
-    internalPath3.lineTo (348.0f, 552.0f);
-    internalPath3.startNewSubPath (340.0f, 560.0f);
-    internalPath3.lineTo (348.0f, 552.0f);
-    internalPath3.lineTo (340.0f, 544.0f);
+    internalPath3.startNewSubPath (160.0f, 536.0f);
+    internalPath3.lineTo (348.0f, 536.0f);
+    internalPath3.startNewSubPath (340.0f, 544.0f);
+    internalPath3.lineTo (348.0f, 536.0f);
+    internalPath3.lineTo (340.0f, 528.0f);
 
-    internalPath4.startNewSubPath (352.0f, 584.0f);
-    internalPath4.lineTo (164.0f, 584.0f);
-    internalPath4.startNewSubPath (172.0f, 592.0f);
-    internalPath4.lineTo (164.0f, 584.0f);
-    internalPath4.lineTo (172.0f, 576.0f);
+    internalPath4.startNewSubPath (352.0f, 568.0f);
+    internalPath4.lineTo (164.0f, 568.0f);
+    internalPath4.startNewSubPath (172.0f, 576.0f);
+    internalPath4.lineTo (164.0f, 568.0f);
+    internalPath4.lineTo (172.0f, 560.0f);
 
     internalPath5.startNewSubPath (160.0f, 720.0f);
     internalPath5.lineTo (348.0f, 720.0f);
@@ -662,6 +690,9 @@ SeqEditor::~SeqEditor()
     chkPref = nullptr;
     chkCallOnlyLyr = nullptr;
     lblCallOnlyLy = nullptr;
+    lblStyle = nullptr;
+    optStyleMusic = nullptr;
+    optStyleSFX = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -892,7 +923,8 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         FileChooser box("Save .mus", savelocation, "*.mus", true);
         if(!box.browseForFileToSave(true)) return;
         savelocation = box.getResult();
-        int dialect = optMusCommunity->getToggleState() ? 0 : optMusCanon->getToggleState() ? 1 : 2;
+        int dialect = optMusCommunity->getToggleState() ? 0 : optMusCanon->getToggleState() ? 2 : 4;
+        dialect |= optStyleSFX->getToggleState() ? 1 : 0;
         startSeqOperation(".mus export", &SeqFile::exportMus, savelocation, dialect);
         //[/UserButtonCode_btnExportMus]
     }
@@ -930,6 +962,16 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     {
         //[UserButtonCode_chkCallOnlyLyr] -- add your button handler code here..
         //[/UserButtonCode_chkCallOnlyLyr]
+    }
+    else if (buttonThatWasClicked == optStyleMusic.get())
+    {
+        //[UserButtonCode_optStyleMusic] -- add your button handler code here..
+        //[/UserButtonCode_optStyleMusic]
+    }
+    else if (buttonThatWasClicked == optStyleSFX.get())
+    {
+        //[UserButtonCode_optStyleSFX] -- add your button handler code here..
+        //[/UserButtonCode_optStyleSFX]
     }
 
     //[UserbuttonClicked_Post]
@@ -1033,24 +1075,24 @@ BEGIN_JUCER_METADATA
     <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
           strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 368 l 164 368 s 172 376 l 164 368 l 172 360</PATH>
     <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
-          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 552 l 348 552 s 340 560 l 348 552 l 340 544</PATH>
+          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 536 l 348 536 s 340 544 l 348 536 l 340 528</PATH>
     <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
-          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 584 l 164 584 s 172 592 l 164 584 l 172 576</PATH>
+          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 568 l 164 568 s 172 576 l 164 568 l 172 560</PATH>
     <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
           strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 720 l 348 720 s 340 728 l 348 720 l 340 712</PATH>
     <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
           strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 752 l 164 752 s 172 760 l 164 752 l 172 744</PATH>
   </BACKGROUND>
   <GROUPCOMPONENT name="" id="288b23c83f4e83ab" memberName="grpMusDialect" virtualName=""
-                  explicitFocusOrder="0" pos="8 609 320 47" title=".mus dialect"/>
+                  explicitFocusOrder="0" pos="8 593 320 71" title=".mus dialect"/>
   <TOGGLEBUTTON name="new toggle button" id="47cfaabd82293101" memberName="optMusCommunity"
-                virtualName="" explicitFocusOrder="0" pos="16 624 112 24" buttonText="Community"
+                virtualName="" explicitFocusOrder="0" pos="16 608 112 24" buttonText="Community"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="1"/>
   <TOGGLEBUTTON name="new toggle button" id="aa9f5ce6f473ab73" memberName="optMusCanon"
-                virtualName="" explicitFocusOrder="0" pos="128 624 80 24" buttonText="Canon"
+                virtualName="" explicitFocusOrder="0" pos="128 608 80 24" buttonText="Canon"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="3788ddb7be05010c" memberName="optMusCanonOld"
-                virtualName="" explicitFocusOrder="0" pos="208 624 112 24" buttonText="Canon (Old)"
+                virtualName="" explicitFocusOrder="0" pos="208 608 112 24" buttonText="Canon (Old)"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <GROUPCOMPONENT name="new group" id="6c3ae9ab90971ff0" memberName="grpImportMIDI"
                   virtualName="" explicitFocusOrder="0" pos="8 96 320 216" title="MIDI Import"/>
@@ -1192,10 +1234,10 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="8 352 152 32" buttonText="Export MIDI"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="3bb24dc32903c5e7" memberName="btnImportMus"
-              virtualName="" explicitFocusOrder="0" pos="8 536 152 32" buttonText="Import .mus"
+              virtualName="" explicitFocusOrder="0" pos="8 520 152 32" buttonText="Import .mus"
               connectedEdges="8" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="8f9107dadce8a52a" memberName="btnExportMus"
-              virtualName="" explicitFocusOrder="0" pos="8 568 152 32" buttonText="Export .mus"
+              virtualName="" explicitFocusOrder="0" pos="8 552 152 32" buttonText="Export .mus"
               connectedEdges="4" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="ce9eeb4274035fc6" memberName="btnImportCom"
               virtualName="" explicitFocusOrder="0" pos="8 704 152 32" buttonText="Import .com/.aseq"
@@ -1232,6 +1274,17 @@ BEGIN_JUCER_METADATA
          edBkgCol="0" labelText="NtLyr" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
+  <LABEL name="lblStyle" id="d5bfeaf6e09966ec" memberName="lblStyle" virtualName=""
+         explicitFocusOrder="0" pos="16 632 56 24" edTextCol="ff000000"
+         edBkgCol="0" labelText="Style:" editableSingleClick="0" editableDoubleClick="0"
+         focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
+         kerning="0.0" bold="0" italic="0" justification="33"/>
+  <TOGGLEBUTTON name="optStyleMusic" id="11ec9f92fae59908" memberName="optStyleMusic"
+                virtualName="" explicitFocusOrder="0" pos="72 632 80 24" buttonText="Music"
+                connectedEdges="0" needsCallback="1" radioGroupId="3" state="1"/>
+  <TOGGLEBUTTON name="optStyleSFX" id="c2b3fa71cbf88894" memberName="optStyleSFX"
+                virtualName="" explicitFocusOrder="0" pos="152 632 136 24" buttonText="Technical / SFX"
+                connectedEdges="0" needsCallback="1" radioGroupId="3" state="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA
