@@ -102,8 +102,8 @@ private:
     void nameSections(int dialect);
     void nameTargetCommands(int dialect);
     int countTicks(ValueTree sec);
-    String getCommandMusLine(int sec, ValueTree section, ValueTree command, int dialect, 
-        int stype, int secticks);
+    String getCommandMusLine(int sec, ValueTree section, ValueTree command, 
+        int dialect, int stype, int secticks);
     int findDynTableIndex(int sec);
     
     //For importCom
@@ -131,6 +131,7 @@ private:
     bool findDynTableType(int dtsec);
     int findNextDynTableType(int s, int c);
     bool getSectionAndCmd(ValueTree command, int &s, int &c);
+    void convertPtrsFirstCmd();
     
     struct SectionSorter {
         static int compareElements(const ValueTree &first, const ValueTree &second){
