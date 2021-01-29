@@ -3124,6 +3124,7 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
             return "ERROR\n";
         }
     }
+    if(noteandcanon && (dialect & 1)) name = name.toLowerCase();
     ret += name + ((dialect & 1) ? "" : "\t") + params + comment + "\n";
     if(action == "End of Data" && dialect < 2){
         ret += "; Section total ticks: " + String(secticks) + "\n";
