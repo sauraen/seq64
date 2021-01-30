@@ -23,24 +23,6 @@
  * ============================================================================
 */
 
-/*
-TODO
-Canon hash commands actually used:
-#define TOKEN value
-#include "path/to/file.mus"
-#label label_name, label_name_2, ...
-#lprinton
-#msg "Blah blah" //referenced by dprint. Number seen to be 0 or 3, definitely not string length.
-#evenw //probably means align to 2 bytes?
-#word value16,value16
-Note that envelopes aren't always 16 bytes! They're pairs of uint16_t's until the first is -1.
-Other hash commands in bicon executable:
-#lprintoff
-#byte
-#wlen
-#evenl
-*/
-
 
 #include "SeqFile.hpp"
 
@@ -2797,6 +2779,127 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
     dbgmsg("Saved MIDI to " + midifile.getFullPathName());
     return importresult;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////// importMus functions /////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////// importMus //////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+int SeqFile::importMus(File musfile){
+    int len = musfile.getSize();
+    if(!musfile.existsAsFile() || len <= 0){
+        dbgmsg("File " + musfile.getFullPathName() + " doesn't exist!");
+        return 2;
+    }
+    if(len > 1000000){
+        dbgmsg("File " + musfile.getFullPathName() + " is more than 1MB, probably not a sequence!");
+        return 2;
+    }
+    FileInputStream fis(musfile);
+    if(fis.failedToOpen()){
+        dbgmsg("Couldn't open file " + musfile.getFullPathName() + "!");
+        return 2;
+    }
+    seqname = musfile.getFileNameWithoutExtension();
+    structure = ValueTree("structure");
+    Random::getSystemRandom().setSeedRandomly();
+    importresult = 0;
+    //
+    int stype = 0;
+    int linenum = 0;
+    bool lprint = false;
+    while(!fis.isExhausted()){
+        ++linenum;
+        String l = fis.readNextLine();
+        l = l.upToFirstOccurrenceOf(";", false, false).trim(); //remove comments
+        //TODO: will need to parse some comments, e.g. block/tsec names and
+        //FORCE LEN 2 annotation
+        if(l.isEmpty()) continue;
+        l = l.replace(",", " , ");
+        StringArray toks = StringArray::fromTokens(l, " \t", "").trim();
+        if(toks.isEmpty()){
+            dbgmsg("No tokens (line " + String(linenum) + ")!");
+            return 2;
+        }
+        if(lprint){
+            //Actual function of #lprinton/#lprintoff unknown, this is a guess.
+            dbgmsg("Line " + String(linenum) + ": " + toks.joinIntoString(" "));
+        }
+        //These are all the hash commands in the bicon executable.
+        if(toks[0] == "#define"){
+            //#define TOKEN value, used widely in SFX seqs, file defining SFX
+            //names-to-numbers mapping can be shared by both mus and C code
+            //TODO
+        }else if(toks[0] == "#include"){
+            //#include "path/to/file.mus", used in SFX seqs
+            //TODO
+        }else if(toks[0] == "#label"){
+            //#label label_name, label_name_2, ..., used for dyntables
+            //TODO
+        }else if(toks[0] == "#msg"){
+            //#msg "Blah blah", referenced by dprint. Number seen to be 0 or 3,
+            //definitely not string length. Perhaps debug console color or
+            //verboseness/severity?
+            //TODO
+        }else if(toks[0] == "#byte"){
+            //Presumably, write bytes to com.
+            //TODO
+        }else if(toks[0] == "#word"){
+            //#word value16,value16, used for envelopes. Write 16-bit ints to com.
+            //TODO
+        }else if(toks[0] == "#evenw"){
+            //Align to even word (2 bytes)
+            //TODO
+        }else if(toks[0] == "#evenl"){
+            //Presumably, align to even long (4 bytes)?
+            //TODO
+        }else if(toks[0] == "#wlen"){
+            //Function completely unknown. Perhaps something to do with "w"
+            //variable-length variables?
+            dbgmsg("Function of #wlen command (line " + String(linenum) + ") is unknown!");
+            importresult |= 1;
+        }else if(toks[0] == "#lprinton"){
+            //Function unknown, presumably printing lines as they're parsed or
+            //some information from them? There's a commented out #lprinton at 
+            //beginning of SFX seq
+            if(toks.size() > 1){
+                dbgmsg("Spurious tokens after #lprinton (line " + String(linenum) + ")!");
+                return 2;
+            }
+            lprint = true;
+        }else if(toks[0] == "#lprintoff"){
+            //Turns off whatever lprinton turns on
+            if(toks.size() > 1){
+                dbgmsg("Spurious tokens after #lprintoff (line " + String(linenum) + ")!");
+                return 2;
+            }
+            lprint = false;
+        }else{
+            ValueTree command = parseMusCommand(toks, stype);
+            if(!command.isValid()){
+                if(importresult >= 2) return;
+                if(toks.size() > 1){
+                    dbgmsg("Token " + toks[0] + " (line " + String(linenum) 
+                        + ") not recognized as a command, but it has tokens after it, so it can't be a label, syntax error!");
+                    return 2;
+                }
+                //Label
+                //TODO
+            }else{
+                //Command
+                //TODO
+            }
+        }
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// exportMus functions /////////////////////////////

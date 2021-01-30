@@ -913,6 +913,15 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnImportMus.get())
     {
         //[UserButtonCode_btnImportMus] -- add your button handler code here..
+        ValueTree abi = getABI();
+        if(!abi.isValid()) return;
+        if(!checkSeqPresence(false)) return;
+        File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("romfolder");
+        FileChooser box("Load .mus", f, "*.mus", true);
+        if(!box.browseForFileToOpen()) return;
+        f = box.getResult();
+        seq.reset(new SeqFile(abi));
+        startSeqOperation(".mus import", &SeqFile::importMus, f);
         //[/UserButtonCode_btnImportMus]
     }
     else if (buttonThatWasClicked == btnExportMus.get())
@@ -1294,4 +1303,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-

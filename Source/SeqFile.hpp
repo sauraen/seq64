@@ -41,9 +41,7 @@ public:
     //Results are 0 okay, 1 warnings, 2+ errors.
     int importMIDI(File midifile, ValueTree midiopts);
     int exportMIDI(File midifile, ValueTree midiopts);
-    #if 0
-    int importMus(File musfile, int dialect);
-    #endif
+    int importMus(File musfile);
     int exportMus(File musfile, int dialect);
     int importCom(File comfile);
     int exportCom(File comfile);
@@ -93,8 +91,10 @@ private:
     void optimize(ValueTree midiopts);
     void reduceTrackNotes();
     
-    //For exportMus
+    //For importMus
+    ValueTree parseMusCommand(const StringArray &toks, int stype);
     
+    //For exportMus
     void assignTSection(ValueTree sec, int tsecnum);
     int assignAllTSections();
     void generateTSecNames(int num_tsections, int dialect);
