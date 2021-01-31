@@ -92,7 +92,8 @@ private:
     void reduceTrackNotes();
     
     //For importMus
-    ValueTree parseMusCommand(const StringArray &toks, int stype);
+    ValueTree parseMusCommand(const StringArray &toks, int stype, int linenum, 
+        bool wrongSTypeErrors);
     
     //For exportMus
     void assignTSection(ValueTree sec, int tsecnum);
@@ -183,6 +184,7 @@ private:
     static Identifier idTargetSection;
     static Identifier idTargetHash;
     static Identifier idTargetCmdByte;
+    static Identifier idTargetSType;
     static Identifier idWillDrop;
     static Identifier idDynTableSType;
     static Identifier idDynTableDynSType;

@@ -2785,7 +2785,142 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
 ////////////////////////////// importMus functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-
+ValueTree SeqFile::parseMusCommand(const StringArray &toks, int stype, int linenum, 
+        bool wrongSTypeErrors){
+    ValueTree ret;
+    String name = toks[0].toLowerCase();
+    String no_w_name = name.endsWithChar('w') ? name.dropLastCharacters(1) : name;
+    bool wideDelay = false;
+    int noteValue = -1000;
+    //Canon note commands
+    if(no_w_name.length() == 5 && name[4] >= '0' && name[4] <= '2'
+            && name[3] == 'b' && name[2] >= '0' && name[2] <= '6'
+            && String("nfs").containsChar(name[1]) && String("abcdefg").containsChar(name[0])){
+        if(stype != 2){
+            if(wrongSTypeErrors){
+                dbgmsg("Canon note command " + toks[0] + " line " + String(linenum) 
+                    + " not allowed in current stype " + String(stype) + "!");
+                importresult |= 2;
+            }
+            return ValueTree();
+        }
+        //A0 is 0, octave changes to 1 once you get to C
+        static const int noteNameMap[7] = {0, 2, 3-12, 5-12, 7-12, 8-12, 10-12};
+        noteValue = noteNameMap[name[0] - 'a'];
+        if(name[1] == 'f') --noteValue; //allows for obscure but musically valid
+        if(name[1] == 's') ++noteValue; //notes like C flat and B sharp
+        noteValue += 12 * (name[2] - '0');
+        if(name.endsWithChar('w')) wideDelay = true;
+        if(noteValue < 0 || noteValue > 0x3F){
+            dbgmsg("Note command " + toks[0] + " line " + String(linenum) 
+                + " maps to invalid note value " + String(noteValue) + "!");
+            importresult |= 2;
+            return ValueTree();
+        }
+        //Find appropriate note command
+        for(int cmd=0; cmd<abi.getNumChildren(); ++cmd){
+            ValueTree command = abi.getChild(cmd);
+            if(command.getProperty(idAction).toString() != "Note") continue;
+            if(!command.getChildWithProperty(idMeaning, "Note").isValid()) continue;
+            if(!command.getChildWithProperty(idMeaning, "Velocity").isValid()) continue;
+            if(name[4] != '1' && !command.getChildWithProperty(idMeaning, "Gate Time").isValid()) continue;
+            if(name[4] != '2' && !command.getChildWithProperty(idMeaning, "Delay").isValid()) continue;
+            ret = command.createCopy();
+            break;
+        }
+        if(!ret.isValid()){
+            dbgmsg("Could not find ABI note definition for note command " + toks[0] 
+                + " line " + String(linenum) + "!");
+            importresult |= 2;
+            return ValueTree();
+        }
+    }
+    //Normal commands
+    for(int cmd=0; !ret.isValid() && cmd<abi.getNumChildren(); ++cmd){
+        ValueTree command = abi.getChild(cmd);
+        if(        command.getProperty(idName, "") == name 
+                || command.getProperty(idCName, "") == name
+                || command.getProperty(idOName, "") == name){
+            ret = command.createCopy();
+        }
+        if(command.getChildWithProperty(idDataLen, "variable").isValid() &&
+                 ( command.getProperty(idCName, "") == no_w_name
+                || command.getProperty(idOName, "") == no_w_name)){
+            wideDelay = true;
+            ret = command.createCopy();
+        }
+    }
+    //Check found command
+    if(!ret.isValid()) return ret; //Probably a label
+    if(        (stype == 0 && !cmd.getProperty(idValidInSeq))
+            || (stype == 1 && !cmd.getProperty(idValidInChn))
+            || (stype == 2 && !cmd.getProperty(idValidInTrk))){
+        if(wrongSTypeErrors){
+            dbgmsg("Command " + toks[0] + " line " + String(linenum) 
+                + " not allowed in current stype " + String(stype) + "!");
+            importresult |= 2;
+        }
+        return ValueTree();
+    }
+    if(stype < 0 || stype > 2){
+        dbgmsg("Non-hash commands not allowed in stype " + String(stype)
+            +  "! Found command " + toks[0] + " line " + String(linenum) + "!");
+        importresult |= 2;
+        return ValueTree();
+    }
+    //Parse parameters
+    int t = 1;
+    for(int p=0; p<ret.getNumChildren(); ++p){
+        ValueTree param = ret.getChild(p);
+        String meaning = param.getProperty(idMeaning);
+        String datasrc = param.getProperty(idDataSrc);
+        int datalen = param.getProperty(idDataLen, 0);
+        if(datasrc == "constant"){
+            //Constant doesn't take an argument, value stored in data len field
+            param.setProperty(idValue, datalen, nullptr);
+            continue;
+        }
+        if(meaning == "Note" && noteValue != -1000){
+            //Canon note value encoded in command token, no separate parameter
+            param.setProperty(idValue, noteValue, nullptr);
+            continue;
+        }
+        if(t >= toks.size()){
+            dbgmsg("Expected comma and then " + param.getProperty(idName) 
+                + " in command " + toks[0] + " line " + String(linenum)
+                + ", got nothing!");
+            importresult |= 2;
+            return ValueTree();
+        }
+        if(toks[t] != ","){
+            dbgmsg("Expected comma, not " + toks[t] + ", in command " + toks[0] 
+                + " line " + String(linenum) + "!");
+            importresult |= 2;
+            return ValueTree();
+        }
+        ++t;
+        if(t >= toks.size()){
+            dbgmsg("Expected " + param.getProperty(idName) + " in command " 
+                + toks[0] + " line " + String(linenum) + ", got nothing!");
+            importresult |= 2;
+            return ValueTree();
+        }
+        String s = toks[t];
+        if(meaning == "Absolute Address" || meaning == "Relative Address"){
+            //Allowed characters: alphanumeric, _, @. Don't need to check for
+            //commas or whitespace due to tokenization scheme.
+            if(s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~")){
+                dbgmsg("Invalid character(s) in label " + s + ", in command " + toks[0] 
+                    + " line " + String(linenum) + "!");
+                importresult |= 2;
+                return ValueTree();
+            }
+            param.setProperty(idValue, s, nullptr);
+            ret.setProperty(idTargetSection, s, nullptr);
+        }
+        ++t;
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// importMus //////////////////////////////////
@@ -2882,7 +3017,7 @@ int SeqFile::importMus(File musfile){
             }
             lprint = false;
         }else{
-            ValueTree command = parseMusCommand(toks, stype);
+            ValueTree command = parseMusCommand(toks, stype, linenum, true);
             if(!command.isValid()){
                 if(importresult >= 2) return;
                 if(toks.size() > 1){
@@ -3177,7 +3312,7 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
         ValueTree param = command.getChild(p);
         String meaning = param.getProperty(idMeaning, "None");
         if(meaning == "Note" && noteandcanon) continue;
-        String datasrc = param.getProperty(idDataSrc).toString();
+        String datasrc = param.getProperty(idDataSrc);
         int datalen = param.getProperty(idDataLen, 0);
         int value = param.getProperty(idValue, 8888);
         if(meaning == "Absolute Address" || meaning == "Relative Address"){
