@@ -92,8 +92,11 @@ private:
     void reduceTrackNotes();
     
     //For importMus
-    ValueTree parseMusCommand(const StringArray &toks, int stype, int linenum, 
-        bool wrongSTypeErrors);
+    bool parseCanonNoteName(String s, int &noteValue);
+    bool isValidLabel(String s);
+    String substituteDefines(const StringPairArray &defs, String s);
+    ValueTree parseMusCommand(const StringPairArray &defs, const StringArray &toks, 
+        int stype, int linenum, bool wrongSTypeErrors);
     
     //For exportMus
     void assignTSection(ValueTree sec, int tsecnum);
@@ -164,7 +167,7 @@ private:
     static Identifier idDataLen;
     static Identifier idDataForce2;
     static Identifier idDataAddr;
-    static Identifier idDataActualLen;
+    //static Identifier idDataActualLen;
     static Identifier idSType;
     static Identifier idValidInSeq;
     static Identifier idValidInChn;

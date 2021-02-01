@@ -44,7 +44,7 @@ Identifier SeqFile::idDataSrc("datasrc");
 Identifier SeqFile::idDataLen("datalen");
 Identifier SeqFile::idDataForce2("dataforce2");
 Identifier SeqFile::idDataAddr("dataaddr");
-Identifier SeqFile::idDataActualLen("dataactuallen");
+//Identifier SeqFile::idDataActualLen("dataactuallen");
 Identifier SeqFile::idSType("stype");
 Identifier SeqFile::idValidInSeq("validinseq");
 Identifier SeqFile::idValidInChn("validinchn");
@@ -2785,17 +2785,40 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
 ////////////////////////////// importMus functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-ValueTree SeqFile::parseMusCommand(const StringArray &toks, int stype, int linenum, 
-        bool wrongSTypeErrors){
+bool SeqFile::parseCanonNoteName(String s, int &noteValue){
+    s = s.toLowerCase();
+    if(s.length() != 3) return false;
+    if(!String("abcdefg").containsChar(name[0])) return false;
+    if(!String("nfs").containsChar(name[1])) return false;
+    if(s[2] < '0' || s[2] > '6') return false;
+    //A0 is 0, octave changes to 1 once you get to C
+    static const int noteNameMap[7] = {0, 2, 3-12, 5-12, 7-12, 8-12, 10-12};
+    noteValue = noteNameMap[s[0] - 'a'];
+    if(s[1] == 'f') --noteValue; //allows for obscure but musically valid
+    if(s[1] == 's') ++noteValue; //notes like C flat and B sharp
+    noteValue += 12 * (s[2] - '0');
+}
+
+bool SeqFile::isValidLabel(String s){
+    return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~");
+}
+
+String SeqFile::substituteDefines(const StringPairArray &defs, String s){
+    if(!defs.containsKey(s)) return s;
+    return substituteDefines(defs, defs[s]);
+}
+
+ValueTree SeqFile::parseMusCommand(const StringPairArray &defs, const StringArray &toks, 
+        int stype, int linenum, bool wrongSTypeErrors){
     ValueTree ret;
     String name = toks[0].toLowerCase();
     String no_w_name = name.endsWithChar('w') ? name.dropLastCharacters(1) : name;
+    bool canon = false;
     bool wideDelay = false;
     int noteValue = -1000;
     //Canon note commands
-    if(no_w_name.length() == 5 && name[4] >= '0' && name[4] <= '2'
-            && name[3] == 'b' && name[2] >= '0' && name[2] <= '6'
-            && String("nfs").containsChar(name[1]) && String("abcdefg").containsChar(name[0])){
+    if(no_w_name.length() == 5 && name[4] >= '0' && name[4] <= '2' && name[3] == 'b'
+            && parseCanonNoteName(name, noteValue)){
         if(stype != 2){
             if(wrongSTypeErrors){
                 dbgmsg("Canon note command " + toks[0] + " line " + String(linenum) 
@@ -2804,19 +2827,14 @@ ValueTree SeqFile::parseMusCommand(const StringArray &toks, int stype, int linen
             }
             return ValueTree();
         }
-        //A0 is 0, octave changes to 1 once you get to C
-        static const int noteNameMap[7] = {0, 2, 3-12, 5-12, 7-12, 8-12, 10-12};
-        noteValue = noteNameMap[name[0] - 'a'];
-        if(name[1] == 'f') --noteValue; //allows for obscure but musically valid
-        if(name[1] == 's') ++noteValue; //notes like C flat and B sharp
-        noteValue += 12 * (name[2] - '0');
-        if(name.endsWithChar('w')) wideDelay = true;
         if(noteValue < 0 || noteValue > 0x3F){
             dbgmsg("Note command " + toks[0] + " line " + String(linenum) 
                 + " maps to invalid note value " + String(noteValue) + "!");
             importresult |= 2;
             return ValueTree();
         }
+        canon = true;
+        if(name.endsWithChar('w')) wideDelay = true;
         //Find appropriate note command
         for(int cmd=0; cmd<abi.getNumChildren(); ++cmd){
             ValueTree command = abi.getChild(cmd);
@@ -2838,14 +2856,16 @@ ValueTree SeqFile::parseMusCommand(const StringArray &toks, int stype, int linen
     //Normal commands
     for(int cmd=0; !ret.isValid() && cmd<abi.getNumChildren(); ++cmd){
         ValueTree command = abi.getChild(cmd);
-        if(        command.getProperty(idName, "") == name 
-                || command.getProperty(idCName, "") == name
-                || command.getProperty(idOName, "") == name){
+        if(command.getProperty(idName, "") == name){
             ret = command.createCopy();
-        }
-        if(command.getChildWithProperty(idDataLen, "variable").isValid() &&
+        }else if(command.getProperty(idCName, "") == name
+              || command.getProperty(idOName, "") == name){
+            ret = command.createCopy();
+            canon = true;
+        }else if(command.getChildWithProperty(idDataLen, "variable").isValid() &&
                  ( command.getProperty(idCName, "") == no_w_name
                 || command.getProperty(idOName, "") == no_w_name)){
+            canon = true;
             wideDelay = true;
             ret = command.createCopy();
         }
@@ -2883,43 +2903,141 @@ ValueTree SeqFile::parseMusCommand(const StringArray &toks, int stype, int linen
         if(meaning == "Note" && noteValue != -1000){
             //Canon note value encoded in command token, no separate parameter
             param.setProperty(idValue, noteValue, nullptr);
-            continue;
-        }
-        if(t >= toks.size()){
-            dbgmsg("Expected comma and then " + param.getProperty(idName) 
-                + " in command " + toks[0] + " line " + String(linenum)
-                + ", got nothing!");
-            importresult |= 2;
-            return ValueTree();
-        }
-        if(toks[t] != ","){
-            dbgmsg("Expected comma, not " + toks[t] + ", in command " + toks[0] 
-                + " line " + String(linenum) + "!");
-            importresult |= 2;
-            return ValueTree();
-        }
-        ++t;
-        if(t >= toks.size()){
-            dbgmsg("Expected " + param.getProperty(idName) + " in command " 
-                + toks[0] + " line " + String(linenum) + ", got nothing!");
-            importresult |= 2;
-            return ValueTree();
-        }
-        String s = toks[t];
-        if(meaning == "Absolute Address" || meaning == "Relative Address"){
-            //Allowed characters: alphanumeric, _, @. Don't need to check for
-            //commas or whitespace due to tokenization scheme.
-            if(s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~")){
-                dbgmsg("Invalid character(s) in label " + s + ", in command " + toks[0] 
+        }else{
+            if(t >= toks.size()){
+                dbgmsg("Expected comma and then " + param.getProperty(idName) 
+                    + " in command " + toks[0] + " line " + String(linenum)
+                    + ", got nothing!");
+                importresult |= 2;
+                return ValueTree();
+            }
+            if(toks[t] != ","){
+                dbgmsg("Expected comma, not " + toks[t] + ", in command " + toks[0] 
                     + " line " + String(linenum) + "!");
                 importresult |= 2;
                 return ValueTree();
             }
-            param.setProperty(idValue, s, nullptr);
-            ret.setProperty(idTargetSection, s, nullptr);
+            ++t;
+            if(t >= toks.size()){
+                dbgmsg("Expected " + param.getProperty(idName) + " in command " 
+                    + toks[0] + " line " + String(linenum) + ", got nothing!");
+                importresult |= 2;
+                return ValueTree();
+            }
+            String s = toks[t];
+            if(meaning == "Absolute Address" || meaning == "Relative Address"){
+                //Allowed characters: alphanumeric, _, @. Don't need to check for
+                //commas or whitespace due to tokenization scheme.
+                if(!isValidLabel(s)){
+                    dbgmsg("Invalid character(s) in label " + s + ", in command " + toks[0] 
+                        + " line " + String(linenum) + "!");
+                    importresult |= 2;
+                    return ValueTree();
+                }
+                param.setProperty(idValue, s, nullptr);
+                ret.setProperty(idTargetSection, s, nullptr);
+            }else{
+                s = substituteDefines(defs, s);
+                s = s.toLowerCase();
+                int value;
+                if(datasrc == "fixed" && datalen == 1 && parseCanonNoteName(s, value)){
+                    if(value < 0 || value > 0x3F){
+                        dbgmsg("Note parameter " + s + " line " + String(linenum) 
+                            + " maps to invalid note value " + String(value) + "!");
+                        importresult |= 2;
+                        return ValueTree();
+                    }
+                    if(!canon || command.getProperty(idName) != "portamento"
+                            || param.getProperty(idName) != "Target Pitch"){
+                        //TODO ugly hack, SEQ64 should never hardcode a command's
+                        //or a parameter's name! Will need to support the portamento
+                        //command more fully, because of its data-dependent datatype
+                        //as well as this note name support.
+                        dbgmsg("Warning: using note name (" + s + " = " + String(value)
+                            + ") as parameter for something other than canon portamento "
+                            + "(\"sweepfrom\"/\"sweep\" command), this is supported but should not be!");
+                        importresult |= 1;
+                    }
+                }else if(s[0] == '$'){
+                    hex = true;
+                    s = s.substring(1);
+                    if(!s.containsOnly("0123456789abcdef")){
+                        dbgmsg("Expected hex integer in command " + toks[0] + " line " 
+                            + String(linenum) + ", got " + toks[t] + "!");
+                        importresult |= 2;
+                        return ValueTree();
+                    }
+                    value = s.getHexValue32();
+                }else{
+                    bool neg = false;
+                    if(s[0] == '-'){
+                        neg = true;
+                        s = s.substring(1);
+                    }
+                    if(!s.containsOnly("0123456789")){
+                        dbgmsg("Expected decimal/hex integer in command " + toks[0] + " line " 
+                            + String(linenum) + ", got " + toks[t] + "!");
+                        importresult |= 2;
+                        return ValueTree();
+                    }
+                    value = s.getIntValue();
+                    if(neg) value = -value;
+                }
+                if((datasrc == "fixed" && datalen == 1 && value < -128 || value > 255)
+                        || (datasrc == "fixed" && datalen == 2 && value < -0x8000 || value > 0xFFFF)
+                        || (datasrc == "variable" && value < 0 || value > 0x7FFF)){
+                    dbgmsg("Integer value " + String(value) + " in command " + toks[0] + " line " 
+                        + String(linenum) + " out of range!");
+                    importresult |= 2;
+                    return ValueTree();
+                }
+                if(datasrc == "variable" && value > 0x7F && canon && !wideDelay){
+                    dbgmsg("Used canon non-w version of command " + toks[0] + " line "
+                        + String(linenum) + ", but value " + String(value) + " requires wide variable length!");
+                    importresult |= 2;
+                    return ValueTree();
+                }
+                if(datasrc == "variable" && value <= 0x7F && wideDelay){
+                    dbgmsg("Mistake in original sequence: sound programmer used wide version of command "
+                        + toks[0] + " despite having too-small variable length value " + String(value)
+                        + ". This mistake is supported by SEQ64 and will be maintained in mus <-> com conversions.");
+                    importresult |= 1;
+                    param.setParameter(idDataForce2, true, nullptr);
+                }
+                param.setParameter(idValue, value, nullptr);
+            }
+            ++t;
         }
-        ++t;
+        if(datasrc == "offset"){
+            if(!command.hasProperty(idCmdEnd)){
+                dbgmsg("Error with offset parameter in ABI definition of command " 
+                    + toks[0] + "!");
+                importresult |= 2;
+                return ValueTree();
+            }
+            value += (int)command.getProperty(idCmd);
+            if(value >= (int)command.getProperty(idCmdEnd)){
+                dbgmsg("Offset parameter in command " + toks[0] + " line " 
+                    + String(linenum) + " out of range!");
+                importresult |= 2;
+                return ValueTree();
+            }
+            command.setProperty(idCmd, value, nullptr);
+            command.removeProperty(idCmdEnd);
+        }
     }
+    if(t < toks.size()){
+        dbgmsg("Spurious extra tokens " + toks[t] + " (etc.) at end of command " 
+            + toks[0] + " line " + String(linenum) + "!");
+        importresult |= 2;
+        return ValueTree();
+    }
+    if(command.hasProperty(idCmdEnd)){
+        dbgmsg("Missing offset parameter in ABI definition of command " + toks[0] + "!");
+        importresult |= 2;
+        return ValueTree();
+    }
+    ret.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2947,6 +3065,7 @@ int SeqFile::importMus(File musfile){
     Random::getSystemRandom().setSeedRandomly();
     importresult = 0;
     //
+    StringPairArray defs;
     int stype = 0;
     int linenum = 0;
     bool lprint = false;
@@ -2971,6 +3090,7 @@ int SeqFile::importMus(File musfile){
         if(toks[0] == "#define"){
             //#define TOKEN value, used widely in SFX seqs, file defining SFX
             //names-to-numbers mapping can be shared by both mus and C code
+            //Check key
             //TODO
         }else if(toks[0] == "#include"){
             //#include "path/to/file.mus", used in SFX seqs
@@ -2986,6 +3106,9 @@ int SeqFile::importMus(File musfile){
         }else if(toks[0] == "#byte"){
             //Presumably, write bytes to com.
             //TODO
+        }else if(toks[0] == "#wlen"){
+            //Presumably, write variable length value to com.
+            //TODO
         }else if(toks[0] == "#word"){
             //#word value16,value16, used for envelopes. Write 16-bit ints to com.
             //TODO
@@ -2995,11 +3118,6 @@ int SeqFile::importMus(File musfile){
         }else if(toks[0] == "#evenl"){
             //Presumably, align to even long (4 bytes)?
             //TODO
-        }else if(toks[0] == "#wlen"){
-            //Function completely unknown. Perhaps something to do with "w"
-            //variable-length variables?
-            dbgmsg("Function of #wlen command (line " + String(linenum) + ") is unknown!");
-            importresult |= 1;
         }else if(toks[0] == "#lprinton"){
             //Function unknown, presumably printing lines as they're parsed or
             //some information from them? There's a commented out #lprinton at 
@@ -3017,12 +3135,17 @@ int SeqFile::importMus(File musfile){
             }
             lprint = false;
         }else{
-            ValueTree command = parseMusCommand(toks, stype, linenum, true);
+            ValueTree command = parseMusCommand(defs, toks, stype, linenum, true);
             if(!command.isValid()){
                 if(importresult >= 2) return;
                 if(toks.size() > 1){
-                    dbgmsg("Token " + toks[0] + " (line " + String(linenum) 
-                        + ") not recognized as a command, but it has tokens after it, so it can't be a label, syntax error!");
+                    dbgmsg("Token " + toks[0] + " line " + String(linenum) 
+                        + " not recognized as a command, but it has tokens after it, so it can't be a label, syntax error!");
+                    return 2;
+                }
+                if(!isValidLabel(toks[0])){
+                    dbgmsg("Token " + toks[0] + " line " + String(linenum)
+                        + " must be a label, but it contains invalid characters!");
                     return 2;
                 }
                 //Label
@@ -3637,11 +3760,11 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
         if(datasrc == "offset"){
             paramvalue = cmdoffset;
             param.setProperty(idDataAddr, 0, nullptr);
-            param.setProperty(idDataActualLen, 1, nullptr);
+            //param.setProperty(idDataActualLen, 1, nullptr);
         }else if(datasrc == "constant"){
             paramvalue = datalen;
             param.setProperty(idDataAddr, -100000, nullptr);
-            param.setProperty(idDataActualLen, 0, nullptr);
+            //param.setProperty(idDataActualLen, 0, nullptr);
         }else if(datasrc == "fixed"){
             for(i=0; i<datalen; i++){
                 len++;
@@ -3650,7 +3773,7 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
                 paramvalue += (uint8_t)data[a+i];
             }
             param.setProperty(idDataAddr, (int)(a-address), nullptr);
-            param.setProperty(idDataActualLen, paramlen, nullptr);
+            //param.setProperty(idDataActualLen, paramlen, nullptr);
         }else if(datasrc == "variable"){
             len++;
             paramlen++;
@@ -3667,7 +3790,7 @@ ValueTree SeqFile::getCommand(Array<uint8_t> &data, uint32_t address, int stype)
                 }
             }
             param.setProperty(idDataAddr, (int)(a-address), nullptr);
-            param.setProperty(idDataActualLen, paramlen, nullptr);
+            //param.setProperty(idDataActualLen, paramlen, nullptr);
         }else{
             dbgmsg("Invalid command description! datasrc == " + datasrc + ", action == " + action);
         }
