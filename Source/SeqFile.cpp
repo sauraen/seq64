@@ -2780,10 +2780,42 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
     return importresult;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// importMus functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+
+void SeqFile::loadMusFileLines(OwnedArray<MusLine> &lines, String path, 
+        int insertIdx, MusLine *includeLine){
+    File f(path);
+    if(!musfile.existsAsFile() || musfile.getSize() <= 0){
+        includeLine->Error("File " + path + " doesn't exist! Note: current working directory is "
+            + File::getCurrentWorkingDirectory().getFullPathName());
+        return;
+    }
+    if(musfile.getSize() > 1000000){
+        includeLine->Error("File " + path + " is more than 1MB, probably not a sequence!");
+        return;
+    }
+    FileInputStream fis(f);
+    if(fis.failedToOpen()){
+        includeLine->Error("Couldn't open file " + path + "!");
+        return 2;
+    }
+    int linenum = 0;
+    while(!fis.isExhausted()){
+        ++linenum;
+        String l = fis.readNextLine();
+        MusLine *line = new MusLine(l, musfile.getFileName(), linenum);
+        if(!line->l.isEmpty()){
+            line->Tokenize();
+            ++insertIdx;
+            lines.insert(insertIdx, line);
+        }else{
+            delete line;
+        }
+    }
+}
 
 bool SeqFile::parseCanonNoteName(String s, int &noteValue){
     s = s.toLowerCase();
@@ -2802,10 +2834,16 @@ bool SeqFile::parseCanonNoteName(String s, int &noteValue){
 bool SeqFile::isValidLabel(String s){
     return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~");
 }
+bool SeqFile::isValidDefineKey(String s){
+    return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~");
+}
+bool SeqFile::isValidDefineValue(String s){
+    return !s.containsAnyOf("!\"#%&'()*+./:;<=>?[\\]^`{|}~");
+}
 
 String SeqFile::substituteDefines(const StringPairArray &defs, String s){
-    if(!defs.containsKey(s)) return s;
-    return substituteDefines(defs, defs[s]);
+    while(defs.containsKey(s)) s = defs[s];
+    return s;
 }
 
 ValueTree SeqFile::parseMusCommand(const StringPairArray &defs, const StringArray &toks, 
@@ -3046,38 +3084,38 @@ ValueTree SeqFile::parseMusCommand(const StringPairArray &defs, const StringArra
 
 
 int SeqFile::importMus(File musfile){
-    int len = musfile.getSize();
-    if(!musfile.existsAsFile() || len <= 0){
-        dbgmsg("File " + musfile.getFullPathName() + " doesn't exist!");
-        return 2;
-    }
-    if(len > 1000000){
-        dbgmsg("File " + musfile.getFullPathName() + " is more than 1MB, probably not a sequence!");
-        return 2;
-    }
-    FileInputStream fis(musfile);
-    if(fis.failedToOpen()){
-        dbgmsg("Couldn't open file " + musfile.getFullPathName() + "!");
-        return 2;
-    }
     seqname = musfile.getFileNameWithoutExtension();
     structure = ValueTree("structure");
     Random::getSystemRandom().setSeedRandomly();
     importresult = 0;
+    //Load original input file
+    OwnedArray<MusLine> lines;
+    MusLine initIncludeLine("#include \"" + musfile.getFullPathName() + "\"", 
+        musFile.getFullPathName(), 0);
+    loadMusFileLines(lines, musFile.getFullPathName(), 0, *initIncludeLine);
+    //Load included files
+    int linenum;
+    for(linenum=0; linenum<lines.size(); ++linenum){
+        if(!lines[linenum]->l.startsWith("#include ")) continue;
+        String path = !lines[linenum]->l.substring(9).trim().unquoted();
+        loadMusFileLines(lines, path, linenum, lines[linenum]);
+        if(importresult >= 2) return;
+        lines.remove(linenum);
+        --linenum;
+    }
+    dbgmsg(String(linenum) + " non-comment/non-empty lines in " + musfile.getFileName()
+        + " and its included files");
+    
+    //
+    int stype = 0;
+    section = ValueTree("seqhdr");
+    section.setProperty(idSType, 0, nullptr);
+    structure.appendChild(section);
     //
     StringPairArray defs;
-    int stype = 0;
-    int linenum = 0;
     bool lprint = false;
-    while(!fis.isExhausted()){
-        ++linenum;
-        String l = fis.readNextLine();
-        l = l.upToFirstOccurrenceOf(";", false, false).trim(); //remove comments
-        //TODO: will need to parse some comments, e.g. block/tsec names and
-        //FORCE LEN 2 annotation
-        if(l.isEmpty()) continue;
-        l = l.replace(",", " , ");
-        StringArray toks = StringArray::fromTokens(l, " \t", "").trim();
+    
+        
         if(toks.isEmpty()){
             dbgmsg("No tokens (line " + String(linenum) + ")!");
             return 2;
@@ -3090,8 +3128,32 @@ int SeqFile::importMus(File musfile){
         if(toks[0] == "#define"){
             //#define TOKEN value, used widely in SFX seqs, file defining SFX
             //names-to-numbers mapping can be shared by both mus and C code
-            //Check key
-            //TODO
+            if(l.containsAnyOf("()")){
+                dbgmsg("This is not the C preprocessor, you can only do \"#define key value\", not \"#define macro(blah) something_with_blah\"!");
+                return 2;
+            }
+            if(toks.size() != 3){
+                dbgmsg("Expected key and value (2 other tokens) on #define line " + String(linenum) + "!");
+                return 2;
+            }
+            String key = toks[1];
+            if(!isValidDefineKey(key)){
+                dbgmsg("#define key \"" + key + "\" line " + String(linenum) 
+                    + " contains invalid characters!");
+                return 2;
+            }
+            String value = toks[2];
+            if(!isValidDefineKey(value)){
+                dbgmsg("#define value \"" + value + "\" line " + String(linenum) 
+                    + " contains invalid characters!");
+                return 2;
+            }
+            if(defs.containsKey(key)){
+                dbgmsg("Duplicate definition of key \"" + key + "\", now (line" + String(linenum)
+                    + ") as " + value + ", previously as " + defs[key] + "!");
+                return 2;
+            }
+            defs.set(key, value);
         }else if(toks[0] == "#include"){
             //#include "path/to/file.mus", used in SFX seqs
             //TODO
@@ -3107,7 +3169,8 @@ int SeqFile::importMus(File musfile){
             //Presumably, write bytes to com.
             //TODO
         }else if(toks[0] == "#wlen"){
-            //Presumably, write variable length value to com.
+            //Presumably, write variable length value to com. Due to how commands
+            //are defined, this probably always writes the 2-byte version.
             //TODO
         }else if(toks[0] == "#word"){
             //#word value16,value16, used for envelopes. Write 16-bit ints to com.

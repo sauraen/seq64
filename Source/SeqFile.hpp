@@ -92,8 +92,40 @@ private:
     void reduceTrackNotes();
     
     //For importMus
+    struct MusLine {
+        String l;
+        StringArray toks;
+        String file;
+        int linenum;
+        bool used;
+        MusLine(String l_, String file_, int linenum_) 
+                : l(l_), file(file_), linenum(linenum_), used(false) {
+            l = l.upToFirstOccurrenceOf(";", false, false).trim(); //remove comments
+            //TODO: will need to parse some comments, e.g. block/tsec names and
+            //FORCE LEN 2 annotation
+        }
+        void Tokenize(){
+            if(l.isEmpty()) return;
+            l = l.replace(",", " , ");
+            toks = StringArray::fromTokens(l, " \t", "").trim();
+        }
+        void Warning(String s){
+            dbgmsg(file + " (" + String(line) + "): warning: " + s);
+            importresult |= 1;
+        }
+        ValueTree Error(String s){
+            dbgmsg(file + " (" + String(line) + "): l\nError: " + s);
+            importresult |= 2;
+            return ValueTree(); //optional to use in parseMusCommand
+        }
+    };
+
+    void loadMusFileLines(OwnedArray<MusLine> &lines, String path, int insertIdx,
+        MusLine *includeLine);
     bool parseCanonNoteName(String s, int &noteValue);
     bool isValidLabel(String s);
+    bool isValidDefineKey(String s);
+    bool isValidDefineValue(String s);
     String substituteDefines(const StringPairArray &defs, String s);
     ValueTree parseMusCommand(const StringPairArray &defs, const StringArray &toks, 
         int stype, int linenum, bool wrongSTypeErrors);
