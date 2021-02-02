@@ -109,15 +109,24 @@ private:
             l = l.replace(",", " , ");
             toks = StringArray::fromTokens(l, " \t", "").trim();
         }
-        void Warning(String s){
-            dbgmsg(file + " (" + String(line) + "): warning: " + s);
+        void Print() const{
+            dbgmsg(file + " (" + String(line) + "): " + l);
+        }
+        void Warning(String s) const{
+            Print();
+            dbgmsg("Warning: " + s);
             importresult |= 1;
         }
-        ValueTree Error(String s){
-            dbgmsg(file + " (" + String(line) + "): l\nError: " + s);
+        ValueTree Error(String s) const{
+            Print();
+            dbgmsg("Error: " + s);
             importresult |= 2;
             return ValueTree(); //optional to use in parseMusCommand
         }
+    };
+    struct FutureSection {
+        String label;
+        int stype, dyntablestype;
     };
 
     void loadMusFileLines(OwnedArray<MusLine> &lines, String path, int insertIdx,
@@ -127,8 +136,10 @@ private:
     bool isValidDefineKey(String s);
     bool isValidDefineValue(String s);
     String substituteDefines(const StringPairArray &defs, String s);
-    ValueTree parseMusCommand(const StringPairArray &defs, const StringArray &toks, 
-        int stype, int linenum, bool wrongSTypeErrors);
+    ValueTree parseMusCommand(const MusLine *line, const StringPairArray &defs,
+        int stype, bool wrongSTypeErrors);
+    void checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
+        ValueTree section, ValueTree command);
     
     //For exportMus
     void assignTSection(ValueTree sec, int tsecnum);

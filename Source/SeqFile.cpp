@@ -3078,6 +3078,57 @@ ValueTree SeqFile::parseMusCommand(const StringPairArray &defs, const StringArra
     ret.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
 }
 
+void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
+        ValueTree section, ValueTree command){
+    if(!command.hasProperty(idTargetSection)) return;
+    String tgt = command.getProperty(idTargetSection);
+    String action = command.getProperty(idAction);
+    int stype = -1;
+    if(action == "Jump" || action == "Branch" || action == "Call"){
+        stype = section.getProperty(idSType);
+    }else if(action == "Ptr Channel Header"){
+        stype = 1;
+    }else if(action == "Ptr Note Layer"){
+        stype = 2;
+    }else if(action == "Ptr Dyn Table"){
+        stype = 3;
+    }else if(action == "Ptr Envelope"){
+        stype = 4;
+    }else if(action == "Ptr Message"){
+        stype = 5;
+    }else if(action == "Ptr Self"){
+        stype = 6;
+    }else{
+        line->Error("Unknown future section stype!");
+        return;
+    }
+    for(int sec=0; sec<structure.numChildren(); ++sec){
+        ValueTree section = structure.getChild(sec);
+        if(section.getProperty(idLabelName, "").toString() == tgt){
+            if((int)section.getProperty(idSType) != stype){
+                line->Error("Conflicting stype for target label " + tgt 
+                    + ", section already parsed as " + section.getProperty(idSType).toString()
+                    + ", now referenced as " + String(stype) + "!");
+            }
+            return;
+    }
+    for(int i=0; i<fs.size(); ++i){
+        if(fs[i].label == tgt){
+            if(fs[i].stype != stype){
+                line->Error("Conflicting stype for target label " + tgt 
+                    + ", previously referenced as " + String(fs[i].stype)
+                    + ", now referenced as " + String(stype) + "!");
+            }
+            return;
+        }
+    }
+    FutureSection f;
+    f.label = tgt;
+    f.stype = stype;
+    f.dyntablestype = -1;
+    fs.add(f);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// importMus //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3105,117 +3156,122 @@ int SeqFile::importMus(File musfile){
     }
     dbgmsg(String(linenum) + " non-comment/non-empty lines in " + musfile.getFileName()
         + " and its included files");
-    
-    //
+    //Init first section
     int stype = 0;
     section = ValueTree("seqhdr");
     section.setProperty(idSType, 0, nullptr);
     structure.appendChild(section);
-    //
+    //Parse data structures
+    Array<FutureSection> futuresecs;
     StringPairArray defs;
+    String nextCmdLabel = "";
     bool lprint = false;
-    
-        
-        if(toks.isEmpty()){
-            dbgmsg("No tokens (line " + String(linenum) + ")!");
+    int ln = 0;
+    while(lines.size() > 0){
+        MusLine *line = lines[ln];
+        if(line->toks.isEmpty()){
+            line->Error("No tokens!");
             return 2;
         }
         if(lprint){
             //Actual function of #lprinton/#lprintoff unknown, this is a guess.
-            dbgmsg("Line " + String(linenum) + ": " + toks.joinIntoString(" "));
+            line->Print();
         }
         //These are all the hash commands in the bicon executable.
-        if(toks[0] == "#define"){
+        if(line->toks[0] == "#define"){
             //#define TOKEN value, used widely in SFX seqs, file defining SFX
             //names-to-numbers mapping can be shared by both mus and C code
-            if(l.containsAnyOf("()")){
-                dbgmsg("This is not the C preprocessor, you can only do \"#define key value\", not \"#define macro(blah) something_with_blah\"!");
+            if(line->l.containsAnyOf("()")){
+                line->Error("This is not the C preprocessor, you can only do \"#define key value\", not \"#define macro(blah) something_with_blah\"!");
                 return 2;
             }
-            if(toks.size() != 3){
-                dbgmsg("Expected key and value (2 other tokens) on #define line " + String(linenum) + "!");
+            if(line->toks.size() != 3){
+                line->Error("Expected key and value (2 other tokens) on #define!");
                 return 2;
             }
-            String key = toks[1];
+            String key = line->toks[1];
+            String value = line->toks[2];
             if(!isValidDefineKey(key)){
-                dbgmsg("#define key \"" + key + "\" line " + String(linenum) 
-                    + " contains invalid characters!");
+                line->Error("#define key \"" + key + "\" contains invalid characters!");
                 return 2;
             }
-            String value = toks[2];
             if(!isValidDefineKey(value)){
-                dbgmsg("#define value \"" + value + "\" line " + String(linenum) 
-                    + " contains invalid characters!");
+                line->Error("#define value \"" + value + "\" contains invalid characters!");
                 return 2;
             }
             if(defs.containsKey(key)){
-                dbgmsg("Duplicate definition of key \"" + key + "\", now (line" + String(linenum)
-                    + ") as " + value + ", previously as " + defs[key] + "!");
+                line->Error("Duplicate definition of key \"" + key + "\", now as " 
+                    + value + ", previously as " + defs[key] + "!");
                 return 2;
             }
             defs.set(key, value);
-        }else if(toks[0] == "#include"){
-            //#include "path/to/file.mus", used in SFX seqs
-            //TODO
-        }else if(toks[0] == "#label"){
+        }else if(line->toks[0] == "#label"){
             //#label label_name, label_name_2, ..., used for dyntables
             //TODO
-        }else if(toks[0] == "#msg"){
+        }else if(line->toks[0] == "#msg"){
             //#msg "Blah blah", referenced by dprint. Number seen to be 0 or 3,
             //definitely not string length. Perhaps debug console color or
             //verboseness/severity?
             //TODO
-        }else if(toks[0] == "#byte"){
+        }else if(line->toks[0] == "#byte"){
             //Presumably, write bytes to com.
             //TODO
-        }else if(toks[0] == "#wlen"){
+        }else if(line->toks[0] == "#wlen"){
             //Presumably, write variable length value to com. Due to how commands
             //are defined, this probably always writes the 2-byte version.
             //TODO
-        }else if(toks[0] == "#word"){
+        }else if(line->toks[0] == "#word"){
             //#word value16,value16, used for envelopes. Write 16-bit ints to com.
             //TODO
-        }else if(toks[0] == "#evenw"){
+        }else if(line->toks[0] == "#evenw"){
             //Align to even word (2 bytes)
             //TODO
-        }else if(toks[0] == "#evenl"){
+        }else if(line->toks[0] == "#evenl"){
             //Presumably, align to even long (4 bytes)?
             //TODO
-        }else if(toks[0] == "#lprinton"){
+        }else if(line->toks[0] == "#lprinton"){
             //Function unknown, presumably printing lines as they're parsed or
             //some information from them? There's a commented out #lprinton at 
             //beginning of SFX seq
-            if(toks.size() > 1){
-                dbgmsg("Spurious tokens after #lprinton (line " + String(linenum) + ")!");
+            if(line->toks.size() > 1){
+                line->Error("Spurious tokens after #lprinton!");
                 return 2;
             }
             lprint = true;
-        }else if(toks[0] == "#lprintoff"){
+        }else if(line->toks[0] == "#lprintoff"){
             //Turns off whatever lprinton turns on
-            if(toks.size() > 1){
-                dbgmsg("Spurious tokens after #lprintoff (line " + String(linenum) + ")!");
+            if(line->toks.size() > 1){
+                line->Error("Spurious tokens after #lprintoff!");
                 return 2;
             }
             lprint = false;
         }else{
-            ValueTree command = parseMusCommand(defs, toks, stype, linenum, true);
+            ValueTree command = parseMusCommand(line, defs, stype, true);
             if(!command.isValid()){
                 if(importresult >= 2) return;
-                if(toks.size() > 1){
-                    dbgmsg("Token " + toks[0] + " line " + String(linenum) 
-                        + " not recognized as a command, but it has tokens after it, so it can't be a label, syntax error!");
+                if(line->toks.size() > 1){
+                    line->Error("Token " + line->toks[0] + " not recognized as a command, "
+                        "but it has tokens after it, so it can't be a label, syntax error!");
                     return 2;
                 }
                 if(!isValidLabel(toks[0])){
-                    dbgmsg("Token " + toks[0] + " line " + String(linenum)
-                        + " must be a label, but it contains invalid characters!");
+                    line->Error("Token " + line->toks[0] + " must be a label, but it "
+                        "contains invalid characters!");
                     return 2;
                 }
                 //Label
-                //TODO
+                if(!nextCmdLabel.isEmpty()){
+                    line->Error("Two labels for same point in the sequence is not supported!");
+                    return 2;
+                }
+                nextCmdLabel = line->toks[0];
+                if(section.getNumChildren() == 0){
+                    section.setProperty(idLabelName, line->toks[0], nullptr);
+                }
             }else{
                 //Command
-                //TODO
+                section.appendChild(command, nullptr);
+                checkAddFutureSection(line, futuresecs, section, command);
             }
         }
     }
