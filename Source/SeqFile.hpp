@@ -93,13 +93,14 @@ private:
     
     //For importMus
     struct MusLine {
+        SeqFile *parent;
         String l;
         StringArray toks;
         String file;
         int linenum;
         bool used;
-        MusLine(String l_, String file_, int linenum_) 
-                : l(l_), file(file_), linenum(linenum_), used(false) {
+        MusLine(SeqFile *p, String l_, String file_, int linenum_) 
+                : parent(p), l(l_), file(file_), linenum(linenum_), used(false) {
             l = l.upToFirstOccurrenceOf(";", false, false).trim(); //remove comments
             //TODO: will need to parse some comments, e.g. block/tsec names and
             //FORCE LEN 2 annotation
@@ -107,20 +108,22 @@ private:
         void Tokenize(){
             if(l.isEmpty()) return;
             l = l.replace(",", " , ");
-            toks = StringArray::fromTokens(l, " \t", "").trim();
+            toks = StringArray::fromTokens(l, " \t", "");
+            toks.trim();
+            toks.removeEmptyStrings();
         }
         void Print() const{
-            dbgmsg(file + " (" + String(line) + "): " + l);
+            parent->dbgmsg(file + " (" + String(linenum) + "): " + l);
         }
         void Warning(String s) const{
             Print();
-            dbgmsg("Warning: " + s);
-            importresult |= 1;
+            parent->dbgmsg("Warning: " + s);
+            parent->importresult |= 1;
         }
         ValueTree Error(String s) const{
             Print();
-            dbgmsg("Error: " + s);
-            importresult |= 2;
+            parent->dbgmsg("Error: " + s);
+            parent->importresult |= 2;
             return ValueTree(); //optional to use in parseMusCommand
         }
     };
@@ -140,6 +143,7 @@ private:
         int stype, bool wrongSTypeErrors);
     void checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
         ValueTree section, ValueTree command);
+    ValueTree createBlankSectionVT(int stype);
     
     //For exportMus
     void assignTSection(ValueTree sec, int tsecnum);
