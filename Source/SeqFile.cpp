@@ -3017,7 +3017,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, const StringPairArray &d
             if(value >= (int)ret.getProperty(idCmdEnd)){
                 return line->Error("Offset parameter " + String(value) + " out of range!");
             }
-            ret.setProperty(idCmd, value, nullptr);
+            //ret.setProperty(idCmd, value, nullptr); //idCmd is the base command, not the offset one
             ret.removeProperty(idCmdEnd, nullptr);
         }
     }
@@ -3064,6 +3064,17 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
                     + ", now referenced as " + String(stype) + "!");
             }
             return;
+        }
+        for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+            ValueTree command = section.getChild(cmd);
+            if(command.getProperty(idLabelName, "").toString() == tgt){
+                if((int)section.getProperty(idSType) != stype){
+                    line->Error("Conflicting stype for target label " + tgt 
+                        + ", found within section already parsed as " + section.getProperty(idSType).toString()
+                        + ", now referenced as " + String(stype) + "!");
+                }
+                return;
+            }
         }
     }
     for(int i=0; i<fs.size(); ++i){
@@ -3151,6 +3162,9 @@ int SeqFile::importMus(File musfile){
         bool endSection = false;
         //These are all the hash commands in the bicon executable.
         if(line->toks[0] == "#define"){
+            unsigned TODO; //Since we're not parsing in order, defines will not
+            //be added in order either!
+            
             //#define TOKEN value, used widely in SFX seqs, file defining SFX
             //names-to-numbers mapping can be shared by both mus and C code
             if(line->l.containsAnyOf("()")){
@@ -3246,6 +3260,7 @@ int SeqFile::importMus(File musfile){
                     command.setProperty(idLabelName, nextCmdLabel, nullptr);
                     nextCmdLabel = "";
                 }
+                command.setProperty(idAddress, ln, nullptr);
                 section.appendChild(command, nullptr);
                 checkAddFutureSection(line, futuresecs, section, command);
                 if(importresult >= 2) return 2;
@@ -3258,9 +3273,8 @@ int SeqFile::importMus(File musfile){
         }
         line->used = true;
         ++ln;
-        if(endSection){
+        if(endSection && futuresecs.size() > 0){
             //Find the start of the next future section.
-            if(futuresecs.size() == 0) break;
             for(ln=0; ln<lines.size(); ++ln){
                 if(lines[ln]->l == futuresecs[0].label) break;
             }
@@ -3275,6 +3289,32 @@ int SeqFile::importMus(File musfile){
             section = createBlankSectionVT(stype);
             section.setProperty(idAddress, ln, nullptr);
             structure.appendChild(section, nullptr);
+        }else if(endSection){
+            //Seems like we're done parsing. Check for unused lines.
+            bool continueParsing = false;
+            for(ln=0; ln<lines.size(); ++ln){
+                if(!lines[ln]->used){
+                    //Check if previous line is a jump.
+                    for(int s=0; s<structure.getNumChildren(); ++s){
+                        section = structure.getChild(s);
+                        ValueTree prev = section.getChildWithProperty(idAddress, ln-1);
+                        if(prev.isValid() && prev.getProperty(idAction).toString() == "Jump"){
+                            break;
+                        }
+                        section = ValueTree();
+                    }
+                    if(section.isValid()){
+                        //Make the unused line be the next command of this section.
+                        stype = section.getProperty(idSType);
+                        dyntablestype = -1; //Jumps can't exist in dyntables
+                        continueParsing = true;
+                        break;
+                    }
+                    //Otherwise give up TODO
+                    lines[ln]->Warning("unused line");
+                }
+            }
+            if(!continueParsing) break;
         }
     }
     //Sort sections by "address" (line index after includes)
@@ -3310,10 +3350,6 @@ int SeqFile::importMus(File musfile){
                 }
             }
         }
-    }
-    //Check for unused lines
-    for(ln=0; ln<lines.size(); ++ln){
-        if(!lines[ln]->used) lines[ln]->Warning("unused line");
     }
     return importresult;
 }
