@@ -2842,13 +2842,22 @@ bool SeqFile::isValidDefineValue(String s){
     return !s.containsAnyOf("!\"#%&'()*+./:;<=>?[\\]^`{|}~");
 }
 
-String SeqFile::substituteDefines(const StringPairArray &defs, String s){
-    while(defs.containsKey(s)) s = defs[s];
-    return s;
+void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
+    for(int t=0; t<line->toks.size(); ++t){
+        int i;
+        for(i=0; i<100; ++i){
+            if(!defs.containsKey(line->toks[t])) break;
+            line->toks.set(t, defs[line->toks[t]]);
+        }
+        if(i == 100){
+            line->Error("Too many #define substitutions, recursive #defines or something like that!");
+            return;
+        }
+    }
+    line->l = line->toks.joinIntoString(" ");
 }
 
-ValueTree SeqFile::parseMusCommand(const MusLine *line, const StringPairArray &defs,
-        int stype, bool wrongSTypeErrors){
+ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, bool wrongSTypeErrors){
     ValueTree ret;
     String name = line->toks[0].toLowerCase();
     String no_w_name = name.endsWithChar('w') ? name.dropLastCharacters(1) : name;
@@ -2951,7 +2960,6 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, const StringPairArray &d
                 ret.setProperty(idTargetSection, s, nullptr);
                 value = 0xFFFFFF;
             }else{
-                s = substituteDefines(defs, s);
                 s = s.toLowerCase();
                 if(datasrc == "fixed" && datalen == 1 && parseCanonNoteName(s, value)){
                     if(value < 0 || value > 0x3F){
@@ -3122,51 +3130,18 @@ int SeqFile::importMus(File musfile){
     MusLine initIncludeLine(this, "#include \"" + musfile.getFullPathName() + "\"", 
         musfile.getFullPathName(), 0);
     loadMusFileLines(lines, musfile.getFullPathName(), 0, &initIncludeLine);
-    //Load included files
+    //Handle #include and #define.
+    StringPairArray defs;
     int ln;
     for(ln=0; ln<lines.size(); ++ln){
-        if(!lines[ln]->l.startsWith("#include ")) continue;
-        String path = lines[ln]->l.substring(9).trim().unquoted();
-        loadMusFileLines(lines, path, ln, lines[ln]);
-        if(importresult >= 2) return 2;
-        lines.remove(ln);
-        --ln;
-    }
-    dbgmsg(String(ln) + " non-comment/non-empty lines in " + musfile.getFileName()
-        + " and its included files");
-    //Init first section
-    ln = 0;
-    int stype = 0, dyntablestype = -1;
-    ValueTree section = createBlankSectionVT(0);
-    section.setProperty(idAddress, ln, nullptr);
-    structure.appendChild(section, nullptr);
-    //Data structures for parse results
-    Array<FutureSection> futuresecs;
-    StringPairArray defs;
-    String nextCmdLabel = "";
-    bool lprint = false;
-    while(true){
-        if(ln >= lines.size()){
-            dbgmsg("Parsing mus file ran off end!");
-            return 2;
-        }
         MusLine *line = lines[ln];
-        if(line->toks.isEmpty()){
-            line->Error("No tokens!");
-            return 2;
-        }
-        if(lprint){
-            //Actual function of #lprinton/#lprintoff unknown, this is a guess.
-            line->Print();
-        }
-        bool endSection = false;
-        //These are all the hash commands in the bicon executable.
-        if(line->toks[0] == "#define"){
-            unsigned TODO; //Since we're not parsing in order, defines will not
-            //be added in order either!
-            
-            //#define TOKEN value, used widely in SFX seqs, file defining SFX
-            //names-to-numbers mapping can be shared by both mus and C code
+        if(line->l.startsWith("#include ")){
+            String path = line->l.substring(9).trim().unquoted();
+            loadMusFileLines(lines, path, ln, line);
+            if(importresult >= 2) return 2;
+        }else if(line->l.startsWith("#define ")){
+            //#define TOKEN value, used widely in SFX seqs. File defining SFX
+            //names-to-numbers mapping can be shared by both mus and C code.
             if(line->l.containsAnyOf("()")){
                 line->Error("This is not the C preprocessor, you can only do \"#define key value\", not \"#define macro(blah) something_with_blah\"!");
                 return 2;
@@ -3191,7 +3166,43 @@ int SeqFile::importMus(File musfile){
                 return 2;
             }
             defs.set(key, value);
-        }else if(line->toks[0] == "#label"){
+        }else{
+            substituteDefines(defs, line);
+            continue;
+        }
+        lines.remove(ln);
+        --ln;
+    }
+    dbgmsg(String(ln) + " lines in " + musfile.getFileName()
+        + " and its included files, besides empty/comments/#include/#define");
+    //Init first section
+    ln = 0;
+    int stype = 0, dyntablestype = -1;
+    ValueTree section = createBlankSectionVT(0);
+    section.setProperty(idAddress, ln, nullptr);
+    structure.appendChild(section, nullptr);
+    //Data structures for parse results
+    Array<FutureSection> futuresecs;
+    String nextCmdLabel = "";
+    bool lprint = false;
+    while(true){
+        if(ln >= lines.size()){
+            dbgmsg("Parsing mus file ran off end!");
+            return 2;
+        }
+        MusLine *line = lines[ln];
+        if(line->toks.isEmpty()){
+            line->Error("No tokens!");
+            return 2;
+        }
+        if(lprint){
+            //Actual function of #lprinton/#lprintoff unknown, this is a guess.
+            line->Print();
+        }
+        bool endSection = false;
+        //Besides #include and #define above, these are all the hash commands in
+        //the bicon executable.
+        if(line->toks[0] == "#label"){
             //#label label_name, label_name_2, ..., used for dyntables
             //TODO
         }else if(line->toks[0] == "#msg"){
@@ -3232,7 +3243,7 @@ int SeqFile::importMus(File musfile){
             }
             lprint = false;
         }else{
-            ValueTree command = parseMusCommand(line, defs, stype, true);
+            ValueTree command = parseMusCommand(line, stype, true);
             if(!command.isValid()){
                 if(importresult >= 2) return 2;
                 if(line->toks.size() > 1){

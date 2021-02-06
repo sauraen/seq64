@@ -138,9 +138,8 @@ private:
     bool isValidLabel(String s);
     bool isValidDefineKey(String s);
     bool isValidDefineValue(String s);
-    String substituteDefines(const StringPairArray &defs, String s);
-    ValueTree parseMusCommand(const MusLine *line, const StringPairArray &defs,
-        int stype, bool wrongSTypeErrors);
+    void substituteDefines(const StringPairArray &defs, MusLine *line);
+    ValueTree parseMusCommand(const MusLine *line, int stype, bool wrongSTypeErrors);
     void checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
         ValueTree section, ValueTree command);
     ValueTree createBlankSectionVT(int stype);
