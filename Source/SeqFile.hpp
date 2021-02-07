@@ -129,7 +129,7 @@ private:
     };
     struct FutureSection {
         String label;
-        int stype, dyntablestype;
+        int stype, dtstype, dtdynstype;
     };
 
     void loadMusFileLines(OwnedArray<MusLine> &lines, String path, int insertIdx,
@@ -139,10 +139,20 @@ private:
     bool isValidDefineKey(String s);
     bool isValidDefineValue(String s);
     void substituteDefines(const StringPairArray &defs, MusLine *line);
-    ValueTree parseMusCommand(const MusLine *line, int stype, bool wrongSTypeErrors);
+    int parseNormalParam(const MusLine *line, String s, String datasrc, 
+        int datalen, bool canon, bool wideDelay, bool &dataforce2);
+    ValueTree parseMusCommand(const MusLine *line, int stype, int dtstype,
+        bool wrongSTypeErrors);
     void checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
-        ValueTree section, ValueTree command);
+        ValueTree section, ValueTree command, int &recentDTFuture);
+    
+    //For importMus and importCom
     ValueTree createBlankSectionVT(int stype);
+    ValueTree makeDynTableCommand(uint32_t address, var target, int dtstype, 
+            int dtdynstype);
+    ValueTree makeEnvelopeCommand(uint32_t address, int16_t rate, uint16_t level);
+    ValueTree makeBasicDataCommand(uint32_t address, int value, 
+            String datasrc, int datalen);
     
     //For exportMus
     void assignTSection(ValueTree sec, int tsecnum);

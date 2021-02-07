@@ -2787,7 +2787,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
 
 void SeqFile::loadMusFileLines(OwnedArray<MusLine> &lines, String path, 
         int insertIdx, MusLine *includeLine){
-    File f(path);
+    File f = File::getCurrentWorkingDirectory().getChildFile(path);
     if(!f.existsAsFile() || f.getSize() <= 0){
         includeLine->Error("File " + path + " doesn't exist! Note: current working directory is "
             + File::getCurrentWorkingDirectory().getFullPathName());
@@ -2857,9 +2857,195 @@ void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
     line->l = line->toks.joinIntoString(" ");
 }
 
-ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, bool wrongSTypeErrors){
+int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc, 
+        int datalen, bool canon, bool wideDelay, bool &dataforce2){
+    int value;
+    s = s.toLowerCase();
+    if(datasrc == "fixed" && datalen == 1 && parseCanonNoteName(s, value)){
+        if(value < 0 || value > 0x3F){
+            line->Error("Note parameter " + s
+                + " maps to invalid note value " + String(value) + "!");
+            return -1;
+        }
+        //TODO this should only be supported for the "Target Pitch" parameter
+        //of the portamento/sweepfrom/sweep command.
+    }else if(s[0] == '$'){
+        s = s.substring(1);
+        if(!s.containsOnly("0123456789abcdef")){
+            line->Error("Expected hex integer, got " + s + "!");
+            return -1;
+        }
+        value = s.getHexValue32();
+    }else{
+        bool neg = false;
+        if(s[0] == '-'){
+            neg = true;
+            s = s.substring(1);
+        }
+        if(!s.containsOnly("0123456789")){
+            line->Error("Expected decimal/hex integer, got " + s + "!");
+            return -1;
+        }
+        value = s.getIntValue();
+        if(neg) value = -value;
+    }
+    if((datasrc == "fixed" && datalen == 1 && (value < -128 || value > 255))
+            || (datasrc == "fixed" && datalen == 2 && (value < -0x8000 || value > 0xFFFF))
+            || (datasrc == "variable" && (value < 0 || value > 0x7FFF))){
+        line->Error("Integer value " + String(value) + " out of range!");
+        return -1;
+    }
+    if(datasrc == "variable" && value > 0x7F && canon && !wideDelay){
+        line->Error("Used canon non-w version of command, but value " 
+            + String(value) + " requires wide variable length!");
+        return -1;
+    }
+    if(datasrc == "variable" && value <= 0x7F && wideDelay){
+        line->Warning("Mistake in original sequence: sound programmer used "
+            "wide version of command despite having too-small variable "
+            "length value " + String(value) + ". This mistake is supported by "
+            "SEQ64 and will be maintained in mus <-> com conversions.");
+        dataforce2 = true;
+    }
+    return value;
+}
+
+ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype, 
+        bool wrongSTypeErrors){
     ValueTree ret;
-    String name = line->toks[0].toLowerCase();
+    String name = line->toks[0];
+    //Besides #include and #define, these are all the hash commands in the
+    //bicon executable.
+    if(name == "#label"){
+        //#label label_name, label_name_2, ..., used for dyntables
+        if(stype != 3){
+            if(!wrongSTypeErrors) return ValueTree("wrongstype");
+            return line->Error("#label only allowed in dyntable!");
+        }
+        if(line->toks.size() < 2){
+            return line->Error("Missing tokens after #label!");
+        }
+        if(line->toks[1] == ","){
+            return line->Error("There is no comma between a hash command and its "
+                "first parameter, whereas there is between a normal command and "
+                "its first parameter!");
+        }
+        ret = ValueTree("cmdlist");
+        int t = 1;
+        while(true){
+            if(!isValidLabel(line->toks[t])){
+                return line->Error("Invalid character(s) in label " + line->toks[t] + "!");
+            }
+            ValueTree command = makeDynTableCommand(-1, line->toks[t], dtstype, -1);
+            if(!command.isValid()){
+                return line->Error("Internal error with dyntable setup!");
+            }
+            command.setProperty(idTargetSection, line->toks[t], nullptr);
+            ret.appendChild(command, nullptr);
+            ++t;
+            if(t == line->toks.size()) break;
+            if(line->toks[t] != ","){
+                return line->Error("Expected comma, got " + line->toks[t] + "!");
+            }
+            ++t;
+            if(t == line->toks.size()){
+                return line->Error("Spurious trailing comma!");
+            }
+        }
+        return ret;
+    }else if(name == "#msg"){
+        //#msg "Blah blah", referenced by dprint. Number seen to be 0 or 3,
+        //definitely not string length. Perhaps debug console color or
+        //verboseness/severity?
+        if(stype != 5){
+            if(!wrongSTypeErrors) return ValueTree("wrongstype");
+            return line->Error("#msg only valid in stype 5 (message)!");
+        }
+        String msg = line->l.substring(4).trim();
+        if(msg[0] != '"' || msg.getLastCharacter() != '"'){
+            return line->Error("Message string must be quoted!");
+        }
+        msg = msg.substring(1, msg.length()-2);
+        if(msg.length() == 0){
+            line->Warning("Empty message!");
+        }
+        ret = ValueTree("message");
+        ret.setProperty(idMessage, msg, nullptr);
+        for(int i=0; i<msg.length(); ++i){
+            ret.appendChild(makeBasicDataCommand(-1, (int)msg[i], "fixed", 1), nullptr);
+        }
+        return ret;
+    }else if(name == "#word" && stype == 4){
+        //#word: value16,value16, used for envelopes. Write 16-bit ints to com.
+        if(line->toks.size() != 4 || line->toks[2] != ","){
+            return line->Error("#word command in envelope must look like \"#word val,val\"!");
+        }
+        int rate, level; bool dummy;
+        rate = parseNormalParam(line, line->toks[1], "fixed", 2, false, false, dummy);
+        if(importresult >= 2) return ValueTree();
+        level = parseNormalParam(line, line->toks[3], "fixed", 2, false, false, dummy);
+        if(importresult >= 2) return ValueTree();
+        return makeEnvelopeCommand(0, rate, level);
+    }else if(name == "#byte" || name == "#wlen" || name == "#word"){
+        //#byte: presumably, write bytes to com.
+        //#wlen: presumably, write variable length value to com. Due to how
+        //commands are defined, this probably always writes the 2-byte version.
+        //Note that, presumably, bicon did not have a concept of stype and
+        //allowed these commands to appear anywhere. In fact, the .def file
+        //probably translated normal commands into these commands.
+        if(!(name == "#byte" && stype == 6)){
+            if(!wrongSTypeErrors) return ValueTree("wrongstype");
+            line->Warning("#byte/#wlen/#word other than #word in envelopes (4) and "
+                "#byte in Other Tables (6) is only partially supported!");
+        }
+        if(line->toks.size() < 2){
+            return line->Error("Missing tokens after " + name + "!");
+        }
+        if(line->toks[1] == ","){
+            return line->Error("There is no comma between a hash command and its "
+                "first parameter, whereas there is between a normal command and "
+                "its first parameter!");
+        }
+        ret = ValueTree("cmdlist");
+        int t = 1;
+        while(true){
+            bool dummy;
+            String datasrc = (name == "#wlen") ? "variable" : "fixed";
+            int datalen = (name == "#word") ? 2 : 1;
+            int value = parseNormalParam(line, line->toks[t], 
+                datasrc, datalen, false, false, dummy);
+            if(importresult >= 2) return ValueTree();
+            ret.appendChild(makeBasicDataCommand(-1, value, datasrc, datalen), nullptr);
+            ++t;
+            if(t == line->toks.size()) break;
+            if(line->toks[t] != ","){
+                return line->Error("Expected comma, got " + line->toks[t] + "!");
+            }
+            ++t;
+            if(t == line->toks.size()){
+                return line->Error("Spurious trailing comma!");
+            }
+        }
+        return ret;
+    }else if(name == "#evenw" || name == "evenl"){
+        //#evenw: align to even word (2 bytes).
+        //#evenl: presumably, align to even long (4 bytes)?
+        ret = ValueTree("align");
+        ret.setProperty(idValue, name == "#evenw" ? 2 : 4, nullptr);
+        return ret;
+    }else if(name == "#lprinton" || name == "#lprintoff"){
+        //Function unknown, presumably printing lines as they're parsed or
+        //some information from them? There's a commented out #lprinton at 
+        //beginning of SFX seq
+        if(line->toks.size() > 1){
+            return line->Error("Spurious tokens after " + name + "!");
+        }
+        ret = ValueTree("lprint");
+        ret.setProperty(idValue, name == "#lprinton", nullptr);
+        return ret;
+    }
+    //All other types of commands and labels
+    name = name.toLowerCase();
     String no_w_name = name.endsWithChar('w') ? name.dropLastCharacters(1) : name;
     bool canon = false;
     bool wideDelay = false;
@@ -2868,7 +3054,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, bool wrongSTy
     if(no_w_name.length() == 5 && name[4] >= '0' && name[4] <= '2' && name[3] == 'b'
             && parseCanonNoteName(name.substring(0, 3), noteValue)){
         if(stype != 2){
-            if(!wrongSTypeErrors) return ValueTree();
+            if(!wrongSTypeErrors) return ValueTree("wrongstype");
             return line->Error("Note command not allowed in current stype " + String(stype) + "!");
         }
         if(noteValue < 0 || noteValue > 0x3F){
@@ -2908,12 +3094,22 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, bool wrongSTy
             ret = command.createCopy();
         }
     }
-    //Check found command
-    if(!ret.isValid()) return ret; //Probably a label
+    if(!ret.isValid()){
+        //Maybe it's a label
+        if(line->toks.size() > 1){
+            return line->Error("Token " + line->toks[0] + " not recognized as a command, "
+                "but it has tokens after it, so it can't be a label, syntax error!");
+        }
+        if(!isValidLabel(line->toks[0])){
+            return line->Error("Token " + line->toks[0] + " must be a label, but it "
+                "contains invalid characters!");
+        }
+        return ValueTree("label");
+    }
     if(        (stype == 0 && !ret.getProperty(idValidInSeq))
             || (stype == 1 && !ret.getProperty(idValidInChn))
             || (stype == 2 && !ret.getProperty(idValidInTrk))){
-        if(!wrongSTypeErrors) return ValueTree();
+        if(!wrongSTypeErrors) return ValueTree("wrongstype");
         return line->Error("Command not allowed in current stype " + String(stype) + "!");
     }
     if(stype < 0 || stype > 2){
@@ -2960,57 +3156,12 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, bool wrongSTy
                 ret.setProperty(idTargetSection, s, nullptr);
                 value = 0xFFFFFF;
             }else{
-                s = s.toLowerCase();
-                if(datasrc == "fixed" && datalen == 1 && parseCanonNoteName(s, value)){
-                    if(value < 0 || value > 0x3F){
-                        return line->Error("Note parameter " + s
-                            + " maps to invalid note value " + String(value) + "!");
-                    }
-                    if(!canon || ret.getProperty(idName) != "portamento"
-                            || param.getProperty(idName) != "Target Pitch"){
-                        //TODO ugly hack, SEQ64 should never hardcode a command's
-                        //or a parameter's name! Will need to support the portamento
-                        //command more fully, because of its data-dependent datatype
-                        //as well as this note name support.
-                        line->Warning("Using note name (" + s + " = " + String(value)
-                            + ") as parameter for something other than canon portamento "
-                            + "(\"sweepfrom\"/\"sweep\" command), this is supported but should not be!");
-                    }
-                }else if(s[0] == '$'){
-                    s = s.substring(1);
-                    if(!s.containsOnly("0123456789abcdef")){
-                        return line->Error("Expected hex integer, got " + line->toks[t] + "!");
-                    }
-                    value = s.getHexValue32();
-                }else{
-                    bool neg = false;
-                    if(s[0] == '-'){
-                        neg = true;
-                        s = s.substring(1);
-                    }
-                    if(!s.containsOnly("0123456789")){
-                        return line->Error("Expected decimal/hex integer, got " + line->toks[t] + "!");
-                    }
-                    value = s.getIntValue();
-                    if(neg) value = -value;
-                }
-                if((datasrc == "fixed" && datalen == 1 && (value < -128 || value > 255))
-                        || (datasrc == "fixed" && datalen == 2 && (value < -0x8000 || value > 0xFFFF))
-                        || (datasrc == "variable" && (value < 0 || value > 0x7FFF))){
-                    return line->Error("Integer value " + String(value) + " out of range!");
-                }
-                if(datasrc == "variable" && value > 0x7F && canon && !wideDelay){
-                    return line->Error("Used canon non-w version of command, but value " 
-                        + String(value) + " requires wide variable length!");
-                }
-                if(datasrc == "variable" && value <= 0x7F && wideDelay){
-                    line->Warning("Mistake in original sequence: sound programmer used "
-                        "wide version of command despite having too-small variable "
-                        "length value " + String(value) + ". This mistake is supported by "
-                        "SEQ64 and will be maintained in mus <-> com conversions.");
-                    param.setProperty(idDataForce2, true, nullptr);
-                }
+                bool dataforce2 = false;
+                value = parseNormalParam(line, s, datasrc, datalen, 
+                    canon, wideDelay, dataforce2);
+                if(importresult >= 2) return ValueTree();
                 param.setProperty(idValue, value, nullptr);
+                if(dataforce2) param.setProperty(idDataForce2, true, nullptr);
             }
             ++t;
         }
@@ -3040,7 +3191,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, bool wrongSTy
 }
 
 void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
-        ValueTree section, ValueTree command){
+        ValueTree section, ValueTree command, int &recentDTFuture){
     if(!command.hasProperty(idTargetSection)) return;
     String tgt = command.getProperty(idTargetSection);
     String action = command.getProperty(idAction);
@@ -3098,8 +3249,12 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
     FutureSection f;
     f.label = tgt;
     f.stype = stype;
-    f.dyntablestype = -1;
+    f.dtstype = -1;
+    f.dtdynstype = -1;
     fs.add(f);
+    if(stype == 3){
+        recentDTFuture = fs.size()-1;
+    }
 }
 
 ValueTree SeqFile::createBlankSectionVT(int stype){
@@ -3110,6 +3265,7 @@ ValueTree SeqFile::createBlankSectionVT(int stype){
                 : stype == 4 ? "envelope"
                 : stype == 5 ? "message"
                 : stype == 6 ? "table"
+                : stype == 7 ? "align"
                 : "unknown");
     ret.setProperty(idSType, stype, nullptr);
     return ret;
@@ -3156,7 +3312,7 @@ int SeqFile::importMus(File musfile){
                 line->Error("#define key \"" + key + "\" contains invalid characters!");
                 return 2;
             }
-            if(!isValidDefineKey(value)){
+            if(!isValidDefineValue(value)){
                 line->Error("#define value \"" + value + "\" contains invalid characters!");
                 return 2;
             }
@@ -3177,7 +3333,7 @@ int SeqFile::importMus(File musfile){
         + " and its included files, besides empty/comments/#include/#define");
     //Init first section
     ln = 0;
-    int stype = 0, dyntablestype = -1;
+    int stype = 0, dtstype = -1, dtdynstype = -1, recentDTFuture = -1;
     ValueTree section = createBlankSectionVT(0);
     section.setProperty(idAddress, ln, nullptr);
     structure.appendChild(section, nullptr);
@@ -3195,95 +3351,152 @@ int SeqFile::importMus(File musfile){
             line->Error("No tokens!");
             return 2;
         }
-        if(lprint){
-            //Actual function of #lprinton/#lprintoff unknown, this is a guess.
-            line->Print();
+        ValueTree command;
+        String type;
+        bool endSection = false, dontAdvanceLine = false;
+        if(line->used){
+            //Check if what we ran into is an existing section
+            ValueTree latersec = structure.getChildWithProperty(idAddress, ln);
+            if(!latersec.isValid()){
+                line->Error("Internal error, line already parsed before!");
+                return 2;
+            }
+            //and if the stype is the same
+            if((int)latersec.getProperty(idSType) != stype){
+                line->Error("Ran into existing section, but inconsistent stypes!");
+                return 2;
+            }
+            //Merge that section with this one
+            for(int i=0; i<latersec.getNumChildren(); ++i){
+                section.appendChild(latersec.getChild(i), nullptr);
+            }
+            structure.removeChild(latersec, nullptr);
+            dontAdvanceLine = true;
+            endSection = true;
         }
-        bool endSection = false;
-        //Besides #include and #define above, these are all the hash commands in
-        //the bicon executable.
-        if(line->toks[0] == "#label"){
-            //#label label_name, label_name_2, ..., used for dyntables
-            //TODO
-        }else if(line->toks[0] == "#msg"){
-            //#msg "Blah blah", referenced by dprint. Number seen to be 0 or 3,
-            //definitely not string length. Perhaps debug console color or
-            //verboseness/severity?
-            //TODO
-        }else if(line->toks[0] == "#byte"){
-            //Presumably, write bytes to com.
-            //TODO
-        }else if(line->toks[0] == "#wlen"){
-            //Presumably, write variable length value to com. Due to how commands
-            //are defined, this probably always writes the 2-byte version.
-            //TODO
-        }else if(line->toks[0] == "#word"){
-            //#word value16,value16, used for envelopes. Write 16-bit ints to com.
-            //TODO
-        }else if(line->toks[0] == "#evenw"){
-            //Align to even word (2 bytes)
-            //TODO
-        }else if(line->toks[0] == "#evenl"){
-            //Presumably, align to even long (4 bytes)?
-            //TODO
-        }else if(line->toks[0] == "#lprinton"){
-            //Function unknown, presumably printing lines as they're parsed or
-            //some information from them? There's a commented out #lprinton at 
-            //beginning of SFX seq
-            if(line->toks.size() > 1){
-                line->Error("Spurious tokens after #lprinton!");
+        if(!endSection){
+            if(lprint){
+                //Actual function of #lprinton/#lprintoff unknown, this is a guess.
+                line->Print();
+            }
+            command = parseMusCommand(line, stype, dtstype, true);
+            if(importresult >= 2 || !command.isValid()) return 2;
+            type = command.getType().toString();
+        }
+        if(endSection){
+            (void)0; //skip all the below
+        }else if(((stype == 3 || stype == 6) && type != "cmdlist") ||
+                (stype == 4 && command.getProperty(idAction, "") != "Envelope Point")){
+            //These stypes don't have their own end markers, we can only detect
+            //them by something else starting.
+            dontAdvanceLine = true;
+            endSection = true;
+        }else if(type == "label"){
+            //Label
+            if(!nextCmdLabel.isEmpty()){
+                line->Error("Two labels for same point in the sequence is not supported!");
                 return 2;
             }
-            lprint = true;
-        }else if(line->toks[0] == "#lprintoff"){
-            //Turns off whatever lprinton turns on
-            if(line->toks.size() > 1){
-                line->Error("Spurious tokens after #lprintoff!");
+            nextCmdLabel = line->toks[0];
+            if(section.getNumChildren() == 0){
+                section.setProperty(idLabelName, line->toks[0], nullptr);
+            }
+            //Check if we ran into a future section
+            for(int i=0; i<futuresecs.size(); ++i){
+                if(futuresecs[i].label == nextCmdLabel){
+                    if(futuresecs[i].stype != stype){
+                        line->Error("Ran into future section, but inconsistent stype!");
+                        return 2;
+                    }
+                    futuresecs.remove(i);
+                    break;
+                }
+            }
+        }else if(type == "wrongstype"){
+            line->Error("Internal error with stype checking!");
+            return 2;
+        }else if(type == "lprint"){
+            lprint = command.getProperty(idValue);
+        }else if(type == "align"){
+            //Add as a new section
+            command.setProperty(idAddress, ln, nullptr);
+            structure.appendChild(command, nullptr);
+            endSection = true;
+        }else if(type == "cmdlist"){
+            for(int i=0; i<command.getNumChildren(); ++i){
+                ValueTree cmd = command.getChild(i);
+                checkAddFutureSection(line, futuresecs, section, command, recentDTFuture);
+                section.appendChild(cmd, nullptr);
+            }
+        }else if(type == "message"){
+            if(section.getNumChildren() > 0){
+                line->Error("Message must appear by itself in a section!");
                 return 2;
             }
-            lprint = false;
+            if(section.getProperty(idLabelName, "").toString().isEmpty()){
+                line->Error("Message must be preceded by message label!");
+                return 2;
+            }
+            section.setProperty(idMessage, command.getProperty(idMessage), nullptr);
+            for(int i=0; i<command.getNumChildren(); ++i){
+                section.appendChild(command.getChild(i), nullptr);
+            }
+            endSection = true;
+        }else if(type == "command"){
+            //Normal command
+            if(!nextCmdLabel.isEmpty()){
+                command.setProperty(idLabelName, nextCmdLabel, nullptr);
+                nextCmdLabel = "";
+            }
+            command.setProperty(idAddress, ln, nullptr);
+            section.appendChild(command, nullptr);
+            checkAddFutureSection(line, futuresecs, section, command, recentDTFuture);
+            if(importresult >= 2) return 2;
+            String action = command.getProperty(idAction);
+            if(action == "End of Data" || action == "Jump"){
+                endSection = true;
+            }else if(action == "Dyn Table Channel" || action == "Dyn Table Layer"
+                    || action == "Dyn Table Dyn Table"){
+                if(recentDTFuture < 0){
+                    line->Error("Dyntable use (type) does not follow dyntable definition (label)!");
+                    return 2;
+                }
+                if(futuresecs[recentDTFuture].stype != 3){
+                    line->Error("Internal error with dyntable tracking!");
+                    return 2;
+                }
+                int t = (action == "Dyn Table Channel") ? 1 :
+                        (action == "Dyn Table Layer") ? 2 : 3;
+                int prevt = futuresecs[recentDTFuture].dtstype;
+                if(prevt == 3){
+                    int prevdoublet = futuresecs[recentDTFuture].dtdynstype;
+                    if(prevdoublet != -1 && prevdoublet != t){
+                        line->Error("Inconsistent double-dynamic type (previously " 
+                            + String(prevdoublet) + ")!");
+                        return 2;
+                    }
+                    if(t == 3){
+                        line->Error("Triple-dynamic dyntables not supported!");
+                        return 2;
+                    }
+                    futuresecs.getReference(recentDTFuture).dtdynstype = t;
+                }else{
+                    if(prevt != -1 && prevt != t){
+                        line->Error("Inconsistent dynamic type (previously " 
+                            + String(prevt) + ")!");
+                        return 2;
+                    }
+                    futuresecs.getReference(recentDTFuture).dtstype = t;
+                }
+            }
         }else{
-            ValueTree command = parseMusCommand(line, stype, true);
-            if(!command.isValid()){
-                if(importresult >= 2) return 2;
-                if(line->toks.size() > 1){
-                    line->Error("Token " + line->toks[0] + " not recognized as a command, "
-                        "but it has tokens after it, so it can't be a label, syntax error!");
-                    return 2;
-                }
-                if(!isValidLabel(line->toks[0])){
-                    line->Error("Token " + line->toks[0] + " must be a label, but it "
-                        "contains invalid characters!");
-                    return 2;
-                }
-                //Label
-                if(!nextCmdLabel.isEmpty()){
-                    line->Error("Two labels for same point in the sequence is not supported!");
-                    return 2;
-                }
-                nextCmdLabel = line->toks[0];
-                if(section.getNumChildren() == 0){
-                    section.setProperty(idLabelName, line->toks[0], nullptr);
-                }
-            }else{
-                //Command
-                if(!nextCmdLabel.isEmpty()){
-                    command.setProperty(idLabelName, nextCmdLabel, nullptr);
-                    nextCmdLabel = "";
-                }
-                command.setProperty(idAddress, ln, nullptr);
-                section.appendChild(command, nullptr);
-                checkAddFutureSection(line, futuresecs, section, command);
-                if(importresult >= 2) return 2;
-                //TODO check command for dyntable use and update most recent futuresec
-                String action = command.getProperty(idAction);
-                if(action == "End of Data" || action == "Jump"){
-                    endSection = true;
-                }
-            }
+            line->Error("Internal error, unknown parsed command type " + type + "!");
+            return 2;
         }
-        line->used = true;
-        ++ln;
+        if(!dontAdvanceLine){
+            line->used = true;
+            ++ln;
+        }
         if(endSection && futuresecs.size() > 0){
             //Find the start of the next future section.
             for(ln=0; ln<lines.size(); ++ln){
@@ -3295,7 +3508,19 @@ int SeqFile::importMus(File musfile){
                 return 2;
             }
             stype = futuresecs[0].stype;
-            dyntablestype = futuresecs[0].dyntablestype;
+            dtstype = futuresecs[0].dtstype;
+            dtdynstype = futuresecs[0].dtdynstype;
+            recentDTFuture = -1;
+            if(stype == 3 && (dtstype < 1 || dtstype > 3)){
+                dbgmsg("New dyntable section " + futuresecs[0].label 
+                    + " doesn't have dtstype!");
+                return 2;
+            }
+            if(stype == 3 && dtstype == 3 && (dtdynstype < 1 || dtdynstype > 3)){
+                dbgmsg("New double-dynamic dyntable section " + futuresecs[0].label 
+                    + " doesn't have dtdynstype!");
+                return 2;
+            }
             futuresecs.remove(0);
             section = createBlankSectionVT(stype);
             section.setProperty(idAddress, ln, nullptr);
@@ -3317,7 +3542,9 @@ int SeqFile::importMus(File musfile){
                     if(section.isValid()){
                         //Make the unused line be the next command of this section.
                         stype = section.getProperty(idSType);
-                        dyntablestype = -1; //Jumps can't exist in dyntables
+                        dtstype = -1; //Jumps can't exist in dyntables
+                        dtdynstype = -1;
+                        recentDTFuture = -1;
                         continueParsing = true;
                         break;
                     }
@@ -3873,9 +4100,14 @@ int SeqFile::exportMus(File musfile, int dialect){
             int lblctr = 0;
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
                 out += !(lblctr & 15) ? "#byte    $" : ",$";
-                ValueTree param = section.getChild(cmd).getChildWithProperty(idMeaning, "Byte");
+                ValueTree param = section.getChild(cmd).getChildWithProperty(idMeaning, "Data");
                 if(!param.isValid()){
                     dbgmsg("Invalid other table / extable!");
+                    return 2;
+                }
+                if(param.getProperty(idDataSrc).toString() != "fixed" ||
+                        (int)param.getProperty(idDataLen) != 1){
+                    dbgmsg("Invalid data type in other table / extable!");
                     return 2;
                 }
                 out += hex((int)param.getProperty(idValue, 0x69), 8);
@@ -4024,25 +4256,16 @@ ValueTree SeqFile::initCommand(uint32_t address){
     return command;
 }
 
-ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address, ValueTree section){
+ValueTree SeqFile::makeDynTableCommand(uint32_t address, var target, int dtstype, 
+        int dtdynstype){
     ValueTree command = initCommand(address);
-    if(address+1 >= data.size()){
-        dbgmsg("Dynamic table address ran off end of sequence!");
-        return ValueTree();
-    }
-    uint16_t tgt_addr = ((uint16_t)data[address] << 8) | data[address+1];
-    if(tgt_addr >= data.size()){
-        dbgmsg("Stopping dyntable @" + hex(address,16) + " because pointer outside seq " + hex(tgt_addr));
-        return ValueTree("end");
-    }
     command.setProperty(idLength, 2, nullptr);
     ValueTree addrparam("parameter");
     addrparam.setProperty(idMeaning, "Absolute Address", nullptr);
-    addrparam.setProperty(idValue, (int)tgt_addr, nullptr);
+    addrparam.setProperty(idValue, target, nullptr);
     addrparam.setProperty(idDataSrc, "fixed", nullptr);
     addrparam.setProperty(idDataLen, 2, nullptr);
     command.appendChild(addrparam, nullptr);
-    int dtstype = section.getProperty(idDynTableSType);
     if(dtstype == 1){
         command.setProperty(idAction, "Ptr Channel Header", nullptr);
         command.setProperty(idName, "[dyntable Ptr Channel Header]", nullptr);
@@ -4064,7 +4287,7 @@ ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address, Va
     }else if(dtstype == 3){
         command.setProperty(idAction, "Ptr Dyn Table", nullptr);
         command.setProperty(idName, "[dyntable Ptr Dyn Table]", nullptr);
-        command.setProperty(idDynTableSType, section.getProperty(idDynTableDynSType), nullptr);
+        command.setProperty(idDynTableSType, dtdynstype, nullptr);
     }else{
         dbgmsg("Invalid dyntable stype target " + String(dtstype) + "!");
         return ValueTree();
@@ -4072,18 +4295,22 @@ ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address, Va
     return command;
 }
 
-ValueTree SeqFile::getEnvelopeCommand(Array<uint8_t> &data, uint32_t address){
-    ValueTree command = initCommand(address);
-    if(address+3 >= data.size()){
-        dbgmsg("Envelope ran off end of sequence!");
+ValueTree SeqFile::getDynTableCommand(Array<uint8_t> &data, uint32_t address, ValueTree section){
+    if(address+1 >= data.size()){
+        dbgmsg("Dynamic table address ran off end of sequence!");
         return ValueTree();
     }
-    int16_t rate = ((int16_t)data[address] << 8) | data[address+1];
-    uint16_t level = ((uint16_t)data[address+2] << 8) | data[address+3];
-    if(rate < 0){
-        if(rate != -1) dbgmsg("Nonstandard envelope termination: rate " + String(rate));
-        command.setProperty(idSecDone, true, nullptr);
+    uint16_t tgt_addr = ((uint16_t)data[address] << 8) | data[address+1];
+    if(tgt_addr >= data.size()){
+        dbgmsg("Stopping dyntable @" + hex(address,16) + " because pointer outside seq " + hex(tgt_addr));
+        return ValueTree("end");
     }
+    return makeDynTableCommand(address, (int)tgt_addr, 
+        section.getProperty(idDynTableSType), section.getProperty(idDynTableDynSType));
+}
+
+ValueTree SeqFile::makeEnvelopeCommand(uint32_t address, int16_t rate, uint16_t level){
+    ValueTree command = initCommand(address);
     command.setProperty(idLength, 4, nullptr);
     command.setProperty(idAction, "Envelope Point", nullptr);
     command.setProperty(idName, "[envelope point]", nullptr);
@@ -4102,9 +4329,39 @@ ValueTree SeqFile::getEnvelopeCommand(Array<uint8_t> &data, uint32_t address){
     return command;
 }
 
-ValueTree SeqFile::getMessageCommand(Array<uint8_t> &data, uint32_t address, ValueTree section){
+ValueTree SeqFile::getEnvelopeCommand(Array<uint8_t> &data, uint32_t address){
+    if(address+3 >= data.size()){
+        dbgmsg("Envelope ran off end of sequence!");
+        return ValueTree();
+    }
+    int16_t rate = ((int16_t)data[address] << 8) | data[address+1];
+    uint16_t level = ((uint16_t)data[address+2] << 8) | data[address+3];
+    ValueTree command = makeEnvelopeCommand(address, rate, level);
+    if(rate < 0){
+        if(rate != -1) dbgmsg("Nonstandard envelope termination: rate " + String(rate));
+        command.setProperty(idSecDone, true, nullptr);
+    }
+    return command;
+}
+
+ValueTree SeqFile::makeBasicDataCommand(uint32_t address, int value, 
+        String datasrc, int datalen){
     ValueTree command = initCommand(address);
+    command.setProperty(idLength, datalen, nullptr);
+    command.setProperty(idAction, "Data", nullptr);
+    command.setProperty(idName, "[data]", nullptr);
+    ValueTree param("parameter");
+    param.setProperty(idMeaning, "Data", nullptr);
+    param.setProperty(idValue, value, nullptr);
+    param.setProperty(idDataSrc, datasrc, nullptr);
+    param.setProperty(idDataLen, datalen, nullptr);
+    command.appendChild(param, nullptr);
+    return command;
+}
+
+ValueTree SeqFile::getMessageCommand(Array<uint8_t> &data, uint32_t address, ValueTree section){
     uint8_t c = data[address];
+    ValueTree command = makeBasicDataCommand(address, c, "fixed", 1);
     if(c == 0){
         if(!section.hasProperty(idMessage)){
             dbgmsg("Warning, empty message at " + hex(address,16) + "!");
@@ -4115,31 +4372,11 @@ ValueTree SeqFile::getMessageCommand(Array<uint8_t> &data, uint32_t address, Val
         section.setProperty(idMessage, section.getProperty(idMessage, "").toString() 
             + String::charToString(c), nullptr);
     }
-    command.setProperty(idLength, 1, nullptr);
-    command.setProperty(idAction, "Message Character", nullptr);
-    command.setProperty(idName, "[msg char]", nullptr);
-    ValueTree param("parameter");
-    param.setProperty(idMeaning, "Character", nullptr);
-    param.setProperty(idValue, (int)c, nullptr);
-    param.setProperty(idDataSrc, "fixed", nullptr);
-    param.setProperty(idDataLen, 1, nullptr);
-    command.appendChild(param, nullptr);
     return command;
 }
 
 ValueTree SeqFile::getOtherTableCommand(Array<uint8_t> &data, uint32_t address){
-    ValueTree command = initCommand(address);
-    uint8_t d = data[address];
-    command.setProperty(idLength, 1, nullptr);
-    command.setProperty(idAction, "Table Byte", nullptr);
-    command.setProperty(idName, "[byte]", nullptr);
-    ValueTree param("parameter");
-    param.setProperty(idMeaning, "Byte", nullptr);
-    param.setProperty(idValue, (int)d, nullptr);
-    param.setProperty(idDataSrc, "fixed", nullptr);
-    param.setProperty(idDataLen, 1, nullptr);
-    command.appendChild(param, nullptr);
-    return command;
+    return makeBasicDataCommand(address, data[address], "fixed", 1);
 }
 
 int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
@@ -4789,17 +5026,7 @@ int SeqFile::importCom(File comfile){
         }
         section.setProperty(idAddressEnd, a_end, nullptr);
         for(; a<a_end; ++a){
-            ValueTree command("command");
-            command.setProperty(idCmd, -1, nullptr);
-            command.setProperty(idAddress, (int)a, nullptr);
-            command.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
-            command.setProperty(idLength, 1, nullptr);
-            command.setProperty(idAction, "Self Table Byte", nullptr);
-            ValueTree param("parameter");
-            param.setProperty(idMeaning, "Byte", nullptr);
-            param.setProperty(idValue, (int)data[a], nullptr);
-            command.appendChild(param, nullptr);
-            section.appendChild(command, nullptr);
+            section.appendChild(makeBasicDataCommand(a, data[a], "fixed", 1), nullptr);
         }
     }
     //Check to make sure every byte was used
@@ -4821,36 +5048,44 @@ int SeqFile::importCom(File comfile){
                 dbgmsg("Ignoring a few unused zeros at end of file, probably padding");
                 break;
             }
-            dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(i-1,16) + 
-                (zeroes ? " (all zero)" : " (nonzeros)") 
-                + " were not read as part of any command, converting to "
-                + (ismsg ? "message" : "Other Table"));
-            importresult |= 1;
-            ValueTree datasec(ismsg ? "message" : "table");
-            if(ismsg){
-                datasec.setProperty(idMessage, 
-                    String((const char*)&(data.data())[unusedstart]), nullptr);
+            bool alignEnv = false;
+            if(i - unusedstart == 1 && zeroes){
+                //One extra byte and it's a zero--maybe alignment before envelope?
+                for(int j=0; j<structure.getNumChildren(); ++j){
+                    ValueTree section = structure.getChild(j);
+                    if((int)section.getProperty(idAddress) == i &&
+                            (int)section.getProperty(idSType) == 4){
+                        alignEnv = true;
+                        break;
+                    }
+                }
             }
-            datasec.setProperty(idSType, ismsg ? 5 : 6, nullptr);
-            datasec.setProperty(idAddress, unusedstart, nullptr);
-            datasec.setProperty(idAddressEnd, i, nullptr);
-            for(int j=unusedstart; j<i; ++j){
-                ValueTree command("command");
-                command.setProperty(idCmd, -1, nullptr);
-                command.setProperty(idAddress, (int)j, nullptr);
-                command.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
-                command.setProperty(idLength, 1, nullptr);
-                command.setProperty(idAction, ismsg ? "Message Character" : "Table Byte", nullptr);
-                command.setProperty(idName, ismsg ? "[msg char]" : "[byte]", nullptr);
-                ValueTree param("parameter");
-                param.setProperty(idMeaning, ismsg ? "Character" : "Byte", nullptr);
-                param.setProperty(idValue, (int)data[j], nullptr);
-                param.setProperty(idDataSrc, "fixed", nullptr);
-                param.setProperty(idDataLen, 1, nullptr);
-                command.appendChild(param, nullptr);
-                datasec.appendChild(command, nullptr);
+            if(alignEnv){
+                ValueTree alignsec("align");
+                alignsec.setProperty(idSType, 7, nullptr);
+                alignsec.setProperty(idAddress, unusedstart, nullptr);
+                alignsec.setProperty(idAddressEnd, i, nullptr);
+                alignsec.setProperty(idValue, 2, nullptr); //amount to align to
+                structure.appendChild(alignsec, nullptr);
+            }else{
+                dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(i-1,16) + 
+                    (zeroes ? " (all zero)" : " (nonzeros)") 
+                    + " were not read as part of any command, converting to "
+                    + (ismsg ? "message" : "Other Table"));
+                importresult |= 1;
+                ValueTree datasec(ismsg ? "message" : "table");
+                if(ismsg){
+                    datasec.setProperty(idMessage, 
+                        String((const char*)&(data.data())[unusedstart]), nullptr);
+                }
+                datasec.setProperty(idSType, ismsg ? 5 : 6, nullptr);
+                datasec.setProperty(idAddress, unusedstart, nullptr);
+                datasec.setProperty(idAddressEnd, i, nullptr);
+                for(int j=unusedstart; j<i; ++j){
+                    datasec.appendChild(makeBasicDataCommand(j, data[j], "fixed", 1), nullptr);
+                }
+                structure.appendChild(datasec, nullptr);
             }
-            structure.appendChild(datasec, nullptr);
         }
     }
     //Sort sections by address

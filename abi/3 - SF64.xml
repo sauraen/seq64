@@ -335,12 +335,18 @@
            cname="chksub">
     <parameter datasrc="offset" name="Channel" meaning="None"/>
   </command>
-  <command cmd="80" name="subv" action="No Action" validinseq="1" comments="Q -= variation bit. Not a typo that there is no Cmd Offset parameter."
-           cmdend="95" cname="gr_portsbc"/>
-  <command cmd="112" name="stv" action="No Action" cmdend="127" comments="variation bit = Q. Not a typo that there is no Cmd Offset parameter."
-           validinseq="1" cname="gr_portwrite"/>
-  <command cmd="128" name="ldv" action="No Action" cmdend="143" comments="Q = variation bit. Not a typo that there is no Cmd Offset parameter."
-           validinseq="1" cname="gr_portread"/>
+  <command cmd="80" name="subv" action="No Action" validinseq="1" comments="Q -= variation byte. The offset parameter does nothing (there is only one variation byte, not 16). But it must be defined for canon mus compatibility."
+           cmdend="95" cname="gr_portsbc">
+    <parameter name="Nothing" meaning="None" datasrc="offset"/>
+  </command>
+  <command cmd="112" name="stv" action="No Action" cmdend="127" comments="variation byte = Q. The offset parameter does nothing (there is only one variation byte, not 16). But it must be defined for canon mus compatibility."
+           validinseq="1" cname="gr_portwrite">
+    <parameter name="Nothing" meaning="None" datasrc="offset"/>
+  </command>
+  <command cmd="128" name="ldv" action="No Action" cmdend="143" comments="Q = variation byte. The offset parameter does nothing (there is only one variation byte, not 16). But it must be defined for canon mus compatibility."
+           validinseq="1" cname="gr_portread">
+    <parameter name="Nothing" meaning="None" datasrc="offset"/>
+  </command>
   <command cmd="144" name="startchan" action="Ptr Channel Header" cmdend="159"
            validinseq="1" comments="Start channel N, with a given channel script."
            cname="opensub">
