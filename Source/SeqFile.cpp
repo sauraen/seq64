@@ -2802,10 +2802,13 @@ void SeqFile::loadMusFileLines(OwnedArray<MusLine> &lines, String path,
         includeLine->Error("Couldn't open file " + path + "!");
         return;
     }
+    dbgmsg("Loading " + path + "...");
     int linenum = 0;
     while(!fis.isExhausted()){
         ++linenum;
         String l = fis.readNextLine();
+        l = l.replace("@", f.getFileNameWithoutExtension().retainCharacters(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"));
         MusLine *line = new MusLine(this, l, f.getFileName(), linenum);
         if(!line->l.isEmpty()){
             line->Tokenize();
@@ -3191,7 +3194,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
 }
 
 void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
-        ValueTree section, ValueTree command, int &recentDTFuture){
+        ValueTree section, ValueTree command){
     if(!command.hasProperty(idTargetSection)) return;
     String tgt = command.getProperty(idTargetSection);
     String action = command.getProperty(idAction);
@@ -3215,21 +3218,21 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
         return;
     }
     for(int sec=0; sec<structure.getNumChildren(); ++sec){
-        ValueTree section = structure.getChild(sec);
-        if(section.getProperty(idLabelName, "").toString() == tgt){
-            if((int)section.getProperty(idSType) != stype){
+        ValueTree tmpsec2 = structure.getChild(sec);
+        if(tmpsec2.getProperty(idLabelName, "").toString() == tgt){
+            if((int)tmpsec2.getProperty(idSType) != stype){
                 line->Error("Conflicting stype for target label " + tgt 
-                    + ", section already parsed as " + section.getProperty(idSType).toString()
+                    + ", section already parsed as " + tmpsec2.getProperty(idSType).toString()
                     + ", now referenced as " + String(stype) + "!");
             }
             return;
         }
-        for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
-            ValueTree command = section.getChild(cmd);
+        for(int cmd=0; cmd<tmpsec2.getNumChildren(); ++cmd){
+            ValueTree command = tmpsec2.getChild(cmd);
             if(command.getProperty(idLabelName, "").toString() == tgt){
-                if((int)section.getProperty(idSType) != stype){
+                if((int)tmpsec2.getProperty(idSType) != stype){
                     line->Error("Conflicting stype for target label " + tgt 
-                        + ", found within section already parsed as " + section.getProperty(idSType).toString()
+                        + ", found within section already parsed as " + tmpsec2.getProperty(idSType).toString()
                         + ", now referenced as " + String(stype) + "!");
                 }
                 return;
@@ -3246,15 +3249,11 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
             return;
         }
     }
+    dbgmsg("Added future section " + tgt + " stype " + String(stype));
     FutureSection f;
     f.label = tgt;
     f.stype = stype;
-    f.dtstype = -1;
-    f.dtdynstype = -1;
     fs.add(f);
-    if(stype == 3){
-        recentDTFuture = fs.size()-1;
-    }
 }
 
 ValueTree SeqFile::createBlankSectionVT(int stype){
@@ -3333,10 +3332,11 @@ int SeqFile::importMus(File musfile){
         + " and its included files, besides empty/comments/#include/#define");
     //Init first section
     ln = 0;
-    int stype = 0, dtstype = -1, dtdynstype = -1, recentDTFuture = -1;
+    int stype = 0, dtstype = -1, dtdynstype = -1;
     ValueTree section = createBlankSectionVT(0);
     section.setProperty(idAddress, ln, nullptr);
     structure.appendChild(section, nullptr);
+    dbgmsg("Parsing initial section in sequence, stype 0");
     //Data structures for parse results
     Array<FutureSection> futuresecs;
     String nextCmdLabel = "";
@@ -3368,7 +3368,7 @@ int SeqFile::importMus(File musfile){
             }
             //Merge that section with this one
             for(int i=0; i<latersec.getNumChildren(); ++i){
-                section.appendChild(latersec.getChild(i), nullptr);
+                section.appendChild(latersec.getChild(i).createCopy(), nullptr);
             }
             structure.removeChild(latersec, nullptr);
             dontAdvanceLine = true;
@@ -3385,12 +3385,17 @@ int SeqFile::importMus(File musfile){
         }
         if(endSection){
             (void)0; //skip all the below
-        }else if(((stype == 3 || stype == 6) && type != "cmdlist") ||
-                (stype == 4 && command.getProperty(idAction, "") != "Envelope Point")){
+        }else if(
+                ( ((stype == 3 || stype == 6) && type != "cmdlist") ||
+                  (stype == 4 && command.getProperty(idAction, "") != "Envelope Point") )
+                && !(type == "label" && !section.hasProperty(idLabelName)) ){
             //These stypes don't have their own end markers, we can only detect
             //them by something else starting.
             dontAdvanceLine = true;
             endSection = true;
+        }else if(type == "wrongstype"){
+            line->Error("Internal error with stype checking!");
+            return 2;
         }else if(type == "label"){
             //Label
             if(!nextCmdLabel.isEmpty()){
@@ -3412,9 +3417,7 @@ int SeqFile::importMus(File musfile){
                     break;
                 }
             }
-        }else if(type == "wrongstype"){
-            line->Error("Internal error with stype checking!");
-            return 2;
+            if(stype >= 3) nextCmdLabel = ""; //Don't keep this for future cmd
         }else if(type == "lprint"){
             lprint = command.getProperty(idValue);
         }else if(type == "align"){
@@ -3424,8 +3427,8 @@ int SeqFile::importMus(File musfile){
             endSection = true;
         }else if(type == "cmdlist"){
             for(int i=0; i<command.getNumChildren(); ++i){
-                ValueTree cmd = command.getChild(i);
-                checkAddFutureSection(line, futuresecs, section, command, recentDTFuture);
+                ValueTree cmd = command.getChild(i).createCopy();
+                checkAddFutureSection(line, futuresecs, section, cmd);
                 section.appendChild(cmd, nullptr);
             }
         }else if(type == "message"){
@@ -3439,7 +3442,7 @@ int SeqFile::importMus(File musfile){
             }
             section.setProperty(idMessage, command.getProperty(idMessage), nullptr);
             for(int i=0; i<command.getNumChildren(); ++i){
-                section.appendChild(command.getChild(i), nullptr);
+                section.appendChild(command.getChild(i).createCopy(), nullptr);
             }
             endSection = true;
         }else if(type == "command"){
@@ -3450,44 +3453,11 @@ int SeqFile::importMus(File musfile){
             }
             command.setProperty(idAddress, ln, nullptr);
             section.appendChild(command, nullptr);
-            checkAddFutureSection(line, futuresecs, section, command, recentDTFuture);
+            checkAddFutureSection(line, futuresecs, section, command);
             if(importresult >= 2) return 2;
             String action = command.getProperty(idAction);
             if(action == "End of Data" || action == "Jump"){
                 endSection = true;
-            }else if(action == "Dyn Table Channel" || action == "Dyn Table Layer"
-                    || action == "Dyn Table Dyn Table"){
-                if(recentDTFuture < 0){
-                    line->Error("Dyntable use (type) does not follow dyntable definition (label)!");
-                    return 2;
-                }
-                if(futuresecs[recentDTFuture].stype != 3){
-                    line->Error("Internal error with dyntable tracking!");
-                    return 2;
-                }
-                int t = (action == "Dyn Table Channel") ? 1 :
-                        (action == "Dyn Table Layer") ? 2 : 3;
-                int prevt = futuresecs[recentDTFuture].dtstype;
-                if(prevt == 3){
-                    int prevdoublet = futuresecs[recentDTFuture].dtdynstype;
-                    if(prevdoublet != -1 && prevdoublet != t){
-                        line->Error("Inconsistent double-dynamic type (previously " 
-                            + String(prevdoublet) + ")!");
-                        return 2;
-                    }
-                    if(t == 3){
-                        line->Error("Triple-dynamic dyntables not supported!");
-                        return 2;
-                    }
-                    futuresecs.getReference(recentDTFuture).dtdynstype = t;
-                }else{
-                    if(prevt != -1 && prevt != t){
-                        line->Error("Inconsistent dynamic type (previously " 
-                            + String(prevt) + ")!");
-                        return 2;
-                    }
-                    futuresecs.getReference(recentDTFuture).dtstype = t;
-                }
             }
         }else{
             line->Error("Internal error, unknown parsed command type " + type + "!");
@@ -3498,33 +3468,49 @@ int SeqFile::importMus(File musfile){
             ++ln;
         }
         if(endSection && futuresecs.size() > 0){
-            //Find the start of the next future section.
+            //Parse any sections other than dyntables if possible.
+            int fs;
+            for(fs=futuresecs.size()-1; fs > 0; --fs){ //stop at 0 if no other choices
+                if(futuresecs[fs].stype != 3) break;
+            }
+            //Find the start of the future section.
             for(ln=0; ln<lines.size(); ++ln){
-                if(lines[ln]->l == futuresecs[0].label) break;
+                if(lines[ln]->l == futuresecs[fs].label) break;
             }
             if(ln == lines.size()){
                 dbgmsg("Could not find pointed-to section with label " 
-                    + futuresecs[0].label + " stype " + String(futuresecs[0].stype) + "!");
+                    + futuresecs[fs].label + " stype " + String(futuresecs[fs].stype) + "!");
                 return 2;
             }
-            stype = futuresecs[0].stype;
-            dtstype = futuresecs[0].dtstype;
-            dtdynstype = futuresecs[0].dtdynstype;
-            recentDTFuture = -1;
-            if(stype == 3 && (dtstype < 1 || dtstype > 3)){
-                dbgmsg("New dyntable section " + futuresecs[0].label 
-                    + " doesn't have dtstype!");
-                return 2;
-            }
-            if(stype == 3 && dtstype == 3 && (dtdynstype < 1 || dtdynstype > 3)){
-                dbgmsg("New double-dynamic dyntable section " + futuresecs[0].label 
-                    + " doesn't have dtdynstype!");
-                return 2;
-            }
-            futuresecs.remove(0);
+            stype = futuresecs[fs].stype;
             section = createBlankSectionVT(stype);
             section.setProperty(idAddress, ln, nullptr);
             structure.appendChild(section, nullptr);
+            dbgmsg("Parsing section " + futuresecs[fs].label + " stype " + String(stype));
+            if(stype == 3){
+                StringArray refs;
+                //Find all commands which refer to this dyntable
+                for(int s=0; s<structure.getNumChildren(); ++s){
+                    ValueTree sec = structure.getChild(s);
+                    for(int c=0; c<sec.getNumChildren(); ++c){
+                        if(sec.getChild(c).getProperty(idTargetSection, "").toString()
+                                == futuresecs[fs].label){
+                            refs.add(sec.getChild(c).getProperty(idHash).toString());
+                        }
+                    }
+                }
+                if(!findDynTableType(structure.getNumChildren()-1, refs)) return 2;
+                dtstype = section.getProperty(idDynTableSType, -1);
+                if(dtstype == 3){
+                    dbgmsg("Double-dynamic commands not yet fully supported!");
+                    return 2;
+                }else if(dtstype != 1 && dtstype != 2){
+                    dbgmsg("Internal error in dyntable setup!");
+                    return 2;
+                }
+                dtdynstype = -1;
+            }
+            futuresecs.remove(fs);
         }else if(endSection){
             //Seems like we're done parsing. Check for unused lines.
             bool continueParsing = false;
@@ -3544,7 +3530,6 @@ int SeqFile::importMus(File musfile){
                         stype = section.getProperty(idSType);
                         dtstype = -1; //Jumps can't exist in dyntables
                         dtdynstype = -1;
-                        recentDTFuture = -1;
                         continueParsing = true;
                         break;
                     }
@@ -4679,11 +4664,10 @@ void SeqFile::clearRecurVisited(){
     }
 }
 
-bool SeqFile::findDynTableType(int dtsec){
+bool SeqFile::findDynTableType(int dtsec, const StringArray &refs){
     //Traverse the sequence, following structural commands, to find what is
     //the type this dyntable is used as after each place it's defined.
     ValueTree section = structure.getChild(dtsec);
-    StringArray refs = StringArray::fromTokens(section.getProperty(idSrcCmdRef).toString(), ",", "");
     if(refs.size() == 0){
         dbgmsg("Internal error, no references to dyntable!");
         return false;
@@ -4706,8 +4690,7 @@ bool SeqFile::findDynTableType(int dtsec){
                 }else if(res < 0){ //other error
                     clearRecurVisited();
                     return false;
-                }
-                if(dtstype < 0){
+                }else if(dtstype < 0){
                     dtstype = res;
                     dbgmsg("dyntable sec " + String(dtsec) + " found stype " + String(dtstype));
                 }else if(dtstype == res){
@@ -4716,18 +4699,18 @@ bool SeqFile::findDynTableType(int dtsec){
                     dbgmsg("dyntable sec " + String(dtsec) + ": previously found stype " 
                         + String(dtstype) + ", just found another stype " + String(res)
                         + " after ref at sec " + String(s) + " cmd " + String(c) + ", aborting!");
+                    clearRecurVisited();
                     return false;
                 }
             }
         }
+        clearRecurVisited();
     }
     if(dtstype < 0){
         dbgmsg("dyntable sec " + String(dtsec) + ": could not find any uses of this table, so unknown stype! Can't continue!");
-        clearRecurVisited();
         return false;
     }
     section.setProperty(idDynTableSType, dtstype, nullptr);
-    clearRecurVisited();
     return true;
 }
 
@@ -4779,6 +4762,23 @@ int SeqFile::findNextDynTableType(int s, int c){
 }
 
 bool SeqFile::getSectionAndCmd(ValueTree command, int &s, int &c){
+    if(!command.hasProperty(idTargetSection)){
+        dbgmsg("Internal error in getSectionAndCmd!");
+        return false;
+    }
+    if(command.getProperty(idTargetSection).isString()){
+        String tgt = command.getProperty(idTargetSection).toString();
+        for(s=0; s<structure.getNumChildren(); ++s){
+            ValueTree sec = structure.getChild(s);
+            c = 0;
+            if(sec.getProperty(idLabelName).toString() == tgt) return true;
+            for(; c<sec.getNumChildren(); ++c){
+                if(sec.getChild(c).getProperty(idLabelName).toString() == tgt) return true;
+            }
+        }
+        dbgmsg("Could not find section " + tgt + "!");
+        return false;
+    }
     int ts = command.getProperty(idTargetSection, -1);
     if(ts < 0 || ts >= structure.getNumChildren()){
         dbgmsg("Sec " + String(s) + " cmd " + String(c) + " jump to invalid section "
@@ -4898,7 +4898,9 @@ int SeqFile::importCom(File comfile){
         uint32_t a = (int)section.getProperty(idAddress);
         if(stype == 3){
             if(!section.hasProperty(idDynTableSType)){
-                if(!findDynTableType(s)) return 2;
+                StringArray refs = StringArray::fromTokens(
+                    section.getProperty(idSrcCmdRef).toString(), ",", "");
+                if(!findDynTableType(s, refs)) return 2;
             }
             if((int)section.getProperty(idDynTableSType) == 3 && !section.hasProperty(idDynTableDynSType)){
                 dbgmsg("dynsetdyntable section missing idDynTableDynSType, "

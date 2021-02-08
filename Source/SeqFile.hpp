@@ -129,7 +129,7 @@ private:
     };
     struct FutureSection {
         String label;
-        int stype, dtstype, dtdynstype;
+        int stype;
     };
 
     void loadMusFileLines(OwnedArray<MusLine> &lines, String path, int insertIdx,
@@ -144,7 +144,7 @@ private:
     ValueTree parseMusCommand(const MusLine *line, int stype, int dtstype,
         bool wrongSTypeErrors);
     void checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
-        ValueTree section, ValueTree command, int &recentDTFuture);
+        ValueTree section, ValueTree command);
     
     //For importMus and importCom
     ValueTree createBlankSectionVT(int stype);
@@ -153,6 +153,10 @@ private:
     ValueTree makeEnvelopeCommand(uint32_t address, int16_t rate, uint16_t level);
     ValueTree makeBasicDataCommand(uint32_t address, int value, 
             String datasrc, int datalen);
+    void clearRecurVisited();
+    bool findDynTableType(int dtsec, const StringArray &refs);
+    int findNextDynTableType(int s, int c);
+    bool getSectionAndCmd(ValueTree command, int &s, int &c);
     
     //For exportMus
     void assignTSection(ValueTree sec, int tsecnum);
@@ -187,10 +191,6 @@ private:
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
     bool removeSection(int remove, int &replace, int hash, int cmdbyte);
     int actionTargetSType(String action, int stype, uint32_t a);
-    void clearRecurVisited();
-    bool findDynTableType(int dtsec);
-    int findNextDynTableType(int s, int c);
-    bool getSectionAndCmd(ValueTree command, int &s, int &c);
     void convertPtrsFirstCmd();
     
     struct SectionSorter {
