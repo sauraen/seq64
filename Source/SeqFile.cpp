@@ -2836,6 +2836,10 @@ bool SeqFile::parseCanonNoteName(String s, int &noteValue){
 }
 
 bool SeqFile::isValidLabel(String s){
+    //Allowed characters: alphanumeric, _. Don't need to check for
+    //commas or whitespace due to tokenization scheme.
+    //@ is allowed but means local section name, so it's already been replaced
+    //with the filename before this point.
     return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~");
 }
 bool SeqFile::isValidDefineKey(String s){
@@ -2861,10 +2865,10 @@ void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
 }
 
 int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc, 
-        int datalen, bool canon, bool wideDelay, bool &dataforce2){
+        int datalen, bool allowNoteName, bool canon, bool wideDelay, bool *dataforce2){
     int value;
     s = s.toLowerCase();
-    if(datasrc == "fixed" && datalen == 1 && parseCanonNoteName(s, value)){
+    if(allowNoteName && datasrc == "fixed" && datalen == 1 && parseCanonNoteName(s, value)){
         if(value < 0 || value > 0x3F){
             line->Error("Note parameter " + s
                 + " maps to invalid note value " + String(value) + "!");
@@ -2908,7 +2912,7 @@ int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc,
             "wide version of command despite having too-small variable "
             "length value " + String(value) + ". This mistake is supported by "
             "SEQ64 and will be maintained in mus <-> com conversions.");
-        dataforce2 = true;
+        if(dataforce2 != nullptr) *dataforce2 = true;
     }
     return value;
 }
@@ -2983,10 +2987,10 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         if(line->toks.size() != 4 || line->toks[2] != ","){
             return line->Error("#word command in envelope must look like \"#word val,val\"!");
         }
-        int rate, level; bool dummy;
-        rate = parseNormalParam(line, line->toks[1], "fixed", 2, false, false, dummy);
+        int rate, level;
+        rate = parseNormalParam(line, line->toks[1], "fixed", 2);
         if(importresult >= 2) return ValueTree();
-        level = parseNormalParam(line, line->toks[3], "fixed", 2, false, false, dummy);
+        level = parseNormalParam(line, line->toks[3], "fixed", 2);
         if(importresult >= 2) return ValueTree();
         return makeEnvelopeCommand(0, rate, level);
     }else if(name == "#byte" || name == "#wlen" || name == "#word"){
@@ -3012,11 +3016,9 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         ret = ValueTree("cmdlist");
         int t = 1;
         while(true){
-            bool dummy;
             String datasrc = (name == "#wlen") ? "variable" : "fixed";
             int datalen = (name == "#word") ? 2 : 1;
-            int value = parseNormalParam(line, line->toks[t], 
-                datasrc, datalen, false, false, dummy);
+            int value = parseNormalParam(line, line->toks[t], datasrc, datalen, true);
             if(importresult >= 2) return ValueTree();
             ret.appendChild(makeBasicDataCommand(-1, value, datasrc, datalen), nullptr);
             ++t;
@@ -3141,17 +3143,29 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
                     + param.getProperty(idName).toString() + ", got nothing!");
             }
             if(line->toks[t] != ","){
-                return line->Error("Expected comma, not " + line->toks[t] + "!");
+                if(t > 1){ //Comma immediately after command optional
+                    return line->Error("Expected comma, not " + line->toks[t] + "!");
+                }
+            }else{
+                ++t;
             }
-            ++t;
             if(t >= line->toks.size()){
                 return line->Error("Expected " + param.getProperty(idName).toString() 
                     + ", got nothing!");
             }
             String s = line->toks[t];
             if(meaning == "Absolute Address" || meaning == "Relative Address"){
-                //Allowed characters: alphanumeric, _, @. Don't need to check for
-                //commas or whitespace due to tokenization scheme.
+                if(s.containsAnyOf("()")){
+                    if(s.getLastCharacter() != ')'){
+                        return line->Error("Invalid syntax in Ptr Self parameter!");
+                    }
+                    s = s.dropLastCharacters(1);
+                    String num = s.fromFirstOccurrenceOf("(", false, false);
+                    s = s.upToFirstOccurrenceOf("(", false, false);
+                    value = parseNormalParam(line, num, "fixed", 1);
+                    if(importresult >= 2) return ValueTree();
+                    param.setProperty(idTargetCmdByte, value, nullptr);
+                }
                 if(!isValidLabel(s)){
                     return line->Error("Invalid character(s) in label " + s + "!");
                 }
@@ -3161,7 +3175,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             }else{
                 bool dataforce2 = false;
                 value = parseNormalParam(line, s, datasrc, datalen, 
-                    canon, wideDelay, dataforce2);
+                    true, canon, wideDelay, &dataforce2);
                 if(importresult >= 2) return ValueTree();
                 param.setProperty(idValue, value, nullptr);
                 if(dataforce2) param.setProperty(idDataForce2, true, nullptr);
@@ -3175,11 +3189,10 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             if(!ret.hasProperty(idCmdEnd)){
                 return line->Error("Error with offset parameter in ABI definition of command!");
             }
-            value += (int)ret.getProperty(idCmd);
-            if(value >= (int)ret.getProperty(idCmdEnd)){
+            if(value < 0 || value + (int)ret.getProperty(idCmd) > (int)ret.getProperty(idCmdEnd)){
                 return line->Error("Offset parameter " + String(value) + " out of range!");
             }
-            //ret.setProperty(idCmd, value, nullptr); //idCmd is the base command, not the offset one
+            //ret.setProperty(idCmd, value + (int)ret.getProperty(idCmd), nullptr); //idCmd is the base command, not the offset one
             ret.removeProperty(idCmdEnd, nullptr);
         }
     }
@@ -3220,6 +3233,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
     for(int sec=0; sec<structure.getNumChildren(); ++sec){
         ValueTree tmpsec2 = structure.getChild(sec);
         if(tmpsec2.getProperty(idLabelName, "").toString() == tgt){
+            if(stype == 6) return;
             if((int)tmpsec2.getProperty(idSType) != stype){
                 line->Error("Conflicting stype for target label " + tgt 
                     + ", section already parsed as " + tmpsec2.getProperty(idSType).toString()
@@ -3230,6 +3244,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
         for(int cmd=0; cmd<tmpsec2.getNumChildren(); ++cmd){
             ValueTree command = tmpsec2.getChild(cmd);
             if(command.getProperty(idLabelName, "").toString() == tgt){
+                if(stype == 6) return;
                 if((int)tmpsec2.getProperty(idSType) != stype){
                     line->Error("Conflicting stype for target label " + tgt 
                         + ", found within section already parsed as " + tmpsec2.getProperty(idSType).toString()
@@ -3241,6 +3256,12 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
     }
     for(int i=0; i<fs.size(); ++i){
         if(fs[i].label == tgt){
+            if(stype == 6) return;
+            if(fs[i].stype == 6){
+                //Change from ptr self type to real section stype
+                fs.getReference(i).stype = stype;
+                return;
+            }
             if(fs[i].stype != stype){
                 line->Error("Conflicting stype for target label " + tgt 
                     + ", previously referenced as " + String(fs[i].stype)
@@ -3339,8 +3360,10 @@ int SeqFile::importMus(File musfile){
     dbgmsg("Parsing initial section in sequence, stype 0");
     //Data structures for parse results
     Array<FutureSection> futuresecs;
-    String nextCmdLabel = "";
+    altnames.clear();
+    String curLabel = "";
     bool lprint = false;
+    bool inQuestionableSection = false;
     while(true){
         if(ln >= lines.size()){
             dbgmsg("Parsing mus file ran off end!");
@@ -3361,16 +3384,26 @@ int SeqFile::importMus(File musfile){
                 line->Error("Internal error, line already parsed before!");
                 return 2;
             }
-            //and if the stype is the same
-            if((int)latersec.getProperty(idSType) != stype){
-                line->Error("Ran into existing section, but inconsistent stypes!");
-                return 2;
+            if(stype == 3 || stype == 4 || stype == 6){
+                //Ran into an existing section, means end of current section
+                dbgmsg("Detected end of " + section.getProperty(idLabelName).toString()
+                    + " due to already parsed line " + line->l);
+            }else if(inQuestionableSection){
+                line->Print();
+                dbgmsg("Ran into another section while parsing unused code, "
+                    "calling that the end of the unused code");
+            }else{
+                //If the stype is the same, it's a continuation of the current section
+                if((int)latersec.getProperty(idSType) != stype){
+                    line->Error("Ran into existing section, but inconsistent stypes!");
+                    return 2;
+                }
+                //Merge that section with this one
+                for(int i=0; i<latersec.getNumChildren(); ++i){
+                    section.appendChild(latersec.getChild(i).createCopy(), nullptr);
+                }
+                structure.removeChild(latersec, nullptr);
             }
-            //Merge that section with this one
-            for(int i=0; i<latersec.getNumChildren(); ++i){
-                section.appendChild(latersec.getChild(i).createCopy(), nullptr);
-            }
-            structure.removeChild(latersec, nullptr);
             dontAdvanceLine = true;
             endSection = true;
         }
@@ -3391,6 +3424,8 @@ int SeqFile::importMus(File musfile){
                 && !(type == "label" && !section.hasProperty(idLabelName)) ){
             //These stypes don't have their own end markers, we can only detect
             //them by something else starting.
+            dbgmsg("Detected end of " + section.getProperty(idLabelName).toString()
+                + " due to different-type line " + line->l);
             dontAdvanceLine = true;
             endSection = true;
         }else if(type == "wrongstype"){
@@ -3398,18 +3433,18 @@ int SeqFile::importMus(File musfile){
             return 2;
         }else if(type == "label"){
             //Label
-            if(!nextCmdLabel.isEmpty()){
-                line->Error("Two labels for same point in the sequence is not supported!");
-                return 2;
-            }
-            nextCmdLabel = line->toks[0];
-            if(section.getNumChildren() == 0){
-                section.setProperty(idLabelName, line->toks[0], nullptr);
+            if(!curLabel.isEmpty()){
+                altnames.set(line->toks[0], curLabel);
+            }else{
+                curLabel = line->toks[0];
+                if(section.getNumChildren() == 0){
+                    section.setProperty(idLabelName, curLabel, nullptr);
+                }
             }
             //Check if we ran into a future section
             for(int i=0; i<futuresecs.size(); ++i){
-                if(futuresecs[i].label == nextCmdLabel){
-                    if(futuresecs[i].stype != stype){
+                if(futuresecs[i].label == line->toks[0]){
+                    if(futuresecs[i].stype != stype && futuresecs[i].stype != 6){
                         line->Error("Ran into future section, but inconsistent stype!");
                         return 2;
                     }
@@ -3417,7 +3452,6 @@ int SeqFile::importMus(File musfile){
                     break;
                 }
             }
-            if(stype >= 3) nextCmdLabel = ""; //Don't keep this for future cmd
         }else if(type == "lprint"){
             lprint = command.getProperty(idValue);
         }else if(type == "align"){
@@ -3425,12 +3459,14 @@ int SeqFile::importMus(File musfile){
             command.setProperty(idAddress, ln, nullptr);
             structure.appendChild(command, nullptr);
             endSection = true;
+            curLabel = "";
         }else if(type == "cmdlist"){
             for(int i=0; i<command.getNumChildren(); ++i){
                 ValueTree cmd = command.getChild(i).createCopy();
                 checkAddFutureSection(line, futuresecs, section, cmd);
                 section.appendChild(cmd, nullptr);
             }
+            curLabel = "";
         }else if(type == "message"){
             if(section.getNumChildren() > 0){
                 line->Error("Message must appear by itself in a section!");
@@ -3445,11 +3481,11 @@ int SeqFile::importMus(File musfile){
                 section.appendChild(command.getChild(i).createCopy(), nullptr);
             }
             endSection = true;
+            curLabel = "";
         }else if(type == "command"){
             //Normal command
-            if(!nextCmdLabel.isEmpty()){
-                command.setProperty(idLabelName, nextCmdLabel, nullptr);
-                nextCmdLabel = "";
+            if(!curLabel.isEmpty()){
+                command.setProperty(idLabelName, curLabel, nullptr);
             }
             command.setProperty(idAddress, ln, nullptr);
             section.appendChild(command, nullptr);
@@ -3459,6 +3495,7 @@ int SeqFile::importMus(File musfile){
             if(action == "End of Data" || action == "Jump"){
                 endSection = true;
             }
+            curLabel = "";
         }else{
             line->Error("Internal error, unknown parsed command type " + type + "!");
             return 2;
@@ -3468,10 +3505,10 @@ int SeqFile::importMus(File musfile){
             ++ln;
         }
         if(endSection && futuresecs.size() > 0){
-            //Parse any sections other than dyntables if possible.
+            //Parse any sections other than dyntables and self tables if possible.
             int fs;
             for(fs=futuresecs.size()-1; fs > 0; --fs){ //stop at 0 if no other choices
-                if(futuresecs[fs].stype != 3) break;
+                if(futuresecs[fs].stype != 3 && futuresecs[fs].stype != 6) break;
             }
             //Find the start of the future section.
             for(ln=0; ln<lines.size(); ++ln){
@@ -3482,6 +3519,8 @@ int SeqFile::importMus(File musfile){
                     + futuresecs[fs].label + " stype " + String(futuresecs[fs].stype) + "!");
                 return 2;
             }
+            inQuestionableSection = false;
+            curLabel = "";
             stype = futuresecs[fs].stype;
             section = createBlankSectionVT(stype);
             section.setProperty(idAddress, ln, nullptr);
@@ -3526,7 +3565,11 @@ int SeqFile::importMus(File musfile){
                         section = ValueTree();
                     }
                     if(section.isValid()){
+                        lines[ln]->Print();
+                        dbgmsg("Unused line after jump, continuing previous section");
                         //Make the unused line be the next command of this section.
+                        inQuestionableSection = true;
+                        curLabel = "";
                         stype = section.getProperty(idSType);
                         dtstype = -1; //Jumps can't exist in dyntables
                         dtdynstype = -1;
@@ -3534,7 +3577,7 @@ int SeqFile::importMus(File musfile){
                         break;
                     }
                     //Otherwise give up TODO
-                    lines[ln]->Warning("unused line");
+                    lines[ln]->Warning("Unused line, could not figure out");
                 }
             }
             if(!continueParsing) break;
@@ -3549,17 +3592,19 @@ int SeqFile::importMus(File musfile){
         for(int k=0; k<tmpsec2.getNumChildren(); ++k){
             ValueTree cmd = tmpsec2.getChild(k);
             if(cmd.hasProperty(idTargetSection)){
+                String tgt = cmd.getProperty(idTargetSection);
+                if(altnames.containsKey(tgt)) tgt = altnames[tgt];
                 bool found = false;
                 for(int s=0; !found && s<structure.getNumChildren(); ++s){
                     section = structure.getChild(s);
-                    if(section.getProperty(idLabelName) == cmd.getProperty(idTargetSection)){
+                    if(section.getProperty(idLabelName) == tgt){
                         cmd.setProperty(idTargetSection, s, nullptr);
                         found = true;
                         break;
                     }
                     for(int c=0; c<section.getNumChildren(); ++c){
                         ValueTree command = section.getChild(c);
-                        if(command.getProperty(idLabelName) == cmd.getProperty(idTargetSection)){
+                        if(command.getProperty(idLabelName) == tgt){
                             cmd.setProperty(idTargetSection, s, nullptr);
                             cmd.setProperty(idTargetHash, command.getProperty(idHash), nullptr);
                             found = true;
@@ -4767,7 +4812,8 @@ bool SeqFile::getSectionAndCmd(ValueTree command, int &s, int &c){
         return false;
     }
     if(command.getProperty(idTargetSection).isString()){
-        String tgt = command.getProperty(idTargetSection).toString();
+        String tgt = command.getProperty(idTargetSection);
+        if(altnames.containsKey(tgt)) tgt = altnames[tgt];
         for(s=0; s<structure.getNumChildren(); ++s){
             ValueTree sec = structure.getChild(s);
             c = 0;

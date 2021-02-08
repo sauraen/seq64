@@ -101,7 +101,10 @@ private:
         bool used;
         MusLine(SeqFile *p, String l_, String file_, int linenum_) 
                 : parent(p), l(l_), file(file_), linenum(linenum_), used(false) {
-            l = l.upToFirstOccurrenceOf(";", false, false).trim(); //remove comments
+            //Remove comments
+            l = l.upToFirstOccurrenceOf(";", false, false);
+            l = l.upToFirstOccurrenceOf("//", false, false);
+            l = l.trim();
             //TODO: will need to parse some comments, e.g. block/tsec names and
             //FORCE LEN 2 annotation
         }
@@ -131,6 +134,7 @@ private:
         String label;
         int stype;
     };
+    StringPairArray altnames;
 
     void loadMusFileLines(OwnedArray<MusLine> &lines, String path, int insertIdx,
         MusLine *includeLine);
@@ -140,7 +144,8 @@ private:
     bool isValidDefineValue(String s);
     void substituteDefines(const StringPairArray &defs, MusLine *line);
     int parseNormalParam(const MusLine *line, String s, String datasrc, 
-        int datalen, bool canon, bool wideDelay, bool &dataforce2);
+        int datalen, bool allowNoteName = false, bool canon = false, 
+        bool wideDelay = false, bool *dataforce2 = nullptr);
     ValueTree parseMusCommand(const MusLine *line, int stype, int dtstype,
         bool wrongSTypeErrors);
     void checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 

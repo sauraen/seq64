@@ -59,7 +59,7 @@ SeqEditor::SeqEditor ()
     //[/Constructor_pre]
 
     grpMusDialect.reset (new juce::GroupComponent (juce::String(),
-                                                   TRANS(".mus dialect")));
+                                                   TRANS(".mus dialect (for export)")));
     addAndMakeVisible (grpMusDialect.get());
 
     grpMusDialect->setBounds (8, 593, 320, 71);
@@ -1093,7 +1093,7 @@ BEGIN_JUCER_METADATA
           strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 752 l 164 752 s 172 760 l 164 752 l 172 744</PATH>
   </BACKGROUND>
   <GROUPCOMPONENT name="" id="288b23c83f4e83ab" memberName="grpMusDialect" virtualName=""
-                  explicitFocusOrder="0" pos="8 593 320 71" title=".mus dialect"/>
+                  explicitFocusOrder="0" pos="8 593 320 71" title=".mus dialect (for export)"/>
   <TOGGLEBUTTON name="new toggle button" id="47cfaabd82293101" memberName="optMusCommunity"
                 virtualName="" explicitFocusOrder="0" pos="16 608 112 24" buttonText="Community"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="1"/>
