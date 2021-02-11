@@ -2908,7 +2908,7 @@ int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc,
         return -1;
     }
     if(datasrc == "variable" && value <= 0x7F && wideDelay){
-        line->Warning("Mistake in original sequence: sound programmer used "
+        line->Info("Mistake in original sequence: sound programmer used "
             "wide version of command despite having too-small variable "
             "length value " + String(value) + ". This mistake is supported by "
             "SEQ64 and will be maintained in mus <-> com conversions.");
@@ -2972,7 +2972,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         if(msg[0] != '"' || msg.getLastCharacter() != '"'){
             return line->Error("Message string must be quoted!");
         }
-        msg = msg.substring(1, msg.length()-2);
+        msg = msg.substring(1, msg.length()-1);
         if(msg.length() == 0){
             line->Warning("Empty message!");
         }
@@ -3118,6 +3118,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         return line->Error("Command not allowed in current stype " + String(stype) + "!");
     }
     if(stype < 0 || stype > 2){
+        if(!wrongSTypeErrors) return ValueTree("wrongstype");
         return line->Error("Non-hash commands not allowed in stype " + String(stype) + "!");
     }
     //Parse parameters
@@ -3270,7 +3271,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
             return;
         }
     }
-    dbgmsg("Added future section " + tgt + " stype " + String(stype));
+    //dbgmsg("Added future section " + tgt + " stype " + String(stype));
     FutureSection f;
     f.label = tgt;
     f.stype = stype;
@@ -3389,8 +3390,7 @@ int SeqFile::importMus(File musfile){
                 dbgmsg("Detected end of " + section.getProperty(idLabelName).toString()
                     + " due to already parsed line " + line->l);
             }else if(inQuestionableSection){
-                line->Print();
-                dbgmsg("Ran into another section while parsing unused code, "
+                line->Info("Ran into another section while parsing unused code, "
                     "calling that the end of the unused code");
             }else{
                 //If the stype is the same, it's a continuation of the current section
@@ -3554,30 +3554,84 @@ int SeqFile::importMus(File musfile){
             //Seems like we're done parsing. Check for unused lines.
             bool continueParsing = false;
             for(ln=0; ln<lines.size(); ++ln){
-                if(!lines[ln]->used){
-                    //Check if previous line is a jump.
-                    for(int s=0; s<structure.getNumChildren(); ++s){
-                        section = structure.getChild(s);
-                        ValueTree prev = section.getChildWithProperty(idAddress, ln-1);
-                        if(prev.isValid() && prev.getProperty(idAction).toString() == "Jump"){
-                            break;
-                        }
-                        section = ValueTree();
-                    }
-                    if(section.isValid()){
-                        lines[ln]->Print();
-                        dbgmsg("Unused line after jump, continuing previous section");
-                        //Make the unused line be the next command of this section.
-                        inQuestionableSection = true;
-                        curLabel = "";
-                        stype = section.getProperty(idSType);
-                        dtstype = -1; //Jumps can't exist in dyntables
-                        dtdynstype = -1;
-                        continueParsing = true;
+                if(lines[ln]->used) continue;
+                //Check for special commands.
+                if(lines[ln]->l.startsWith("#evenw") || lines[ln]->l.startsWith("#evenl")){
+                    inQuestionableSection = true;
+                    curLabel = "";
+                    section = structure.getChild(0);
+                    stype = 0;
+                    dtstype = -1;
+                    dtdynstype = -1;
+                    continueParsing = true;
+                    break;
+                }
+                //Check if previous line is a jump.
+                for(int s=0; s<structure.getNumChildren(); ++s){
+                    section = structure.getChild(s);
+                    ValueTree prev = section.getChildWithProperty(idAddress, ln-1);
+                    if(prev.isValid() && prev.getProperty(idAction).toString() == "Jump"){
                         break;
                     }
-                    //Otherwise give up TODO
-                    lines[ln]->Warning("Unused line, could not figure out");
+                    section = ValueTree();
+                }
+                if(section.isValid()){
+                    lines[ln]->Info("Unused line after jump, continuing previous section");
+                    //Make the unused line be the next command of this section.
+                    inQuestionableSection = true;
+                    curLabel = "";
+                    stype = section.getProperty(idSType);
+                    dtstype = -1; //Jumps can't exist in dyntables
+                    dtdynstype = -1;
+                    continueParsing = true;
+                    break;
+                }
+                //Try parsing the next few lines as each stype, since many
+                //commands are only valid in some.
+                Array<int> validSTypes;
+                String stypesstring;
+                for(stype=0; stype<=6; ++stype){
+                    bool okay = true;
+                    for(int tmpln=ln; tmpln<lines.size() && !lines[tmpln]->used; ++tmpln){
+                        command = parseMusCommand(lines[tmpln], stype, 1, false);
+                        if(importresult >= 2 || !command.isValid()){
+                            dbgmsg("Syntax error--not wrong stype--encountered during speculative parsing!");
+                            return 2;
+                        }
+                        type = command.getType().toString();
+                        if(type == "wrongstype"){
+                            okay = false;
+                            break;
+                        }
+                        String action = command.getProperty(idAction, "");
+                        if(action == "End of Data" || action == "Jump"){
+                            break;
+                        }
+                    }
+                    if(okay){
+                        validSTypes.add(stype);
+                        stypesstring += String(stype) + ", ";
+                    }
+                }
+                if(validSTypes.size() == 0){
+                    lines[ln]->Warning("Speculative parsing failed to determine stype. Ignoring line");
+                    lines[ln]->used = true;
+                }else if(validSTypes.size() >= 2){
+                    lines[ln]->Warning("Speculative parsing resulted in multiple "
+                        "possible stypes: " + stypesstring + ". Ignoring line");
+                    lines[ln]->used = true;
+                }else{
+                    stype = validSTypes[0];
+                    lines[ln]->Info("Speculative parsing deduced stype " + String(stype));
+                    inQuestionableSection = true;
+                    curLabel = "";
+                    dtstype = (stype == 3) ? 1 : -1; //Hopefully no unused dyntable, but if so probably channel
+                    dtdynstype = -1;
+                    section = createBlankSectionVT(stype);
+                    section.setProperty(idAddress, ln, nullptr);
+                    structure.appendChild(section, nullptr);
+                    continueParsing = true;
+                    break;
                 }
             }
             if(!continueParsing) break;

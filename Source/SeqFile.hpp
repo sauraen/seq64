@@ -116,16 +116,20 @@ private:
             toks.removeEmptyStrings();
         }
         void Print() const{
-            parent->dbgmsg(file + " (" + String(linenum) + "): " + l);
+            parent->dbgmsg("> " + file + " (" + String(linenum) + "): " + l);
+        }
+        void Info(String s) const{
+            Print();
+            parent->dbgmsg("  " + s);
         }
         void Warning(String s) const{
             Print();
-            parent->dbgmsg("Warning: " + s);
+            parent->dbgmsg("  Warning: " + s);
             parent->importresult |= 1;
         }
         ValueTree Error(String s) const{
             Print();
-            parent->dbgmsg("Error: " + s);
+            parent->dbgmsg("  Error: " + s);
             parent->importresult |= 2;
             return ValueTree(); //optional to use in parseMusCommand
         }

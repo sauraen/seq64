@@ -10,9 +10,9 @@ class seq64Application : public JUCEApplication
 public:
     seq64Application() {}
 
-    const String getApplicationName() override       { return ProjectInfo::projectName; }
+    const String getApplicationName() override       { return "SEQ64 V2.0"; }
     const String getApplicationVersion() override    { return ProjectInfo::versionString; }
-    bool moreThanOneInstanceAllowed() override             { return true; }
+    bool moreThanOneInstanceAllowed() override       { return true; }
 
     void initialise (const String& commandLine) override {
         mainWindow.reset (new MainWindow (getApplicationName()));
