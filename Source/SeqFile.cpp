@@ -2806,10 +2806,7 @@ void SeqFile::loadMusFileLines(OwnedArray<MusLine> &lines, String path,
     int linenum = 0;
     while(!fis.isExhausted()){
         ++linenum;
-        String l = fis.readNextLine();
-        l = l.replace("@", f.getFileNameWithoutExtension().retainCharacters(
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"));
-        MusLine *line = new MusLine(this, l, f.getFileName(), linenum);
+        MusLine *line = new MusLine(this, fis.readNextLine(), f.getFileName(), linenum);
         if(!line->l.isEmpty()){
             line->Tokenize();
             ++insertIdx;
@@ -2836,17 +2833,15 @@ bool SeqFile::parseCanonNoteName(String s, int &noteValue){
 }
 
 bool SeqFile::isValidLabel(String s){
-    //Allowed characters: alphanumeric, _. Don't need to check for
+    //Allowed characters: alphanumeric, @, _. Don't need to check for
     //commas or whitespace due to tokenization scheme.
-    //@ is allowed but means local section name, so it's already been replaced
-    //with the filename before this point.
     return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~");
 }
 bool SeqFile::isValidDefineKey(String s){
-    return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~");
+    return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?@[\\]^`{|}~");
 }
 bool SeqFile::isValidDefineValue(String s){
-    return !s.containsAnyOf("!\"#%&'()*+./:;<=>?[\\]^`{|}~");
+    return !s.containsAnyOf("!\"#%&'()*+./:;<=>?@[\\]^`{|}~");
 }
 
 void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
@@ -2981,6 +2976,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         for(int i=0; i<msg.length(); ++i){
             ret.appendChild(makeBasicDataCommand(-1, (int)msg[i], "fixed", 1), nullptr);
         }
+        ret.appendChild(makeBasicDataCommand(-1, 0, "fixed", 1), nullptr); //string null terminator
         return ret;
     }else if(name == "#word" && stype == 4){
         //#word: value16,value16, used for envelopes. Write 16-bit ints to com.
@@ -3165,7 +3161,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
                     s = s.upToFirstOccurrenceOf("(", false, false);
                     value = parseNormalParam(line, num, "fixed", 1);
                     if(importresult >= 2) return ValueTree();
-                    param.setProperty(idTargetCmdByte, value, nullptr);
+                    ret.setProperty(idTargetCmdByte, value, nullptr);
                 }
                 if(!isValidLabel(s)){
                     return line->Error("Invalid character(s) in label " + s + "!");
@@ -3352,6 +3348,20 @@ int SeqFile::importMus(File musfile){
     }
     dbgmsg(String(ln) + " lines in " + musfile.getFileName()
         + " and its included files, besides empty/comments/#include/#define");
+    //Replace @ labels
+    dbgmsg("Replacing @ labels...");
+    String localParentLabel = "";
+    for(ln=0; ln<lines.size(); ++ln){
+        ValueTree command = parseMusCommand(lines[ln], 0, -1, false);
+        if(importresult >= 2 || !command.isValid()) return 2;
+        if(command.getType().toString() == "label" && !lines[ln]->l.containsChar('@')){
+            localParentLabel = lines[ln]->toks[0];
+        }
+        if(lines[ln]->l.containsChar('@')){
+            lines[ln]->l = lines[ln]->l.replace("@", localParentLabel);
+            lines[ln]->Tokenize();
+        }
+    }
     //Init first section
     ln = 0;
     int stype = 0, dtstype = -1, dtdynstype = -1;
@@ -3361,6 +3371,7 @@ int SeqFile::importMus(File musfile){
     dbgmsg("Parsing initial section in sequence, stype 0");
     //Data structures for parse results
     Array<FutureSection> futuresecs;
+    StringArray alllabels;
     altnames.clear();
     String curLabel = "";
     bool lprint = false;
@@ -3433,17 +3444,23 @@ int SeqFile::importMus(File musfile){
             return 2;
         }else if(type == "label"){
             //Label
+            String lbl = line->toks[0];
+            if(alllabels.contains(lbl)){
+                line->Error("Redefinition of label " + lbl + "!");
+                return 2;
+            }
+            alllabels.add(lbl);
             if(!curLabel.isEmpty()){
-                altnames.set(line->toks[0], curLabel);
+                altnames.set(lbl, curLabel);
             }else{
-                curLabel = line->toks[0];
+                curLabel = lbl;
                 if(section.getNumChildren() == 0){
                     section.setProperty(idLabelName, curLabel, nullptr);
                 }
             }
             //Check if we ran into a future section
             for(int i=0; i<futuresecs.size(); ++i){
-                if(futuresecs[i].label == line->toks[0]){
+                if(futuresecs[i].label == lbl){
                     if(futuresecs[i].stype != stype && futuresecs[i].stype != 6){
                         line->Error("Ran into future section, but inconsistent stype!");
                         return 2;
@@ -3653,6 +3670,14 @@ int SeqFile::importMus(File musfile){
                     section = structure.getChild(s);
                     if(section.getProperty(idLabelName) == tgt){
                         cmd.setProperty(idTargetSection, s, nullptr);
+                        if(cmd.hasProperty(idTargetCmdByte)){
+                            if(section.getNumChildren() == 0){
+                                dbgmsg("Ptr Self has label of empty section?!");
+                                return 2;
+                            }
+                            cmd.setProperty(idTargetHash, 
+                                section.getChild(0).getProperty(idHash), nullptr);
+                        }
                         found = true;
                         break;
                     }
@@ -5316,6 +5341,18 @@ int SeqFile::exportCom(File comfile){
     for(sec=0; sec<structure.getNumChildren(); sec++){
         section = structure.getChild(sec);
         section.setProperty(idAddress, (int)address, nullptr);
+        if(section.getType().toString() == "align"){
+            int value = section.getProperty(idValue, -1);
+            if(value != 2 && value != 4){
+                dbgmsg("Invalid alignment: " + String(value));
+                return 2;
+            }
+            uint32_t newaddr = (address + value - 1) & ~(value - 1);
+            section.setProperty(idLength, (int)(newaddr - address), nullptr);
+            dbgmsg("Aligning address " + hex(address,16) + " to " + hex(newaddr,16));
+            address = newaddr;
+            continue;
+        }
         for(cmd=0; cmd<section.getNumChildren(); cmd++){
             command = section.getChild(cmd);
             command.setProperty(idAddress, (int)address, nullptr);
@@ -5331,8 +5368,18 @@ int SeqFile::exportCom(File comfile){
     for(sec=0; sec<structure.getNumChildren(); sec++){
         //dbgmsg("----Section " + String(sec));
         section = structure.getChild(sec);
+        if(address != (int)section.getProperty(idAddress, -1)){
+            dbgmsg(hex(address,16) + " address sanity check failed!"); return 2;
+        }
+        if(section.getType().toString() == "align"){
+            for(int i=0; i<(int)section.getProperty(idLength); ++i) data.set(address++, 0);
+            continue;
+        }
         for(cmd=0; cmd<section.getNumChildren(); cmd++){
             command = section.getChild(cmd);
+            if(address != (int)command.getProperty(idAddress, -1)){
+                dbgmsg(hex(address,16) + " address sanity check failed!"); return 2;
+            }
             action = command.getProperty(idAction, "No Action");
             len = command.getProperty(idLength, 1);
             //Get addresses of pointers
@@ -5366,6 +5413,10 @@ int SeqFile::exportCom(File comfile){
                         }
                     }else{
                         ptraddr = section2.getProperty(idAddress);
+                        if(command.hasProperty(idTargetCmdByte)){
+                            dbgmsg("Command with target command byte but no target hash!");
+                            importresult |= 2;
+                        }
                     }
                 }
                 //Put in relative/absolute address
