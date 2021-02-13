@@ -2918,14 +2918,14 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
     String name = line->toks[0];
     //Besides #include and #define, these are all the hash commands in the
     //bicon executable.
-    if(name == "#label"){
+    if(name == "#address" || name == "#label"){
         //#label label_name, label_name_2, ..., used for dyntables
         if(stype != 3){
             if(!wrongSTypeErrors) return ValueTree("wrongstype");
-            return line->Error("#label only allowed in dyntable!");
+            return line->Error("#address/#label only allowed in dyntable!");
         }
         if(line->toks.size() < 2){
-            return line->Error("Missing tokens after #label!");
+            return line->Error("Missing tokens after #address/#label!");
         }
         if(line->toks[1] == ","){
             return line->Error("There is no comma between a hash command and its "
@@ -2955,15 +2955,15 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             }
         }
         return ret;
-    }else if(name == "#msg"){
+    }else if(name == "#string" || name == "#msg"){
         //#msg "Blah blah", referenced by dprint. Number seen to be 0 or 3,
         //definitely not string length. Perhaps debug console color or
         //verboseness/severity?
         if(stype != 5){
             if(!wrongSTypeErrors) return ValueTree("wrongstype");
-            return line->Error("#msg only valid in stype 5 (message)!");
+            return line->Error("#string/#msg only valid in stype 5 (message)!");
         }
-        String msg = line->l.substring(4).trim();
+        String msg = line->l.substring(name.length()).trim();
         if(msg[0] != '"' || msg.getLastCharacter() != '"'){
             return line->Error("Message string must be quoted!");
         }
@@ -2978,10 +2978,10 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         }
         ret.appendChild(makeBasicDataCommand(-1, 0, "fixed", 1), nullptr); //string null terminator
         return ret;
-    }else if(name == "#word" && stype == 4){
+    }else if((name == "#u16" || name == "#word") && stype == 4){
         //#word: value16,value16, used for envelopes. Write 16-bit ints to com.
         if(line->toks.size() != 4 || line->toks[2] != ","){
-            return line->Error("#word command in envelope must look like \"#word val,val\"!");
+            return line->Error("#u16/#word command in envelope must look like \"#word val,val\"!");
         }
         int rate, level;
         rate = parseNormalParam(line, line->toks[1], "fixed", 2);
@@ -2989,17 +2989,18 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         level = parseNormalParam(line, line->toks[3], "fixed", 2);
         if(importresult >= 2) return ValueTree();
         return makeEnvelopeCommand(0, rate, level);
-    }else if(name == "#byte" || name == "#wlen" || name == "#word"){
+    }else if(name == "#u8" || name == "#byte" || name == "#variable" || name == "#wlen" 
+            || name == "#u16" || name == "#word"){
         //#byte: presumably, write bytes to com.
         //#wlen: presumably, write variable length value to com. Due to how
         //commands are defined, this probably always writes the 2-byte version.
         //Note that, presumably, bicon did not have a concept of stype and
         //allowed these commands to appear anywhere. In fact, the .def file
         //probably translated normal commands into these commands.
-        if(!(name == "#byte" && stype == 6)){
+        if(!((name == "#u8" || name == "#byte") && stype == 6)){
             if(!wrongSTypeErrors) return ValueTree("wrongstype");
-            line->Warning("#byte/#wlen/#word other than #word in envelopes (4) and "
-                "#byte in Other Tables (6) is only partially supported!");
+            line->Warning("#u8/#byte/#variable/#wlen/#u16/#word other than #u16/#word "
+                "in envelopes (4) and #u8/#byte in Other Tables (6) is only partially supported!");
         }
         if(line->toks.size() < 2){
             return line->Error("Missing tokens after " + name + "!");
@@ -3012,8 +3013,8 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         ret = ValueTree("cmdlist");
         int t = 1;
         while(true){
-            String datasrc = (name == "#wlen") ? "variable" : "fixed";
-            int datalen = (name == "#word") ? 2 : 1;
+            String datasrc = (name == "#variable" || name == "#wlen") ? "variable" : "fixed";
+            int datalen = (name == "#u16" || name == "#word") ? 2 : 1;
             int value = parseNormalParam(line, line->toks[t], datasrc, datalen, true);
             if(importresult >= 2) return ValueTree();
             ret.appendChild(makeBasicDataCommand(-1, value, datasrc, datalen), nullptr);
@@ -3028,11 +3029,11 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             }
         }
         return ret;
-    }else if(name == "#evenw" || name == "evenl"){
+    }else if(name == "#align2" || name == "#evenw" || name == "#align4" || name == "evenl"){
         //#evenw: align to even word (2 bytes).
         //#evenl: presumably, align to even long (4 bytes)?
         ret = ValueTree("align");
-        ret.setProperty(idValue, name == "#evenw" ? 2 : 4, nullptr);
+        ret.setProperty(idValue, (name == "#align4" || name == "#evenl") ? 4 : 2, nullptr);
         return ret;
     }else if(name == "#lprinton" || name == "#lprintoff"){
         //Function unknown, presumably printing lines as they're parsed or
@@ -3079,23 +3080,29 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         }
     }
     //Normal commands
-    for(int cmd=0; !ret.isValid() && cmd<abi.getNumChildren(); ++cmd){
+    ValueTree possibleCmds("temp");
+    for(int cmd=0; cmd<abi.getNumChildren(); ++cmd){
         ValueTree command = abi.getChild(cmd);
-        if(command.getProperty(idName, "").toString().toLowerCase() == name){
-            ret = command.createCopy();
-        }else if(command.getProperty(idCName, "").toString().toLowerCase() == name
-              || command.getProperty(idOName, "").toString().toLowerCase() == name){
-            ret = command.createCopy();
+        String nname = command.getProperty(idName,  "");
+        String cname = command.getProperty(idCName, "");
+        String oname = command.getProperty(idOName, "");
+        nname = nname.toLowerCase();
+        cname = cname.toLowerCase();
+        oname = oname.toLowerCase();
+        bool hasVariable = command.getChildWithProperty(idDataSrc, "variable").isValid();
+        if(nname == name){
+            (void)0; //just add to possible cmds below
+        }else if(cname == name || oname == name){
             canon = true;
-        }else if(command.getChildWithProperty(idDataSrc, "variable").isValid() &&
-                 ( command.getProperty(idCName, "").toString().toLowerCase() == no_w_name
-                || command.getProperty(idOName, "").toString().toLowerCase() == no_w_name)){
+        }else if(hasVariable && (cname == no_w_name || oname == no_w_name)){
             canon = true;
             wideDelay = true;
-            ret = command.createCopy();
+        }else{
+            continue;
         }
+        possibleCmds.appendChild(command.createCopy(), nullptr);
     }
-    if(!ret.isValid()){
+    if(possibleCmds.getNumChildren() == 0){
         //Maybe it's a label
         if(line->toks.size() > 1){
             return line->Error("Token " + line->toks[0] + " not recognized as a command, "
@@ -3107,16 +3114,35 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         }
         return ValueTree("label");
     }
-    if(        (stype == 0 && !ret.getProperty(idValidInSeq))
-            || (stype == 1 && !ret.getProperty(idValidInChn))
-            || (stype == 2 && !ret.getProperty(idValidInTrk))){
-        if(!wrongSTypeErrors) return ValueTree("wrongstype");
-        return line->Error("Command not allowed in current stype " + String(stype) + "!");
-    }
     if(stype < 0 || stype > 2){
         if(!wrongSTypeErrors) return ValueTree("wrongstype");
         return line->Error("Non-hash commands not allowed in stype " + String(stype) + "!");
     }
+    //Need to check stype after listing possible commands, because we need to
+    //distinguish between the case where the command is completely
+    //unrecognized and therefore it's a label, and the case where it's recognized
+    //but in the wrong stype.
+    for(int cmd=0; cmd<possibleCmds.getNumChildren(); ++cmd){
+        ValueTree command = possibleCmds.getChild(cmd);
+        if(        (stype == 0 && !command.getProperty(idValidInSeq))
+                || (stype == 1 && !command.getProperty(idValidInChn))
+                || (stype == 2 && !command.getProperty(idValidInTrk))){
+            possibleCmds.removeChild(cmd, nullptr);
+            --cmd;
+        }
+    }
+    if(possibleCmds.getNumChildren() == 0){
+        if(!wrongSTypeErrors) return ValueTree("wrongstype");
+        return line->Error("Command not allowed in current stype " + String(stype) + "!");
+    }
+    if(possibleCmds.getNumChildren() >= 2){
+        return line->Error("This could be multiple different commands, check the "
+            "ABI definition! Note that there is no mus dialect setting for import, "
+            "so if e.g. the community name of command A is the same as the canon "
+            "name for command B, in the same stype, this would be ambiguous.");
+    }
+    ret = possibleCmds.getChild(0);
+    possibleCmds.removeChild(0, nullptr); //ret will get added to structure later, can't have two parents
     //Parse parameters
     int t = 1;
     for(int p=0; p<ret.getNumChildren(); ++p){
@@ -3573,7 +3599,7 @@ int SeqFile::importMus(File musfile){
             for(ln=0; ln<lines.size(); ++ln){
                 if(lines[ln]->used) continue;
                 //Check for special commands.
-                if(lines[ln]->l.startsWith("#evenw") || lines[ln]->l.startsWith("#evenl")){
+                if(lines[ln]->l.startsWith("#align") || lines[ln]->l.startsWith("#even")){
                     inQuestionableSection = true;
                     curLabel = "";
                     section = structure.getChild(0);
@@ -3827,8 +3853,8 @@ void SeqFile::nameSections(int dialect){
         }else if(section.hasProperty(idSrcCmdRef)){
             name += "_" + String(dialect >= 2 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
         }
-        if(allsecnames.contains(name)){
-            dbgmsg("Name clash for section " + String(sec) + " \"" + name + "\"");
+        if(name.isEmpty() || allsecnames.contains(name)){
+            //dbgmsg("Name clash for section " + String(sec) + " \"" + name + "\"");
             name += "_" + String(sec);
         }
         allsecnames.addIfNotAlreadyThere(name);
@@ -4102,6 +4128,15 @@ int SeqFile::exportMus(File musfile, int dialect){
     int last_stype = -2;
     for(int sec=0; sec<structure.getNumChildren(); ++sec){
         ValueTree section = structure.getChild(sec);
+        if(section.getType().toString() == "align"){
+            if((int)section.getProperty(idValue) == 4){
+                out += (dialect >= 2) ? "#evenl" : "#align4";
+            }else{
+                out += (dialect >= 2) ? "#evenw" : "#align2";
+            }
+            out += "\n\n";
+            continue;
+        }
         int stype = section.getProperty(idSType);
         if(sectiongroup == -1){
             sectiongroup = 0;
@@ -4160,11 +4195,6 @@ int SeqFile::exportMus(File musfile, int dialect){
             }else{
                 out += "; Some Dyntable\n";
             }
-        }else if(stype == 4){
-            //envelope
-            if(last_stype != 4){
-                out += "#evenw\n\n";
-            }
         }
         //Section label
         if(sec != 0 || dialect < 2){
@@ -4175,7 +4205,7 @@ int SeqFile::exportMus(File musfile, int dialect){
             //dyntable
             int lblctr = 0;
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
-                out += !(lblctr & 7) ? "#label   " : ", ";
+                out += !(lblctr & 7) ? (dialect >= 2 ? "#label   " : "#address ") : ", ";
                 int tgt = section.getChild(cmd).getProperty(idTargetSection, -1);
                 if(tgt < 0 || tgt >= structure.getNumChildren()){
                     dbgmsg("Invalid idTargetSection " + String(tgt) + " in dyntable!");
@@ -4198,17 +4228,19 @@ int SeqFile::exportMus(File musfile, int dialect){
                     dbgmsg("Invalid envelope point!\n");
                     return 2;
                 }
-                out += "#word\t" + p1.getProperty(idValue, -1).toString() + "," 
+                out += (dialect >= 2 ? "#word\t" : "#u16 ") 
+                    + p1.getProperty(idValue, -1).toString() + "," 
                     + p2.getProperty(idValue, 0).toString() + "\n";
             }
         }else if(stype == 5){
             //message
-            out += "#msg \"" + section.getProperty(idMessage, "").toString() + "\"\n";
+            out += (dialect >= 2 ? "#msg \"" : "#string \"") 
+                + section.getProperty(idMessage, "").toString() + "\"\n";
         }else if(stype == 6){
             //extable
             int lblctr = 0;
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
-                out += !(lblctr & 15) ? "#byte    $" : ",$";
+                out += !(lblctr & 15) ? (dialect >= 2 ? "#byte    $" : "#u8 $") : ",$";
                 ValueTree param = section.getChild(cmd).getChildWithProperty(idMeaning, "Data");
                 if(!param.isValid()){
                     dbgmsg("Invalid other table / extable!");
@@ -5455,541 +5487,3 @@ int SeqFile::exportCom(File comfile){
     dbgmsg("Saved " + String(data.size()) + " bytes from sequence to " + comfile.getFullPathName());
     return importresult;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-///////////////////////// No longer used (GUI editing) /////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-#if 0
-
-void SeqFile::trim(){
-    int lastbyte = data.size() - 1;
-    for(; lastbyte >= 0; lastbyte--){
-        if(data[lastbyte] != 0){
-            break;
-        }
-    }
-    lastbyte = (lastbyte & 0xFFFFFFFC) + 4;
-    if(lastbyte >= data.size()){
-        dbgmsg("SeqFile::trim(): no trim required");
-        return;
-    }
-    dbgmsg("Trimming SeqFile from " + hex((uint32_t)data.size(), 4) + " to " + hex((uint32_t)lastbyte, 4) + " bytes");
-    data.removeRange(lastbyte, data.size() - lastbyte);
-}
-
-int SeqFile::getNumSections(){
-    return sections.size();
-}
-
-
-String SeqFile::getSectionDescription(int s){
-    if(s < 0 || s >= sections.size()) return "";
-    SeqData* sec = sections[s];
-    String ret = "@" + hex(sec->address, 4) + ": ";
-    if(sec->stype == 0){
-        ret += "Seq -- --";
-    }else if(sec->stype == 1){
-        ret += "Chn " + String(sec->channel).paddedLeft(' ', 2) + " --";
-    }else{
-        ret += "Trk " + String(sec->channel).paddedLeft(' ', 2) + " " + String(sec->layer).paddedLeft(' ', 2);
-    }
-    ret += " " + String(sec->cmdoffsets.size());
-    return ret;
-}
-
-String SeqFile::getCommandDescription(int s, int c){
-    if(s < 0 || s >= sections.size()) return "";
-    String ret = "";
-    SeqData* section = sections[s];
-    if(c < 0 || c >= section->cmdoffsets.size()) return "";
-    uint32_t a = section->cmdoffsets[c];
-    ValueTree cmd = getCommand(a, section->stype);
-    int len = cmd.getProperty(idLength, 1);
-    for(int i=0; i<len; i++){
-        ret += hex(data[a+i]) + " ";
-    }
-    ret = ret.paddedRight(' ', 15);
-    ret = "@" + hex(a, 4) + ": " + ret;
-    ret += cmd.getProperty(idName, "[Unknown Cmd]").toString();
-    return ret;
-}
-
-
-void SeqFile::insertSpaceAt(uint32_t address, int size, int enlargeSection){
-    //Fix pointers
-    SeqData* sec;
-    ValueTree command, param;
-    String action;
-    int c;
-    uint32_t a;
-    int addrOfChangeSection = -1;
-    if(enlargeSection >= 0 && enlargeSection < sections.size()){
-        addrOfChangeSection = sections[enlargeSection]->address;
-    }
-    for(int s=0; s<sections.size(); s++){
-        sec = sections[s];
-        if(s == enlargeSection){
-            if(sec->address > address){
-                sec->address += size;
-            }
-            if(sec->address_end >= address){
-                sec->address_end += size;
-            }
-        }else{
-            if(sec->address >= address){
-                sec->address += size;
-            }
-            if(sec->address_end > address){
-                sec->address_end += size;
-            }
-        }
-        for(c=0; c<sec->cmdoffsets.size(); c++){
-            a = sec->cmdoffsets[c];
-            editCmdPointer(a, sec->stype, address, size, addrOfChangeSection);
-            if(a >= address){
-                sec->cmdoffsets.set(c, a + size);
-            }
-        }
-    }
-    //Actually insert space
-    data.insertMultiple(address, 0, size);
-}
-void SeqFile::removeData(uint32_t address, int size, int shrinkSection){
-    if(size <= 0){
-        dbgmsg("Asked to remove data with invalid size " + String(size) + "!");
-        return;
-    }
-    //Fix pointers
-    SeqData* sec;
-    ValueTree command, param;
-    int c;
-    uint32_t a;
-    int addrOfChangeSection = -1;
-    if(shrinkSection >= 0 && shrinkSection < sections.size()){
-        addrOfChangeSection = sections[shrinkSection]->address;
-    }
-    for(int s=0; s<sections.size(); s++){
-        sec = sections[s];
-        if(sec->address >= address){
-            sec->address -= size;
-            if(sec->address < address) sec->address = address;
-        }
-        for(c=0; c<sec->cmdoffsets.size(); c++){
-            a = sec->cmdoffsets[c];
-            editCmdPointer(a, sec->stype, address, 0-size, addrOfChangeSection);
-            if(a >= address){
-                a -= size;
-                if(a < address) a = address;
-                sec->cmdoffsets.set(c, a);
-            }
-        }
-        if(sec->address_end >= address){
-            sec->address_end -= size;
-            if(sec->address_end < address) sec->address_end = address;
-        }
-    }
-    //Actually delete data
-    data.removeRange(address, size);
-}
-
-void SeqFile::editCmdPointer(uint32_t cmdaddr, int stype, uint32_t daddr, int dsize, int addrOfChangeSection){
-    ValueTree command = getCommand(cmdaddr, stype);
-    String action = command.getProperty(idAction);
-    //Fix absolute pointers
-    ValueTree param = command.getChildWithProperty(idMeaning, "Absolute Address");
-    if(param.isValid()){
-        if(param.getProperty(idDataSrc, "fixed").toString() != "fixed"){
-            dbgmsg("Address command parameters must be fixed-length! (in " + action + ")");
-            return;
-        }
-        int oldvalue = (int)param.getProperty(idValue, 0);
-        if(oldvalue >= daddr){
-            if(oldvalue == daddr && addrOfChangeSection == daddr){
-                return; //Leave pointer
-            }
-            int newvalue = oldvalue + dsize;
-            int datalen = (int)param.getProperty(idDataLen, 1);
-            //Check out-of-range
-            if(newvalue < 0 || newvalue >= (1 << (datalen << 3))){ //8-bit for one, 16-bit for two...
-                dbgmsg("Absolute address pointer going out-of-range @" + hex(cmdaddr,16) 
-                        + " in " + action + ", now " + String(newvalue) + "!");
-                return;
-            }
-            int a = cmdaddr + (int)param.getProperty(idDataAddr, 1);
-            for(int i=a+datalen-1; i>=a; i--){
-                data.set(i, (newvalue & 0xFF));
-                newvalue >>= 8;
-            }
-        }
-        return;
-    }
-    //Fix relative pointers
-    param = command.getChildWithProperty(idMeaning, "Relative Address");
-    if(param.isValid()){
-        if(param.getProperty(idDataSrc, "fixed").toString() != "fixed"){
-            dbgmsg("Address command parameters must be fixed-length! (in " + action + ")");
-            return;
-        }
-        int oldvalue = (int)param.getProperty(idValue, 0);
-        //dbgmsg("Relative address value @" + hex(cmdaddr,16) + " parsed to " + String(oldvalue));
-        int newvalue = 0;
-        int datalen = (int)param.getProperty(idDataLen, 1);
-        if(cmdaddr >= daddr && (int)cmdaddr + oldvalue < daddr){
-            newvalue = oldvalue - dsize;
-        }else if(cmdaddr < daddr && (int)cmdaddr + oldvalue >= daddr){
-            newvalue = oldvalue + dsize;
-        }else{
-            return;
-        }
-        //Check out-of-range
-        int max_value = (1 << ((datalen << 3) - 1)) - 1; //7-bit for one, 15-bit for two...
-        if(newvalue < 0 - max_value || newvalue > max_value){
-            dbgmsg("Relative address pointer going out-of-range @" + hex(cmdaddr,16) 
-                    + " in " + action + ", now " + String(newvalue) + "!");
-            return;
-        }
-        int a = cmdaddr + (int)param.getProperty(idDataAddr, 1);
-        for(int i=a+datalen-1; i>=a; i--){
-            data.set(i, (newvalue & 0xFF));
-            newvalue >>= 8;
-        }
-    }
-}
-
-int SeqFile::editCmdParam(int section, uint32_t address, int stype, String meaning, int newvalue){
-    dbgmsg("Editing command parameter @" + hex(address,16) + " stype " + String(stype) + " " + meaning + " to " + hex((uint32_t)newvalue));
-    int ret = 0;
-    ValueTree command = getCommand(address, stype);
-    ValueTree param = command.getChildWithProperty(idMeaning, meaning);
-    if(!param.isValid()){
-        dbgmsg("Error: asked to edit command parameter with meaning " + meaning + ", does not exist!");
-        return -1;
-    }
-    int value = param.getProperty(idValue, 0);
-    if(newvalue == value) return 0;
-    uint32_t a = address + (int)param.getProperty(idDataAddr, 1);
-    String datasrc = param.getProperty(idDataSrc, "fixed");
-    int datalen = param.getProperty(idDataLen, 1);
-    //int dataactuallen = param.getProperty(idDataActualLen, 1);
-    if(datasrc == "offset"){
-        ValueTree desc = getDescription(data[address], stype);
-        int cmdbegin = desc.getProperty(idCmd, 0);
-        int cmdend = desc.getProperty(idCmdEnd, cmdbegin);
-        if(newvalue > (cmdend - cmdbegin) || newvalue < 0) return -1;
-        data.set(a, cmdbegin + newvalue);
-    }else if(datasrc == "fixed"){
-        for(int i=a+datalen-1; i>=a; i--){
-            data.set(i, (newvalue & 0xFF));
-            newvalue >>= 8;
-        }
-    }else if(datasrc == "variable"){
-        if(newvalue < 0) newvalue = 0;
-        if(datalen == 1){
-            if(newvalue > 0x7F) newvalue = 0x7F;
-            if(value == 0){
-                //Make room for value
-                insertSpaceAt(a, 1, section);
-                ret = 1;
-                data.set(a, newvalue);
-            }else{
-                if(newvalue == 0){
-                    removeData(a, 1, section);
-                    ret = 1;
-                }else{
-                    data.set(a, newvalue);
-                }
-            }
-        }else if(datalen == 2){
-            if(newvalue >= 0x8000) newvalue = 0x8000;
-            if(value <= 0x7F && newvalue >= 0x80){
-                insertSpaceAt(a+1, 1, section);
-                ret = 1;
-            }else if(value >= 0x80 && newvalue <= 0x7F){
-                removeData(a+1, 1, section);
-                ret = 1;
-            }
-            if(newvalue <= 0x7F){
-                data.set(a, newvalue);
-            }else{
-                data.set(a, 0x80 + (newvalue >> 8));
-                data.set(a+1, (newvalue & 0xFF));
-            }
-        }else{
-            dbgmsg("Due to SeqFile variable length format, length > 2 not defined!");
-            return -1;
-        }
-    }else{
-         dbgmsg("Invalid command description! datasrc == " + datasrc);
-         return -1;
-    }
-    return ret;
-}
-bool SeqFile::swapCommands(int sectionidx, int firstcmdidx){
-    SeqData* section = getSection(sectionidx);
-    if(firstcmdidx <= 0 || firstcmdidx >= section->cmdoffsets.size() - 1) return false;
-    //Get commands
-    uint32_t cmdaddr_1 = section->cmdoffsets[firstcmdidx];
-    uint32_t cmdaddr_2 = section->cmdoffsets[firstcmdidx+1];
-    ValueTree cmd_1 = getCommand(cmdaddr_1, section->stype);
-    ValueTree cmd_2 = getCommand(cmdaddr_2, section->stype);
-    uint32_t len_1 = (int)cmd_1.getProperty("length", 1);
-    uint32_t len_2 = (int)cmd_2.getProperty("length", 1);
-    if(len_1 != (cmdaddr_2 - cmdaddr_1)){
-        dbgmsg("Difference in address between commands not equal to first command's length!");
-        return false;
-    }
-    //Edit command relative addresses
-    for(int p=0; p<cmd_1.getNumChildren(); ++p){
-        ValueTree param = cmd_1.getChild(p);
-        if(param.getProperty("meaning", "None") == "Relative Address"){
-            editCmdParam(sectionidx, cmdaddr_1, section->stype, "Relative Address",
-                (int)param.getProperty("value", 0) - len_1);
-        }
-    }
-    for(int p=0; p<cmd_2.getNumChildren(); ++p){
-        ValueTree param = cmd_2.getChild(p);
-        if(param.getProperty("meaning", "None") == "Relative Address"){
-            editCmdParam(sectionidx, cmdaddr_2, section->stype, "Relative Address",
-                (int)param.getProperty("value", 0) + len_1);
-        }
-    }
-    //Swap commands
-    uint32_t s, d;
-    for(s=cmdaddr_1, d=cmdaddr_2+len_2; s<cmdaddr_2; ++s, ++d){
-        data.insert(d, data[s]);
-    }
-    for(s=0; s<len_1; ++s){
-        data.remove(cmdaddr_1);
-    }
-    //Done
-    parse();
-    return true;
-}
-
-void SeqFile::insertCommand(int section, int cmdidx, ValueTree command){
-    if(!command.isValid()) return;
-    //dbgmsg("Writing command " + command.getProperty(idAction).toString() + " section " 
-    //        + String(section) + " index " + String(cmdidx));
-    if(section >= sections.size() || section < 0){
-        dbgmsg("Invalid section " + String(section));
-        return;
-    }
-    SeqData* sec = sections[section];
-    //int address_start = sec->address;
-    ValueTree param;
-    String datasrc;
-    //Get address to insert command at
-    uint32_t address;
-    //bool insertAtEnd = false;
-    if(cmdidx < sec->cmdoffsets.size() && cmdidx >= 0){
-        address = sec->cmdoffsets[cmdidx];
-    }else{
-        cmdidx = sec->cmdoffsets.size();
-        address = sec->address_end;
-        //insertAtEnd = true;
-    }
-    //Figure out how many bytes to insert
-    int cmdlen = getNewCommandLength(command);
-    //See if an absolute address in the command itself will be affected by its own insertion
-    param = command.getChildWithProperty(idMeaning, "Absolute Address");
-    if(param.isValid()){
-        int oldvalue = (int)param.getProperty(idValue, 0);
-        if(oldvalue >= address){
-            int newvalue = oldvalue + cmdlen;
-            param.setProperty(idValue, newvalue, 0);
-        }
-    }
-    //Insert the room for the bytes into the data
-    insertSpaceAt(address, cmdlen, section);
-    //Set up cmdoffset for new command
-    sec->cmdoffsets.insert(cmdidx, address);
-    //Write command
-    writeCommand(address, command);
-}
-
-void SeqFile::deleteCommand(int section, int cmdidx){
-    if(section >= sections.size() || section < 0){
-        dbgmsg("Invalid section " + String(section));
-        return;
-    }
-    SeqData* sec = sections[section];
-    if(cmdidx >= sec->cmdoffsets.size() || cmdidx < 0){
-        dbgmsg("Invalid command " + String(section));
-        return;
-    }
-    uint32_t address = sec->cmdoffsets[cmdidx];
-    ValueTree command = getCommand(address, sec->stype);
-    int cmdlen = command.getProperty(idLength, 1);
-    //Delete the cmdoffset
-    sec->cmdoffsets.remove(cmdidx);
-    //Delete the data
-    removeData(address, cmdlen, section);
-}
-
-
-Array<uint8_t> data;
-
-uint8_t SeqFile::readByte(uint32_t address){
-    return data[address];
-}
-void SeqFile::writeByte(uint32_t address, uint8_t d){
-    data.set(address, d);
-}
-uint32_t SeqFile::getLength(){
-    return data.size();
-}
-
-
-struct SeqData{
-    SeqData();
-
-    uint32_t address;
-    uint32_t address_end;
-    int8_t stype;
-    int8_t channel;
-    int8_t layer;
-    int8_t calldepth;
-    int8_t finished;
-    int16_t tsection;
-    Array<uint32_t> cmdoffsets;
-};
-
-SeqData::SeqData(){
-	address = 0;
-	address_end = 0;
-	stype = 0;
-	channel = 0;
-	layer = 0;
-	calldepth = 0;
-	finished = 0;
-	tsection = 0;
-}
-
-OwnedArray<SeqData> sections;
-
-
-SeqData* SeqFile::getOrMakeSectionAt(uint32_t a){
-    for(int s=0; s<sections.size(); s++){
-        if(sections[s]->address == a){
-            return sections[s];
-        }
-    }
-    SeqData* newsection = new SeqData();
-    newsection->address = a;
-	newsection->address_end = a;
-	newsection->channel = 0;
-	newsection->layer = 0;
-	newsection->stype = 0;
-	newsection->tsection = 0;
-	newsection->calldepth = 0;
-    newsection->finished = 0;
-    sections.add(newsection);
-    return newsection;
-}
-bool SeqFile::isSectionAt(uint32_t a, int stype){
-    for(int s=0; s<sections.size(); s++){
-        if(sections[s]->address != a) continue;
-        if(sections[s]->stype != stype){
-            dbgmsg("Pointer to section @" + hex(a,16) + " from stype " 
-                    + String(stype) + " to stype " + String(sections[s]->stype) + "!");
-        }
-        return true;
-    }
-    return false;
-}
-SeqData* SeqFile::getSection(int s){
-    if(s < 0 || s >= sections.size()) return nullptr;
-    return sections[s];
-}
-
-
-bool SeqFile::load(ROM& rom, int seqnumber){
-    //if(rom.byteOrdering != ROM::ABCD && ((seqaddr & 0x00000003) || (length & 0x00000003))){
-    //    dbgmsg("Byte-swapped ROM with non-word-aligned data... this will end poorly!");
-    //}
-    //Get file and index properties from RomDesc
-    ValueTree asiinfonode = romdesc.getChildWithName("knownfilelist")
-            .getChildWithProperty("type", "Audioseq Index");
-    if(!asiinfonode.isValid()){
-        dbgmsg("Audioseq Index not defined in RomDesc!");
-        return false;
-    }
-    uint32_t asiaddr = (int)asiinfonode.getProperty("address");
-    if(asiaddr >= rom.getSize()){
-        dbgmsg("Audioseq Index at invalid index " + hex(asiaddr) + "!");
-        return false;
-    }
-    ValueTree asinfonode = romdesc.getChildWithName("knownfilelist")
-            .getChildWithProperty("type", "Audioseq");
-    if(!asinfonode.isValid()){
-        dbgmsg("Audioseq not defined in RomDesc!");
-        return false;
-    }
-    uint32_t asaddr = (int)asinfonode.getProperty("address");
-    if(asaddr >= rom.getSize()){
-        dbgmsg("Audioseq at invalid index " + hex(asaddr) + "!");
-        return false;
-    }
-    //Get sequence properties from index
-    uint32_t seqaddr, seqlen;
-    if((int)romdesc.getProperty("indextype", 1) == 2){
-        seqaddr = asaddr + rom.readWord(asiaddr + (16*seqnumber) + 16);
-        seqlen = rom.readWord(asiaddr + (16*seqnumber) + 20);
-    }else{
-        seqaddr = asaddr + rom.readWord(asiaddr + (8*seqnumber) + 4);
-        seqlen = rom.readWord(asiaddr + (8*seqnumber) + 8);
-    }
-    if(seqlen >= 10000000){
-        dbgmsg("Trying to load sequence more than 10MB! Probably wrong!");
-        return false;
-    }
-    //Actually load sequence
-    dbgmsg("Loading sequence file from " + hex(seqaddr) + " length " + hex(seqlen));
-    data.ensureStorageAllocated(seqlen);
-    for(int i=0; i<seqlen; i++){
-        data.add(rom.readByte(i+seqaddr));
-    }
-    dbgmsg("Copied ROM data to sequence, size == " + hex((uint32_t)data.size()));
-    trim();
-    /*
-    TODO bank integration
-    //Try to load bank number
-    bank_num = -1;
-    ValueTree sbminfonode = romdesc.getChildWithName("knownfilelist")
-            .getChildWithProperty("type", "Sequence Banks Map");
-    do{
-        if(!sbminfonode.isValid()){
-            dbgmsg("No Sequence Banks Map defined in RomDesc, cannot load bank");
-            break;
-        }
-        uint32_t sbmaddr = (int)sbminfonode.getProperty("address");
-        if(sbmaddr >= rom.getSize()){
-            dbgmsg("Invalid Sequence Banks Map in RomDesc " + hex(sbmaddr) + ", cannot load bank");
-            break;
-        }
-        //Read bank number
-        uint16_t ptr = rom.readHalfWord(sbmaddr + (seqnumber << 1));
-        uint8_t seq_isetcount = rom.readByte(sbmaddr + ptr);
-        if(seq_isetcount == 0){
-            dbgmsg("Sequence has no banks, cannot load bank");
-            break;
-        }
-        if(seq_isetcount > 1){
-            dbgmsg(
-                    "========================== PLEASE NOTE ============================\n"
-                    "This sequence uses more than one bank.\n"
-                    "By default the first one will be used for MIDI export--\n"
-                    "if you want to use a different one, change them in the Sequence Banks\n"
-                    "section of the Files Pane.");
-        }
-        bank_num = rom.readByte(sbmaddr + ptr + 1);
-    }while(false);
-    */
-    //Before we leave
-    parse();
-    return true;
-}
-
-
-#endif
