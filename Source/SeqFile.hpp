@@ -98,15 +98,16 @@ private:
         StringArray toks;
         String file;
         int linenum;
-        bool used;
+        bool used, dataforce2;
         MusLine(SeqFile *p, String l_, String file_, int linenum_) 
-                : parent(p), l(l_), file(file_), linenum(linenum_), used(false) {
+                : parent(p), l(l_), file(file_), linenum(linenum_), used(false),
+                  dataforce2(false) {
             //Remove comments
+            dataforce2 = l.contains("; FORCE LEN 2");
             l = l.upToFirstOccurrenceOf(";", false, false);
             l = l.upToFirstOccurrenceOf("//", false, false);
             l = l.trim();
-            //TODO: will need to parse some comments, e.g. block/tsec names and
-            //FORCE LEN 2 annotation
+            //TODO: will need to parse block/tsec names
         }
         void Tokenize(){
             if(l.isEmpty()) return;

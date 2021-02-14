@@ -3079,70 +3079,74 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             return line->Error("Could not find ABI note definition for note command!");
         }
     }
-    //Normal commands
     ValueTree possibleCmds("temp");
-    for(int cmd=0; cmd<abi.getNumChildren(); ++cmd){
-        ValueTree command = abi.getChild(cmd);
-        String nname = command.getProperty(idName,  "");
-        String cname = command.getProperty(idCName, "");
-        String oname = command.getProperty(idOName, "");
-        nname = nname.toLowerCase();
-        cname = cname.toLowerCase();
-        oname = oname.toLowerCase();
-        bool hasVariable = command.getChildWithProperty(idDataSrc, "variable").isValid();
-        if(nname == name){
-            (void)0; //just add to possible cmds below
-        }else if(cname == name || oname == name){
-            canon = true;
-        }else if(hasVariable && (cname == no_w_name || oname == no_w_name)){
-            canon = true;
-            wideDelay = true;
-        }else{
-            continue;
+    if(!ret.isValid()){
+        //Normal commands
+        for(int cmd=0; cmd<abi.getNumChildren(); ++cmd){
+            ValueTree command = abi.getChild(cmd);
+            String nname = command.getProperty(idName,  "");
+            String cname = command.getProperty(idCName, "");
+            String oname = command.getProperty(idOName, "");
+            nname = nname.toLowerCase();
+            cname = cname.toLowerCase();
+            oname = oname.toLowerCase();
+            bool hasVariable = command.getChildWithProperty(idDataSrc, "variable").isValid();
+            if(nname == name){
+                (void)0; //just add to possible cmds below
+            }else if(cname == name || oname == name){
+                canon = true;
+            }else if(hasVariable && (cname == no_w_name || oname == no_w_name)){
+                canon = true;
+                wideDelay = true;
+            }else{
+                continue;
+            }
+            possibleCmds.appendChild(command.createCopy(), nullptr);
         }
-        possibleCmds.appendChild(command.createCopy(), nullptr);
-    }
-    if(possibleCmds.getNumChildren() == 0){
-        //Maybe it's a label
-        if(line->toks.size() > 1){
-            return line->Error("Token " + line->toks[0] + " not recognized as a command, "
-                "but it has tokens after it, so it can't be a label, syntax error!");
+        if(possibleCmds.getNumChildren() == 0){
+            //Maybe it's a label
+            if(line->toks.size() > 1){
+                return line->Error("Token " + line->toks[0] + " not recognized as a command, "
+                    "but it has tokens after it, so it can't be a label, syntax error!");
+            }
+            if(!isValidLabel(line->toks[0])){
+                return line->Error("Token " + line->toks[0] + " must be a label, but it "
+                    "contains invalid characters!");
+            }
+            return ValueTree("label");
         }
-        if(!isValidLabel(line->toks[0])){
-            return line->Error("Token " + line->toks[0] + " must be a label, but it "
-                "contains invalid characters!");
-        }
-        return ValueTree("label");
     }
     if(stype < 0 || stype > 2){
         if(!wrongSTypeErrors) return ValueTree("wrongstype");
         return line->Error("Non-hash commands not allowed in stype " + String(stype) + "!");
     }
-    //Need to check stype after listing possible commands, because we need to
-    //distinguish between the case where the command is completely
-    //unrecognized and therefore it's a label, and the case where it's recognized
-    //but in the wrong stype.
-    for(int cmd=0; cmd<possibleCmds.getNumChildren(); ++cmd){
-        ValueTree command = possibleCmds.getChild(cmd);
-        if(        (stype == 0 && !command.getProperty(idValidInSeq))
-                || (stype == 1 && !command.getProperty(idValidInChn))
-                || (stype == 2 && !command.getProperty(idValidInTrk))){
-            possibleCmds.removeChild(cmd, nullptr);
-            --cmd;
+    if(!ret.isValid()){
+        //Need to check stype after listing possible commands, because we need to
+        //distinguish between the case where the command is completely
+        //unrecognized and therefore it's a label, and the case where it's recognized
+        //but in the wrong stype.
+        for(int cmd=0; cmd<possibleCmds.getNumChildren(); ++cmd){
+            ValueTree command = possibleCmds.getChild(cmd);
+            if(        (stype == 0 && !command.getProperty(idValidInSeq))
+                    || (stype == 1 && !command.getProperty(idValidInChn))
+                    || (stype == 2 && !command.getProperty(idValidInTrk))){
+                possibleCmds.removeChild(cmd, nullptr);
+                --cmd;
+            }
         }
+        if(possibleCmds.getNumChildren() == 0){
+            if(!wrongSTypeErrors) return ValueTree("wrongstype");
+            return line->Error("Command not allowed in current stype " + String(stype) + "!");
+        }
+        if(possibleCmds.getNumChildren() >= 2){
+            return line->Error("This could be multiple different commands, check the "
+                "ABI definition! Note that there is no mus dialect setting for import, "
+                "so if e.g. the community name of command A is the same as the canon "
+                "name for command B, in the same stype, this would be ambiguous.");
+        }
+        ret = possibleCmds.getChild(0);
+        possibleCmds.removeChild(0, nullptr); //ret will get added to structure later, can't have two parents
     }
-    if(possibleCmds.getNumChildren() == 0){
-        if(!wrongSTypeErrors) return ValueTree("wrongstype");
-        return line->Error("Command not allowed in current stype " + String(stype) + "!");
-    }
-    if(possibleCmds.getNumChildren() >= 2){
-        return line->Error("This could be multiple different commands, check the "
-            "ABI definition! Note that there is no mus dialect setting for import, "
-            "so if e.g. the community name of command A is the same as the canon "
-            "name for command B, in the same stype, this would be ambiguous.");
-    }
-    ret = possibleCmds.getChild(0);
-    possibleCmds.removeChild(0, nullptr); //ret will get added to structure later, can't have two parents
     //Parse parameters
     int t = 1;
     for(int p=0; p<ret.getNumChildren(); ++p){
@@ -3201,7 +3205,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
                     true, canon, wideDelay, &dataforce2);
                 if(importresult >= 2) return ValueTree();
                 param.setProperty(idValue, value, nullptr);
-                if(dataforce2) param.setProperty(idDataForce2, true, nullptr);
+                if(dataforce2 || line->dataforce2) param.setProperty(idDataForce2, true, nullptr);
             }
             ++t;
         }
@@ -4041,7 +4045,9 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
                 if(dialect >= 2){
                     name += (action == "Note") ? "W" : "w";
                 }else{
-                    comment += " ; FORCE LEN 2";
+                    if(value < 0x80 && param.hasProperty(idDataForce2)){
+                        comment += " ; FORCE LEN 2";
+                    }
                 }
             }
             params += comma + String(value);
