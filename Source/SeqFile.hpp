@@ -182,15 +182,15 @@ private:
     
     //For importCom
     ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
-    ValueTree getCommand(Array<uint8_t> &data, uint32_t address, int stype);
+    ValueTree getCommand(const Array<uint8_t> &data, uint32_t address, int stype);
     ValueTree initCommand(uint32_t address);
-    ValueTree getDynTableCommand(Array<uint8_t> &data, uint32_t address, ValueTree section);
-    ValueTree getEnvelopeCommand(Array<uint8_t> &data, uint32_t address);
-    ValueTree getMessageCommand(Array<uint8_t> &data, uint32_t address, ValueTree section);
-    ValueTree getOtherTableCommand(Array<uint8_t> &data, uint32_t address);
+    ValueTree getDynTableCommand(const Array<uint8_t> &data, uint32_t address, ValueTree section);
+    ValueTree getEnvelopeCommand(const Array<uint8_t> &data, uint32_t address);
+    ValueTree getMessageCommand(const Array<uint8_t> &data, uint32_t address, ValueTree section);
+    ValueTree getOtherTableCommand(const Array<uint8_t> &data, uint32_t address);
     
     //<0: error, 1: section escape, 2: restart_parsing
-    int checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t parse_addr, 
+    int checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t &parse_addr, 
         ValueTree parse_cmd);
     //<0: error, 0: not found, 1: found
     int findTargetCommand(String action, uint32_t parse_addr, int tgt_addr, int tgt_stype, ValueTree parse_cmd);
@@ -202,6 +202,16 @@ private:
     bool removeSection(int remove, int &replace, int hash, int cmdbyte);
     int actionTargetSType(String action, int stype, uint32_t a);
     void convertPtrsFirstCmd();
+    bool findTableEnd(int s, const Array<uint8_t> &data);
+    int parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &datause,
+        bool forceContinue);
+    void parseTableSection(int s, const Array<uint8_t> &data, Array<uint8_t> &datause);
+    bool findFirstUnusedData(const Array<uint8_t> &data, const Array<uint8_t> &datause, 
+        int &start, int &end, bool &zeroes, bool &ismsg);
+    bool checkUnusedIsAlign(int unusedstart, int unusedend, bool zeroes, 
+        Array<uint8_t> &datause);
+    void unusedToTableOrMsg(const Array<uint8_t> &data, Array<uint8_t> &datause,
+        int unusedstart, int unusedend, bool zeroes, bool ismsg);
     
     struct SectionSorter {
         static int compareElements(const ValueTree &first, const ValueTree &second){
