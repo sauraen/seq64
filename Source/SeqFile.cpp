@@ -2242,10 +2242,12 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 || action == "Channel Enable" || action == "Channel Disable"
                 || action == "Enable Long Notes"){
             //silently ignore
-        }else if(action == "Jump" || action == "Branch" || action == "Ptr Dyn Table"
-                || action == "Dyn Table Channel" || action == "Dyn Table Layer"
-                || action == "Dyn Table Dyn Table" || action == "Ptr Envelope"
-                || action == "Ptr Self" || action == "Ptr Other Table"){
+        }else if(action == "Jump" || action == "Branch" || action == "Seq Hdr Call Table"
+                || action == "Set Dyntable"
+                || action == "Channel from Dyntable" || action == "Layer from Dyntable"
+                || action == "Dyntable from Dyntable" || action == "Data from Dyntable"
+                || action == "Dyntable from Data" || action == "Ptr Envelope"
+                || action == "Ptr Other Table" || action == "Ptr Self"){
             dbgmsg("Ignoring " + action);
         }else if(action == "Ptr Message"){
             //TODO print message from sequence
@@ -3241,17 +3243,19 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
     int stype = -1;
     if(action == "Jump" || action == "Branch" || action == "Call"){
         stype = section.getProperty(idSType);
+    }else if(action == "Ptr Seq Header"){
+        stype = 0;
     }else if(action == "Ptr Channel Header"){
         stype = 1;
     }else if(action == "Ptr Note Layer"){
         stype = 2;
-    }else if(action == "Ptr Dyn Table"){
+    }else if(action == "Seq Hdr Call Table" || action == "Set Dyntable"){
         stype = 3;
     }else if(action == "Ptr Envelope"){
         stype = 4;
     }else if(action == "Ptr Message"){
         stype = 5;
-    }else if(action == "Ptr Self"){
+    }else if(action == "Ptr Other Table" || action == "Ptr Self"){
         stype = 6;
     }else{
         line->Error("Unknown future section stype!");
@@ -4424,7 +4428,10 @@ ValueTree SeqFile::makeDynTableCommand(uint32_t address, var target, int dtstype
     addrparam.setProperty(idDataSrc, "fixed", nullptr);
     addrparam.setProperty(idDataLen, 2, nullptr);
     command.appendChild(addrparam, nullptr);
-    if(dtstype == 1){
+    if(dtstype == 0){
+        command.setProperty(idAction, "Ptr Seq Header", nullptr);
+        command.setProperty(idName, "[dyntable Ptr Seq Header]", nullptr);
+    }else if(dtstype == 1){
         command.setProperty(idAction, "Ptr Channel Header", nullptr);
         command.setProperty(idName, "[dyntable Ptr Channel Header]", nullptr);
         ValueTree param("parameter");
@@ -4443,9 +4450,12 @@ ValueTree SeqFile::makeDynTableCommand(uint32_t address, var target, int dtstype
         param.setProperty(idDataLen, 0, nullptr);
         command.appendChild(param, nullptr);
     }else if(dtstype == 3){
-        command.setProperty(idAction, "Ptr Dyn Table", nullptr);
+        command.setProperty(idAction, "Set Dyntable", nullptr);
         command.setProperty(idName, "[dyntable Ptr Dyn Table]", nullptr);
         command.setProperty(idDynTableSType, dtdynstype, nullptr);
+    }else if(dtstype == 6){
+        command.setProperty(idAction, "Ptr Other Table", nullptr);
+        command.setProperty(idName, "[dyntable Ptr Other Table]", nullptr);
     }else{
         dbgmsg("Invalid dyntable stype target " + String(dtstype) + "!");
         return ValueTree();
@@ -4545,7 +4555,9 @@ int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
     }else{
         param = command.getChildWithProperty(idMeaning, "Relative Address");
         if(param.isValid()){
-            address = (int)param.getProperty(idValue) + (int)currentAddr;
+            int value = param.getProperty(idValue);
+            if(value >= 0x80) value -= 0x100;
+            address = value + (int)currentAddr;
         }else{
             dbgmsg("@" + hex(currentAddr,16) + ": Pointer with no address value!");
             return -1;
@@ -4679,7 +4691,7 @@ int SeqFile::findTargetCommand(String action, uint32_t parse_addr, int tgt_addr,
             if((int)tmpsec.getProperty(idSType) != tgt_stype && tgt_stype >= 0){
                 dbgmsg(action + " to addr " + hex(tgt_addr,16) + " empty section "
                     + String(i) + ": requested wrong stype " + String(tgt_stype)
-                    + "(sec is " + tmpsec.getProperty(idSType).toString() + ")!");
+                    + " (sec is " + tmpsec.getProperty(idSType).toString() + ")!");
                 return -1;
             }
             if(tgt_stype == 3){
@@ -4785,6 +4797,7 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
         }
     }else if(tgt_stype == 6){
         ValueTree param = parse_cmd.getChildWithProperty(idMeaning, "Size");
+        //TODO support tables of unknown size
         if(!param.isValid()){
             dbgmsg(src_action + " with no size specified in command!");
             return -1;
@@ -4805,6 +4818,12 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
 int SeqFile::actionTargetSType(String action, int stype, uint32_t a){
     if(action == "Jump" || action == "Branch" || action == "Call"){
         return stype;
+    }else if(action == "Ptr Seq Header"){
+        if(stype != 0 && stype != 3){
+            dbgmsg("@" + hex(a,16)+ ": " + action + " from invalid parent stype " + String(stype) + "!");
+            return -2;
+        }
+        return 0;
     }else if(action == "Ptr Channel Header"){
         if(stype != 0 && stype != 1 && stype != 3){
             dbgmsg("@" + hex(a,16)+ ": " + action + " from invalid parent stype " + String(stype) + "!");
@@ -4817,7 +4836,7 @@ int SeqFile::actionTargetSType(String action, int stype, uint32_t a){
             return -2;
         }
         return 2;
-    }else if(action == "Ptr Dyn Table"){   return 3;
+    }else if(action == "Set Dyntable" || action == "Seq Hdr Call Table"){ return 3;
     }else if(action == "Ptr Envelope"){    return 4;
     }else if(action == "Ptr Message"){     return 5;
     }else if(action == "Ptr Other Table"){ return 6;
@@ -4856,7 +4875,7 @@ bool SeqFile::findDynTableType(int dtsec, const StringArray &refs){
             for(int c=0; c<tmpsec.getNumChildren(); ++c){
                 ValueTree command = tmpsec.getChild(c);
                 if((int)command.getProperty(idHash) != hash) continue;
-                int res = findNextDynTableType(s, c+1);
+                int res = findNextDynTableType(s, c);
                 if(res == -1){
                     dbgmsg("No dyntable use after definition in sec " + String(s)
                         + " cmd " + String(c) + "!");
@@ -4898,12 +4917,30 @@ int SeqFile::findNextDynTableType(int s, int c){
         String action = command.getProperty(idAction);
         if(action == "End of Data"){
             return -1;
-        }else if(action == "Dyn Table Channel"){
+        }else if(action == "Seq Hdr Call Table"){
+            //Technically this isn't a dyntable as it doesn't set the dyntable
+            //pointer, but seq hdr doesn't have its own dyntable pointer anyway,
+            //so we can treat this as a command which both sets and then
+            //immediately uses the dyntable
+            return 0;
+        }else if(action == "Channel from Dyntable"){
             return 1;
-        }else if(action == "Dyn Table Layer"){
+        }else if(action == "Layer from Dyntable"){
             return 2;
-        }else if(action == "Dyn Table Dyn Table"){
+        }else if(action == "Dyntable from Dyntable"){
             return 3;
+        }else if(action == "Data from Dyntable"){
+            return 6;
+        }else if(action == "Set Dyntable" || action == "Dyntable from Data"){
+            //Dyntable pointer is now overwritten with something else. However,
+            //most likely this is just multiple commands setting up the
+            //dyntable, before one command actually uses it.
+            // dbgmsg("Sec " + String(s) + " cmd " + String(c) 
+            //     + ": dyntable pointer overwritten by another command, could now "
+            //     "go anywhere, but assuming it will be the same type");
+            //Also since we're now starting with the set dyntable command itself
+            //for Seq Hdr Call Table purposes, this will be triggered every time.
+            (void)0;
         }else if(action == "Jump"){
             if(!getSectionAndCmd(command, s, c)) return -2;
             section = structure.getChild(s);
@@ -5003,7 +5040,7 @@ bool SeqFile::findTableEnd(int s, const Array<uint8_t> &data){
         if(sec_addr < a) continue;
         if(sec_addr >= a_end) continue;
         if(sec_addr == a){
-            dbgmsg("Another section starts at same place as Ptr Self table, internal error!");
+            dbgmsg("Another section starts at same place as data table, internal error!");
             return false;
         }
         a_end = sec_addr;
@@ -5118,10 +5155,11 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
         if(action == "End of Data"){
             secdone = true;
         }else if(action == "Jump" || action == "Branch" || action == "Call" 
-                || action == "Ptr Channel Header" || action == "Ptr Note Layer"
-                || action == "Ptr Dyn Table" || action == "Ptr Self"
+                || action == "Ptr Seq Header" || action == "Ptr Channel Header"
+                || action == "Ptr Note Layer" 
+                || action == "Seq Hdr Call Table" || action == "Set Dyntable"
                 || action == "Ptr Envelope" || action == "Ptr Message"
-                || action == "Ptr Other Table"){
+                || action == "Ptr Other Table" || action == "Ptr Self"){
             //Set up pointer and stype
             int tgt_addr = getPtrAddress(command, a, data.size());
             if(tgt_addr < 0) return 2; //Already printed error
@@ -5140,7 +5178,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             if(action == "Jump"){
                 //Unconditional jump ends the section
                 secdone = true;
-            }else if(action == "Ptr Dyn Table"){
+            }else if(action == "Seq Hdr Call Table" || action == "Set Dyntable"){
                 ValueTree tmpsec = structure.getChild(command.getProperty(idTargetSection));
                 tmpsec.setProperty(idSrcCmdRef, tmpsec.getProperty(idSrcCmdRef, "").toString() 
                     + "," + command.getProperty(idHash).toString(), nullptr);
@@ -5330,9 +5368,9 @@ int SeqFile::importCom(File comfile){
                 pass = 0;
             }
         }else{
-            //Known Ptr Self tables (2).
+            //Known data tables (2).
             if(!(stype < 0 || stype == 6)){
-                dbgmsg("Internal error, expected known Ptr Self table, got " + String(stype) + "!");
+                dbgmsg("Internal error, expected known data table, got " + String(stype) + "!");
                 return 2;
             }
             if(!findTableEnd(s, data)) return 2;

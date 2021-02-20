@@ -244,27 +244,31 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     cbxAction->addItem (TRANS("Loop Start"), 7);
     cbxAction->addItem (TRANS("Loop Break"), 8);
     cbxAction->addItem (TRANS("Loop End"), 9);
-    cbxAction->addItem (TRANS("Ptr Channel Header"), 10);
-    cbxAction->addItem (TRANS("Ptr Note Layer"), 11);
-    cbxAction->addItem (TRANS("Ptr Dyn Table"), 12);
-    cbxAction->addItem (TRANS("Dyn Table Channel"), 13);
-    cbxAction->addItem (TRANS("Dyn Table Layer"), 14);
-    cbxAction->addItem (TRANS("Dyn Table Dyn Table"), 15);
-    cbxAction->addItem (TRANS("Ptr Self"), 16);
-    cbxAction->addItem (TRANS("Ptr Envelope"), 17);
-    cbxAction->addItem (TRANS("Ptr Message"), 18);
-    cbxAction->addItem (TRANS("Ptr Other Table"), 19);
-    cbxAction->addItem (TRANS("Mute Behavior"), 20);
-    cbxAction->addItem (TRANS("Mute Scale"), 21);
-    cbxAction->addItem (TRANS("Channel Enable"), 22);
-    cbxAction->addItem (TRANS("Channel Disable"), 23);
-    cbxAction->addItem (TRANS("Master Volume"), 24);
-    cbxAction->addItem (TRANS("Tempo"), 25);
-    cbxAction->addItem (TRANS("Enable Long Notes"), 26);
-    cbxAction->addItem (TRANS("CC or CC Group"), 27);
-    cbxAction->addItem (TRANS("Chn Transpose"), 28);
-    cbxAction->addItem (TRANS("Layer Transpose"), 29);
-    cbxAction->addItem (TRANS("Note"), 30);
+    cbxAction->addItem (TRANS("Ptr Seq Header"), 10);
+    cbxAction->addItem (TRANS("Ptr Channel Header"), 11);
+    cbxAction->addItem (TRANS("Ptr Note Layer"), 12);
+    cbxAction->addItem (TRANS("Seq Hdr Call Table"), 13);
+    cbxAction->addItem (TRANS("Set Dyntable"), 14);
+    cbxAction->addItem (TRANS("Channel from Dyntable"), 15);
+    cbxAction->addItem (TRANS("Layer from Dyntable"), 16);
+    cbxAction->addItem (TRANS("Dyntable from Dyntable"), 17);
+    cbxAction->addItem (TRANS("Data from Dyntable"), 18);
+    cbxAction->addItem (TRANS("Dyntable from Data"), 19);
+    cbxAction->addItem (TRANS("Ptr Envelope"), 20);
+    cbxAction->addItem (TRANS("Ptr Message"), 21);
+    cbxAction->addItem (TRANS("Ptr Other Table"), 22);
+    cbxAction->addItem (TRANS("Ptr Self"), 23);
+    cbxAction->addItem (TRANS("Mute Behavior"), 24);
+    cbxAction->addItem (TRANS("Mute Scale"), 25);
+    cbxAction->addItem (TRANS("Channel Enable"), 26);
+    cbxAction->addItem (TRANS("Channel Disable"), 27);
+    cbxAction->addItem (TRANS("Master Volume"), 28);
+    cbxAction->addItem (TRANS("Tempo"), 29);
+    cbxAction->addItem (TRANS("Enable Long Notes"), 30);
+    cbxAction->addItem (TRANS("CC or CC Group"), 31);
+    cbxAction->addItem (TRANS("Chn Transpose"), 32);
+    cbxAction->addItem (TRANS("Layer Transpose"), 33);
+    cbxAction->addItem (TRANS("Note"), 34);
     cbxAction->addListener (this);
 
     cbxAction->setBounds (232, 416, 240, 24);
@@ -1101,7 +1105,7 @@ void SeqABIEditor::fillParamInfo(){
     optDataSrcVariable->setToggleState(datasrc == "variable", dontSendNotification);
     lblDataLen->setText(datasrc == "offset" ? "(none)" : datasrc == "constant" ? "const" :
         datasrc == "fixed" ? "length" : "1 or 2", dontSendNotification);
-    txtDataLen->setText(datasrc == "offset" || datasrc == "variable" ? "" 
+    txtDataLen->setText(datasrc == "offset" || datasrc == "variable" ? ""
         : selparam.getProperty("datalen", "").toString(), false);
     txtDataLen->setEnabled(datasrc == "fixed" || datasrc == "constant");
 }
@@ -1113,23 +1117,25 @@ void SeqABIEditor::fillMeaningsBox(String action){
     bool add_addrs = false;
     if(action == "No Action" || action == "End of Data" || action == "Delay"
             || action == "Loop Break" || action == "Loop End" 
-            || action == "Enable Long Notes" || action == "Dyn Table Dyn Table"){
-        //None
+            || action == "Enable Long Notes" || action == "Dyntable from Dyntable"
+            || action == "Data from Dyntable" || action == "Dyntable from Data"){
+        (void)0; //None
     }else if(action == "Mute Behavior" || action == "Mute Scale"
             || action == "Master Volume" || action == "Tempo"
             || action == "Chn Transpose" || action == "Layer Transpose"){
         cbxMeaning->addItem("Value", cbxMeaning->getNumItems()+1);
     }else if(action == "Jump" || action == "Branch" || action == "Call"
-            || action == "Ptr Dyn Table" || action == "Ptr Envelope" 
-            || action == "Ptr Message"){
+            || action == "Ptr Seq Header"
+            || action == "Seq Hdr Call Table" || action == "Set Dyntable" 
+            || action == "Ptr Envelope" || action == "Ptr Message"){
         add_addrs = true;
-    }else if(action == "Ptr Channel Header" || action == "Dyn Table Channel"){
+    }else if(action == "Ptr Channel Header" || action == "Channel from Dyntable"){
         cbxMeaning->addItem("Channel", cbxMeaning->getNumItems()+1);
         add_addrs = true;
-    }else if(action == "Ptr Note Layer" || action == "Dyn Table Layer"){
+    }else if(action == "Ptr Note Layer" || action == "Layer from Dyntable"){
         cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
         add_addrs = true;
-    }else if(action == "Ptr Self" || action == "Ptr Other Table"){
+    }else if(action == "Ptr Other Table" || action == "Ptr Self"){
         cbxMeaning->addItem("Size", cbxMeaning->getNumItems()+1);
         add_addrs = true;
     }else if(action == "Loop Start"){
@@ -1264,7 +1270,7 @@ BEGIN_JUCER_METADATA
               caret="1" popupmenu="1"/>
   <COMBOBOX name="cbxAction" id="e2a97de7a0a41ac7" memberName="cbxAction"
             virtualName="" explicitFocusOrder="0" pos="232 416 240 24" editable="0"
-            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump&#10;Branch&#10;Call&#10;Loop Start&#10;Loop Break&#10;Loop End&#10;Ptr Channel Header&#10;Ptr Note Layer&#10;Ptr Dyn Table&#10;Dyn Table Channel&#10;Dyn Table Layer&#10;Dyn Table Dyn Table&#10;Ptr Self&#10;Ptr Envelope&#10;Ptr Message&#10;Ptr Other Table&#10;Mute Behavior&#10;Mute Scale&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Enable Long Notes&#10;CC or CC Group&#10;Chn Transpose&#10;Layer Transpose&#10;Note"
+            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump&#10;Branch&#10;Call&#10;Loop Start&#10;Loop Break&#10;Loop End&#10;Ptr Seq Header&#10;Ptr Channel Header&#10;Ptr Note Layer&#10;Seq Hdr Call Table&#10;Set Dyntable&#10;Channel from Dyntable&#10;Layer from Dyntable&#10;Dyntable from Dyntable&#10;Data from Dyntable&#10;Dyntable from Data&#10;Ptr Envelope&#10;Ptr Message&#10;Ptr Other Table&#10;Ptr Self&#10;Mute Behavior&#10;Mute Scale&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Enable Long Notes&#10;CC or CC Group&#10;Chn Transpose&#10;Layer Transpose&#10;Note"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="chkValidInSeq" id="e629b15d1c633dc3" memberName="chkValidInSeq"
                 virtualName="" explicitFocusOrder="0" pos="272 328 200 24" buttonText="Seq Header / Group Track"
