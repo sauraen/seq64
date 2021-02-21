@@ -2847,6 +2847,22 @@ bool SeqFile::isValidDefineValue(String s){
 }
 
 void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
+    int i = 0;
+    for(int d=0; d<defs.size() && i < 100; ++d){
+        String key = defs.getAllKeys()[d];
+        if(line->l.contains(key)){
+            line->l = line->l.replace(key, defs.getAllValues()[d]);
+            d = -1;
+            ++i;
+        }
+    }
+    if(i == 100){
+        line->Error("Too many #define substitutions, recursive #defines or something like that!");
+    }
+    if(i >= 1){
+        line->Tokenize();
+    }
+    /*
     for(int t=0; t<line->toks.size(); ++t){
         int i;
         for(i=0; i<100; ++i){
@@ -2859,6 +2875,7 @@ void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
         }
     }
     line->l = line->toks.joinIntoString(" ");
+    */
 }
 
 int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc, 
@@ -2980,6 +2997,22 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         }
         ret.appendChild(makeBasicDataCommand(-1, 0, "fixed", 1), nullptr); //string null terminator
         return ret;
+    }else if(name == "#pad"){
+        //Insert the given number of zero bytes.
+        if(stype != 6){
+            if(!wrongSTypeErrors) return ValueTree("wrongstype");
+            line->Warning("#pad anywhere besides Other Tables (6) is only partially supported!");
+        }
+        if(line->toks.size() != 2){
+            return line->Error("#pad command must look like \"#pad u16val\"!");
+        }
+        int count = parseNormalParam(line, line->toks[1], "fixed", 2);
+        if(importresult >= 2) return ValueTree();
+        ret = ValueTree("cmdlist");
+        for(int i=0; i<count; ++i){
+            ret.appendChild(makeBasicDataCommand(-1, 0, "fixed", 1), nullptr);
+        }
+        return ret;
     }else if((name == "#u16" || name == "#word") && stype == 4){
         //#word: value16,value16, used for envelopes. Write 16-bit ints to com.
         if(line->toks.size() != 4 || line->toks[2] != ","){
@@ -3031,11 +3064,15 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             }
         }
         return ret;
-    }else if(name == "#align2" || name == "#evenw" || name == "#align4" || name == "evenl"){
+    }else if(name == "#align2" || name == "#evenw" || name == "#align16" || name == "evenl"){
         //#evenw: align to even word (2 bytes).
-        //#evenl: presumably, align to even long (4 bytes)?
+        //#evenl: Previously thought it was "align to even long", i.e. 4 bytes,
+        //but based on use in Hyrule Field master sequence, suspect it's "align
+        //to even line", i.e. cacheline or DMA line, i.e. 16 bytes, for seqload.
+        //Of course it's possible bicon got more hash commands between SF64 and
+        //OoT.
         ret = ValueTree("align");
-        ret.setProperty(idValue, (name == "#align4" || name == "#evenl") ? 4 : 2, nullptr);
+        ret.setProperty(idValue, (name == "#align16" || name == "#evenl") ? 16 : 2, nullptr);
         return ret;
     }else if(name == "#lprinton" || name == "#lprintoff"){
         //Function unknown, presumably printing lines as they're parsed or
@@ -3375,6 +3412,7 @@ int SeqFile::importMus(File musfile){
             defs.set(key, value);
         }else{
             substituteDefines(defs, line);
+            if(importresult >= 2) return 2;
             continue;
         }
         lines.remove(ln);
@@ -3419,12 +3457,12 @@ int SeqFile::importMus(File musfile){
             if(inQuestionableSection){
                 line->Info("Ran into end of sequence while parsing unused code, "
                     "calling that the end of the unused code");
-                dontAdvanceLine = true;
-                endSection = true;
             }else{
-                dbgmsg("Parsing mus file ran off end!");
-                return 2;
+                line->Warning("Ran into end of sequence while parsing normal code, "
+                    "normally this is an error but in some technical sequences it's OK");
             }
+            dontAdvanceLine = true;
+            endSection = true;
         }
         if(!endSection){
             line = lines[ln];
@@ -3524,6 +3562,10 @@ int SeqFile::importMus(File musfile){
         }else if(type == "cmdlist"){
             for(int i=0; i<command.getNumChildren(); ++i){
                 ValueTree cmd = command.getChild(i).createCopy();
+                if(!curLabel.isEmpty()){
+                    cmd.setProperty(idLabelName, curLabel, nullptr);
+                    curLabel = "";
+                }
                 checkAddFutureSection(line, futuresecs, section, cmd);
                 section.appendChild(cmd, nullptr);
             }
@@ -3604,7 +3646,7 @@ int SeqFile::importMus(File musfile){
                 if(dtstype == 3){
                     dbgmsg("Double-dynamic commands not yet fully supported!");
                     return 2;
-                }else if(dtstype != 1 && dtstype != 2){
+                }else if(dtstype != 0 && dtstype != 1 && dtstype != 2 && dtstype != 6){
                     dbgmsg("Internal error in dyntable setup!");
                     return 2;
                 }
@@ -3736,7 +3778,7 @@ int SeqFile::importMus(File musfile){
                     }
                 }
                 if(!found){
-                    dbgmsg("Internal error when sorting sections!");
+                    dbgmsg("Could not find section or command with label " + tgt + "!");
                     return 2;
                 }
             }
@@ -4149,8 +4191,8 @@ int SeqFile::exportMus(File musfile, int dialect){
     for(int sec=0; sec<structure.getNumChildren(); ++sec){
         ValueTree section = structure.getChild(sec);
         if(section.getType().toString() == "align"){
-            if((int)section.getProperty(idValue) == 4){
-                out += (dialect >= 2) ? "#evenl" : "#align4";
+            if((int)section.getProperty(idValue) == 16){
+                out += (dialect >= 2) ? "#evenl" : "#align16";
             }else{
                 out += (dialect >= 2) ? "#evenw" : "#align2";
             }
@@ -4220,18 +4262,39 @@ int SeqFile::exportMus(File musfile, int dialect){
         if(sec != 0 || dialect < 2){
             out += section.getProperty(idLabelName).toString() + "\n";
         }
-        //TODO community versions of all of these outputs
         if(stype == 3){
             //dyntable
             int lblctr = 0;
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
-                out += !(lblctr & 7) ? (dialect >= 2 ? "#label   " : "#address ") : ", ";
-                int tgt = section.getChild(cmd).getProperty(idTargetSection, -1);
-                if(tgt < 0 || tgt >= structure.getNumChildren()){
-                    dbgmsg("Invalid idTargetSection " + String(tgt) + " in dyntable!");
+                ValueTree command = section.getChild(cmd);
+                if(command.hasProperty(idLabelName) && cmd != 0){
+                    out += "\n\n" + command.getProperty(idLabelName).toString() + "\n";
+                    lblctr = 0;
+                }
+                if(!(lblctr & 7)){
+                    out += (dialect >= 2 ? "#label   " : "#address ");
+                }else{
+                    out += ", ";
+                }
+                int s = command.getProperty(idTargetSection, -1);
+                if(s < 0 || s >= structure.getNumChildren()){
+                    dbgmsg("Invalid idTargetSection " + String(s) + " in dyntable!");
                     return 2;
                 }
-                out += structure.getChild(tgt).getProperty(idLabelName).toString();
+                ValueTree targetsection = structure.getChild(s);
+                String label;
+                if(command.hasProperty(idTargetHash)){
+                    ValueTree targetcommand = targetsection.getChildWithProperty(idHash,
+                        command.getProperty(idTargetHash));
+                    if(!targetcommand.isValid()){
+                        dbgmsg("Invalid target command hash in dyntable!");
+                        return 2;
+                    }
+                    label = targetcommand.getProperty(idLabelName, "ERROR").toString();
+                }else{
+                    label = targetsection.getProperty(idLabelName).toString();
+                }
+                out += label;
                 ++lblctr;
                 if(!(lblctr & 7)) out += "\n";
                 if(lblctr == 16){
@@ -4239,6 +4302,7 @@ int SeqFile::exportMus(File musfile, int dialect){
                     out += "\n"; //Extra newline every 16
                 }
             }
+            if(lblctr != 0) out += "\n";
         }else if(stype == 4){
             //envelope
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
@@ -5099,8 +5163,11 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                 dbgmsg("Stopping dyntable because end of sequence");
                 break;
             }
-            dbgmsg("@" + hex(a,16) + ": in section " + String(s) + ", ran off end of sequence!");
-            return 2;
+            dbgmsg("Warning: @" + hex(a,16) + ": in section " + String(s) 
+                + ", ran off end of sequence. Normally this is an error, but "
+                "in some technical sequences this is normal.");
+            importresult |= 1;
+            break;
         }
         //Need to get command before checking if run into existing commands,
         //because have to use command hash if ran into branch dest
@@ -5506,7 +5573,7 @@ int SeqFile::exportCom(File comfile){
         section.setProperty(idAddress, (int)address, nullptr);
         if(section.getType().toString() == "align"){
             int value = section.getProperty(idValue, -1);
-            if(value != 2 && value != 4){
+            if(value != 2 && value != 16){
                 dbgmsg("Invalid alignment: " + String(value));
                 return 2;
             }
