@@ -155,7 +155,7 @@
   <command cmd="176" name="setfilter" action="Ptr Other Table" comments="Sets the current filter pointer (within the sequence data) to the given parameter. It's unknown what this filter is used for, but it's an 8-point FIR filter (16 bytes). Maybe something to do with ADPCM codebooks? Or just a generic filter that can be applied to audio?"
            validinchn="1">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
-    <parameter name="Fixed size" meaning="None" datasrc="constant" datalen="16"/>
+    <parameter name="Fixed size" meaning="Size" datasrc="constant" datalen="16"/>
   </command>
   <command cmd="177" name="clearfilter" action="No Action" comments="Sets the current filter pointer to nullptr, disabling use of the filter. See setfilter."
            validinchn="1"/>

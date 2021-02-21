@@ -4752,7 +4752,8 @@ int SeqFile::findTargetCommand(String action, uint32_t parse_addr, int tgt_addr,
         if(tgt_addr < tmpaddr) continue;
         if(tgt_addr == tmpaddr && tmpsec.getNumChildren() == 0){
             //Pointer to existing empty section
-            if((int)tmpsec.getProperty(idSType) != tgt_stype && tgt_stype >= 0){
+            int sec_stype = tmpsec.getProperty(idSType);
+            if(sec_stype != tgt_stype && sec_stype >= 0 && tgt_stype >= 0){
                 dbgmsg(action + " to addr " + hex(tgt_addr,16) + " empty section "
                     + String(i) + ": requested wrong stype " + String(tgt_stype)
                     + " (sec is " + tmpsec.getProperty(idSType).toString() + ")!");
@@ -4766,6 +4767,9 @@ int SeqFile::findTargetCommand(String action, uint32_t parse_addr, int tgt_addr,
                         + " vs. current double-dynamic stype " + parse_cmd.getProperty(idDynTableSType).toString() + "!");
                     return -1;
                 }
+            }
+            if(sec_stype < 0 && tgt_stype >= 0){
+                tmpsec.setProperty(idSType, tgt_stype, nullptr);
             }
             parse_cmd.setProperty(idTargetSection, i, nullptr);
             return 1;
@@ -4972,6 +4976,7 @@ bool SeqFile::findDynTableType(int dtsec, const StringArray &refs){
 }
 
 int SeqFile::findNextDynTableType(int s, int c){
+    //dbgmsg("Looking for next dyntable use after sec " + String(s) + " cmd " + String(c));
     ValueTree section = structure.getChild(s);
     while(true){
         if(c >= section.getNumChildren()) return -1;
@@ -5004,7 +5009,7 @@ int SeqFile::findNextDynTableType(int s, int c){
             //     "go anywhere, but assuming it will be the same type");
             //Also since we're now starting with the set dyntable command itself
             //for Seq Hdr Call Table purposes, this will be triggered every time.
-            (void)0;
+            ++c;
         }else if(action == "Jump"){
             if(!getSectionAndCmd(command, s, c)) return -2;
             section = structure.getChild(s);
@@ -5127,11 +5132,13 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
     }
     int stype = section.getProperty(idSType);
     dbgmsg("Parsing section " + String(s) + " stype " + String(stype));
-    uint32_t a;
+    uint32_t a, forceContinueA;
     if(!forceContinue){
         a = (int)section.getProperty(idAddress);
+        forceContinueA = -1;
     }else{
         a = (int)section.getProperty(idAddressEnd);
+        forceContinueA = a;
         section.removeProperty(idAddressEnd, nullptr);
     }
     if(stype == 3){
@@ -5202,8 +5209,13 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
         int ranIntoResult = checkRanIntoOtherSection(stype, s, a, command);
         if(ranIntoResult < 0){
             if(!forceContinue) return 2;
-            dbgmsg("Considering that the end of the unused data (not an error)");
-            ranIntoResult = 1;
+            if(a == forceContinueA){
+                dbgmsg("Ran into another section during first command, aborting force continue");
+                ret = -1;
+            }else{
+                dbgmsg("Considering that the end of the unused data (not an error)");
+            }
+            break;
         }
         if((ranIntoResult & 2)) ret = 1; //restart parsing
         if((ranIntoResult & 1)) break; //section escape
@@ -5235,7 +5247,17 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             if(tgt_stype < -1) return 2;
             //Find target command if it exists
             int res = findTargetCommand(action, a, tgt_addr, tgt_stype, command);
-            if(res < 0) return 2;
+            if(res < 0){
+                if(!forceContinue) return 2;
+                if(a - cmdlen != forceContinueA) return 2;
+                dbgmsg("Aborting force continue due to error on first new command");
+                //Undo all of our changes and get out of here
+                section.removeChild(command, nullptr);
+                a -= cmdlen;
+                for(int i=a; i<a+cmdlen; ++i) datause.set(i, 0);
+                ret = -1;
+                break;
+            }
             if(res == 0){
                 //Not found
                 res = createSection(action, tgt_addr, tgt_stype, command, section);
@@ -5412,10 +5434,15 @@ int SeqFile::importCom(File comfile){
                     + structure.getChild(j).getProperty(idSType).toString() 
                     + " due to unused data after jump");
                 int res = parseComSection(j, data, datause, true);
-                if(res == 2) return 2;
-                s = -1;
-                pass = 0;
-                continue;
+                if(res == 2){
+                    return 2;
+                }else if(res >= 0){
+                    //Success or warning
+                    s = -1;
+                    pass = 0;
+                    continue;
+                }
+                //Otherwise aborted
             }
             //Otherwise just make it a table
             unusedToTableOrMsg(data, datause, unusedstart, unusedend, zeroes, ismsg);
