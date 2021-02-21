@@ -247,9 +247,9 @@
            cname="sclosesub" validinchn="1">
     <parameter name="Channel" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="206" name="ldpi" action="No Action" comments="Load pointer with immediate. P = value"
+  <command cmd="206" name="ldpi" action="Maybe Ptr" comments="Load pointer with immediate. P = value"
            validinchn="1">
-    <parameter name="Value" meaning="None" datasrc="fixed" datalen="2"/>
+    <parameter name="Value" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
   </command>
   <command cmd="207" name="stps" action="Ptr Self" validinchn="1" comments="Store pointer to sequence. Self-modifying code -- sequenceData[A] = P. A need not be 2-byte aligned.">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
@@ -468,7 +468,7 @@
   <command cmd="210" name="ldshorttablevel" action="Ptr Other Table" comments="Set velocity table for short notes. Target should be an array of bytes in the sequence data of length 16."
            cname="vtset" validinseq="1">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
-    <parameter name="Size (const)" meaning="None" datasrc="constant" datalen="16"/>
+    <parameter name="Size (const)" meaning="Size" datasrc="constant" datalen="16"/>
   </command>
   <command cmd="211" name="mutebhv" action="Mute Behavior" comments="Set mute behavior (bitmask). Bit 0x20 lowers volume, bit 0x40 does something to tracks, and bit 0x80 pauses the sequence script. Default mute behavior is to have all of those bits set.&#10;Canon parameter names:&#10;80 = &quot;SEQSTOP&quot; = &quot;sequence stop.&quot;&#10;40 = &quot;VOICECUT&quot; = &quot;voice stop immediately,and not entry.&quot;&#10;20 = &quot;VOLDOWN&quot; = &quot;volume down.(x pausevolume)&quot;&#10;10 = &quot;ENTRYOFF&quot; = &quot;now voice will continue,but next isn't on.&quot;&#10;08 = &quot;FREEZE&quot; = &quot;restart OK.&quot;"
            cname="defpause" validinseq="1">

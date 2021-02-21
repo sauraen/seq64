@@ -1007,6 +1007,7 @@ void SeqEditor::timerCallback(){
         opthread->join();
         opthread.reset(nullptr);
         stopTimer();
+        txtDebug->insertTextAtCaret(seq->getDebugOutput());
         txtSeq->setText(seq->getInternalString());
         if(opres == 0){
             NativeMessageBox::showMessageBox(AlertWindow::InfoIcon, "seq64",
@@ -1303,4 +1304,3 @@ END_JUCER_METADATA
 
 //[EndFile] You can add extra defines here...
 //[/EndFile]
-

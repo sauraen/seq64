@@ -196,7 +196,7 @@ private:
     int findTargetCommand(String action, uint32_t parse_addr, int tgt_addr, int tgt_stype, ValueTree parse_cmd);
     //<0: error, 0: okay
     int createSection(String src_action, int tgt_addr, int tgt_stype, ValueTree parse_cmd,
-        ValueTree parse_section);
+        ValueTree parse_section, bool forceContinue);
     
     int getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen);
     bool removeSection(int remove, int &replace, int hash, int cmdbyte);
@@ -270,5 +270,6 @@ private:
     //static Identifier idCurDynTableSec;
     static Identifier idMessage;
     static Identifier idRecurVisited;
+    static Identifier idQuestionableSection;
     
 };

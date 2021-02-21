@@ -70,6 +70,7 @@ Identifier SeqFile::idDynTableDynSType("dyntabledynstype");
 //Identifier SeqFile::idCurDynTableSec("curdyntablesec");
 Identifier SeqFile::idMessage("message");
 Identifier SeqFile::idRecurVisited("recurvisited");
+Identifier SeqFile::idQuestionableSection("questionablesection");
 
 const int SeqFile::max_layers = 4;
 
@@ -2247,7 +2248,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 || action == "Channel from Dyntable" || action == "Layer from Dyntable"
                 || action == "Dyntable from Dyntable" || action == "Data from Dyntable"
                 || action == "Dyntable from Data" || action == "Ptr Envelope"
-                || action == "Ptr Other Table" || action == "Ptr Self"){
+                || action == "Ptr Other Table" || action == "Ptr Self" || action == "Maybe Ptr"){
             dbgmsg("Ignoring " + action);
         }else if(action == "Ptr Message"){
             //TODO print message from sequence
@@ -3292,7 +3293,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
         stype = 4;
     }else if(action == "Ptr Message"){
         stype = 5;
-    }else if(action == "Ptr Other Table" || action == "Ptr Self"){
+    }else if(action == "Ptr Other Table" || action == "Ptr Self" || action == "Maybe Ptr"){
         stype = 6;
     }else{
         line->Error("Unknown future section stype!");
@@ -4067,11 +4068,17 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
         String datasrc = param.getProperty(idDataSrc);
         int datalen = param.getProperty(idDataLen, 0);
         int value = param.getProperty(idValue, 8888);
-        if(meaning == "Absolute Address" || meaning == "Relative Address"){
+        bool isaddr = (meaning == "Absolute Address" || meaning == "Relative Address");
+        if(isaddr && action == "Maybe Ptr" && !command.hasProperty(idTargetSection)){
+            //Maybe Ptr wasn't a pointer
+            isaddr = false;
+        }
+        if(isaddr){
             ValueTree target = structure.getChild(command.getProperty(idTargetSection, -1));
             if(!target.isValid()){
                 dbgmsg(name + " cmd (sec " + String(sec) + " pointing to invalid section "
                     + command.getProperty(idTargetSection, -1).toString() + "!");
+                importresult |= 2;
                 return "ERROR\n";
             }
             if(command.hasProperty(idTargetHash)){
@@ -4079,6 +4086,7 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
                 if(!target.isValid()){
                     dbgmsg(name + " cmd (sec " + String(sec) + " pointing to section "
                         + command.getProperty(idTargetSection, -1).toString() + " invalid cmd hash!");
+                    importresult |= 2;
                     return "ERROR\n";
                 }
             }
@@ -4113,12 +4121,13 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
             //do nothing
         }else{
             dbgmsg("datasrc error!");
+            importresult |= 2;
             return "ERROR\n";
         }
     }
     if(noteandcanon && (dialect & 1)) name = name.toLowerCase();
     ret += name + ((dialect & 1) ? "" : "\t") + params + comment + "\n";
-    if(action == "End of Data" && dialect < 2){
+    if(action == "End of Data" && dialect == 0){
         ret += "; Section total ticks: " + String(secticks) + "\n";
     }
     return ret;
@@ -4817,9 +4826,12 @@ int SeqFile::findTargetCommand(String action, uint32_t parse_addr, int tgt_addr,
 }
 
 int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, ValueTree parse_cmd,
-        ValueTree parse_section){
+        ValueTree parse_section, bool forceContinue){
     ValueTree newsec = createBlankSectionVT(tgt_stype);
     newsec.setProperty(idAddress, tgt_addr, nullptr);
+    if(forceContinue || (bool)parse_section.getProperty(idQuestionableSection, false)){
+        newsec.setProperty(idQuestionableSection, true, nullptr);
+    }
     if(src_action == "Call"){
         newsec.setProperty(idSrcCmdRef, parse_section.getNumChildren()-1, nullptr);
     }
@@ -4863,19 +4875,11 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
             dbgmsg("with known dyntablestype " + parse_cmd.getProperty(idDynTableSType).toString());
             newsec.setProperty(idDynTableSType, parse_cmd.getProperty(idDynTableSType), nullptr);
         }
-    }else if(tgt_stype == 6){
+    }else if(tgt_stype == 6 || tgt_stype < 0){
+        //For some tables, the size is specified in the command (usually as constant)
         ValueTree param = parse_cmd.getChildWithProperty(idMeaning, "Size");
-        //TODO support tables of unknown size
-        if(!param.isValid()){
-            dbgmsg(src_action + " with no size specified in command!");
-            return -1;
-        }
-        newsec.setProperty(idLength, param.getProperty(idValue), nullptr);
-    }else if(tgt_stype < 0){
-        ValueTree param = parse_cmd.getChildWithProperty(idMeaning, "Size");
-        if(param.isValid() && (int)param.getProperty(idValue) == 1){
-            //Self write, no possible address offset, therefore length 1
-            //TODO do we need to do anything with this info?
+        if(param.isValid()){
+            newsec.setProperty(idLength, param.getProperty(idValue), nullptr);
         }
     }
     structure.appendChild(newsec, nullptr);
@@ -4909,6 +4913,7 @@ int SeqFile::actionTargetSType(String action, int stype, uint32_t a){
     }else if(action == "Ptr Message"){     return 5;
     }else if(action == "Ptr Other Table"){ return 6;
     }else if(action == "Ptr Self"){        return -1;
+    }else if(action == "Maybe Ptr"){       return 6;
     }else{
         dbgmsg("Unknown action " + action + " for actionTargetSType!");
         return -2;
@@ -5101,6 +5106,14 @@ bool SeqFile::findTableEnd(int s, const Array<uint8_t> &data){
     ValueTree section = structure.getChild(s);
     int a = section.getProperty(idAddress);
     int a_end = data.size();
+    if(section.hasProperty(idLength)){
+        int len = section.getProperty(idLength);
+        dbgmsg("Table section " + String(s) + " using table length specified in command: " + String(len));
+        a_end = a + len;
+        section.setProperty(idAddressEnd, a_end, nullptr);
+        section.removeProperty(idLength, nullptr);
+        return true;
+    }
     //End is the start of the next section after it
     for(int j=0; j<structure.getNumChildren(); ++j){
         if(j==s) continue;
@@ -5132,6 +5145,10 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
     }
     int stype = section.getProperty(idSType);
     dbgmsg("Parsing section " + String(s) + " stype " + String(stype));
+    if(stype == 6){
+        dbgmsg("Internal error, parseComSection use for table sections is deprecated!");
+        return 2;
+    }
     uint32_t a, forceContinueA;
     if(!forceContinue){
         a = (int)section.getProperty(idAddress);
@@ -5208,14 +5225,21 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
         //Check if we ran into another section at this command
         int ranIntoResult = checkRanIntoOtherSection(stype, s, a, command);
         if(ranIntoResult < 0){
-            if(!forceContinue) return 2;
-            if(a == forceContinueA){
-                dbgmsg("Ran into another section during first command, aborting force continue");
-                ret = -1;
-            }else{
-                dbgmsg("Considering that the end of the unused data (not an error)");
+            if(forceContinue){
+                if(a == forceContinueA){
+                    dbgmsg("Ran into another section during first command, aborting force continue");
+                    ret = -1;
+                }else{
+                    dbgmsg("Considering that the end of the unused data (not an error)");
+                }
+                break;
             }
-            break;
+            if((bool)section.getProperty(idQuestionableSection, false)){
+                dbgmsg("Ran into another section while parsing child of unused section, ending section");
+                break;
+            }
+            //Otherwise this is an error
+            return 2;
         }
         if((ranIntoResult & 2)) ret = 1; //restart parsing
         if((ranIntoResult & 1)) break; //section escape
@@ -5238,9 +5262,14 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                 || action == "Ptr Note Layer" 
                 || action == "Seq Hdr Call Table" || action == "Set Dyntable"
                 || action == "Ptr Envelope" || action == "Ptr Message"
-                || action == "Ptr Other Table" || action == "Ptr Self"){
+                || action == "Ptr Other Table" || action == "Ptr Self"
+                || action == "Maybe Ptr"){
             //Set up pointer and stype
             int tgt_addr = getPtrAddress(command, a, data.size());
+            if(action == "Maybe Ptr" && tgt_addr <= 0){
+                dbgmsg("Considering Maybe Ptr to not be a pointer");
+                continue; //Guess it's not a pointer
+            }
             if(tgt_addr < 0) return 2; //Already printed error
             //dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
             int tgt_stype = actionTargetSType(action, stype, a);
@@ -5248,19 +5277,24 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             //Find target command if it exists
             int res = findTargetCommand(action, a, tgt_addr, tgt_stype, command);
             if(res < 0){
-                if(!forceContinue) return 2;
-                if(a - cmdlen != forceContinueA) return 2;
-                dbgmsg("Aborting force continue due to error on first new command");
-                //Undo all of our changes and get out of here
-                section.removeChild(command, nullptr);
-                a -= cmdlen;
-                for(int i=a; i<a+cmdlen; ++i) datause.set(i, 0);
-                ret = -1;
-                break;
+                if(action == "Maybe Ptr"){
+                    dbgmsg("Considering Maybe Ptr to not be a pointer");
+                    continue; //Guess it's not a pointer
+                }
+                if(forceContinue && a - cmdlen == forceContinueA){
+                    dbgmsg("Aborting force continue due to error on first new command");
+                    //Undo all of our changes and get out of here
+                    section.removeChild(command, nullptr);
+                    a -= cmdlen;
+                    for(int i=a; i<a+cmdlen; ++i) datause.set(i, 0);
+                    ret = -1;
+                    break;
+                }
+                return 2;
             }
             if(res == 0){
                 //Not found
-                res = createSection(action, tgt_addr, tgt_stype, command, section);
+                res = createSection(action, tgt_addr, tgt_stype, command, section, forceContinue);
                 if(res < 0) return 2;
             }
             //Special post handling for certain pointers
