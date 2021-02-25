@@ -138,6 +138,7 @@ private:
     struct FutureSection {
         String label;
         int stype;
+        bool questionable;
     };
     StringPairArray altnames;
 
@@ -148,6 +149,8 @@ private:
     bool isValidDefineKey(String s);
     bool isValidDefineValue(String s);
     void substituteDefines(const StringPairArray &defs, MusLine *line);
+    bool getMusHex(String s, int &value);
+    bool getMusInt(String s, int &value);
     int parseNormalParam(const MusLine *line, String s, String datasrc, 
         int datalen, bool allowNoteName = false, bool canon = false, 
         bool wideDelay = false, bool *dataforce2 = nullptr);

@@ -2879,6 +2879,28 @@ void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
     */
 }
 
+bool SeqFile::getMusHex(String s, int &value){
+    if(s.length() < 2) return false;
+    if(s[0] != '$') return false;
+    s = s.substring(1).toLowerCase();
+    if(!s.containsOnly("0123456789abcdef")) return false;
+    value = s.getHexValue32();
+    return true;
+}
+
+bool SeqFile::getMusInt(String s, int &value){
+    if(s.length() < 1) return false;
+    bool neg = false;
+    if(s[0] == '-'){
+        neg = true;
+        s = s.substring(1);
+    }
+    if(!s.containsOnly("0123456789")) return false;
+    value = s.getIntValue();
+    if(neg) value = -value;
+    return true;
+}
+
 int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc, 
         int datalen, bool allowNoteName, bool canon, bool wideDelay, bool *dataforce2){
     int value;
@@ -2891,25 +2913,9 @@ int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc,
         }
         //TODO this should only be supported for the "Target Pitch" parameter
         //of the portamento/sweepfrom/sweep command.
-    }else if(s[0] == '$'){
-        s = s.substring(1);
-        if(!s.containsOnly("0123456789abcdef")){
-            line->Error("Expected hex integer, got " + s + "!");
-            return -1;
-        }
-        value = s.getHexValue32();
-    }else{
-        bool neg = false;
-        if(s[0] == '-'){
-            neg = true;
-            s = s.substring(1);
-        }
-        if(!s.containsOnly("0123456789")){
-            line->Error("Expected decimal/hex integer, got " + s + "!");
-            return -1;
-        }
-        value = s.getIntValue();
-        if(neg) value = -value;
+    }else if(!getMusHex(s, value) && !getMusInt(s, value)){
+        line->Error("Expected decimal/hex integer, got " + s + "!");
+        return -1;
     }
     if((datasrc == "fixed" && datalen == 1 && (value < -128 || value > 255))
             || (datasrc == "fixed" && datalen == 2 && (value < -0x8000 || value > 0xFFFF))
@@ -3085,6 +3091,14 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         ret = ValueTree("lprint");
         ret.setProperty(idValue, name == "#lprinton", nullptr);
         return ret;
+    }else if(name == "#bug"){
+        //This is a bug in the original sequence. SEQ64 should parse this section
+        //ignoring any errors as much as possible.
+        if(line->toks.size() > 1){
+            return line->Error("Spurious tokens after #bug (ironically)!");
+        }
+        ret = ValueTree("bug");
+        return ret;
     }
     //All other types of commands and labels
     name = name.toLowerCase();
@@ -3221,6 +3235,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
                     + ", got nothing!");
             }
             String s = line->toks[t];
+            bool dataforce2;
             if(meaning == "Absolute Address" || meaning == "Relative Address"){
                 if(s.containsAnyOf("()")){
                     if(s.getLastCharacter() != ')'){
@@ -3233,14 +3248,18 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
                     if(importresult >= 2) return ValueTree();
                     ret.setProperty(idTargetCmdByte, value, nullptr);
                 }
-                if(!isValidLabel(s)){
+                if(ret.getProperty(idAction).toString() == "Maybe Ptr" && (getMusHex(s, value) || getMusInt(s, value))){
+                    line->Info("Maybe Ptr is a regular parameter, not a pointer");
+                    param.setProperty(idValue, value, nullptr);
+                }else if(!isValidLabel(s)){
                     return line->Error("Invalid character(s) in label " + s + "!");
+                }else{
+                    param.setProperty(idValue, s, nullptr);
+                    ret.setProperty(idTargetSection, s, nullptr);
                 }
-                param.setProperty(idValue, s, nullptr);
-                ret.setProperty(idTargetSection, s, nullptr);
                 value = 0xFFFFFF;
             }else{
-                bool dataforce2 = false;
+                dataforce2 = false;
                 value = parseNormalParam(line, s, datasrc, datalen, 
                     true, canon, wideDelay, &dataforce2);
                 if(importresult >= 2) return ValueTree();
@@ -3343,6 +3362,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
     FutureSection f;
     f.label = tgt;
     f.stype = stype;
+    f.questionable = section.hasProperty(idQuestionableSection);
     fs.add(f);
 }
 
@@ -3448,14 +3468,13 @@ int SeqFile::importMus(File musfile){
     altnames.clear();
     String curLabel = "";
     bool lprint = false;
-    bool inQuestionableSection = false;
     while(true){
         MusLine *line;
         ValueTree command;
         String type;
         bool endSection = false, dontAdvanceLine = false;
         if(ln >= lines.size()){
-            if(inQuestionableSection){
+            if(section.hasProperty(idQuestionableSection)){
                 line->Info("Ran into end of sequence while parsing unused code, "
                     "calling that the end of the unused code");
             }else{
@@ -3482,7 +3501,7 @@ int SeqFile::importMus(File musfile){
                     //Ran into an existing section, means end of current section
                     dbgmsg("Detected end of " + section.getProperty(idLabelName).toString()
                         + " due to already parsed line " + line->l);
-                }else if(inQuestionableSection){
+                }else if(section.hasProperty(idQuestionableSection)){
                     line->Info("Ran into another section while parsing unused code, "
                         "calling that the end of the unused code");
                 }else{
@@ -3554,6 +3573,9 @@ int SeqFile::importMus(File musfile){
             }
         }else if(type == "lprint"){
             lprint = command.getProperty(idValue);
+        }else if(type == "bug"){
+            line->Info("Setting current section to buggy mode (ignoring some types of errors)");
+            section.setProperty(idQuestionableSection, true, nullptr);
         }else if(type == "align"){
             //Add as a new section
             command.setProperty(idAddress, ln, nullptr);
@@ -3623,11 +3645,13 @@ int SeqFile::importMus(File musfile){
                     + futuresecs[fs].label + " stype " + String(futuresecs[fs].stype) + "!");
                 return 2;
             }
-            inQuestionableSection = false;
             curLabel = "";
             stype = futuresecs[fs].stype;
             section = createBlankSectionVT(stype);
             section.setProperty(idAddress, ln, nullptr);
+            if(futuresecs[fs].questionable){
+                section.setProperty(idQuestionableSection, true, nullptr);
+            }
             structure.appendChild(section, nullptr);
             dbgmsg("Parsing section " + futuresecs[fs].label + " stype " + String(stype));
             if(stype == 3){
@@ -3656,14 +3680,15 @@ int SeqFile::importMus(File musfile){
             futuresecs.remove(fs);
         }else if(endSection){
             //Seems like we're done parsing. Check for unused lines.
+            section.removeProperty(idQuestionableSection, nullptr);
             bool continueParsing = false;
             for(ln=0; ln<lines.size(); ++ln){
                 if(lines[ln]->used) continue;
                 //Check for special commands.
                 if(lines[ln]->l.startsWith("#align") || lines[ln]->l.startsWith("#even")){
-                    inQuestionableSection = true;
                     curLabel = "";
                     section = structure.getChild(0);
+                    section.setProperty(idQuestionableSection, true, nullptr);
                     stype = 0;
                     dtstype = -1;
                     dtdynstype = -1;
@@ -3682,7 +3707,7 @@ int SeqFile::importMus(File musfile){
                 if(section.isValid()){
                     lines[ln]->Info("Unused line after jump, continuing previous section");
                     //Make the unused line be the next command of this section.
-                    inQuestionableSection = true;
+                    section.setProperty(idQuestionableSection, true, nullptr);
                     curLabel = "";
                     stype = section.getProperty(idSType);
                     dtstype = -1; //Jumps can't exist in dyntables
@@ -3727,12 +3752,12 @@ int SeqFile::importMus(File musfile){
                 }else{
                     stype = validSTypes[0];
                     lines[ln]->Info("Speculative parsing deduced stype " + String(stype));
-                    inQuestionableSection = true;
                     curLabel = "";
                     dtstype = (stype == 3) ? 1 : -1; //Hopefully no unused dyntable, but if so probably channel
                     dtdynstype = -1;
                     section = createBlankSectionVT(stype);
                     section.setProperty(idAddress, ln, nullptr);
+                    section.setProperty(idQuestionableSection, true, nullptr);
                     structure.appendChild(section, nullptr);
                     continueParsing = true;
                     break;
@@ -4280,11 +4305,7 @@ int SeqFile::exportMus(File musfile, int dialect){
                     out += "\n\n" + command.getProperty(idLabelName).toString() + "\n";
                     lblctr = 0;
                 }
-                if(!(lblctr & 7)){
-                    out += (dialect >= 2 ? "#label   " : "#address ");
-                }else{
-                    out += ", ";
-                }
+                out += !(lblctr & 7) ? (dialect >= 2 ? "#label   " : "#address ") : ", ";
                 int s = command.getProperty(idTargetSection, -1);
                 if(s < 0 || s >= structure.getNumChildren()){
                     dbgmsg("Invalid idTargetSection " + String(s) + " in dyntable!");
@@ -4315,8 +4336,12 @@ int SeqFile::exportMus(File musfile, int dialect){
         }else if(stype == 4){
             //envelope
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
-                ValueTree p1 = section.getChild(cmd).getChildWithProperty(idMeaning, "Rate");
-                ValueTree p2 = section.getChild(cmd).getChildWithProperty(idMeaning, "Level");
+                ValueTree command = section.getChild(cmd);
+                if(command.hasProperty(idLabelName) && cmd != 0){
+                    out += "\n" + command.getProperty(idLabelName).toString() + "\n";
+                }
+                ValueTree p1 = command.getChildWithProperty(idMeaning, "Rate");
+                ValueTree p2 = command.getChildWithProperty(idMeaning, "Level");
                 if(!p1.isValid() || !p2.isValid()){
                     dbgmsg("Invalid envelope point!\n");
                     return 2;
@@ -4333,8 +4358,13 @@ int SeqFile::exportMus(File musfile, int dialect){
             //extable
             int lblctr = 0;
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
+                ValueTree command = section.getChild(cmd);
+                if(command.hasProperty(idLabelName) && cmd != 0){
+                    out += "\n\n" + command.getProperty(idLabelName).toString() + "\n";
+                    lblctr = 0;
+                }
                 out += !(lblctr & 15) ? (dialect >= 2 ? "#byte    $" : "#u8 $") : ",$";
-                ValueTree param = section.getChild(cmd).getChildWithProperty(idMeaning, "Data");
+                ValueTree param = command.getChildWithProperty(idMeaning, "Data");
                 if(!param.isValid()){
                     dbgmsg("Invalid other table / extable!");
                     return 2;
