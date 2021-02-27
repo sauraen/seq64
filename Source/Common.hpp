@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "JuceHeader.h"
+#include <JuceHeader.h>
 
 inline bool isInt(String str, bool allowNegative = true){
     str = str.trim();
@@ -115,6 +115,8 @@ inline String hexauto(int i) { return hex(i, i >= 0x10000 ? 32 : i >= 0x100 ? 16
 #define NULLSTATEMENT ((void)0)
 #define REQUIRESEMICOLON do{NULLSTATEMENT;} while(false)
 
+#ifndef SEQ64_CONSOLE_ONLY
+
 #define FROMLOOKANDFEEL(colorType) \
     LookAndFeel::getDefaultLookAndFeel().findColour(colorType)
 
@@ -152,6 +154,8 @@ inline void TurnRed(TextEditor *ed, bool turnRed = true){
 inline void TurnRed(const std::unique_ptr<TextEditor> &ed, bool turnRed = true){
     TurnRed(ed.get(), turnRed);
 }
+
+#endif
 
 inline File findFile(String relpath){
     File f = File::getSpecialLocation(File::currentApplicationFile).getParentDirectory();
