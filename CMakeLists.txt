@@ -19,7 +19,12 @@
 
 cmake_minimum_required(VERSION 3.12)
 
+set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
+set(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} CACHE STRING "" FORCE)
+
 project(SEQ64 VERSION 2.0.0)
+
+# Version selection setup
 
 option(SEQ64_CONSOLE_ONLY "Whether SEQ64 should build console version only" OFF)
 option(SEQ64_BUILD_GUI "Whether SEQ64 should build console and GUI versions" OFF)
@@ -45,56 +50,68 @@ elseif(NOT SEQ64_BUILD_GUI)
     endif()
 endif()
 
-if(SEQ64_CONSOLE_ONLY)
-    # Turn off Juce libraries needed for modules we won't be using.
-    
-endif()
-
-add_subdirectory(juce)
+# SEQ64 sources
 
 add_subdirectory(Source)
 list(TRANSFORM SEQ64_SHARED_SOURCES PREPEND "Source/")
 list(TRANSFORM SEQ64_CONSOLE_ONLY_SOURCES PREPEND "Source/")
 list(TRANSFORM SEQ64_GUI_ONLY_SOURCES PREPEND "Source/")
 
-juce_add_console_app(seq64_console PRODUCT_NAME "SEQ64" COMPANY_NAME "Sauraen")
-juce_generate_juce_header(seq64_console)
-target_sources(seq64_console PRIVATE ${SEQ64_SHARED_SOURCES} ${SEQ64_CONSOLE_ONLY_SOURCES})
+if(WIN32)
+    set(SEQ64_COMPILE_OPTIONS "/W2" "/O2")
+else()
+    set(SEQ64_COMPILE_OPTIONS "-Wall" "-Wextra" "-Wno-sign-compare" "-Wno-sign-conversion" "-O3")
+endif()
+
+# Console version
+
+add_executable(seq64_console
+    ${SEQ64_SHARED_SOURCES}
+    ${SEQ64_CONSOLE_ONLY_SOURCES}
+    "juce/modules/juce_core/juce_core.cpp"
+    "juce/modules/juce_events/juce_events.cpp"
+    "juce/modules/juce_audio_basics/juce_audio_basics.cpp"
+    "juce/modules/juce_data_structures/juce_data_structures.cpp"
+)
+target_include_directories(seq64_console PRIVATE
+    "Source"
+    "juce/modules"
+)
 target_compile_definitions(seq64_console PRIVATE 
+    JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1
     JUCE_WEB_BROWSER=0 
     JUCE_USE_CURL=0 
     SEQ64_CONSOLE_ONLY=1
 )
-target_link_libraries(seq64_console 
-    PRIVATE
-    juce::juce_core
-    juce::juce_audio_basics
-    juce::juce_data_structures
-    PUBLIC
-    juce::juce_recommended_config_flags
-    juce::juce_recommended_warning_flags
-)
+target_compile_options(seq64_console PRIVATE ${SEQ64_COMPILE_OPTIONS})
+if(UNIX AND NOT APPLE)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+    target_link_libraries(seq64_console Threads::Threads ${CMAKE_DL_LIBS})
+endif()
+
+# GUI version
 
 if(SEQ64_BUILD_GUI)
-    juce_add_gui_app(seq64_gui PRODUCT_NAME "SEQ64" COMPANY_NAME "Sauraen")
+    add_subdirectory(juce)
+    
+    juce_add_gui_app(seq64_gui PRODUCT_NAME "seq64_gui" COMPANY_NAME "Sauraen")
     juce_generate_juce_header(seq64_gui)
     target_sources(seq64_gui PRIVATE ${SEQ64_SHARED_SOURCES} ${SEQ64_GUI_ONLY_SOURCES})
     target_compile_definitions(seq64_gui PRIVATE 
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
+        JUCE_DISPLAY_SPLASH_SCREEN=0
         JUCE_APPLICATION_NAME_STRING="SEQ64 V2.0"
         JUCE_APPLICATION_VERSION_STRING="V2.0"
     )
-    target_link_libraries(seq64_gui 
-        PRIVATE
+    target_link_libraries(seq64_gui PRIVATE
         juce::juce_core
         juce::juce_audio_basics
         juce::juce_data_structures
         juce::juce_events
         juce::juce_graphics
         juce::juce_gui_basics
-        PUBLIC
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_warning_flags
     )
+    target_compile_options(seq64_gui PRIVATE ${SEQ64_COMPILE_OPTIONS})
 endif()

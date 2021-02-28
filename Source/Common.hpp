@@ -24,7 +24,11 @@
 
 #pragma once
 
+#ifdef SEQ64_CONSOLE_ONLY
+#include "JuceHeaderConsole.hpp"
+#else
 #include <JuceHeader.h>
+#endif
 
 inline bool isInt(String str, bool allowNegative = true){
     str = str.trim();
