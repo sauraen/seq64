@@ -6,9 +6,9 @@ Click the Releases tab above to download SEQ64 V2.0 or the legacy SEQ64 V1. Or, 
 
 ## Impressum
 
-seq64 - Sequenced music editor for first-party N64 games.
-Created by and Copyright (C) 2014-2021 Sauraen, sauraen@gmail.com
-Licensed under the GNU General Public License version 3 - see LICENSE.txt
+seq64 - Sequenced music editor for first-party N64 games.\
+Created by and Copyright (C) 2014-2021 Sauraen, sauraen@gmail.com\
+Licensed under the GNU General Public License version 3 - see LICENSE.txt\
 Made with the Juce 6 C++ framework under the GPL3 license
 
 ## Instructions
