@@ -2460,7 +2460,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                     continue;
                 }
                 int value = param.getProperty(idValue);
-                if(value < 0 || value > 0x7F){
+                if(cc != 128 && (value < 0 || value > 0x7F)){
                     dbgmsg("CC " + String(cc) + " event with invalid value = " + String(value) + "!");
                     importresult |= 1;
                     value = value < 0 ? 0 : 0x7F;

@@ -24,6 +24,7 @@
 
 #include "Common.hpp"
 #include "SeqEditor.hpp"
+#include "CommandLine.hpp"
 
 class seq64Application : public JUCEApplication
 {
@@ -35,8 +36,14 @@ public:
     bool moreThanOneInstanceAllowed() override       { return true; }
 
     void initialise (const String& commandLine) override {
-        std::cout << "SEQ64 command line is: " << commandLine << "\n";
-        mainWindow.reset (new MainWindow (getApplicationName()));
+        if(!commandLine.isEmpty()){
+            StringArray args = StringArray::fromTokens(commandLine, true);
+            args.insert(0, "seq64_gui"); //Arg 0 is the program name and is ignored
+            seq64_cli(args);
+            quit();
+        }else{
+            mainWindow.reset (new MainWindow (getApplicationName()));
+        }
     }
     void shutdown() override {
         mainWindow = nullptr;
@@ -44,7 +51,9 @@ public:
     void systemRequestedQuit() override {
         quit();
     }
-    void anotherInstanceStarted (const String& commandLine) override {}
+    void anotherInstanceStarted (const String& commandLine) override {
+        ignoreUnused(commandLine);
+    }
 
     class MainWindow : public DocumentWindow
     {
