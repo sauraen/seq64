@@ -106,7 +106,7 @@ int seq64_cli(const StringArray &args){
     String abistr, instr, outstr;
     int dialect = -1;
     
-    ValueTree midiopts;
+    ValueTree midiopts("midiopts");
     midiopts.setProperty("pref", true, nullptr);
     midiopts.setProperty("smartloop", true, nullptr);
     midiopts.setProperty("reladdr", false, nullptr);

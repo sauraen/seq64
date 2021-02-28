@@ -870,24 +870,26 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     int metatype;
     for(int m=0; m<mastertrack->getNumEvents(); m++){
         msg = mastertrack->getEventPointer(m)->message;
-        if(msg.isTextMetaEvent()){
-            metatext = msg.getTextFromTextMetaEvent();
-            metatype = msg.getMetaEventType();
-            if((metatype == 0x06 && (metatext.startsWithIgnoreCase("Section") ||
-                    metatext.startsWithIgnoreCase("loop")))
-                || (metatype == 0x01 && metatext.startsWithIgnoreCase("block:"))){
-                timestamp = msg.getTimeStamp();
-                String secname = metatext.startsWithIgnoreCase("block:") ? metatext.substring(6)
-                    : metatext.startsWithIgnoreCase("Section") ? "tsec" + String(tsectimes.size())
-                    : metatext;
-                if(tsectimes[tsectimes.size()-1] == timestamp){
-                    tsecnames.set(tsectimes.size()-1, secname);
-                }else{
-                    tsectimes.add(msg.getTimeStamp());
-                    tsecnames.add(secname);
-                }
-            }
+        if(!msg.isTextMetaEvent()) continue;
+        metatext = msg.getTextFromTextMetaEvent();
+        metatype = msg.getMetaEventType();
+        if(metatype == 0x06){
+            if(!metatext.startsWithIgnoreCase("Section") &&
+                !metatext.startsWithIgnoreCase("loop")) continue;
+        }else if(metatype == 0x01){
+            if(!metatext.startsWithIgnoreCase("block:")) continue;
         }
+        timestamp = msg.getTimeStamp();
+        if(tsectimes[tsectimes.size()-1] != timestamp){
+            tsectimes.add(msg.getTimeStamp());
+            tsecnames.add("blahblahwillbeoverwritten");
+        }
+        if(metatext.startsWithIgnoreCase("Section")){
+            metatext = "tsec" + String(tsectimes.size()-1);
+        }else if(metatext.startsWithIgnoreCase("block:")){
+            metatext = metatext.substring(6);
+        }
+        tsecnames.set(tsectimes.size()-1, metatext);
     }
     if(tsectimes.size() != tsecnames.size()){
         dbgmsg("tsections internal consistency error!");
@@ -1206,7 +1208,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         wantProperty(want, reladdr ? "Relative Address" : "Absolute Address", 0xFFFF);
         want = createCommand(want);
         want.setProperty(idTargetSection, 0, nullptr);
-        want.setProperty(idTargetHash, tsechashes[num_tsections == 1 ? 0 : 1], nullptr);
+        int targetsection = num_tsections == 1 ? 0 : 1;
+        dbgmsg("Adding smart loop command to tsec " + String(targetsection));
+        want.setProperty(idTargetHash, tsechashes[targetsection], nullptr);
         section.addChild(want, cmd, nullptr);
         cmd++;
     }
@@ -4189,13 +4193,28 @@ int SeqFile::exportMus(File musfile, int dialect){
     fos.setPosition(0);
     fos.truncate();
     importresult = 0;
-    //Assign tsections to all sections
+    //Assign tsections, tsection names, section names, command names
     int num_tsections = assignAllTSections();
-    //Check tsecnames and generate if needed
-    if(tsecnames.size() != num_tsections) generateTSecNames(num_tsections, dialect);
-    //Assign names to all sections
+    if(tsecnames.size() != num_tsections){
+        generateTSecNames(num_tsections, dialect);
+    }else{
+        //If the tsection names came from the MIDI, they could be inconsistent, check
+        for(int i=0; i<tsecnames.size(); ++i){
+            if(tsecnames[i].isEmpty() || !isValidLabel(tsecnames[i])){
+                dbgmsg("Invalid tsec name \"" + tsecnames[i] + "\" for tsec " + String(i) 
+                    + ", internal error or bad marker in MIDI!");
+                return 2;
+            }
+            for(int j=i+1; j<tsecnames.size(); ++j){
+                if(tsecnames[i].equalsIgnoreCase(tsecnames[j])){
+                    dbgmsg("Repeated tsec name \"" + tsecnames[i] + "\" for tsec " + String(i) 
+                        + " and " + String(j) + ", internal error or bad marker in MIDI!");
+                    return 2;
+                }
+            }
+        }
+    }
     nameSections(dialect);
-    //Assign names to all commands which are pointed at
     nameTargetCommands(dialect);
     //Write data
     String out;
