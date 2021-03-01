@@ -2,7 +2,7 @@
 
 ## Downloads
 
-Click the Releases tab above to download SEQ64 V2.0 or the legacy SEQ64 V1. Or, compile from source on Linux, WSL, Windows native, or Mac with an easy, modern CMake build system. Or, integrate as a submodule into your romhack or decomp repo!
+Click [the Releases tab](https://github.com/sauraen/seq64/releases) to download SEQ64 V2.0 or the legacy SEQ64 V1. Or, compile from source on Linux, WSL, Windows native, or Mac with an easy, modern CMake build system. Or, integrate as a submodule into your romhack or decomp repo!
 
 ## Impressum
 
@@ -13,7 +13,7 @@ Made with the Juce 6 C++ framework under the GPL3 license
 
 ## Instructions
 
-Click the Wiki tab above for articles on SEQ64 compilation and use.
+Click [the Wiki tab](https://github.com/sauraen/seq64/wiki) for articles on SEQ64 compilation and use.
 
 ## Background
 
@@ -31,7 +31,7 @@ SEQ64 V2.0 does NOT currently include any bank editing or MIDI instrument number
 
 SEQ64 V1 was started in an era when romhacking tools took whole ROMs and modified certain files in them while being careful not to disrupt any other data. It got widespread use by the community, but almost exclusively for MIDI importing and then `Save Raw` (`.com`/`.aseq` export outside the ROM). At this time, the assembly version of Music Macro Language was only theorized to exist--in fact the format was only theorized to be "Music Macro Language" at all (later versions of this language were used in first-party Nintendo games as late as Skyward Sword).
 
-SEQ64 V1 provided MIDI import (to `.com`/`.aseq`) and import (from `.com`/`.aseq`), as well as a bank editing and creation tool. It also was able to use General MIDI instrument and pitch metadata annotated by the user in the banks to export MIDIs which sound reasonable with General MIDI playback. It can still be downloaded from the Releases tab above, if you need these features.
+SEQ64 V1 provided MIDI import (to `.com`/`.aseq`) and export (from `.com`/`.aseq`), as well as a bank editing and creation tool. It also was able to use General MIDI instrument and pitch metadata annotated by the user in the banks to export MIDIs which sound reasonable with General MIDI playback. It can still be downloaded from the Releases tab above, if you need these features.
 
 ## Format information
 
