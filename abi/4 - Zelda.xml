@@ -492,12 +492,12 @@
            cname="gr_evolume" validinseq="1">
     <parameter name="fadeVolumeScale" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="218" name="sfade" action="No Action" comments="Fade volume over time.&#10;Canon info: 0=&quot;MOVE&quot;, 1=&quot;FADEIN&quot;, 2=&quot;FADEOUT&quot;.&#10;Sets the sequencer to the provided mode and fade timer.  If set to FADEOUT, automatically calculates the fadeout velocity based on the current volume."
+  <command cmd="218" name="sfade" action="No Action" comments="Fade volume over time.&#10;Canon info: 0=&quot;MOVE&quot;, 1=&quot;FADEIN&quot;, 2=&quot;FADEOUT&quot;.&#10;Sets the sequencer to the provided mode and fade timer.  If set to FADEOUT, begins the fade out from the current volume immediately."
            cname="volumemode" validinseq="1">
     <parameter name="Mode" meaning="None" datasrc="fixed" datalen="1"/>
     <parameter name="Time" meaning="None" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="219" name="svol" action="Master Volume" comments="Set volume scale (0..127) (higher values are possible but may cause issues with fading). The command is ignored on fadeout and always forces a volume of 0 on fadein."
+  <command cmd="219" name="svol" action="Master Volume" comments="Set volume scale (0..127) (higher values are possible but may cause issues with fading). If fade mode is 0, the change takes effect immediately. If fade mode is 1 (fade in), the sequence fades to this new level (up or down) according to the fade time. If fade mode is 2 (fade out), the fadeout continues and this volume command is ignored."
            cname="volumechg" validinseq="1">
     <parameter datasrc="fixed" datalen="1" name="Volume" meaning="Value"/>
   </command>
@@ -513,8 +513,10 @@
            cname="transofs" validinseq="1">
     <parameter name="Delta Semitones" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="223" name="stpreset" action="No Action" comments="Resets sequence transposition to 0."
-           validinseq="1"/>
+  <command cmd="223" name="stp" action="No Action" comments="Sets sequence transposition."
+           validinseq="1" cname="transchg">
+    <parameter name="Semitones" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
   <command cmd="239" name="print" action="Ptr Message" cname="dprint" validinseq="1"
            comments="No actual operation.  Might be used to show specific log values in the audio debugger.">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
