@@ -97,7 +97,7 @@
     <parameter name="N" meaning="None" datasrc="offset"/>
   </command>
   <command cmd="24" name="loadsplp" action="No Action" cmdend="31" validinchn="1"
-           comments="Load a sample (probably bank SFX). The sample bank is the current channel's bank ID, the sample number itself is given by P, and N (cmd offset) is the I/O address to report the sample status in. It is initialized to -1, then set to 0, 2, or 3 based on various states or errors, and then presumably set to 1 when the sample loading finishes.">
+           comments="Load a sample (probably bank SFX). The sample bank is the current channel's bank ID, the sample number itself is given by P + 0x100, and N % 8 is the I/O address to report the sample status in. It is initialized to -1, then set to 0, 2, or 3 based on various states or errors, and then presumably set to 1 when the sample loading finishes.">
     <parameter name="N" meaning="None" datasrc="offset"/>
   </command>
   <command cmd="32" name="startchan" action="Ptr Channel Header" comments="Start channel N for the parent sequence, with channel script starting at address X."
@@ -105,14 +105,14 @@
     <parameter name="Channel" meaning="None" datasrc="offset"/>
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="48" name="stcio" action="No Action" cmdend="63" comments="IO[N][X] = Q, where IO[N] is the IO array for channel N."
+  <command cmd="48" name="stcio" action="No Action" cmdend="63" comments="Chan[C].IO[N] = Q, where IO[N] is the IO array for channel C."
            cname="sr_subportwrite" oname="dtblopen" validinchn="1">
-    <parameter name="N (channel)" meaning="None" datasrc="offset"/>
+    <parameter name="C (channel)" meaning="None" datasrc="offset"/>
     <parameter name="IO byte" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
   <command cmd="64" name="ldcio" action="No Action" cmdend="79" cname="sr_subportread"
-           validinchn="1" comments="Q = IO[N][X], where IO[N] is the IO array for channel N.">
-    <parameter name="N (Channel)" meaning="None" datasrc="offset"/>
+           validinchn="1" comments="Q = Chan[C].IO[N], where IO[N] is the IO array for channel C.">
+    <parameter name="C (Channel)" meaning="None" datasrc="offset"/>
     <parameter name="IO byte" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
   <command cmd="80" name="subio" action="No Action" cmdend="95" comments="Decrease Q by IO[N]."
@@ -128,17 +128,17 @@
     <parameter datasrc="offset" name="IO byte" meaning="None"/>
   </command>
   <command cmd="120" name="rstartlayer" action="Ptr Note Layer" cmdend="123"
-           comments="Relative layer start." validinchn="1">
+           validinchn="1" comments="Assigns note layer N to script located at current script location + offset.  If note layer N is not allocated, nothing will occur.">
     <parameter name="Note Layer" meaning="Note Layer" datasrc="offset"/>
     <parameter name="Relative Address" meaning="Relative Address" datasrc="fixed"
                datalen="2"/>
   </command>
-  <command cmd="128" name="testlayer" action="No Action" cmdend="135" comments="Set Q to 1 or 0, depending on whether layer N has been disabled (either forcibly or by finishing its script)."
+  <command cmd="128" name="testlayer" action="No Action" cmdend="135" comments="For note layer N, sets Q to 0 if layer is playing data, 1 if layer is done playing, and -1 if layer is not allocated."
            oname="chknote" validinchn="1">
     <parameter datasrc="offset" name="N" meaning="None"/>
   </command>
   <command cmd="136" name="startlayer" action="Ptr Note Layer" cmdend="139"
-           comments="Start note layer N, with script starting at address X."
+           comments="If note layer N is allocated, start note layer N with script starting at given address."
            oname="opennote" validinchn="1">
     <parameter datasrc="offset" name="Note Layer" meaning="Note Layer"/>
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
@@ -148,7 +148,7 @@
     <parameter name="Note Layer" meaning="None" datasrc="offset"/>
   </command>
   <command cmd="152" name="dynstartlayer" action="Layer from Dyntable" cmdend="159"
-           comments="If Q != -1, start layer N, with layer script given by dyntable[Q]."
+           comments="If Q != -1 and N layer is allocated, start layer N, with layer script given by dyntable[Q]."
            cname="sr_tblnopen" oname="ctblopen" validinchn="1">
     <parameter name="Note Layer" meaning="Note Layer" datasrc="offset"/>
   </command>
@@ -167,17 +167,17 @@
            comments="Copy one or two filters into the sequence data at the current filter pointer. The parameter is of the form XY in hex, where the first and second nybble are each two different filter indices from different banks of filter points in the ROM. If either is 0, only the other filter is copied. If both are nonzero, two are averaged as they are copied. If both are zero, a filter which is just a delayed impulse is used.">
     <parameter name="Filter indices" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="180" name="p2dyntable" action="Dyntable from Data" comments="dyntable = P"
+  <command cmd="180" name="p2dyntable" action="Dyntable from Data" comments="dyntable = data[P]"
            validinchn="1"/>
   <command cmd="181" name="dyntable2p" action="Data from Dyntable" comments="P = dyntable[Q]"
            validinchn="1"/>
   <command cmd="182" name="lddyn" action="Data from Dyntable" comments="Q = dyntable[Q]"
            validinchn="1"/>
-  <command cmd="183" name="randp" action="No Action" validinchn="1" comments="Loads P with a random halfword if Choices is 0. If Choices is nonzero, loads P with a random halfword between 0 and Choices-1.">
-    <parameter name="Choices" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="183" name="randp" action="No Action" validinchn="1" comments="Assigns P to a random value between 0 and Max - 1.  If Max == 0, then it will assign it to any value between 0 and 65536.">
+    <parameter name="Max" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="184" name="rand" action="No Action" validinchn="1" comments="Loads Q with a random byte if Choices is 0. If Choices is nonzero, loads Q with a random byte between 0 and Choices-1.">
-    <parameter name="Choices" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="184" name="rand" action="No Action" validinchn="1" comments="Assigns Q to a random byte between 0 and Max - 1.  If Max == 0, it's assigned any random value between -128 and 127.">
+    <parameter name="Max" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
   <command cmd="185" name="velrand" action="No Action" comments="Sets velocityRandomVariance (humanization)."
            validinchn="1">
@@ -194,8 +194,8 @@
            validinchn="1">
     <parameter name="Immediate" meaning="None" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="189" name="randaddp" action="No Action" validinchn="1" comments="Generate a new random value (not using the existing audio random value) based on Choice like in the 'rand' instruction. Add Value to it (potentially an address). Then, there is some weird bit manipulation of the result which looks like it does nothing. Store the result (after each step!) to P.">
-    <parameter name="Choice" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="189" name="randaddp" action="No Action" validinchn="1" comments="First sets P to a new random value between 0 and Max (if Max == 0, then the random value is unbounded). It then adds Value to P and sets the topmost bit to 1.">
+    <parameter name="Max" meaning="None" datasrc="fixed" datalen="1"/>
     <parameter name="Value" meaning="None" datasrc="fixed" datalen="2"/>
   </command>
   <command cmd="193" name="instr" action="CC or CC Group" comments="Set instrument (program?) within bank. 0x80-0x83 set raw waves (sawtooth, triangle, sine, square), 0x7f is special, otherwise 0-indexed.&#10;Canon info: 80 saw, 01 triangle (&quot;delta&quot;), 02 sine, 03 square (&quot;pulse&quot;), 06 &quot;pulse0&quot;, 07 &quot;pulse1&quot;"
@@ -378,8 +378,8 @@
            validinchn="1">
     <parameter name="Bend (s8)" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="0" name="testchan" action="No Action" cmdend="15" comments="Set Q to 1 or 0, depending on whether channel N has been disabled by channel script."
-           cname="chksub" validinseq="1">
+  <command cmd="0" name="testchan" action="No Action" cmdend="15" cname="chksub"
+           validinseq="1" comments="Sets Q to 1 if channel N is disabled, otherwise sets it to 0.">
     <parameter datasrc="offset" name="Channel" meaning="None"/>
   </command>
   <command cmd="64" name="stopchan" action="No Action" cmdend="79" validinseq="1"
@@ -391,7 +391,7 @@
     <parameter name="IO byte" meaning="None" datasrc="offset"/>
   </command>
   <command cmd="96" name="loadbank" action="No Action" cmdend="111" validinseq="1"
-           validinchn="1" comments="Loads something func_800E4EEC (probably bank) of given index (to given slot?). sequenceIO[N] is passed as some parameter (to the bank?).">
+           validinchn="1" comments="Calls func_800E4EEC(bank idx?, bank slot?, sequenceIO[N]). Effects not entirely known, likely loads a bank from the specified slot.">
     <parameter name="N" meaning="None" datasrc="offset"/>
     <parameter name="Bank idx" meaning="None" datasrc="fixed" datalen="1"/>
     <parameter name="Bank slot?" meaning="None" datasrc="fixed" datalen="1"/>
@@ -405,13 +405,13 @@
     <parameter name="IO byte" meaning="None" datasrc="offset"/>
   </command>
   <command cmd="144" name="startchan" action="Ptr Channel Header" cmdend="159"
-           comments="Start channel N, with a given channel script." cname="opensub"
-           validinseq="1">
+           comments="Enables channel N with the channel script located at the given address."
+           cname="opensub" validinseq="1">
     <parameter datasrc="offset" name="Channel" meaning="Channel"/>
     <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
   </command>
   <command cmd="160" name="rstartchan" action="Ptr Channel Header" oname="brsub"
-           cmdend="175" validinseq="1" comments="Start channel with relative pointer.">
+           cmdend="175" validinseq="1" comments="Enables channel N with the channel script at the relative address.">
     <parameter name="Channel" meaning="Channel" datasrc="offset"/>
     <parameter name="Relative Address" meaning="None" datasrc="fixed" datalen="2"/>
   </command>
@@ -421,7 +421,7 @@
     <parameter name="Sequence index" meaning="None" datasrc="fixed" datalen="1"/>
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="196" name="unk_C4" action="No Action" comments="Calls func_800E20D4(param2, param1 == -1 ? variation bit : param1, 0). If afterwards, variation bit hasn't changed, return (yield?), otherwise continue parsing. (???)"
+  <command cmd="196" name="unk_C4" action="No Action" comments="Calls func_800E20D4(param1 == -1 ? variation bit : param1, param2, 0). If afterwards, variation bit hasn't changed, return (yield?), otherwise continue parsing. (???)"
            validinseq="1">
     <parameter name="param1" meaning="None" datasrc="fixed" datalen="1"/>
     <parameter name="param2" meaning="None" datasrc="fixed" datalen="1"/>
@@ -430,7 +430,7 @@
            validinseq="1">
     <parameter name="Unnamed" meaning="None" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="198" name="unk_C6" action="No Action" validinseq="1" comments="Sets sequence player bit 1 (0x02), unknown."/>
+  <command cmd="198" name="unk_C6" action="No Action" validinseq="1" comments="Sets sequence player bit 1 (0x02), disables further processing of the sequencer after the script has been parsed."/>
   <command cmd="199" name="sts" action="Ptr Self" cname="gr_store" oname="sselfwriteb"
            validinseq="1" comments="Self-Modifying Code -- sequenceData[A] = Q + imm">
     <parameter name="Immediate" meaning="None" datasrc="fixed" datalen="1"/>
@@ -449,12 +449,12 @@
            validinseq="1">
     <parameter datasrc="fixed" datalen="1" name="Value" meaning="None"/>
   </command>
-  <command cmd="205" name="tblcall" action="Seq Hdr Call Table" comments="If Q != -1 and call depth is not 3, make a function call to position sequenceData[A+Q]."
+  <command cmd="205" name="tblcall" action="Seq Hdr Call Table" comments="If Q != -1 and call depth not at max (3), make a function call to position sequenceData[A+Q]."
            validinseq="1">
     <parameter name="A" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="206" name="rand" action="No Action" validinseq="1" comments="Loads Q with a random byte if Choices is 0. If Choices is nonzero, loads Q with a random byte between 0 and Choices-1.">
-    <parameter name="Choices" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="206" name="rand" action="No Action" validinseq="1" comments="Loads Q with a random byte between 0 and Max - 1.  If Max == 0, then it will be unbounded.">
+    <parameter name="Max" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
   <command cmd="208" name="noteallocpolicy" action="No Action" comments="Set note allocation policy (bitmask). If bit 0x1 is set, it will try to steal notes back from what was previously played on the same layer. If bit 0x2 is set, notes will be allocated exclusively from the channel&#8217;s reserved notes, else if 0x4 is set, from the channel&#8217;s or sequence&#8217;s reserved notes, else if 0x8 is set, from unreserved notes, otherwise from all sources. Not used by the game."
            cname="defmonomode" validinseq="1">
@@ -476,51 +476,49 @@
   </command>
   <command cmd="212" name="mute" action="No Action" comments="Set sequence to muted mode. Depending on what behavior has been set this will do different things; from lowering volume to not running scripts."
            cname="selfpause" validinseq="1"/>
-  <command cmd="213" name="mutescale" action="Mute Scale" comments="Set volume multiplier for muted mode (0&#8230;127)."
+  <command cmd="213" name="mutescale" action="Mute Scale" comments="Sets volume multiplier for muted mode (0&#8230;127)."
            cname="pausevolume" validinseq="1">
     <parameter datasrc="fixed" datalen="1" name="Volume Multiplier" meaning="Value"/>
   </command>
-  <command cmd="214" name="disablechan" action="Channel Disable" comments="Uninitialize channels (bitmask). This actually does absolutely nothing (reads the u16 and then returns)."
+  <command cmd="214" name="disablechan" action="Channel Disable" comments="Likely was meant to uninitialize channels (bitmask). Implemented as a no-op."
            cname="deallocsub" validinseq="1">
     <parameter datasrc="fixed" datalen="2" name="Channels" meaning="Bitfield"/>
   </command>
-  <command cmd="215" name="initchan" action="Channel Enable" comments="Initialize channels (bitmask). This copies mute behavior and note allocation policy."
+  <command cmd="215" name="initchan" action="Channel Enable" comments="Initialize channels, where each bit either enables or disables the channel.  Each channel will be initialized with the sequencer's default bank, mute behavior, and note allocation policy."
            cname="allocsub" validinseq="1">
     <parameter datasrc="fixed" datalen="2" name="Channels" meaning="Bitfield"/>
   </command>
-  <command cmd="217" name="sexp" action="No Action" comments="Sequence expression (second volume control)."
+  <command cmd="217" name="sexp" action="No Action" comments="Sequence expression (second volume control) (0..127)."
            cname="gr_evolume" validinseq="1">
     <parameter name="fadeVolumeScale" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="218" name="sfade" action="No Action" comments="Fade volume over time.&#10;Canon info: 0=&quot;MOVE&quot;, 1=&quot;FADEIN&quot;, 2=&quot;FADEOUT&quot;. The command does actually check if the first parameter is 1 or 2, but it looks like if it's 0 nothing actually happens."
+  <command cmd="218" name="sfade" action="No Action" comments="Fade volume over time.&#10;Canon info: 0=&quot;MOVE&quot;, 1=&quot;FADEIN&quot;, 2=&quot;FADEOUT&quot;.&#10;Sets the sequencer to the provided mode and fade timer.  If set to FADEOUT, automatically calculates the fadeout velocity based on the current volume."
            cname="volumemode" validinseq="1">
     <parameter name="Mode" meaning="None" datasrc="fixed" datalen="1"/>
     <parameter name="Time" meaning="None" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="219" name="svol" action="Master Volume" comments="Set volume scale (0&#8230;255 = none to twice normal).&#10;Actually normal is 0x58, not 0x80."
+  <command cmd="219" name="svol" action="Master Volume" comments="Set volume scale (0..127) (higher values are possible but may cause issues with fading). The command is ignored on fadeout and always forces a volume of 0 on fadein."
            cname="volumechg" validinseq="1">
     <parameter datasrc="fixed" datalen="1" name="Volume" meaning="Value"/>
   </command>
-  <command cmd="220" name="unk_DC" action="No Action" comments="Reads 1 byte as s8, stores 3 times it to seq data, doesn't look like the tempo command at all. Maybe some kind of PPQN setting?"
+  <command cmd="220" name="tempovar" action="No Action" comments="Sets temporary tempo variance to V. This value is added on top of the regular tempo while the sequence plays."
            validinseq="1">
-    <parameter name="Unknown" meaning="None" datasrc="fixed" datalen="1"/>
+    <parameter name="Variance" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="221" name="tempo" action="Tempo" comments="Set tempo in BPM."
+  <command cmd="221" name="tempo" action="Tempo" comments="Set tempo in BPM. If new tempo is &gt; current maximum, set tempo to max.  If tempo is 0 or less, it will be set to 1."
            cname="tempochg" validinseq="1">
     <parameter datasrc="fixed" datalen="1" name="Tempo" meaning="Value"/>
   </command>
-  <command cmd="222" name="stprel" action="No Action" comments="Change sequence transposition by some delta."
+  <command cmd="222" name="stprel" action="No Action" comments="Change sequence transposition by semitones."
            cname="transofs" validinseq="1">
     <parameter name="Delta Semitones" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="223" name="stp" action="No Action" comments="Set sequence transposition in semitones."
-           cname="transchg" validinseq="1">
-    <parameter datasrc="fixed" datalen="1" name="Semitones" meaning="None"/>
-  </command>
-  <command cmd="239" name="print" action="Ptr Message" cname="dprint" comments="Print debug message"
-           validinseq="1">
+  <command cmd="223" name="stpreset" action="No Action" comments="Resets sequence transposition to 0."
+           validinseq="1"/>
+  <command cmd="239" name="print" action="Ptr Message" cname="dprint" validinseq="1"
+           comments="No actual operation.  Might be used to show specific log values in the audio debugger.">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
-    <parameter name="Unk 0 or 3" meaning="None" datasrc="fixed" datalen="1"/>
+    <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
   <command cmd="240" name="unreservenotes" action="No Action" comments="Drop all earlier reservations made by this sequence/channel."
            cname="deallocvoice" validinseq="1" validinchn="1"/>
