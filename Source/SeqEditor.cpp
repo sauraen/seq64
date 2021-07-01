@@ -944,7 +944,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!abi.isValid()) return;
         if(!checkSeqPresence(false)) return;
         File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("romfolder");
-        FileChooser box("Load .com/.aseq", f, "*.com;*.aseq", true);
+        FileChooser box("Load .com/.aseq", f, "*.com;*.aseq;*.m64;*.bin;*.seq", true);
         if(!box.browseForFileToOpen()) return;
         f = box.getResult();
         seq.reset(new SeqFile(abi));
@@ -956,7 +956,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_btnExportCom] -- add your button handler code here..
         if(!checkSeqPresence(true)) return;
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
-        FileChooser box("Save .com/.aseq", savelocation, "*.com;*.aseq", true);
+        FileChooser box("Save .com/.aseq", savelocation, "*.com;*.aseq;*.m64;*.bin;*.seq", true);
         if(!box.browseForFileToSave(true)) return;
         savelocation = box.getResult();
         startSeqOperation(".com/.aseq export", &SeqFile::exportCom, savelocation);

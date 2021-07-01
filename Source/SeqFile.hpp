@@ -172,13 +172,16 @@ private:
     bool getSectionAndCmd(ValueTree command, int &s, int &c);
     
     //For exportMus
+    StringArray alllabelnames;
     void assignTSection(ValueTree sec, int tsecnum);
     int assignAllTSections();
     void generateTSecNames(int num_tsections, int dialect);
     String getSecNamePrefix(int dialect, ValueTree section);
+    void registerExistingLabelName(ValueTree section);
+    void setLabelNameAuto(ValueTree target, String name, String extra = "_");
     void nameSections(int dialect);
     void nameTargetCommands(int dialect);
-    int countTicks(ValueTree sec);
+    int countTicks(ValueTree sec, int starthash, int *lastdelay);
     String getCommandMusLine(int sec, ValueTree section, ValueTree command, 
         int dialect, int stype, int secticks);
     int findDynTableIndex(int sec);
@@ -259,6 +262,7 @@ private:
     static Identifier idOldSectionIdx;
     static Identifier idSecDone;
     static Identifier idTicks;
+    static Identifier idLastDelay;
     static Identifier idLabelName;
     static Identifier idLabelNameAuto;
     static Identifier idSrcCmdRef;

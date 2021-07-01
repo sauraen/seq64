@@ -15,6 +15,10 @@ Made with the Juce 6 C++ framework under the GPL3 license
 
 Click [the Wiki tab](https://github.com/sauraen/seq64/wiki) for articles on SEQ64 compilation and use.
 
+## .com? .mus? What is all this? Where do I load a ROM?
+
+You don't load a ROM in SEQ64 V2.0. `.com`, `.aseq`, and `.m64` are all the same thing (Music Macro Language binary). `.mus` is the text-based assembly language version of this same data. The rest of this README explains in more detail. If you are using an old-school toolchain which doesn't split the ROM into its constituent files, but where you just edit the whole ROM in one tool after another, use SEQ64 V1.
+
 ## Background
 
 Certain Nintendo 64 games made by Nintendo's internal studios, including Super Mario 64, Zelda, and several others, use a music sequence format called Music Macro Language (formerly referred to as `Audioseq` after the name of the file containing the sequences in the OoT Debug ROM). This format can be thought of as a cross between MIDI and a scripting language such as Python: it contains instructions for things like playing notes, pitch bend, and selecting instruments, and also programming instructions like branches, loops, calls, memory I/O, and some basic variable manipulation. In games which use this format, not only are MIDI-like music sequences stored in this format, but the first sequence in each game handles sound effects. This sequence is a huge "program" written in this language which listens for messages from the game engine and then plays miniature sequences for each of these sound effects.

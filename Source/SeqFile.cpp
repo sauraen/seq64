@@ -57,6 +57,7 @@ Identifier SeqFile::idSectionName("sectionname");
 Identifier SeqFile::idOldSectionIdx("oldsectionidx");
 Identifier SeqFile::idSecDone("secdone");
 Identifier SeqFile::idTicks("ticks");
+Identifier SeqFile::idLastDelay("lastdelay");
 Identifier SeqFile::idLabelName("labelname");
 Identifier SeqFile::idLabelNameAuto("labelnameauto");
 Identifier SeqFile::idSrcCmdRef("srccmdref");
@@ -267,8 +268,7 @@ void SeqFile::getCommandRange(ValueTree command, String meaning, int &range_min,
 int SeqFile::getLargestCommandRange(int stype, String action, String meaning){
     ValueTree test, param, param2;
     ValueTree possibleCmdsList("possiblecmdslist");
-    bool flag;
-    int i, range, maxrange = 0;
+    int i, maxrange = 0;
     for(i=0; i<abi.getNumChildren(); i++){
         test = abi.getChild(i);
         if(!isCommandValidIn(test, stype)) continue;
@@ -597,7 +597,7 @@ void SeqFile::prefSetBool(ValueTree midiopts, Identifier opt, String value, Stri
     if(truthy) midiopts.setProperty(opt, true, nullptr);
     else if(falsey) midiopts.setProperty(opt, false, nullptr);
     else{
-        dbgmsg(".pref: Invalid value " + prefline);
+        dbgmsg(".pref: Invalid bool value: " + prefline);
         importresult |= 1;
     }
 }
@@ -606,7 +606,7 @@ void SeqFile::prefSetInt(ValueTree midiopts, Identifier opt, int max, String val
     if(isInt(value) && v >= 0 && v <= max){
         midiopts.setProperty(opt, v, nullptr);
     }else{
-        dbgmsg(".pref: Invalid " + opt + " value " + value);
+        dbgmsg(".pref: Invalid " + opt + " value " + value + ": " + prefline);
         importresult |= 1;
     }
 }
@@ -614,10 +614,10 @@ void SeqFile::prefSetHex(ValueTree midiopts, Identifier opt, int max, String val
     if(value.startsWithIgnoreCase("0x")) value = value.substring(2);
     else if(value.startsWith("$")) value = value.substring(1);
     int v = value.getHexValue32();
-    if(isHex(value) && v >= 0 && v <= 255){
+    if(isHex(value) && v >= 0 && v <= max){
         midiopts.setProperty(opt, v, nullptr);
     }else{
-        dbgmsg(".pref: Invalid " + opt + " value " + value);
+        dbgmsg(".pref: Invalid " + opt + " value " + value + ": " + prefline);
         importresult |= 1;
     }
 }
@@ -1654,7 +1654,6 @@ void SeqFile::optimize(ValueTree midiopts){
     int numCmdsDelete;
     //
     ValueTree want, want2, param;
-    int i;
     int cctype, cclast, ccdir;
     if(useLoops){
         dbgmsg("\nLooking for data to loop");
@@ -3479,11 +3478,12 @@ int SeqFile::importMus(File musfile){
         bool endSection = false, dontAdvanceLine = false;
         if(ln >= lines.size()){
             if(section.hasProperty(idQuestionableSection)){
-                line->Info("Ran into end of sequence while parsing unused code, "
+                dbgmsg("Ran into end of sequence while parsing unused code, "
                     "calling that the end of the unused code");
             }else{
-                line->Warning("Ran into end of sequence while parsing normal code, "
+                dbgmsg("Ran into end of sequence while parsing normal code, "
                     "normally this is an error but in some technical sequences it's OK");
+                importresult |= 1;
             }
             dontAdvanceLine = true;
             endSection = true;
@@ -3898,20 +3898,47 @@ String SeqFile::getSecNamePrefix(int dialect, ValueTree section){
     return name;
 }
 
+void SeqFile::registerExistingLabelName(ValueTree section){
+    String name = section.getProperty(idLabelName).toString();
+    if(alllabelnames.contains(name)){
+        dbgmsg("Duplicate existing label name " + name + "!");
+        importresult |= 2;
+    }else{
+        alllabelnames.add(name);
+    }
+}
+
+void SeqFile::setLabelNameAuto(ValueTree target, String name, String extra){
+    if(extra.isEmpty()){
+        dbgmsg("Internal error in setLabelNameAuto!");
+        importresult |= 2;
+        return;
+    }
+    while(name.isEmpty() || alllabelnames.contains(name)){
+        String name2 = name + extra;
+        //dbgmsg("Duplicate generated name " + name + ", changing to " + name2);
+        name = name2;
+    }
+    alllabelnames.add(name);
+    target.setProperty(idLabelName, name, nullptr);
+    target.setProperty(idLabelNameAuto, true, nullptr);
+}
+
 void SeqFile::nameSections(int dialect){
-    StringArray allsecnames;
     //Main section
     ValueTree section = structure.getChild(0);
-    if(!section.hasProperty(idLabelName) || section.hasProperty(idLabelNameAuto)){
-        String name = dialect >= 2 ? "_" + seqname : "_start";
-        allsecnames.addIfNotAlreadyThere(name);
-        section.setProperty(idLabelName, name, nullptr);
-        section.setProperty(idLabelNameAuto, true, nullptr);
+    if(section.hasProperty(idLabelName) && !section.hasProperty(idLabelNameAuto)){
+        registerExistingLabelName(section);
+    }else{
+        setLabelNameAuto(section, dialect >= 2 ? "_" + seqname : "_start");
     }
     //Rest of sections
     for(int sec=1; sec<structure.getNumChildren(); sec++){
         section = structure.getChild(sec);
-        if(section.hasProperty(idLabelName) && !section.hasProperty(idLabelNameAuto)) continue;
+        if(section.hasProperty(idLabelName) && !section.hasProperty(idLabelNameAuto)){
+            registerExistingLabelName(section);
+            continue;
+        }
         int stype = section.getProperty(idSType);
         String name = getSecNamePrefix(dialect, section);
         if(stype == 1 || stype == 2){
@@ -3941,15 +3968,10 @@ void SeqFile::nameSections(int dialect){
                 name += "_ldstbl" + String(sec);
             }
         }else if(section.hasProperty(idSrcCmdRef)){
-            name += "_" + String(dialect >= 2 ? "pat" : "call") + section.getProperty(idSrcCmdRef).toString();
+            name += "_" + String(dialect >= 2 ? "pat" : "call") 
+                + section.getProperty(idSrcCmdRef).toString();
         }
-        if(name.isEmpty() || allsecnames.contains(name)){
-            //dbgmsg("Name clash for section " + String(sec) + " \"" + name + "\"");
-            name += "_" + String(sec);
-        }
-        allsecnames.addIfNotAlreadyThere(name);
-        section.setProperty(idLabelName, name, nullptr);
-        section.setProperty(idLabelNameAuto, true, nullptr);
+        setLabelNameAuto(section, name, "_" + String(sec));
     }
 }
 
@@ -3970,62 +3992,87 @@ void SeqFile::nameTargetCommands(int dialect){
         ValueTree section = structure.getChild(sec);
         for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
             ValueTree command = section.getChild(cmd);
-            if(command.hasProperty(idLabelName) && !command.hasProperty(idLabelNameAuto)) continue;
-            if(command.hasProperty(idTSection)){
-                //In seq header, first command of each tsection
-                command.setProperty(idLabelName, getSecNamePrefix(dialect, command), nullptr);
-            }else if(targethashes.contains(command.getProperty(idHash))){
-                //Normal target command
-                command.setProperty(idLabelName, section.getProperty(idLabelName).toString() + "_" + String(cmd), nullptr);
-            }else{
+            if(command.hasProperty(idLabelName) && !command.hasProperty(idLabelNameAuto)){
+                registerExistingLabelName(command);
                 continue;
             }
-            command.setProperty(idLabelNameAuto, true, nullptr);
+            if(command.hasProperty(idTSection)){
+                //In seq header, first command of each tsection
+                setLabelNameAuto(command, getSecNamePrefix(dialect, command));
+            }else if(targethashes.contains(command.getProperty(idHash))){
+                //Normal target command
+                setLabelNameAuto(command, 
+                    section.getProperty(idLabelName).toString() + "_" + String(cmd));
+            }
         }
     }
 }
 
-int SeqFile::countTicks(ValueTree sec){
-    if(!sec.isValid()){
-        dbgmsg("Invalid section in countTicks!");
-        importresult |= 2;
-        return 0;
-    }
-    if(sec.hasProperty(idTicks)){
-        return sec.getProperty(idTicks);
-    }
-    int stype = sec.getProperty(idSType);
-    if(stype >= 3) return 0;
-    sec.setProperty(idTicks, -1, nullptr);
-    int ticks = 0;
-    int lastnotedelay = -1;
-    for(int i=0; i<sec.getNumChildren(); ++i){
-        ValueTree command = sec.getChild(i);
-        String action = command.getProperty(idAction).toString();
-        ValueTree delayparam = command.getChildWithProperty(idMeaning, "Delay");
-        if(delayparam.isValid()){
-            int delay = delayparam.getProperty(idValue);
-            ticks += delay;
-            if(action == "Note") lastnotedelay = delay;
-        }else if(action == "Note"){
-            if(stype != 2 || lastnotedelay < 0){
-                dbgmsg("Internal error in countTicks()!");
-                importresult |= 2;
-                return 0;
-            }
-            ticks += lastnotedelay;
+int SeqFile::countTicks(ValueTree sec, int starthash, int *lastdelay){
+    do{
+        if(!sec.isValid()){
+            dbgmsg("countTicks(): invalid section!");
+            break;
         }
-        if(action == "Call"){
-            int t = countTicks(structure.getChild((int)command.getProperty(idTargetSection)));
-            //TODO this isn't always right, can call into middle of section
-            if(t >= 0){
+        if(starthash == 0 && sec.hasProperty(idTicks)){
+            if(lastdelay != nullptr) *lastdelay = sec.getProperty(idLastDelay);
+            return sec.getProperty(idTicks);
+        }
+        int stype = sec.getProperty(idSType);
+        if(stype >= 3) return 0;
+        int ticks = 0;
+        int lastnotedelay = -1;
+        int i=0;
+        if(starthash != 0){
+            ValueTree command = sec.getChildWithProperty(idHash, starthash);
+            if(!command.isValid()){
+                dbgmsg("countTicks(): target hash not found! Sec "
+                    + sec.getProperty(idLabelName).toString() + " hash "
+                    + String(starthash));
+                break;
+            }
+            i = sec.indexOf(command);
+        }
+        bool error = false;
+        for(; i<sec.getNumChildren() && !error; ++i){
+            ValueTree command = sec.getChild(i);
+            String action = command.getProperty(idAction).toString();
+            ValueTree delayparam = command.getChildWithProperty(idMeaning, "Delay");
+            if(delayparam.isValid()){
+                int delay = delayparam.getProperty(idValue);
+                ticks += delay;
+                if(action == "Note") lastnotedelay = delay;
+            }else if(action == "Note"){
+                if(stype != 2){
+                    dbgmsg("countTicks(): note in stype" + String(stype) + "!");
+                    error = true; break;
+                }else if(lastnotedelay < 0){
+                    dbgmsg("countTicks(): note uses last delay but last delay is undefined! Sec "
+                        + sec.getProperty(idName).toString() + " " + sec.getProperty(idLabelName).toString()
+                        + " cmd " + String(i));
+                    error = true; break;
+                }
+                ticks += lastnotedelay;
+            }
+            if(action == "Call"){
+                int ld = -1;
+                ValueTree subsec = structure.getChild((int)command.getProperty(idTargetSection));
+                int sh = command.getProperty(idTargetHash, 0);
+                int t = countTicks(subsec, sh, &ld);
+                if(ld < 0) { error = true; break; }
                 ticks += t;
-                lastnotedelay = -1;
+                lastnotedelay = ld;
             }
         }
-    }
-    sec.setProperty(idTicks, ticks, nullptr);
-    return ticks;
+        if(error) break;
+        if(starthash == 0) sec.setProperty(idTicks, ticks, nullptr);
+        sec.setProperty(idLastDelay, lastnotedelay, nullptr);
+        if(lastdelay != nullptr) *lastdelay = lastnotedelay;
+        return ticks;
+    }while(false);
+    if(lastdelay != nullptr) *lastdelay = -1;
+    importresult |= 1;
+    return 0;
 }
 
 String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command, 
@@ -4214,6 +4261,7 @@ int SeqFile::exportMus(File musfile, int dialect){
             }
         }
     }
+    alllabelnames.clear();
     nameSections(dialect);
     nameTargetCommands(dialect);
     //Write data
@@ -4240,7 +4288,6 @@ int SeqFile::exportMus(File musfile, int dialect){
     }
     int tsecnum = -1;
     int sectiongroup = -1;
-    int last_stype = -2;
     for(int sec=0; sec<structure.getNumChildren(); ++sec){
         ValueTree section = structure.getChild(sec);
         if(section.getType().toString() == "align"){
@@ -4403,14 +4450,13 @@ int SeqFile::exportMus(File musfile, int dialect){
             if(lblctr != 0) out += "\n";
         }else{
             //Seq header, channel, or layer command
-            int secticks = countTicks(section);
+            int secticks = countTicks(section, 0, nullptr);
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
                 out += getCommandMusLine(sec, section, section.getChild(cmd), 
                     dialect, stype, secticks);
             }
         }
         out += "\n";
-        last_stype = stype;
     }
     if(tsecnames_generated){
         tsecnames.clear();
@@ -4453,7 +4499,7 @@ ValueTree SeqFile::getCommand(const Array<uint8_t> &data, uint32_t address, int 
     ValueTree param, desc;
     String action, meaning, datasrc;
     int i, len, paramlen, paramindex, cmdoffset, paramvalue, datalen;
-    uint8_t c, d;
+    uint8_t c;
     uint32_t a = address;
     //
     len = 1;
