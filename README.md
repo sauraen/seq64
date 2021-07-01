@@ -1,8 +1,8 @@
-# SEQ64 V2.0 is here!
+# SEQ64 V2 is here!
 
 ## Downloads
 
-Click [the Releases tab](https://github.com/sauraen/seq64/releases) to download SEQ64 V2.0 or the legacy SEQ64 V1. Or, compile from source on Linux, WSL, Windows native, or Mac with an easy, modern CMake build system. Or, integrate as a submodule into your romhack or decomp repo!
+Click [the Releases tab](https://github.com/sauraen/seq64/releases) to download SEQ64 V2 or the legacy SEQ64 V1. Or, compile from source on Linux, WSL, Windows native, or Mac with an easy, modern CMake build system. Or, integrate as a submodule into your romhack or decomp repo!
 
 ## Impressum
 
@@ -17,7 +17,7 @@ Click [the Wiki tab](https://github.com/sauraen/seq64/wiki) for articles on SEQ6
 
 ## .com? .mus? What is all this? Where do I load a ROM?
 
-You don't load a ROM in SEQ64 V2.0. `.com`, `.aseq`, and `.m64` are all the same thing (Music Macro Language binary). `.mus` is the text-based assembly language version of this same data. The rest of this README explains in more detail. If you are using an old-school toolchain which doesn't split the ROM into its constituent files, but where you just edit the whole ROM in one tool after another, use SEQ64 V1.
+You don't load a ROM in SEQ64 V2. `.com`, `.aseq`, and `.m64` are all the same thing (Music Macro Language binary). `.mus` is the text-based assembly language version of this same data. The rest of this README explains in more detail. If you are using an old-school toolchain which doesn't split the ROM into its constituent files, but where you just edit the whole ROM in one tool after another, use SEQ64 V1.
 
 ## Background
 
@@ -25,11 +25,11 @@ Certain Nintendo 64 games made by Nintendo's internal studios, including Super M
 
 Music Macro Language exists in two forms: a text-based assembly language in files with the extension `.mus`, and a binary format used in the games with the canonical extension `.com` (community extension `.aseq`, and sometimes referred to as `.m64`, though this extension was already taken for Mupen 64 format TAS replay files). Of course, a music sequence, though not the sound effects sequence or other technical sequences, can also be represented (at least mostly) as a MIDI file, and the music in these games was originally created as MIDIs and then converted to `.mus`.
 
-## SEQ64 V2.0
+## SEQ64 V2
 
-SEQ64 V2.0 converts among any of these three formats: MIDI (`.mid`), Music Macro Language assembly (`.mus`), and Music Macro Language binary (`.com`/`.aseq`). This means that existing sequences can be exported and edited--either to MIDI for music or to assembly for sound effects and technical sequences--and then re-imported into the game. Crucially, SEQ64 aims to--and succeeds in several key cases--match the game data byte-for-byte when converted from binary to assembly or MIDI and back again. This is no easy task: for example, the sound effects sequence from Ocarina of Time is over 17,000 lines long, and contains bugs (in the actual in-game version) which make the sequence technically invalid. Nevertheless, workarounds were put in place, and SEQ64 matches on `.com` -> `.mus` -> `.com` for the sound effects sequences in Super Mario 64, Star Fox 64, and Ocarina of Time.
+SEQ64 V2 converts among any of these three formats: MIDI (`.mid`), Music Macro Language assembly (`.mus`), and Music Macro Language binary (`.com`/`.aseq`). This means that existing sequences can be exported and edited--either to MIDI for music or to assembly for sound effects and technical sequences--and then re-imported into the game. Crucially, SEQ64 aims to--and succeeds in several key cases--match the game data byte-for-byte when converted from binary to assembly or MIDI and back again. This is no easy task: for example, the sound effects sequence from Ocarina of Time is over 17,000 lines long, and contains bugs (in the actual in-game version) which make the sequence technically invalid. Nevertheless, workarounds were put in place, and SEQ64 matches on `.com` -> `.mus` -> `.com` for the sound effects sequences in Super Mario 64, Star Fox 64, and Ocarina of Time.
 
-SEQ64 V2.0 does NOT currently include any bank editing or MIDI instrument number conversion to General MIDI. If you need these features, please use SEQ64 V1. Future work is (at least theoretically) planned on SEQ64 to provide comprehensive sample/bank library management--we'll see if this ever ends up happening.
+SEQ64 V2 does NOT currently include any bank editing or MIDI instrument number conversion to General MIDI. If you need these features, please use SEQ64 V1. Future work is (at least theoretically) planned on SEQ64 to provide comprehensive sample/bank library management--we'll see if this ever ends up happening.
 
 ## SEQ64 V1
 
@@ -39,7 +39,7 @@ SEQ64 V1 provided MIDI import (to `.com`/`.aseq`) and export (from `.com`/`.aseq
 
 ## Format information
 
-One key design decision of SEQ64 is that as little is hardcoded as possible. In the case of SEQ64 V2.0, this means the definition of the Music Macro Language format--what all the commands do, what format their parameters are, etc.--is stored in an "ABI definition" XML file. As the Music Macro Language format changed between games, these changes can be represented by swapping or editing these files, rather than editing and recompiling the program. In SEQ64 V1, each ROM had its own "RomDesc" file, including the Music Macro Language format definition as well as the bank binary format definition, the addresses of key files and tables, and program settings.
+One key design decision of SEQ64 is that as little is hardcoded as possible. In the case of SEQ64 V2, this means the definition of the Music Macro Language format--what all the commands do, what format their parameters are, etc.--is stored in an "ABI definition" XML file. As the Music Macro Language format changed between games, these changes can be represented by swapping or editing these files, rather than editing and recompiling the program. In SEQ64 V1, each ROM had its own "RomDesc" file, including the Music Macro Language format definition as well as the bank binary format definition, the addresses of key files and tables, and program settings.
 
 ## Compatibility
 
