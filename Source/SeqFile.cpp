@@ -1384,7 +1384,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     bool found = false;
                     for(int i=m; i<trk->getNumEvents(); ++i){
                         MidiMessage msg2 = trk->getEventPointer(i)->message;
-                        if(msg2.getTimeStamp() != timestamp) break;
+                        if((int)msg2.getTimeStamp() != timestamp) break;
                         int cc2, value2;
                         getExtendedCC(msg2, cc2, value2);
                         if(cc2 != paramcc) continue;
@@ -1394,12 +1394,12 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                         tmpparam.setProperty(idValue, value2, nullptr);
                         trk->deleteEvent(i, false);
                         if(i == m) --m;
-                        --i;
                         found = true;
                         break;
                     }
                     if(!found){
-                        dbgmsg("Multiple CC command (channel " + String(channel)
+                        dbgmsg("Multiple CC command " + cccmd.getProperty(idName).toString()
+                            + " (channel " + String(channel)
                             + " timestamp " + String(timestamp) + " first CC " + String(cc) 
                             + ") missing required secondary CC " + String(paramcc)
                             + ", setting to zero!");
