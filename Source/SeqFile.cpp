@@ -4724,14 +4724,21 @@ int SeqFile::getPtrAddress(ValueTree command, uint32_t currentAddr, int seqlen){
         param = command.getChildWithProperty(idMeaning, "Relative Address");
         if(param.isValid()){
             int value = param.getProperty(idValue);
-            if(value >= 0x80) value -= 0x100;
+            jassert(param.getProperty(idDataSrc) == "fixed");
+            int l = param.getProperty(idDataLen);
+            if(l == 2){
+                if(value >= 0x8000) value -= 0x10000;
+            }else{
+                jassert(l == 1);
+                if(value >= 0x80) value -= 0x100;
+            }
             address = value + (int)currentAddr;
         }else{
             dbgmsg("@" + hex(currentAddr,16) + ": Pointer with no address value!");
             return -1;
         }
     }
-    if(address >= seqlen){
+    if(address >= seqlen || address < 0){
         dbgmsg("@" + hex(currentAddr,16) + ": Pointer off end of sequence to " 
                 + hex((uint32_t)address,16) + "!");
         return -1;
@@ -5306,7 +5313,10 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             dbgmsg("Internal stype error!");
             return 2;
         }
-        if(!command.isValid()) return 2;
+        if(!command.isValid()){
+            dbgmsg("Internal error, uninitialized command");
+            return 2;
+        }
         if(command.getType().toString() == "end") break;
         if(command.hasProperty(idSecDone)){
             command.removeProperty(idSecDone, nullptr);
@@ -5334,6 +5344,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                 break;
             }
             //Otherwise this is an error
+            dbgmsg("Error due to running into another section");
             return 2;
         }
         if((ranIntoResult & 2)) ret = 1; //restart parsing
@@ -5365,10 +5376,16 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                 dbgmsg("Considering Maybe Ptr to not be a pointer");
                 continue; //Guess it's not a pointer
             }
-            if(tgt_addr < 0) return 2; //Already printed error
+            if(tgt_addr < 0){
+                dbgmsg("Pointer address error");
+                return 2;
+            }
             //dbgmsg(action + " @" + hex(a,16) + " to @" + hex(tgt_addr,16));
             int tgt_stype = actionTargetSType(action, stype, a);
-            if(tgt_stype < -1) return 2;
+            if(tgt_stype < -1){
+                dbgmsg("Invalid target stype");
+                return 2;
+            }
             //Find target command if it exists
             int res = findTargetCommand(action, a, tgt_addr, tgt_stype, command);
             if(res < 0){
@@ -5385,12 +5402,16 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                     ret = -1;
                     break;
                 }
+                dbgmsg("findTargetCommand failed");
                 return 2;
             }
             if(res == 0){
                 //Not found
                 res = createSection(action, tgt_addr, tgt_stype, command, section, forceContinue);
-                if(res < 0) return 2;
+                if(res < 0){
+                    dbgmsg("createSection failed");
+                    return 2;
+                }
             }
             //Special post handling for certain pointers
             if(action == "Jump"){
@@ -5564,6 +5585,7 @@ int SeqFile::importCom(File comfile){
                     + " due to unused data after jump");
                 int res = parseComSection(j, data, datause, true);
                 if(res == 2){
+                    dbgmsg("Continued parseComSection failed");
                     return 2;
                 }else if(res >= 0){
                     //Success or warning
@@ -5585,7 +5607,10 @@ int SeqFile::importCom(File comfile){
             if(stype < 0 || stype == 6) continue; //Tables
             if(pass == 0 && stype == 3) continue; //Normal sections before dyntables
             int res = parseComSection(s, data, datause, false);
-            if(res == 2) return 2;
+            if(res == 2){
+                dbgmsg("Main parseComSection failed");
+                return 2;
+            }
             if(res == 1 || pass == 1){ //restart
                 s = -1;
                 pass = 0;
@@ -5596,7 +5621,10 @@ int SeqFile::importCom(File comfile){
                 dbgmsg("Internal error, expected known data table, got " + String(stype) + "!");
                 return 2;
             }
-            if(!findTableEnd(s, data)) return 2;
+            if(!findTableEnd(s, data)){
+                dbgmsg("findTableEnd failed");
+                return 2;
+            }
             section.setProperty(idSType, 6, nullptr);
             parseTableSection(s, data, datause);
         }
