@@ -413,7 +413,8 @@
   <command cmd="160" name="rstartchan" action="Ptr Channel Header" oname="brsub"
            cmdend="175" validinseq="1" comments="Enables channel N with the channel script at the relative address.">
     <parameter name="Channel" meaning="Channel" datasrc="offset"/>
-    <parameter name="Relative Address" meaning="None" datasrc="fixed" datalen="2"/>
+    <parameter name="Relative Address" meaning="Relative Address" datasrc="fixed"
+               datalen="2"/>
   </command>
   <command cmd="176" name="loadseq" action="Ptr Seq Header" comments="Load new sequence (given index) into current sequence's data at address. sequenceIO[N] is passed as some parameter to that sequence."
            cmdend="191" validinseq="1">
