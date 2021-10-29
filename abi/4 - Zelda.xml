@@ -102,7 +102,7 @@
   </command>
   <command cmd="32" name="startchan" action="Ptr Channel Header" comments="Start channel N for the parent sequence, with channel script starting at address X."
            cname="sopensub" cmdend="47" validinchn="1">
-    <parameter name="Channel" meaning="None" datasrc="offset"/>
+    <parameter name="Channel" meaning="Channel" datasrc="offset"/>
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
   </command>
   <command cmd="48" name="stcio" action="No Action" cmdend="63" comments="Chan[C].IO[N] = Q, where IO[N] is the IO array for channel C."

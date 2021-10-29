@@ -4949,6 +4949,12 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
         if(channel < 0 || channel >= 16){
             dbgmsg("Error determining channel for new section from " + src_action 
                 + " @" + hex((int)parse_cmd.getProperty(idAddress),16) + "!");
+            dbgmsg("src_action " + src_action + " has Channel param " + 
+                String((int)parse_cmd.getChildWithProperty(idMeaning, "Channel").isValid()));
+            ValueTree param = parse_cmd.getChildWithProperty(idMeaning, "Channel");
+            if(param.isValid()){
+                dbgmsg("value " + param.getProperty(idValue, -1234).toString());
+            }
             return -1;
         }
         newsec.setProperty(idChannel, channel, nullptr);
@@ -5343,6 +5349,10 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                 dbgmsg("Ran into another section while parsing child of unused section, ending section");
                 break;
             }
+            if(stype == 3){
+                dbgmsg("Considering that the end of the dyntable (not an error)");
+                break;
+            }
             //Otherwise this is an error
             dbgmsg("Error due to running into another section");
             return 2;
@@ -5393,13 +5403,19 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                     dbgmsg("Considering Maybe Ptr to not be a pointer");
                     continue; //Guess it's not a pointer
                 }
-                if(forceContinue && a - cmdlen == forceContinueA){
-                    dbgmsg("Aborting force continue due to error on first new command");
+                if((forceContinue && a - cmdlen == forceContinueA) || stype == 3){
+                    if(stype == 3){
+                        dbgmsg("Stopping dynable due to bad address");
+                    }else{
+                        dbgmsg("Aborting force continue due to error on first new command");
+                    }
                     //Undo all of our changes and get out of here
                     section.removeChild(command, nullptr);
                     a -= cmdlen;
                     for(int i=a; i<a+cmdlen; ++i) datause.set(i, 0);
-                    ret = -1;
+                    if(forceContinue){
+                        ret = -1;
+                    }
                     break;
                 }
                 dbgmsg("findTargetCommand failed");
