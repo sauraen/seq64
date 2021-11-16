@@ -2229,14 +2229,24 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
     int stype = 0;
     uint32_t t = 0;
     int cmd = -1;
+    bool hasbeenjump = false;
     while(true){
+        ValueTree command;
+        String action;
         ++cmd;
         if(cmd >= section.getNumChildren()){
-            dbgmsg("Parsing ran off end of section!");
-            return 2;
+            if(hasbeenjump){
+                dbgmsg("Parsing ran off end of section after jump, ending section");
+                importresult |= 1;
+            }else{
+                dbgmsg("Parsing ran off end of section!");
+                importresult |= 2;
+            }
+            action = "End of Data";
+        }else{
+            command = section.getChild(cmd);
+            action = command.getProperty(idAction, "Unknown");
         }
-        ValueTree command = section.getChild(cmd);
-        String action = command.getProperty(idAction, "Unknown");
         //Normal actions
         if(action == "Unknown"){
             //do nothing
@@ -2253,6 +2263,9 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 || action == "Dyntable from Data" || action == "Ptr Envelope"
                 || action == "Ptr Other Table" || action == "Ptr Self" || action == "Maybe Ptr"){
             dbgmsg("Ignoring " + action);
+            if(action == "Jump"){
+                hasbeenjump = true;
+            }
         }else if(action == "Ptr Message"){
             //TODO print message from sequence
         }else if(action == "Delay"){
@@ -2285,6 +2298,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             }else if(stype == 0){
                 channel = -1;
             }
+            hasbeenjump = false;
             //dbgmsg("End of Data return to stype " + String(stype));
         }else if(action == "Call"){
             if(!command.hasProperty(idTargetSection)){
@@ -2300,6 +2314,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             stack.add(ExportStackEntry(section, cmd, stype, 0, 100000));
             cmd = -1;
             section = structure.getChild(newsec);
+            hasbeenjump = false;
         }else if(action == "Loop Start"){
             ValueTree param = command.getChildWithProperty(idMeaning, "Loop Count");
             if(!param.isValid()){
@@ -2358,6 +2373,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                 dbgmsg("Ptr Channel Header to a section which isn't a channel!");
                 return 2;
             }
+            hasbeenjump = false;
             cmd = -1;
             stype = 1;
             //MIDI file section
@@ -2404,6 +2420,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             cmd = -1;
             stype = 2;
             delay = -1;
+            hasbeenjump = false;
         }else if(action == "Master Volume"){
             if(stype != 0){
                 dbgmsg("Master Volume in somewhere other than seq header!");
