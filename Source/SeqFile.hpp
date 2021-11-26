@@ -112,6 +112,9 @@ private:
         void Tokenize(){
             if(l.isEmpty()) return;
             l = l.replace(",", " , ");
+            l = l.replace(":", " : ");
+            while(l.contains("+ ")) l = l.replace("+ ", "+");
+            while(l.contains(" +")) l = l.replace(" +", "+");
             toks = StringArray::fromTokens(l, " \t", "");
             toks.trim();
             toks.removeEmptyStrings();

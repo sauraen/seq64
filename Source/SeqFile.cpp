@@ -2856,9 +2856,9 @@ bool SeqFile::parseCanonNoteName(String s, int &noteValue){
 }
 
 bool SeqFile::isValidLabel(String s){
-    //Allowed characters: alphanumeric, @, _. Don't need to check for
+    //Allowed characters: alphanumeric, ., @, _. Don't need to check for
     //commas or whitespace due to tokenization scheme.
-    return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?[\\]^`{|}~");
+    return !s.containsAnyOf("!\"#$%&'()*+-/:;<=>?[\\]^`{|}~");
 }
 bool SeqFile::isValidDefineKey(String s){
     return !s.containsAnyOf("!\"#$%&'()*+-./:;<=>?@[\\]^`{|}~");
@@ -2901,8 +2901,14 @@ void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
 
 bool SeqFile::getMusHex(String s, int &value){
     if(s.length() < 2) return false;
-    if(s[0] != '$') return false;
-    s = s.substring(1).toLowerCase();
+    s = s.toLowerCase();
+    if(s[0] == '$'){
+        s = s.substring(1);
+    }else if(s.startsWith("0x")){
+        s = s.substring(2);
+    }else{
+        return false;
+    }
     if(!s.containsOnly("0123456789abcdef")) return false;
     value = s.getHexValue32();
     return true;
@@ -3179,7 +3185,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         }
         if(possibleCmds.getNumChildren() == 0){
             //Maybe it's a label
-            if(line->toks.size() > 1){
+            if(line->toks.size() > 2 || (line->toks.size() == 2 && line->toks[1] != ":")){
                 return line->Error("Token " + line->toks[0] + " not recognized as a command, "
                     "but it has tokens after it, so it can't be a label, syntax error!");
             }
@@ -3257,13 +3263,19 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             String s = line->toks[t];
             bool dataforce2;
             if(meaning == "Absolute Address" || meaning == "Relative Address"){
-                if(s.containsAnyOf("()")){
-                    if(s.getLastCharacter() != ')'){
-                        return line->Error("Invalid syntax in Ptr Self parameter!");
+                if(s.containsAnyOf("()+")){
+                    String num;
+                    if(s.containsAnyOf("()")){
+                        if(s.getLastCharacter() != ')'){
+                            return line->Error("Invalid syntax in Ptr Self parameter!");
+                        }
+                        s = s.dropLastCharacters(1);
+                        num = s.fromFirstOccurrenceOf("(", false, false);
+                        s = s.upToFirstOccurrenceOf("(", false, false);
+                    }else{
+                        num = s.fromFirstOccurrenceOf("+", false, false);
+                        s = s.upToFirstOccurrenceOf("+", false, false);
                     }
-                    s = s.dropLastCharacters(1);
-                    String num = s.fromFirstOccurrenceOf("(", false, false);
-                    s = s.upToFirstOccurrenceOf("(", false, false);
                     value = parseNormalParam(line, num, "fixed", 1);
                     if(importresult >= 2) return ValueTree();
                     ret.setProperty(idTargetCmdByte, value, nullptr);
@@ -3659,7 +3671,7 @@ int SeqFile::importMus(File musfile){
             }
             //Find the start of the future section.
             for(ln=0; ln<lines.size(); ++ln){
-                if(lines[ln]->l == futuresecs[fs].label) break;
+                if(lines[ln]->l.replace(":", "").trim() == futuresecs[fs].label) break;
             }
             if(ln == lines.size()){
                 dbgmsg("Could not find pointed-to section with label " 
@@ -3958,35 +3970,59 @@ void SeqFile::nameSections(int dialect){
         }
         int stype = section.getProperty(idSType);
         String name = getSecNamePrefix(dialect, section);
-        if(stype == 1 || stype == 2){
-            name += "_" + String(dialect >= 2 ? "sub" : "chn") + section.getProperty(idChannel).toString();
-        }
-        if(stype == 2){
-            name += "_" + String(dialect >= 2 ? "note" : "ly") + section.getProperty(idLayer).toString();
-        }
-        if(stype == 3){
-            name += "_tbl_" + String(sec);
-        }else if(stype == 4){
-            if(dialect >= 2){
-                name = "ENVE_" + seqname + String(sec);
+        if(dialect == 1){
+            String secnum;
+            if(section.hasProperty(idAddress)){
+                secnum = hex((uint16_t)(int)section.getProperty(idAddress));
             }else{
-                name += "_env" + String(sec);
+                secnum = String(sec);
             }
-        }else if(stype == 5){
-            if(dialect >= 2){
-                name = "_message_" + String(sec);
+                  if(stype == 0){ name = "seq";
+            }else if(stype == 1){ name = "chan";
+            }else if(stype == 2){ name = "layer";
+            }else if(stype == 3){ name = "table";
+            }else if(stype == 4){ name = "envelope";
+            }else if(stype == 5){ name = "message";
+            }else if(stype == 6){ name = "ldstbl";
             }else{
-                name += "_msg" + String(sec);
+                name = "error";
+                dbgmsg("Invalid stype " + String(stype) + "!");
             }
-        }else if(stype == 6){
-            if(dialect >= 2){
-                name = "_extbl_" + String(sec);
-            }else{
-                name += "_ldstbl" + String(sec);
+            if(stype <= 2 && section.hasProperty(idSrcCmdRef)){
+                name += "_call" + section.getProperty(idSrcCmdRef).toString();
             }
-        }else if(section.hasProperty(idSrcCmdRef)){
-            name += "_" + String(dialect >= 2 ? "pat" : "call") 
-                + section.getProperty(idSrcCmdRef).toString();
+            name += "_" + secnum;
+        }else{
+            if(stype == 1 || stype == 2){
+                name += "_" + String(dialect >= 2 ? "sub" : "chn") + section.getProperty(idChannel).toString();
+            }
+            if(stype == 2){
+                name += "_" + String(dialect >= 2 ? "note" : "ly") + section.getProperty(idLayer).toString();
+            }
+            if(stype == 3){
+                name += "_tbl_" + String(sec);
+            }else if(stype == 4){
+                if(dialect >= 2){
+                    name = "ENVE_" + seqname + String(sec);
+                }else{
+                    name += "_env" + String(sec);
+                }
+            }else if(stype == 5){
+                if(dialect >= 2){
+                    name = "_message_" + String(sec);
+                }else{
+                    name += "_msg" + String(sec);
+                }
+            }else if(stype == 6){
+                if(dialect >= 2){
+                    name = "_extbl_" + String(sec);
+                }else{
+                    name += "_ldstbl" + String(sec);
+                }
+            }else if(section.hasProperty(idSrcCmdRef)){
+                name += "_" + String(dialect >= 2 ? "pat" : "call") 
+                    + section.getProperty(idSrcCmdRef).toString();
+            }
         }
         setLabelNameAuto(section, name, "_" + String(sec));
     }
@@ -4101,7 +4137,9 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
     }
     String ret;
     if(command.hasProperty(idLabelName)){
-        ret += command.getProperty(idLabelName).toString() + "\n";
+        ret += command.getProperty(idLabelName).toString();
+        if(dialect < 2) ret += ":";
+        ret += "\n";
     }
     String action = command.getProperty(idAction);
     if(action == "End of Data" && (dialect == 2 || dialect == 4) 
@@ -4153,8 +4191,20 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
     }
     String params;
     String comment;
-    String comma = (dialect & 1) ? "," : ", ";
+    bool firstarg = true;
     for(int p=0; p<command.getNumChildren(); ++p){
+        String comma;
+        if(dialect >= 2){
+            if((dialect & 1)){
+                comma = ",";
+            }else if(firstarg){
+                comma = "\t, ";
+            }else{
+                comma = ", ";
+            }
+        }else{
+            comma = firstarg ? " " : ", ";
+        }
         ValueTree param = command.getChild(p);
         String meaning = param.getProperty(idMeaning, "None");
         if(meaning == "Note" && noteandcanon) continue;
@@ -4184,12 +4234,18 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
                 }
             }
             params += comma + target.getProperty(idLabelName).toString();
+            firstarg = false;
             if(command.hasProperty(idTargetCmdByte)){
-                params += "(" + command.getProperty(idTargetCmdByte).toString() + ")";
+                String tgt = command.getProperty(idTargetCmdByte).toString();
+                if(dialect >= 2){
+                    params += "(" + tgt + ")";
+                }else{
+                    params += " + " + tgt;
+                }
             }
         }else if(datasrc == "fixed"){
             if(datalen == 2){
-                params += comma + "$" + hex((uint16_t)value);
+                params += comma + (dialect >= 2 ? "$" : "0x") + hex((uint16_t)value);
             }else{
                 if(datalen == 1 && value >= 0x80 && (action == "CC or CC Group" 
                         || action == "Chn Transpose" || action == "Ly Transpose")){
@@ -4197,6 +4253,7 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
                 }
                 params += comma + String(value);
             }
+            firstarg = false;
         }else if(datasrc == "variable"){
             if(value >= 0x80 || param.hasProperty(idDataForce2)){
                 if(dialect >= 2){
@@ -4208,8 +4265,10 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
                 }
             }
             params += comma + String(value);
+            firstarg = false;
         }else if(datasrc == "offset"){
             params += comma + String(value);
+            firstarg = false;
         }else if(datasrc == "constant"){
             //do nothing
         }else{
@@ -4219,7 +4278,7 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
         }
     }
     if(noteandcanon && (dialect & 1)) name = name.toLowerCase();
-    ret += name + ((dialect & 1) ? "" : "\t") + params + comment + "\n";
+    ret += name + params + comment + "\n";
     if(action == "End of Data" && dialect == 0){
         ret += "; Section total ticks: " + String(secticks) + "\n";
     }
@@ -4377,7 +4436,7 @@ int SeqFile::exportMus(File musfile, int dialect){
         }
         //Section label
         if(sec != 0 || dialect < 2){
-            out += section.getProperty(idLabelName).toString() + "\n";
+            out += section.getProperty(idLabelName).toString() + ":\n";
         }
         if(stype == 3){
             //dyntable
@@ -4385,7 +4444,9 @@ int SeqFile::exportMus(File musfile, int dialect){
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
                 ValueTree command = section.getChild(cmd);
                 if(command.hasProperty(idLabelName) && cmd != 0){
-                    out += "\n\n" + command.getProperty(idLabelName).toString() + "\n";
+                    out += "\n\n" + command.getProperty(idLabelName).toString();
+                    if(dialect < 2) out += ":";
+                    out += "\n";
                     lblctr = 0;
                 }
                 out += !(lblctr & 7) ? (dialect >= 2 ? "#label   " : "#address ") : ", ";
@@ -4421,7 +4482,9 @@ int SeqFile::exportMus(File musfile, int dialect){
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
                 ValueTree command = section.getChild(cmd);
                 if(command.hasProperty(idLabelName) && cmd != 0){
-                    out += "\n" + command.getProperty(idLabelName).toString() + "\n";
+                    out += "\n" + command.getProperty(idLabelName).toString();
+                    if(dialect < 2) out += ":";
+                    out += "\n";
                 }
                 ValueTree p1 = command.getChildWithProperty(idMeaning, "Rate");
                 ValueTree p2 = command.getChildWithProperty(idMeaning, "Level");
@@ -4443,10 +4506,13 @@ int SeqFile::exportMus(File musfile, int dialect){
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
                 ValueTree command = section.getChild(cmd);
                 if(command.hasProperty(idLabelName) && cmd != 0){
-                    out += "\n\n" + command.getProperty(idLabelName).toString() + "\n";
+                    out += "\n\n" + command.getProperty(idLabelName).toString();
+                    if(dialect < 2) out += ":";
+                    out += "\n";
                     lblctr = 0;
                 }
-                out += !(lblctr & 15) ? (dialect >= 2 ? "#byte    $" : "#u8 $") : ",$";
+                out += !(lblctr & 15) ? (dialect >= 2 ? "#byte    " : "#u8 ") : ",";
+                out += dialect >= 2 ? "$" : "0x";
                 ValueTree param = command.getChildWithProperty(idMeaning, "Data");
                 if(!param.isValid()){
                     dbgmsg("Invalid other table / extable!");
