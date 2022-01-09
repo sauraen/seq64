@@ -866,18 +866,28 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     tsectimes.add(0);
     tsecnames.clear();
     tsecnames.add("start");
-    String metatext;
-    int metatype;
     for(int m=0; m<mastertrack->getNumEvents(); m++){
         msg = mastertrack->getEventPointer(m)->message;
-        if(!msg.isTextMetaEvent()) continue;
-        metatext = msg.getTextFromTextMetaEvent();
-        metatype = msg.getMetaEventType();
-        if(metatype == 0x06){
-            if(!metatext.startsWithIgnoreCase("Section") &&
-                !metatext.startsWithIgnoreCase("loop")) continue;
-        }else if(metatype == 0x01){
-            if(!metatext.startsWithIgnoreCase("block:")) continue;
+        String metatext;
+        if(msg.isTextMetaEvent()){
+            metatext = msg.getTextFromTextMetaEvent();
+            int metatype = msg.getMetaEventType();
+            if(metatype == 0x06){
+                if(!metatext.startsWithIgnoreCase("Section") &&
+                    !metatext.startsWithIgnoreCase("loop")) continue;
+            }else if(metatype == 0x01){
+                if(!metatext.startsWithIgnoreCase("block:")) continue;
+            }
+        }else if((bool)midiopts.getProperty("flstudio") && msg.isController() 
+                && msg.getControllerNumber() == 115 && msg.getControllerValue() != 0){
+            if(msg.getChannel() != 1){
+                dbgmsg("FL Studio mode, received CC 115 (temporal section marker) not on channel 1 (0 zero-indexed)! Ignoring!");
+                importresult |= 1;
+                continue;
+            }
+            metatext = "SectionX";
+        }else{
+            continue;
         }
         timestamp = msg.getTimeStamp();
         if(tsectimes[tsectimes.size()-1] != timestamp){
@@ -1168,10 +1178,21 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     hadmastervol = true;
                 }
             }
+        }else if(msg.isController()){
+            if((bool)midiopts.getProperty("flstudio") && msg.getControllerNumber() == 114){
+                if(msg.getChannel() != 1){
+                    dbgmsg("FL Studio mode, received CC 114 (Master Volume) not on channel 1 (0 zero-indexed)! Ignoring!");
+                    importresult |= 1;
+                }else{
+                    want = wantAction("Master Volume", 0);
+                    wantProperty(want, "Value", msg.getControllerValue());
+                    want = createCommand(want);
+                    hadmastervol = true;
+                }
+            }
         }else if(msg.isTextMetaEvent()){
-            metatext = msg.getTextFromTextMetaEvent();
-            metatype = msg.getMetaEventType();
-            if(metatype == 0x01 && metatext.startsWithIgnoreCase("jump:")){
+            String metatext = msg.getTextFromTextMetaEvent();
+            if(msg.getMetaEventType() == 0x01 && metatext.startsWithIgnoreCase("jump:")){
                 midiopts.setProperty("smartloop", false, nullptr);
                 String target = metatext.substring(5);
                 int tsec = tsecnames.indexOf(target, true);

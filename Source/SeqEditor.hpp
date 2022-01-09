@@ -159,12 +159,8 @@ private:
     std::unique_ptr<juce::Label> lblStyle;
     std::unique_ptr<juce::ToggleButton> optStyleMusic;
     std::unique_ptr<juce::ToggleButton> optStyleSFX;
-    juce::Path internalPath1;
-    juce::Path internalPath2;
-    juce::Path internalPath3;
-    juce::Path internalPath4;
-    juce::Path internalPath5;
-    juce::Path internalPath6;
+    std::unique_ptr<juce::ToggleButton> chkFLStudio;
+    std::unique_ptr<juce::TextButton> btnFLStudioHelp;
 
 
     //==============================================================================

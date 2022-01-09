@@ -880,15 +880,54 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
     else if (buttonThatWasClicked == btnCCHelp.get())
     {
         //[UserButtonCode_btnCCHelp] -- add your button handler code here..
+        StringArray strs;
+        for(int i=0; i<=129; ++i) strs.add("");
+        strs.set(0, "[S] Bank");
+        strs.set(128, "[S] Pitch Bend");
+        strs.set(129, "[S] Program Change (instrument)");
+        strs.set(32, "[S] Bank LSB");
+        strs.set(6, "[S] Data Entry (RPN/NRPN) MSB");
+        strs.set(38, "[S] Data Entry (RPN/NRPN) LSB");
+        strs.set(96, "[S] Data Increment (RPN/NRPN)");
+        strs.set(97, "[S] Data Decrement (RPN/NRPN)");
+        strs.set(98, "[S] NRPN LSB");
+        strs.set(99, "[S] NRPN MSB");
+        strs.set(100, "[S] RPN LSB");
+        strs.set(101, "[S] RPN MSB");
+        strs.set(120, "[S] All Sound Off");
+        strs.set(121, "[S] Reset All Controllers");
+        strs.set(122, "[S] Local On/Off");
+        strs.set(123, "[S] All Notes Off");
+        strs.set(124, "[S] Omni Mode Off");
+        strs.set(125, "[S] Omni Mode On");
+        strs.set(126, "[S] Mono Mode");
+        strs.set(127, "[S] Poly Mode");
+        strs.set(114, "[S] FL Studio compat Master Volume");
+        strs.set(115, "[S] FL Studio compat temporal section marker");
+        for(int i=0; i<abi.getNumChildren(); ++i){
+            ValueTree command = abi.getChild(i);
+            String cname = command.getProperty("name").toString();
+            for(int j=0; j<command.getNumChildren(); ++j){
+                ValueTree param = command.getChild(j);
+                if(!param.hasProperty("cc")) continue;
+                int cc = param.getProperty("cc");
+                if(cc < 0 || cc > 129){
+                    std::cout << "Invalid CC " << cc << "!\n";
+                    continue;
+                }
+                String olddesc = strs[cc];
+                if(!olddesc.isEmpty()) olddesc = olddesc + "; ";
+                strs.set(cc, olddesc + cname + ":" + param.getProperty("name").toString());
+            }
+        }
+        for(int i=0; i<=129; ++i){
+            if(!strs[i].isEmpty()) strs.set(i, String(i) + ": " + strs[i]);
+        }
+        strs.removeEmptyStrings();
         NativeMessageBox::showMessageBoxAsync(AlertWindow::InfoIcon, "seq64",
-            "CC help\n\nSpecial CC values are:\n"
-            "0: Bank\n"
-            "128: Pitch Bend\n"
-            "129: Program Change (instrument)\n\n"
-            "The following CC values are special in MIDI and may not be mapped to Audioseq commands:\n"
-            "32: Bank LSB\n"
-            "6, 38, 96-101: RPN/NRPN controls\n"
-            "120-127: Channel mode messages");
+            "Current CC map ([S] = special, can't be changed):\n"
+            + strs.joinIntoString("\n")
+        );
         //[/UserButtonCode_btnCCHelp]
     }
 

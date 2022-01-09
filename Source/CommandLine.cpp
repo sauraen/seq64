@@ -47,6 +47,7 @@ static void displayHelpText(){
     "pref           bool (true)     (MIDI import) Read .pref file next to .mid\n"
     "smartloop      bool (true)     (MIDI import) Loop body of music seq after intro\n"
     "reladdr        bool (false)    (MIDI import) Use only rel addr commands\n"
+    "flstudio       bool (false)    (MIDI import) FL Studio compatibility mode\n"
     "mutebhv        int (0x20)      (MIDI import) Mute Behavior bits (D3 20)\n"
     "mutescale      int (0x32)      (MIDI import) Mute Scale vol multiplier (D5 32)\n"
     "mastervol      int (0x58)      (MIDI import) If > 0, add master vol cmd\n"
@@ -110,6 +111,7 @@ int seq64_cli(const StringArray &args){
     midiopts.setProperty("pref", true, nullptr);
     midiopts.setProperty("smartloop", true, nullptr);
     midiopts.setProperty("reladdr", false, nullptr);
+    midiopts.setProperty("flstudio", false, nullptr);
     midiopts.setProperty("mutebhv", 0x20, nullptr);
     midiopts.setProperty("mutescale", 0x32, nullptr);
     midiopts.setProperty("mastervol", 0x58, nullptr);

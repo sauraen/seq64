@@ -62,7 +62,7 @@ SeqEditor::SeqEditor ()
                                                    TRANS(".mus dialect (for export)")));
     addAndMakeVisible (grpMusDialect.get());
 
-    grpMusDialect->setBounds (8, 593, 320, 71);
+    grpMusDialect->setBounds (8, 553, 320, 71);
 
     optMusCommunity.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optMusCommunity.get());
@@ -71,7 +71,7 @@ SeqEditor::SeqEditor ()
     optMusCommunity->addListener (this);
     optMusCommunity->setToggleState (true, dontSendNotification);
 
-    optMusCommunity->setBounds (16, 608, 112, 24);
+    optMusCommunity->setBounds (16, 568, 112, 24);
 
     optMusCanon.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optMusCanon.get());
@@ -79,7 +79,7 @@ SeqEditor::SeqEditor ()
     optMusCanon->setRadioGroupId (1);
     optMusCanon->addListener (this);
 
-    optMusCanon->setBounds (128, 608, 80, 24);
+    optMusCanon->setBounds (128, 568, 80, 24);
 
     optMusCanonOld.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optMusCanonOld.get());
@@ -87,13 +87,13 @@ SeqEditor::SeqEditor ()
     optMusCanonOld->setRadioGroupId (1);
     optMusCanonOld->addListener (this);
 
-    optMusCanonOld->setBounds (208, 608, 112, 24);
+    optMusCanonOld->setBounds (208, 568, 112, 24);
 
     grpImportMIDI.reset (new juce::GroupComponent ("new group",
                                                    TRANS("MIDI Import")));
     addAndMakeVisible (grpImportMIDI.get());
 
-    grpImportMIDI->setBounds (8, 96, 320, 216);
+    grpImportMIDI->setBounds (8, 136, 320, 240);
 
     chkSmartLoop.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (chkSmartLoop.get());
@@ -101,13 +101,13 @@ SeqEditor::SeqEditor ()
     chkSmartLoop->addListener (this);
     chkSmartLoop->setToggleState (true, dontSendNotification);
 
-    chkSmartLoop->setBounds (16, 136, 112, 24);
+    chkSmartLoop->setBounds (16, 176, 112, 24);
 
     grpOptimizer.reset (new juce::GroupComponent ("new group",
                                                   TRANS("Optimizer")));
     addAndMakeVisible (grpOptimizer.get());
 
-    grpOptimizer->setBounds (16, 184, 304, 120);
+    grpOptimizer->setBounds (16, 248, 304, 120);
 
     chkUseCalls.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (chkUseCalls.get());
@@ -115,7 +115,7 @@ SeqEditor::SeqEditor ()
     chkUseCalls->addListener (this);
     chkUseCalls->setToggleState (true, dontSendNotification);
 
-    chkUseCalls->setBounds (24, 200, 80, 24);
+    chkUseCalls->setBounds (24, 264, 80, 24);
 
     txtMasterVol.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtMasterVol.get());
@@ -127,7 +127,7 @@ SeqEditor::SeqEditor ()
     txtMasterVol->setPopupMenuEnabled (true);
     txtMasterVol->setText (TRANS("58"));
 
-    txtMasterVol->setBounds (280, 160, 40, 24);
+    txtMasterVol->setBounds (280, 200, 40, 24);
 
     lblMasterVol.reset (new juce::Label ("new label",
                                          TRANS("Default Mst.Vol.")));
@@ -138,7 +138,7 @@ SeqEditor::SeqEditor ()
     lblMasterVol->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMasterVol->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMasterVol->setBounds (168, 160, 112, 24);
+    lblMasterVol->setBounds (168, 200, 112, 24);
 
     chkUseLoops.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (chkUseLoops.get());
@@ -146,7 +146,7 @@ SeqEditor::SeqEditor ()
     chkUseLoops->addListener (this);
     chkUseLoops->setToggleState (true, dontSendNotification);
 
-    chkUseLoops->setBounds (24, 264, 80, 24);
+    chkUseLoops->setBounds (24, 328, 80, 24);
 
     txtMergeVel.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtMergeVel.get());
@@ -158,7 +158,7 @@ SeqEditor::SeqEditor ()
     txtMergeVel->setPopupMenuEnabled (true);
     txtMergeVel->setText (TRANS("5"));
 
-    txtMergeVel->setBounds (160, 224, 40, 24);
+    txtMergeVel->setBounds (160, 288, 40, 24);
 
     lblMergeVel.reset (new juce::Label ("new label",
                                         TRANS("Vels")));
@@ -169,7 +169,7 @@ SeqEditor::SeqEditor ()
     lblMergeVel->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMergeVel->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMergeVel->setBounds (104, 224, 55, 24);
+    lblMergeVel->setBounds (104, 288, 55, 24);
 
     txtMergeGates.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtMergeGates.get());
@@ -181,7 +181,7 @@ SeqEditor::SeqEditor ()
     txtMergeGates->setPopupMenuEnabled (true);
     txtMergeGates->setText (TRANS("3"));
 
-    txtMergeGates->setBounds (160, 248, 40, 24);
+    txtMergeGates->setBounds (160, 312, 40, 24);
 
     lblMergeGates.reset (new juce::Label ("new label",
                                           TRANS("Gates")));
@@ -192,7 +192,7 @@ SeqEditor::SeqEditor ()
     lblMergeGates->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMergeGates->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMergeGates->setBounds (104, 248, 55, 24);
+    lblMergeGates->setBounds (104, 312, 55, 24);
 
     txtMergeCCs.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtMergeCCs.get());
@@ -204,7 +204,7 @@ SeqEditor::SeqEditor ()
     txtMergeCCs->setPopupMenuEnabled (true);
     txtMergeCCs->setText (TRANS("1"));
 
-    txtMergeCCs->setBounds (160, 272, 40, 24);
+    txtMergeCCs->setBounds (160, 336, 40, 24);
 
     lblMergeCCs.reset (new juce::Label ("new label",
                                         TRANS("CCs")));
@@ -215,7 +215,7 @@ SeqEditor::SeqEditor ()
     lblMergeCCs->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMergeCCs->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMergeCCs->setBounds (104, 272, 55, 24);
+    lblMergeCCs->setBounds (104, 336, 55, 24);
 
     txtQuantVolPan.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtQuantVolPan.get());
@@ -227,7 +227,7 @@ SeqEditor::SeqEditor ()
     txtQuantVolPan->setPopupMenuEnabled (true);
     txtQuantVolPan->setText (TRANS("2"));
 
-    txtQuantVolPan->setBounds (272, 224, 40, 24);
+    txtQuantVolPan->setBounds (272, 288, 40, 24);
 
     lblQuantVolPan.reset (new juce::Label ("new label",
                                            TRANS("Vol/Pan")));
@@ -238,7 +238,7 @@ SeqEditor::SeqEditor ()
     lblQuantVolPan->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblQuantVolPan->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblQuantVolPan->setBounds (208, 224, 64, 24);
+    lblQuantVolPan->setBounds (208, 288, 64, 24);
 
     txtQuantPitch.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtQuantPitch.get());
@@ -250,7 +250,7 @@ SeqEditor::SeqEditor ()
     txtQuantPitch->setPopupMenuEnabled (true);
     txtQuantPitch->setText (TRANS("1"));
 
-    txtQuantPitch->setBounds (272, 248, 40, 24);
+    txtQuantPitch->setBounds (272, 312, 40, 24);
 
     lblQuantPitch.reset (new juce::Label ("new label",
                                           TRANS("Pitch")));
@@ -261,7 +261,7 @@ SeqEditor::SeqEditor ()
     lblQuantPitch->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblQuantPitch->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblQuantPitch->setBounds (208, 248, 64, 24);
+    lblQuantPitch->setBounds (208, 312, 64, 24);
 
     txtQuantOther.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtQuantOther.get());
@@ -273,7 +273,7 @@ SeqEditor::SeqEditor ()
     txtQuantOther->setPopupMenuEnabled (true);
     txtQuantOther->setText (TRANS("1"));
 
-    txtQuantOther->setBounds (272, 272, 40, 24);
+    txtQuantOther->setBounds (272, 336, 40, 24);
 
     lblQuantOther.reset (new juce::Label ("new label",
                                           TRANS("Other")));
@@ -284,7 +284,7 @@ SeqEditor::SeqEditor ()
     lblQuantOther->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblQuantOther->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblQuantOther->setBounds (208, 272, 64, 24);
+    lblQuantOther->setBounds (208, 336, 64, 24);
 
     lblMerge.reset (new juce::Label ("new label",
                                      TRANS("Merge Close:")));
@@ -295,7 +295,7 @@ SeqEditor::SeqEditor ()
     lblMerge->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMerge->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMerge->setBounds (104, 200, 96, 24);
+    lblMerge->setBounds (104, 264, 96, 24);
 
     lblQuant.reset (new juce::Label ("new label",
                                      TRANS("Quantize:")));
@@ -306,13 +306,13 @@ SeqEditor::SeqEditor ()
     lblQuant->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblQuant->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblQuant->setBounds (208, 200, 104, 24);
+    lblQuant->setBounds (208, 264, 104, 24);
 
     grpExportMIDI.reset (new juce::GroupComponent ("new group",
                                                    TRANS("MIDI Export")));
     addAndMakeVisible (grpExportMIDI.get());
 
-    grpExportMIDI->setBounds (8, 392, 320, 96);
+    grpExportMIDI->setBounds (8, 376, 320, 96);
 
     optInstOrig.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optInstOrig.get());
@@ -321,7 +321,7 @@ SeqEditor::SeqEditor ()
     optInstOrig->addListener (this);
     optInstOrig->setToggleState (true, dontSendNotification);
 
-    optInstOrig->setBounds (16, 408, 144, 24);
+    optInstOrig->setBounds (16, 392, 144, 24);
 
     optInstGM10.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optInstGM10.get());
@@ -329,7 +329,7 @@ SeqEditor::SeqEditor ()
     optInstGM10->setRadioGroupId (2);
     optInstGM10->addListener (this);
 
-    optInstGM10->setBounds (16, 432, 144, 24);
+    optInstGM10->setBounds (16, 416, 144, 24);
 
     optInstGMMulti.reset (new juce::ToggleButton ("new toggle button"));
     addAndMakeVisible (optInstGMMulti.get());
@@ -337,7 +337,7 @@ SeqEditor::SeqEditor ()
     optInstGMMulti->setRadioGroupId (2);
     optInstGMMulti->addListener (this);
 
-    optInstGMMulti->setBounds (16, 456, 144, 24);
+    optInstGMMulti->setBounds (16, 440, 144, 24);
 
     lblPPQN.reset (new juce::Label ("new label",
                                     TRANS("PPQN 48x:")));
@@ -348,7 +348,7 @@ SeqEditor::SeqEditor ()
     lblPPQN->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblPPQN->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblPPQN->setBounds (176, 408, 95, 24);
+    lblPPQN->setBounds (176, 392, 95, 24);
 
     txtPPQN.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtPPQN.get());
@@ -360,7 +360,7 @@ SeqEditor::SeqEditor ()
     txtPPQN->setPopupMenuEnabled (true);
     txtPPQN->setText (TRANS("4"));
 
-    txtPPQN->setBounds (272, 408, 40, 24);
+    txtPPQN->setBounds (272, 392, 40, 24);
 
     txtSeq.reset (new juce::TextEditor ("new text editor"));
     addAndMakeVisible (txtSeq.get());
@@ -372,7 +372,7 @@ SeqEditor::SeqEditor ()
     txtSeq->setPopupMenuEnabled (false);
     txtSeq->setText (juce::String());
 
-    txtSeq->setBounds (352, 248, 440, 544);
+    txtSeq->setBounds (352, 248, 440, 464);
 
     lblInternal.reset (new juce::Label ("new label",
                                         TRANS("SEQ64 internal sequence representation:")));
@@ -426,55 +426,55 @@ SeqEditor::SeqEditor ()
     chkRel->setButtonText (TRANS("Relative Addrs"));
     chkRel->addListener (this);
 
-    chkRel->setBounds (16, 160, 128, 24);
+    chkRel->setBounds (16, 200, 128, 24);
 
     btnImportMIDI.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnImportMIDI.get());
     btnImportMIDI->setButtonText (TRANS("Import MIDI"));
-    btnImportMIDI->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportMIDI->setConnectedEdges (juce::Button::ConnectedOnRight);
     btnImportMIDI->addListener (this);
 
-    btnImportMIDI->setBounds (8, 320, 152, 32);
+    btnImportMIDI->setBounds (8, 96, 160, 32);
 
     btnExportMIDI.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnExportMIDI.get());
     btnExportMIDI->setButtonText (TRANS("Export MIDI"));
-    btnExportMIDI->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportMIDI->setConnectedEdges (juce::Button::ConnectedOnLeft);
     btnExportMIDI->addListener (this);
 
-    btnExportMIDI->setBounds (8, 352, 152, 32);
+    btnExportMIDI->setBounds (168, 96, 160, 32);
 
     btnImportMus.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnImportMus.get());
     btnImportMus->setButtonText (TRANS("Import .mus"));
-    btnImportMus->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportMus->setConnectedEdges (juce::Button::ConnectedOnRight);
     btnImportMus->addListener (this);
 
-    btnImportMus->setBounds (8, 520, 152, 32);
+    btnImportMus->setBounds (8, 512, 160, 32);
 
     btnExportMus.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnExportMus.get());
     btnExportMus->setButtonText (TRANS("Export .mus"));
-    btnExportMus->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportMus->setConnectedEdges (juce::Button::ConnectedOnLeft);
     btnExportMus->addListener (this);
 
-    btnExportMus->setBounds (8, 552, 152, 32);
+    btnExportMus->setBounds (168, 512, 160, 32);
 
     btnImportCom.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnImportCom.get());
     btnImportCom->setButtonText (TRANS("Import .com/.aseq"));
-    btnImportCom->setConnectedEdges (juce::Button::ConnectedOnBottom);
+    btnImportCom->setConnectedEdges (juce::Button::ConnectedOnRight);
     btnImportCom->addListener (this);
 
-    btnImportCom->setBounds (8, 704, 152, 32);
+    btnImportCom->setBounds (8, 672, 160, 32);
 
     btnExportCom.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnExportCom.get());
     btnExportCom->setButtonText (TRANS("Export .com/.aseq"));
-    btnExportCom->setConnectedEdges (juce::Button::ConnectedOnTop);
+    btnExportCom->setConnectedEdges (juce::Button::ConnectedOnLeft);
     btnExportCom->addListener (this);
 
-    btnExportCom->setBounds (8, 736, 152, 32);
+    btnExportCom->setBounds (168, 672, 160, 32);
 
     lblMuteBhv.reset (new juce::Label ("new label",
                                        TRANS("Mute Behav.")));
@@ -485,7 +485,7 @@ SeqEditor::SeqEditor ()
     lblMuteBhv->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMuteBhv->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMuteBhv->setBounds (192, 112, 88, 24);
+    lblMuteBhv->setBounds (192, 152, 88, 24);
 
     txtMuteBhv.reset (new juce::TextEditor ("txtMuteBhv"));
     addAndMakeVisible (txtMuteBhv.get());
@@ -497,7 +497,7 @@ SeqEditor::SeqEditor ()
     txtMuteBhv->setPopupMenuEnabled (true);
     txtMuteBhv->setText (TRANS("20"));
 
-    txtMuteBhv->setBounds (280, 112, 40, 24);
+    txtMuteBhv->setBounds (280, 152, 40, 24);
 
     lblMuteScale.reset (new juce::Label ("new label",
                                          TRANS("Mute Scale")));
@@ -508,7 +508,7 @@ SeqEditor::SeqEditor ()
     lblMuteScale->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblMuteScale->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblMuteScale->setBounds (192, 136, 88, 24);
+    lblMuteScale->setBounds (192, 176, 88, 24);
 
     txtMuteScale.reset (new juce::TextEditor ("txtMuteScale"));
     addAndMakeVisible (txtMuteScale.get());
@@ -520,7 +520,7 @@ SeqEditor::SeqEditor ()
     txtMuteScale->setPopupMenuEnabled (true);
     txtMuteScale->setText (TRANS("32"));
 
-    txtMuteScale->setBounds (280, 136, 40, 24);
+    txtMuteScale->setBounds (280, 176, 40, 24);
 
     chkPref.reset (new juce::ToggleButton ("chkPref"));
     addAndMakeVisible (chkPref.get());
@@ -528,14 +528,14 @@ SeqEditor::SeqEditor ()
     chkPref->addListener (this);
     chkPref->setToggleState (true, dontSendNotification);
 
-    chkPref->setBounds (16, 112, 176, 24);
+    chkPref->setBounds (16, 152, 176, 24);
 
     chkCallOnlyLyr.reset (new juce::ToggleButton ("chkCallOnlyLyr"));
     addAndMakeVisible (chkCallOnlyLyr.get());
     chkCallOnlyLyr->setButtonText (TRANS("Only"));
     chkCallOnlyLyr->addListener (this);
 
-    chkCallOnlyLyr->setBounds (32, 224, 64, 24);
+    chkCallOnlyLyr->setBounds (32, 288, 64, 24);
 
     lblCallOnlyLy.reset (new juce::Label ("lblCallOnlyLy",
                                           TRANS("NtLyr")));
@@ -546,7 +546,7 @@ SeqEditor::SeqEditor ()
     lblCallOnlyLy->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblCallOnlyLy->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblCallOnlyLy->setBounds (54, 240, 48, 24);
+    lblCallOnlyLy->setBounds (54, 304, 48, 24);
 
     lblStyle.reset (new juce::Label ("lblStyle",
                                      TRANS("Style:")));
@@ -557,7 +557,7 @@ SeqEditor::SeqEditor ()
     lblStyle->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblStyle->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblStyle->setBounds (16, 632, 56, 24);
+    lblStyle->setBounds (16, 584, 56, 24);
 
     optStyleMusic.reset (new juce::ToggleButton ("optStyleMusic"));
     addAndMakeVisible (optStyleMusic.get());
@@ -566,7 +566,7 @@ SeqEditor::SeqEditor ()
     optStyleMusic->addListener (this);
     optStyleMusic->setToggleState (true, dontSendNotification);
 
-    optStyleMusic->setBounds (72, 632, 80, 24);
+    optStyleMusic->setBounds (72, 592, 80, 24);
 
     optStyleSFX.reset (new juce::ToggleButton ("optStyleSFX"));
     addAndMakeVisible (optStyleSFX.get());
@@ -574,43 +574,21 @@ SeqEditor::SeqEditor ()
     optStyleSFX->setRadioGroupId (3);
     optStyleSFX->addListener (this);
 
-    optStyleSFX->setBounds (152, 632, 136, 24);
+    optStyleSFX->setBounds (152, 592, 136, 24);
 
-    internalPath1.startNewSubPath (160.0f, 336.0f);
-    internalPath1.lineTo (348.0f, 336.0f);
-    internalPath1.startNewSubPath (340.0f, 344.0f);
-    internalPath1.lineTo (348.0f, 336.0f);
-    internalPath1.lineTo (340.0f, 328.0f);
+    chkFLStudio.reset (new juce::ToggleButton ("chkFLStudio"));
+    addAndMakeVisible (chkFLStudio.get());
+    chkFLStudio->setButtonText (TRANS("FL Studio compat"));
+    chkFLStudio->addListener (this);
 
-    internalPath2.startNewSubPath (352.0f, 368.0f);
-    internalPath2.lineTo (164.0f, 368.0f);
-    internalPath2.startNewSubPath (172.0f, 376.0f);
-    internalPath2.lineTo (164.0f, 368.0f);
-    internalPath2.lineTo (172.0f, 360.0f);
+    chkFLStudio->setBounds (16, 224, 150, 24);
 
-    internalPath3.startNewSubPath (160.0f, 536.0f);
-    internalPath3.lineTo (348.0f, 536.0f);
-    internalPath3.startNewSubPath (340.0f, 544.0f);
-    internalPath3.lineTo (348.0f, 536.0f);
-    internalPath3.lineTo (340.0f, 528.0f);
+    btnFLStudioHelp.reset (new juce::TextButton ("btnFLStudioHelp"));
+    addAndMakeVisible (btnFLStudioHelp.get());
+    btnFLStudioHelp->setButtonText (TRANS("?"));
+    btnFLStudioHelp->addListener (this);
 
-    internalPath4.startNewSubPath (352.0f, 568.0f);
-    internalPath4.lineTo (164.0f, 568.0f);
-    internalPath4.startNewSubPath (172.0f, 576.0f);
-    internalPath4.lineTo (164.0f, 568.0f);
-    internalPath4.lineTo (172.0f, 560.0f);
-
-    internalPath5.startNewSubPath (160.0f, 720.0f);
-    internalPath5.lineTo (348.0f, 720.0f);
-    internalPath5.startNewSubPath (340.0f, 728.0f);
-    internalPath5.lineTo (348.0f, 720.0f);
-    internalPath5.lineTo (340.0f, 712.0f);
-
-    internalPath6.startNewSubPath (352.0f, 752.0f);
-    internalPath6.lineTo (164.0f, 752.0f);
-    internalPath6.startNewSubPath (172.0f, 760.0f);
-    internalPath6.lineTo (164.0f, 752.0f);
-    internalPath6.lineTo (172.0f, 744.0f);
+    btnFLStudioHelp->setBounds (168, 224, 24, 24);
 
 
     //[UserPreSize]
@@ -623,7 +601,7 @@ SeqEditor::SeqEditor ()
 
     //[/UserPreSize]
 
-    setSize (800, 800);
+    setSize (800, 720);
 
 
     //[Constructor] You can add your own custom stuff here..
@@ -693,6 +671,8 @@ SeqEditor::~SeqEditor()
     lblStyle = nullptr;
     optStyleMusic = nullptr;
     optStyleSFX = nullptr;
+    chkFLStudio = nullptr;
+    btnFLStudioHelp = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -706,78 +686,6 @@ void SeqEditor::paint (juce::Graphics& g)
     //[/UserPrePaint]
 
     g.fillAll (juce::Colour (0xff323e44));
-
-    {
-        float x = 0, y = 0;
-        juce::Colour fillColour = juce::Colours::aliceblue;
-        juce::Colour strokeColour = juce::Colours::aliceblue;
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.fillPath (internalPath1, juce::AffineTransform::translation(x, y));
-        g.setColour (strokeColour);
-        g.strokePath (internalPath1, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
-    }
-
-    {
-        float x = 0, y = 0;
-        juce::Colour fillColour = juce::Colours::aliceblue;
-        juce::Colour strokeColour = juce::Colours::aliceblue;
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.fillPath (internalPath2, juce::AffineTransform::translation(x, y));
-        g.setColour (strokeColour);
-        g.strokePath (internalPath2, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
-    }
-
-    {
-        float x = 0, y = 0;
-        juce::Colour fillColour = juce::Colours::aliceblue;
-        juce::Colour strokeColour = juce::Colours::aliceblue;
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.fillPath (internalPath3, juce::AffineTransform::translation(x, y));
-        g.setColour (strokeColour);
-        g.strokePath (internalPath3, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
-    }
-
-    {
-        float x = 0, y = 0;
-        juce::Colour fillColour = juce::Colours::aliceblue;
-        juce::Colour strokeColour = juce::Colours::aliceblue;
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.fillPath (internalPath4, juce::AffineTransform::translation(x, y));
-        g.setColour (strokeColour);
-        g.strokePath (internalPath4, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
-    }
-
-    {
-        float x = 0, y = 0;
-        juce::Colour fillColour = juce::Colours::aliceblue;
-        juce::Colour strokeColour = juce::Colours::aliceblue;
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.fillPath (internalPath5, juce::AffineTransform::translation(x, y));
-        g.setColour (strokeColour);
-        g.strokePath (internalPath5, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
-    }
-
-    {
-        float x = 0, y = 0;
-        juce::Colour fillColour = juce::Colours::aliceblue;
-        juce::Colour strokeColour = juce::Colours::aliceblue;
-        //[UserPaintCustomArguments] Customize the painting arguments here..
-        //[/UserPaintCustomArguments]
-        g.setColour (fillColour);
-        g.fillPath (internalPath6, juce::AffineTransform::translation(x, y));
-        g.setColour (strokeColour);
-        g.strokePath (internalPath6, juce::PathStrokeType (4.200f), juce::AffineTransform::translation(x, y));
-    }
 
     //[UserPaint] Add your own custom painting code here..
     //[/UserPaint]
@@ -864,6 +772,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         midiopts.setProperty("pref", chkPref->getToggleState(), nullptr);
         midiopts.setProperty("smartloop", chkSmartLoop->getToggleState(), nullptr);
         midiopts.setProperty("reladdr", chkRel->getToggleState(), nullptr);
+        midiopts.setProperty("flstudio", chkFLStudio->getToggleState(), nullptr);
         midiopts.setProperty("mutebhv", txtMuteBhv->getText().getHexValue32(), nullptr);
         midiopts.setProperty("mutescale", txtMuteScale->getText().getHexValue32(), nullptr);
         midiopts.setProperty("mastervol", txtMasterVol->getText().getHexValue32(), nullptr);
@@ -982,6 +891,27 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_optStyleSFX] -- add your button handler code here..
         //[/UserButtonCode_optStyleSFX]
     }
+    else if (buttonThatWasClicked == chkFLStudio.get())
+    {
+        //[UserButtonCode_chkFLStudio] -- add your button handler code here..
+        //[/UserButtonCode_chkFLStudio]
+    }
+    else if (buttonThatWasClicked == btnFLStudioHelp.get())
+    {
+        //[UserButtonCode_btnFLStudioHelp] -- add your button handler code here..
+        NativeMessageBox::showMessageBox(AlertWindow::InfoIcon, "About FL Studio compatibility mode",
+            "FL Studio does not support many types of standard MIDI commands, "
+            "and should not be considered a MIDI editor program. Nevertheless, "
+            "many community members continue to use it for MIDI editing.\n\n"
+            "FL Studio does not support:\n"
+            "- SysEx commands (used by SEQ64 for Master Volume)\n"
+            "- Text events (Marker type text events are used by SEQ64 for temporal sections, including loop points)\n\n"
+            "SEQ64's FL Studio compatibility mode replaces these with:\n"
+            "- CC 114, channel 0 only: Master Volume\n"
+            "- CC 115, channel 0 only, any nonzero value: temporal section marker (e.g. loop point)\n"
+        );
+        //[/UserButtonCode_btnFLStudioHelp]
+    }
 
     //[UserbuttonClicked_Post]
     //[/UserbuttonClicked_Post]
@@ -992,7 +922,8 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
 //[MiscUserCode] You can add your own definitions of your custom methods or any other code here...
 
 void SeqEditor::rowSelected(TextListBox* parent, int row){
-
+    ignoreUnused(parent);
+    ignoreUnused(row);
 }
 
 void SeqEditor::timerCallback(){
@@ -1078,140 +1009,127 @@ BEGIN_JUCER_METADATA
                  parentClasses="public Component, private TextListBox::Listener, private Timer"
                  constructorParams="" variableInitialisers="seq(nullptr), opthread(nullptr)"
                  snapPixels="8" snapActive="1" snapShown="1" overlayOpacity="0.330"
-                 fixedSize="1" initialWidth="800" initialHeight="800">
-  <BACKGROUND backgroundColour="ff323e44">
-    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
-          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 336 l 348 336 s 340 344 l 348 336 l 340 328</PATH>
-    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
-          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 368 l 164 368 s 172 376 l 164 368 l 172 360</PATH>
-    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
-          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 536 l 348 536 s 340 544 l 348 536 l 340 528</PATH>
-    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
-          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 568 l 164 568 s 172 576 l 164 568 l 172 560</PATH>
-    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
-          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 160 720 l 348 720 s 340 728 l 348 720 l 340 712</PATH>
-    <PATH pos="0 0 100 100" fill="solid: fff0f8ff" hasStroke="1" stroke="4.2, mitered, butt"
-          strokeColour="solid: fff0f8ff" nonZeroWinding="1">s 352 752 l 164 752 s 172 760 l 164 752 l 172 744</PATH>
-  </BACKGROUND>
+                 fixedSize="1" initialWidth="800" initialHeight="720">
+  <BACKGROUND backgroundColour="ff323e44"/>
   <GROUPCOMPONENT name="" id="288b23c83f4e83ab" memberName="grpMusDialect" virtualName=""
-                  explicitFocusOrder="0" pos="8 593 320 71" title=".mus dialect (for export)"/>
+                  explicitFocusOrder="0" pos="8 553 320 71" title=".mus dialect (for export)"/>
   <TOGGLEBUTTON name="new toggle button" id="47cfaabd82293101" memberName="optMusCommunity"
-                virtualName="" explicitFocusOrder="0" pos="16 608 112 24" buttonText="Community"
+                virtualName="" explicitFocusOrder="0" pos="16 568 112 24" buttonText="Community"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="1"/>
   <TOGGLEBUTTON name="new toggle button" id="aa9f5ce6f473ab73" memberName="optMusCanon"
-                virtualName="" explicitFocusOrder="0" pos="128 608 80 24" buttonText="Canon"
+                virtualName="" explicitFocusOrder="0" pos="128 568 80 24" buttonText="Canon"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="3788ddb7be05010c" memberName="optMusCanonOld"
-                virtualName="" explicitFocusOrder="0" pos="208 608 112 24" buttonText="Canon (Old)"
+                virtualName="" explicitFocusOrder="0" pos="208 568 112 24" buttonText="Canon (Old)"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="0"/>
   <GROUPCOMPONENT name="new group" id="6c3ae9ab90971ff0" memberName="grpImportMIDI"
-                  virtualName="" explicitFocusOrder="0" pos="8 96 320 216" title="MIDI Import"/>
+                  virtualName="" explicitFocusOrder="0" pos="8 136 320 240" title="MIDI Import"/>
   <TOGGLEBUTTON name="new toggle button" id="298575bd077da219" memberName="chkSmartLoop"
-                virtualName="" explicitFocusOrder="0" pos="16 136 112 24" buttonText="Smart Loop"
+                virtualName="" explicitFocusOrder="0" pos="16 176 112 24" buttonText="Smart Loop"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <GROUPCOMPONENT name="new group" id="5c6bcdf4f16c5863" memberName="grpOptimizer"
-                  virtualName="" explicitFocusOrder="0" pos="16 184 304 120" title="Optimizer"/>
+                  virtualName="" explicitFocusOrder="0" pos="16 248 304 120" title="Optimizer"/>
   <TOGGLEBUTTON name="new toggle button" id="844c730ae280e7ec" memberName="chkUseCalls"
-                virtualName="" explicitFocusOrder="0" pos="24 200 80 24" buttonText="Calls"
+                virtualName="" explicitFocusOrder="0" pos="24 264 80 24" buttonText="Calls"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TEXTEDITOR name="new text editor" id="154dd00d08a19a23" memberName="txtMasterVol"
-              virtualName="" explicitFocusOrder="0" pos="280 160 40 24" initialText="58"
+              virtualName="" explicitFocusOrder="0" pos="280 200 40 24" initialText="58"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="2f44836e853ff58e" memberName="lblMasterVol"
-         virtualName="" explicitFocusOrder="0" pos="168 160 112 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="168 200 112 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Default Mst.Vol." editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <TOGGLEBUTTON name="new toggle button" id="d41d23e2781f6f08" memberName="chkUseLoops"
-                virtualName="" explicitFocusOrder="0" pos="24 264 80 24" buttonText="Loops"
+                virtualName="" explicitFocusOrder="0" pos="24 328 80 24" buttonText="Loops"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TEXTEDITOR name="new text editor" id="78aaa4ed17c1daf0" memberName="txtMergeVel"
-              virtualName="" explicitFocusOrder="0" pos="160 224 40 24" initialText="5"
+              virtualName="" explicitFocusOrder="0" pos="160 288 40 24" initialText="5"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="2c9954e88ae8e669" memberName="lblMergeVel"
-         virtualName="" explicitFocusOrder="0" pos="104 224 55 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="104 288 55 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Vels" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="8816310b8df382e9" memberName="txtMergeGates"
-              virtualName="" explicitFocusOrder="0" pos="160 248 40 24" initialText="3"
+              virtualName="" explicitFocusOrder="0" pos="160 312 40 24" initialText="3"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="b3c139534d0c5e82" memberName="lblMergeGates"
-         virtualName="" explicitFocusOrder="0" pos="104 248 55 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="104 312 55 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Gates" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="5e89a6c4e553dd90" memberName="txtMergeCCs"
-              virtualName="" explicitFocusOrder="0" pos="160 272 40 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="160 336 40 24" initialText="1"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="66a9164a43b56ffb" memberName="lblMergeCCs"
-         virtualName="" explicitFocusOrder="0" pos="104 272 55 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="104 336 55 24" edTextCol="ff000000"
          edBkgCol="0" labelText="CCs" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="db26cbb96e518db0" memberName="txtQuantVolPan"
-              virtualName="" explicitFocusOrder="0" pos="272 224 40 24" initialText="2"
+              virtualName="" explicitFocusOrder="0" pos="272 288 40 24" initialText="2"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="efae19279bcd8096" memberName="lblQuantVolPan"
-         virtualName="" explicitFocusOrder="0" pos="208 224 64 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="208 288 64 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Vol/Pan" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="4a30b577b172724c" memberName="txtQuantPitch"
-              virtualName="" explicitFocusOrder="0" pos="272 248 40 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="272 312 40 24" initialText="1"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="158ac64e370f720a" memberName="lblQuantPitch"
-         virtualName="" explicitFocusOrder="0" pos="208 248 64 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="208 312 64 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Pitch" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="555bf6985ab64c24" memberName="txtQuantOther"
-              virtualName="" explicitFocusOrder="0" pos="272 272 40 24" initialText="1"
+              virtualName="" explicitFocusOrder="0" pos="272 336 40 24" initialText="1"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="43e6a535c362df1d" memberName="lblQuantOther"
-         virtualName="" explicitFocusOrder="0" pos="208 272 64 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="208 336 64 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Other" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="6afc2a191b7a4913" memberName="lblMerge"
-         virtualName="" explicitFocusOrder="0" pos="104 200 96 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="104 264 96 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Merge Close:" editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <LABEL name="new label" id="ce1f3929ac632965" memberName="lblQuant"
-         virtualName="" explicitFocusOrder="0" pos="208 200 104 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="208 264 104 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Quantize:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <GROUPCOMPONENT name="new group" id="abc01da3904d8db0" memberName="grpExportMIDI"
-                  virtualName="" explicitFocusOrder="0" pos="8 392 320 96" title="MIDI Export"/>
+                  virtualName="" explicitFocusOrder="0" pos="8 376 320 96" title="MIDI Export"/>
   <TOGGLEBUTTON name="new toggle button" id="fb17c74cd24b8be6" memberName="optInstOrig"
-                virtualName="" explicitFocusOrder="0" pos="16 408 144 24" buttonText="Orig Inst/Drums"
+                virtualName="" explicitFocusOrder="0" pos="16 392 144 24" buttonText="Orig Inst/Drums"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="1"/>
   <TOGGLEBUTTON name="new toggle button" id="592157384d470058" memberName="optInstGM10"
-                virtualName="" explicitFocusOrder="0" pos="16 432 144 24" buttonText="GM, drums ch 10"
+                virtualName="" explicitFocusOrder="0" pos="16 416 144 24" buttonText="GM, drums ch 10"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
   <TOGGLEBUTTON name="new toggle button" id="974cd53f9babaa12" memberName="optInstGMMulti"
-                virtualName="" explicitFocusOrder="0" pos="16 456 144 24" buttonText="GM, drums multi"
+                virtualName="" explicitFocusOrder="0" pos="16 440 144 24" buttonText="GM, drums multi"
                 connectedEdges="0" needsCallback="1" radioGroupId="2" state="0"/>
   <LABEL name="new label" id="20b130cdc7fc8b6f" memberName="lblPPQN" virtualName=""
-         explicitFocusOrder="0" pos="176 408 95 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="176 392 95 24" edTextCol="ff000000"
          edBkgCol="0" labelText="PPQN 48x:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="new text editor" id="7884c8ddfeb40a43" memberName="txtPPQN"
-              virtualName="" explicitFocusOrder="0" pos="272 408 40 24" initialText="4"
+              virtualName="" explicitFocusOrder="0" pos="272 392 40 24" initialText="4"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <TEXTEDITOR name="new text editor" id="6103737800c72a64" memberName="txtSeq"
-              virtualName="" explicitFocusOrder="0" pos="352 248 440 544" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="352 248 440 464" initialText=""
               multiline="1" retKeyStartsLine="1" readonly="1" scrollbars="1"
               caret="0" popupmenu="0"/>
   <LABEL name="new label" id="acc8f386f68b50d2" memberName="lblInternal"
@@ -1235,66 +1153,72 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="256 24 63 32" buttonText="Edit..."
               connectedEdges="0" needsCallback="1" radioGroupId="0"/>
   <TOGGLEBUTTON name="new toggle button" id="32dace4af418847d" memberName="chkRel"
-                virtualName="" explicitFocusOrder="0" pos="16 160 128 24" buttonText="Relative Addrs"
+                virtualName="" explicitFocusOrder="0" pos="16 200 128 24" buttonText="Relative Addrs"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <TEXTBUTTON name="new button" id="dda1a6799546c40" memberName="btnImportMIDI"
-              virtualName="" explicitFocusOrder="0" pos="8 320 152 32" buttonText="Import MIDI"
-              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="8 96 160 32" buttonText="Import MIDI"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="afcf973a847dd8fa" memberName="btnExportMIDI"
-              virtualName="" explicitFocusOrder="0" pos="8 352 152 32" buttonText="Export MIDI"
-              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="168 96 160 32" buttonText="Export MIDI"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="3bb24dc32903c5e7" memberName="btnImportMus"
-              virtualName="" explicitFocusOrder="0" pos="8 520 152 32" buttonText="Import .mus"
-              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="8 512 160 32" buttonText="Import .mus"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="8f9107dadce8a52a" memberName="btnExportMus"
-              virtualName="" explicitFocusOrder="0" pos="8 552 152 32" buttonText="Export .mus"
-              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="168 512 160 32" buttonText="Export .mus"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="ce9eeb4274035fc6" memberName="btnImportCom"
-              virtualName="" explicitFocusOrder="0" pos="8 704 152 32" buttonText="Import .com/.aseq"
-              connectedEdges="8" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="8 672 160 32" buttonText="Import .com/.aseq"
+              connectedEdges="2" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="e373bb4f6fe0c973" memberName="btnExportCom"
-              virtualName="" explicitFocusOrder="0" pos="8 736 152 32" buttonText="Export .com/.aseq"
-              connectedEdges="4" needsCallback="1" radioGroupId="0"/>
+              virtualName="" explicitFocusOrder="0" pos="168 672 160 32" buttonText="Export .com/.aseq"
+              connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="f47463540eb17b52" memberName="lblMuteBhv"
-         virtualName="" explicitFocusOrder="0" pos="192 112 88 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="192 152 88 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Mute Behav." editableSingleClick="0"
          editableDoubleClick="0" focusDiscardsChanges="0" fontname="Default font"
          fontsize="15.0" kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="txtMuteBhv" id="eaf577117e5f825a" memberName="txtMuteBhv"
-              virtualName="" explicitFocusOrder="0" pos="280 112 40 24" initialText="20"
+              virtualName="" explicitFocusOrder="0" pos="280 152 40 24" initialText="20"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <LABEL name="new label" id="f55d4d9dc7a4d940" memberName="lblMuteScale"
-         virtualName="" explicitFocusOrder="0" pos="192 136 88 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="192 176 88 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Mute Scale" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="txtMuteScale" id="5781be6e6a4a3b3b" memberName="txtMuteScale"
-              virtualName="" explicitFocusOrder="0" pos="280 136 40 24" initialText="32"
+              virtualName="" explicitFocusOrder="0" pos="280 176 40 24" initialText="32"
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="0"
               caret="1" popupmenu="1"/>
   <TOGGLEBUTTON name="chkPref" id="dc2a1a56e93490e" memberName="chkPref" virtualName=""
-                explicitFocusOrder="0" pos="16 112 176 24" buttonText="Use .pref file (if exist)"
+                explicitFocusOrder="0" pos="16 152 176 24" buttonText="Use .pref file (if exist)"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="1"/>
   <TOGGLEBUTTON name="chkCallOnlyLyr" id="4d62bd8a13f76fa4" memberName="chkCallOnlyLyr"
-                virtualName="" explicitFocusOrder="0" pos="32 224 64 24" buttonText="Only"
+                virtualName="" explicitFocusOrder="0" pos="32 288 64 24" buttonText="Only"
                 connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
   <LABEL name="lblCallOnlyLy" id="1eae0080342723a0" memberName="lblCallOnlyLy"
-         virtualName="" explicitFocusOrder="0" pos="54 240 48 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="54 304 48 24" edTextCol="ff000000"
          edBkgCol="0" labelText="NtLyr" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <LABEL name="lblStyle" id="d5bfeaf6e09966ec" memberName="lblStyle" virtualName=""
-         explicitFocusOrder="0" pos="16 632 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="16 584 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Style:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TOGGLEBUTTON name="optStyleMusic" id="11ec9f92fae59908" memberName="optStyleMusic"
-                virtualName="" explicitFocusOrder="0" pos="72 632 80 24" buttonText="Music"
+                virtualName="" explicitFocusOrder="0" pos="72 592 80 24" buttonText="Music"
                 connectedEdges="0" needsCallback="1" radioGroupId="3" state="1"/>
   <TOGGLEBUTTON name="optStyleSFX" id="c2b3fa71cbf88894" memberName="optStyleSFX"
-                virtualName="" explicitFocusOrder="0" pos="152 632 136 24" buttonText="Technical / SFX"
+                virtualName="" explicitFocusOrder="0" pos="152 592 136 24" buttonText="Technical / SFX"
                 connectedEdges="0" needsCallback="1" radioGroupId="3" state="0"/>
+  <TOGGLEBUTTON name="chkFLStudio" id="2ef2841d1b377a6d" memberName="chkFLStudio"
+                virtualName="" explicitFocusOrder="0" pos="16 224 150 24" buttonText="FL Studio compat"
+                connectedEdges="0" needsCallback="1" radioGroupId="0" state="0"/>
+  <TEXTBUTTON name="btnFLStudioHelp" id="e9d53afe51a5011a" memberName="btnFLStudioHelp"
+              virtualName="" explicitFocusOrder="0" pos="168 224 24 24" buttonText="?"
+              connectedEdges="0" needsCallback="1" radioGroupId="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA
