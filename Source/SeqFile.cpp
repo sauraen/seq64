@@ -855,8 +855,17 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     OwnedArray<MidiMessageSequence> chantracks;
     for(int channel=0; channel<16; channel++){
         chantracks.add(new MidiMessageSequence());
-        mastertrack->extractMidiChannelMessages(channel+1, *chantracks[channel], false);
-        mastertrack->deleteMidiChannelMessages(channel+1);
+        for(int m=0; m<mastertrack->getNumEvents(); ++m){
+            msg = mastertrack->getEventPointer(m)->message;
+            if(msg.getChannel() == channel+1 && (
+                !(bool)midiopts.getProperty("flstudio") ||
+                !msg.isController() || 
+                !(msg.getControllerNumber() == 114 || msg.getControllerNumber() == 115))){
+                chantracks[channel]->addEvent(msg);
+                mastertrack->deleteEvent(m, false);
+                --m;
+            }
+        }
         mastertrack->updateMatchedPairs();
         chantracks[channel]->updateMatchedPairs();
     }
