@@ -186,9 +186,9 @@
            oname="monomode">
     <parameter name="Bitmask" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="210" name="sustain" action="No Action" validinchn="1" comments="Set envelope sustain volume"
-           oname="sreverb">
-    <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
+  <command cmd="210" name="pseudosuspedal" action="CC or CC Group" oname="sreverb"
+           validinchn="1" comments="Questionably implemented MIDI sustain pedal. If set, when a note is released, immediately sets the envelope volume to this value, and keeps it there until killed by the note pool.">
+    <parameter name="Value" meaning="CC" datasrc="fixed" datalen="1" cc="64"/>
   </command>
   <command cmd="211" name="pitchbend" action="CC or CC Group" validinchn="1"
            comments="Pitch bend by &lt;= 1 octave in either direction (-127&#8230;127)."
