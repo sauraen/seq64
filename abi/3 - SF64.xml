@@ -204,9 +204,9 @@
            oname="monomode">
     <parameter name="Bitmask" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="210" name="pseudosuspedal" action="CC or CC Group" oname="sreverb"
-           validinchn="1" comments="Questionably implemented MIDI sustain pedal. If set, when a note is released, immediately sets the envelope volume to this value, and keeps it there until killed by the note pool.">
-    <parameter name="Value" meaning="CC" datasrc="fixed" datalen="1" cc="64"/>
+  <command cmd="210" name="relsustain" action="CC or CC Group" oname="sreverb"
+           validinchn="1" comments="Adds a sustain phase to the envelope release. At key off, volume falls at the release rate to the sustain value. Then it holds at the sustain value for 128 ticks, and then it falls at the release rate to 0. Changes to the sustain value while the note is in the sustain phase are ignored, so this command cannot be used like MIDI sustain pedal (releasing the pedal does not stop the note).">
+    <parameter name="Value" meaning="CC" datasrc="fixed" datalen="1" cc="70"/>
   </command>
   <command cmd="211" name="pitchbend" action="CC or CC Group" validinchn="1"
            comments="Pitch bend by &lt;= 1 octave in either direction (-127&#8230;127)."
