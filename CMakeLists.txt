@@ -78,6 +78,9 @@ add_executable(seq64_console
     "juce/modules/juce_audio_basics/juce_audio_basics.cpp"
     "juce/modules/juce_data_structures/juce_data_structures.cpp"
 )
+if(APPLE)
+    set_target_properties(seq64_console PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED TRUE CXX_EXTENSIONS FALSE)
+endif()
 target_include_directories(seq64_console PRIVATE
     "Source"
     "juce/modules"
@@ -104,6 +107,9 @@ if(SEQ64_BUILD_GUI)
     juce_add_gui_app(seq64_gui PRODUCT_NAME "seq64_gui" COMPANY_NAME "Sauraen")
     juce_generate_juce_header(seq64_gui)
     target_sources(seq64_gui PRIVATE ${SEQ64_SHARED_SOURCES} ${SEQ64_GUI_ONLY_SOURCES})
+    if(APPLE)
+        set_target_properties(seq64_gui PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED TRUE CXX_EXTENSIONS FALSE)
+    endif()
     target_compile_definitions(seq64_gui PRIVATE 
         JUCE_STANDALONE_APPLICATION=1
         JUCE_WEB_BROWSER=0
