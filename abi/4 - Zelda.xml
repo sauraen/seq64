@@ -186,9 +186,11 @@
   <command cmd="186" name="gaterand" action="No Action" validinchn="1" comments="Sets gate length humanization (durationRandomVariance).">
     <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="187" name="unk_BB" action="No Action" validinchn="1" comments="Sets channel[0xF] to param 1 and channel[0x20] to param 2.">
-    <parameter name="Param 1" meaning="None" datasrc="fixed" datalen="1"/>
-    <parameter name="Param 2" meaning="None" datasrc="fixed" datalen="2"/>
+  <command cmd="187" name="chorus" action="CC or CC Group" validinchn="1"
+           comments="Chorus">
+    <parameter name="Length" meaning="None" datasrc="constant" datalen="16"/>
+    <parameter name="Chorus" meaning="CC" datasrc="fixed" datalen="1" cc="93"/>
+    <parameter name="Chorus LSB" meaning="CC" datasrc="fixed" datalen="1" cc="94"/>
   </command>
   <command cmd="188" name="addp" action="No Action" comments="P += immediate"
            validinchn="1">
@@ -574,10 +576,8 @@
            validintrk="1" validinchn="1">
     <parameter datasrc="variable" name="Delay" meaning="Delay"/>
   </command>
-  <command cmd="254" name="yield" action="Delay" cname="return" comments="Return from parsing, to pick up from the next command on the next parse cycle. Effectively delay by 1 tick."
-           validinseq="1" validinchn="1" validintrk="1">
-    <parameter name="Constant delay" meaning="Delay" datasrc="constant" datalen="1"/>
-  </command>
+  <command cmd="254" name="yield" action="No Action" cname="return" comments="Return from parsing, to pick up from the next command on the next parse cycle."
+           validinseq="1" validinchn="1" validintrk="1"/>
   <command cmd="255" name="end" action="End of Data" validinchn="1" validintrk="1"
            cname="fin" validinseq="1"/>
 </cmdlist>

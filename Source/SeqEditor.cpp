@@ -908,7 +908,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
             "- Text events (Marker type text events are used by SEQ64 for temporal sections, including loop points)\n\n"
             "SEQ64's FL Studio compatibility mode replaces these with:\n"
             "- CC 114, channel 0 only: Master Volume\n"
-            "- CC 115, channel 0 only, any nonzero value: temporal section marker (e.g. loop point)\n"
+            "- CC 115, channel 0 only, value not zero and not the same as the last value: temporal section marker (e.g. loop point)\n"
         );
         //[/UserButtonCode_btnFLStudioHelp]
     }

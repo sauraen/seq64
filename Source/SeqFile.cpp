@@ -875,6 +875,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     tsectimes.add(0);
     tsecnames.clear();
     tsecnames.add("start");
+    int lastCC115 = -1;
     for(int m=0; m<mastertrack->getNumEvents(); m++){
         msg = mastertrack->getEventPointer(m)->message;
         String metatext;
@@ -888,12 +889,17 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 if(!metatext.startsWithIgnoreCase("block:")) continue;
             }
         }else if((bool)midiopts.getProperty("flstudio") && msg.isController() 
-                && msg.getControllerNumber() == 115 && msg.getControllerValue() != 0){
+                && msg.getControllerNumber() == 115){
+            if(msg.getControllerValue() == 0 || msg.getControllerValue() == lastCC115){
+                dbgmsg("Ignoring spurious CC 115 value " + String(msg.getControllerValue()) + " inserted by FL Studio");
+                continue;
+            }
             if(msg.getChannel() != 1){
                 dbgmsg("FL Studio mode, received CC 115 (temporal section marker) not on channel 1 (0 zero-indexed)! Ignoring!");
                 importresult |= 1;
                 continue;
             }
+            lastCC115 = msg.getControllerValue();
             metatext = "SectionX";
         }else{
             continue;

@@ -465,10 +465,8 @@
            cname="wait">
     <parameter datasrc="variable" name="Delay" meaning="Delay"/>
   </command>
-  <command cmd="254" name="yield" action="Delay" validinseq="1" validinchn="1"
-           cname="return" comments="Return from parsing, to pick up from the next command on the next parse cycle. Effectively delay by 1 tick.">
-    <parameter name="Constant delay" meaning="Delay" datasrc="constant" datalen="1"/>
-  </command>
+  <command cmd="254" name="yield" action="No Action" cname="return" comments="Return from parsing, to pick up from the next command on the next parse cycle."
+           validinseq="1" validinchn="1" validintrk="1"/>
   <command cmd="255" name="end" action="End of Data" validinseq="1" validinchn="1"
            validintrk="1" cname="fin"/>
 </cmdlist>

@@ -23,7 +23,7 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
 set(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} CACHE STRING "" FORCE)
 
-project(SEQ64 VERSION 2.0.0)
+project(SEQ64 VERSION 2.1.4)
 
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/juce/CMakeLists.txt")
     message(FATAL_ERROR "You forgot to get the Git submodules, please run git submodule update --init")
@@ -115,8 +115,8 @@ if(SEQ64_BUILD_GUI)
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_DISPLAY_SPLASH_SCREEN=0
-        JUCE_APPLICATION_NAME_STRING="SEQ64 V2.0"
-        JUCE_APPLICATION_VERSION_STRING="V2.0"
+        JUCE_APPLICATION_NAME_STRING="SEQ64 V2.1.4"
+        JUCE_APPLICATION_VERSION_STRING="V2.1.4"
     )
     target_link_libraries(seq64_gui PRIVATE
         juce::juce_core
