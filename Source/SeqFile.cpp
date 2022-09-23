@@ -69,9 +69,48 @@ Identifier SeqFile::idWillDrop("willdrop");
 Identifier SeqFile::idDynTableSType("dyntablestype");
 Identifier SeqFile::idDynTableDynSType("dyntabledynstype");
 //Identifier SeqFile::idCurDynTableSec("curdyntablesec");
-Identifier SeqFile::idMessage("message");
+Identifier SeqFile::idString("string");
 Identifier SeqFile::idRecurVisited("recurvisited");
 Identifier SeqFile::idQuestionableSection("questionablesection");
+
+Identifier SeqFile::idInclude("include");
+Identifier SeqFile::idDefine("define");
+Identifier SeqFile::idEntry("entry");
+Identifier SeqFile::idString("string");
+Identifier SeqFile::idPad("pad");
+Identifier SeqFile::idu8("u8");
+Identifier SeqFile::idVariable("variable");
+Identifier SeqFile::idu16("u16");
+Identifier SeqFile::idAlign2("align2");
+Identifier SeqFile::idAlign16("align16");
+Identifier SeqFile::idLPrintOn("lprinton");
+Identifier SeqFile::idLPrintOff("lprintoff");
+Identifier SeqFile::idBug("bug");
+
+const StringArray SeqFile::sTypeNames = {
+    /* 0 */ "seqhdr",
+    /* 1 */ "chanhdr",
+    /* 2 */ "notelayer",
+    /* 3 */ "dyntable",
+    /* 4 */ "envelope",
+    /* 5 */ "string",
+    /* 6 */ "table",
+    /* 7 */ "align",
+    /* 8 */ "filter",
+    /* 9 */ "buffer"
+};
+const StringArray SeqFile::communitySTypeNames = {
+    /* 0 */ ".sequence",
+    /* 1 */ ".channel",
+    /* 2 */ ".layer",
+    /* 3 */ ".table",
+    /* 4 */ ".envelope",
+    /* 5 */ ".string",
+    /* 6 */ ".array",
+    /* 7 */ ".alignsection",
+    /* 8 */ ".filter",
+    /* 9 */ ".buffer"
+};
 
 const int SeqFile::max_layers = 4;
 
@@ -106,8 +145,8 @@ String SeqFile::getInternalString(){
             ret += ", layer " + section.getProperty(idLayer, -1).toString();
         }
         ret += "\n";
-        if(section.hasProperty(idMessage)){
-            ret += "  Message: " + section.getProperty(idMessage).toString() + "\n";
+        if(section.hasProperty(idString)){
+            ret += "  String: " + section.getProperty(idString).toString() + "\n";
             continue;
         }
         for(int j=0; j<section.getNumChildren(); ++j){
@@ -2302,8 +2341,8 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
             if(action == "Jump"){
                 hasbeenjump = true;
             }
-        }else if(action == "Ptr Message"){
-            //TODO print message from sequence
+        }else if(action == "Ptr String"){
+            //TODO print string from sequence
         }else if(action == "Delay"){
             //Time difference taken care of by delay (after this if action)
             if(stype == 0){
@@ -2843,6 +2882,30 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
 ////////////////////////////// importMus functions /////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+//"Translate" base name to community or canon
+String SeqFile::xl(Identifier base){
+         if(base == idInclude  ) return canon ? "#include"   : ".include";
+    else if(base == idDefine   ) return canon ? "#define"    : ".define";
+    else if(base == idEntry    ) return canon ? "#label"     : "entry";
+    else if(base == idString   ) return canon ? "#msg"       : "string";
+    else if(base == idPad      ) return canon ? "#pad"       : "space";
+    else if(base == idu8       ) return canon ? "#byte"      : "byte";
+    else if(base == idVariable ) return canon ? "#wlen"      : "ERROR_CANON_ONLY";
+    else if(base == idu16      ) return canon ? "#word"      : "point";
+    else if(base == idAlign2   ) return canon ? "#evenw"     : "ERROR_CANON_ONLY";
+    else if(base == idAlign16  ) return canon ? "#evenl"     : "ERROR_CANON_ONLY";
+    else if(base == idLPrintOn ) return canon ? "#lprinton"  : "ERROR_CANON_ONLY";
+    else if(base == idLPrintOff) return canon ? "#lprintoff" : "ERROR_CANON_ONLY";
+    else if(base == idBug      ) return canon ? "#bug"       : ".bug";
+}
+
+String SeqFile::xlspc(Identifier base){
+    String ret = xl(base);
+         if(base == idEntry    ) return ret + (canon ? "   " : " ");
+    else if(base == idu8       ) return ret + (canon ? "    "  : " ");
+    else if(base == idu16      ) return ret + (canon ? "\t"  : " ");
+    else return ret;
+}
 
 void SeqFile::loadMusFileLines(OwnedArray<MusLine> &lines, String path, 
         int insertIdx, MusLine *includeLine){
@@ -2914,25 +2977,12 @@ void SeqFile::substituteDefines(const StringPairArray &defs, MusLine *line){
         }
     }
     if(i == 100){
-        line->Error("Too many #define substitutions, recursive #defines or something like that!");
+        line->Error("Too many " + xl(idDefine) + " substitutions, recursive " 
+            + xl(idDefine) + "s or something like that!");
     }
     if(i >= 1){
         line->Tokenize();
     }
-    /*
-    for(int t=0; t<line->toks.size(); ++t){
-        int i;
-        for(i=0; i<100; ++i){
-            if(!defs.containsKey(line->toks[t])) break;
-            line->toks.set(t, defs[line->toks[t]]);
-        }
-        if(i == 100){
-            line->Error("Too many #define substitutions, recursive #defines or something like that!");
-            return;
-        }
-    }
-    line->l = line->toks.joinIntoString(" ");
-    */
 }
 
 bool SeqFile::getMusHex(String s, int &value){
@@ -2964,7 +3014,7 @@ bool SeqFile::getMusInt(String s, int &value){
 }
 
 int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc, 
-        int datalen, bool allowNoteName, bool canon, bool wideDelay, bool *dataforce2){
+        int datalen, bool allowNoteName, bool twoByteDelay, bool *dataforce2){
     int value;
     s = s.toLowerCase();
     if(allowNoteName && datasrc == "fixed" && datalen == 1 && parseCanonNoteName(s, value)){
@@ -2985,14 +3035,14 @@ int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc,
         line->Error("Integer value " + String(value) + " out of range!");
         return -1;
     }
-    if(datasrc == "variable" && value > 0x7F && canon && !wideDelay){
-        line->Error("Used canon non-w version of command, but value " 
-            + String(value) + " requires wide variable length!");
+    if(datasrc == "variable" && value > 0x7F && isCanon && !twoByteDelay){
+        line->Error("Used canon one-byte version of command, but value " 
+            + String(value) + " requires two-byte variable length!");
         return -1;
     }
-    if(datasrc == "variable" && value <= 0x7F && wideDelay){
+    if(datasrc == "variable" && value <= 0x7F && twoByteDelay){
         line->Info("Mistake in original sequence: sound programmer used "
-            "wide version of command despite having too-small variable "
+            "two-byte version of command despite having too-small variable "
             "length value " + String(value) + ". This mistake is supported by "
             "SEQ64 and will be maintained in mus <-> com conversions.");
         if(dataforce2 != nullptr) *dataforce2 = true;
@@ -3003,22 +3053,25 @@ int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc,
 ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype, 
         bool wrongSTypeErrors){
     ValueTree ret;
+    String noCommaError = "There is no comma between a hash command and its "
+        "first parameter" + String(isCanon ? 
+        ", whereas there is between a normal command and its first parameter"
+        : "") + "!";
     String name = line->toks[0];
+    TODO; //convert envelope terminators (hang, etc.) into two u16s
     //Besides #include and #define, these are all the hash commands in the
     //bicon executable.
-    if(name == "#address" || name == "#label"){
+    if(name == xl(idEntry)){
         //#label label_name, label_name_2, ..., used for dyntables
         if(stype != 3){
             if(!wrongSTypeErrors) return ValueTree("wrongstype");
-            return line->Error("#address/#label only allowed in dyntable!");
+            return line->Error(name + " only allowed in dyntable!");
         }
         if(line->toks.size() < 2){
-            return line->Error("Missing tokens after #address/#label!");
+            return line->Error("Missing tokens after " + name + "!");
         }
         if(line->toks[1] == ","){
-            return line->Error("There is no comma between a hash command and its "
-                "first parameter, whereas there is between a normal command and "
-                "its first parameter!");
+            return line->Error(noCommaError);
         }
         ret = ValueTree("cmdlist");
         int t = 1;
@@ -3043,37 +3096,37 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             }
         }
         return ret;
-    }else if(name == "#string" || name == "#msg"){
+    }else if(name == xl(idString)){
         //#msg "Blah blah", referenced by dprint. Number seen to be 0 or 3,
         //definitely not string length. Perhaps debug console color or
         //verboseness/severity?
         if(stype != 5){
             if(!wrongSTypeErrors) return ValueTree("wrongstype");
-            return line->Error("#string/#msg only valid in stype 5 (message)!");
+            return line->Error(name + " only valid in stype 5 (string)!");
         }
         String msg = line->l.substring(name.length()).trim();
         if(msg[0] != '"' || msg.getLastCharacter() != '"'){
-            return line->Error("Message string must be quoted!");
+            return line->Error(name + " must be quoted!");
         }
         msg = msg.substring(1, msg.length()-1);
         if(msg.length() == 0){
-            line->Warning("Empty message!");
+            line->Warning("Empty " + name + "!");
         }
-        ret = ValueTree("message");
-        ret.setProperty(idMessage, msg, nullptr);
+        ret = ValueTree("string");
+        ret.setProperty(idString, msg, nullptr);
         for(int i=0; i<msg.length(); ++i){
             ret.appendChild(makeBasicDataCommand(-1, (int)msg[i], "fixed", 1), nullptr);
         }
         ret.appendChild(makeBasicDataCommand(-1, 0, "fixed", 1), nullptr); //string null terminator
         return ret;
-    }else if(name == "#pad"){
+    }else if(name == xl(idPad)){
         //Insert the given number of zero bytes.
         if(stype != 6){
             if(!wrongSTypeErrors) return ValueTree("wrongstype");
-            line->Warning("#pad anywhere besides Other Tables (6) is only partially supported!");
+            line->Warning(name + " anywhere besides Other Tables (6) is only partially supported!");
         }
         if(line->toks.size() != 2){
-            return line->Error("#pad command must look like \"#pad u16val\"!");
+            return line->Error(name + " command must look like \"" + name + " u16val\"!");
         }
         int count = parseNormalParam(line, line->toks[1], "fixed", 2);
         if(importresult >= 2) return ValueTree();
@@ -3082,10 +3135,10 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             ret.appendChild(makeBasicDataCommand(-1, 0, "fixed", 1), nullptr);
         }
         return ret;
-    }else if((name == "#u16" || name == "#word") && stype == 4){
+    }else if(name == xl(idu16) && stype == 4){
         //#word: value16,value16, used for envelopes. Write 16-bit ints to com.
         if(line->toks.size() != 4 || line->toks[2] != ","){
-            return line->Error("#u16/#word command in envelope must look like \"#word val,val\"!");
+            return line->Error(name + " command in envelope must look like \"" + name + " val,val\"!");
         }
         int rate, level;
         rate = parseNormalParam(line, line->toks[1], "fixed", 2);
@@ -3093,32 +3146,32 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         level = parseNormalParam(line, line->toks[3], "fixed", 2);
         if(importresult >= 2) return ValueTree();
         return makeEnvelopeCommand(0, rate, level);
-    }else if(name == "#u8" || name == "#byte" || name == "#variable" || name == "#wlen" 
-            || name == "#u16" || name == "#word"){
+    }else if(name == xl(idu8) || name == xl(idVariable) || name == xl(idu16)){
+        TODO; //Why need separate envelope commands? Handle that here?
         //#byte: presumably, write bytes to com.
         //#wlen: presumably, write variable length value to com. Due to how
         //commands are defined, this probably always writes the 2-byte version.
         //Note that, presumably, bicon did not have a concept of stype and
         //allowed these commands to appear anywhere. In fact, the .def file
         //probably translated normal commands into these commands.
-        if(!((name == "#u8" || name == "#byte") && stype == 6)){
+        if(!(name == xl(idu8) && stype == 6)){
             if(!wrongSTypeErrors) return ValueTree("wrongstype");
-            line->Warning("#u8/#byte/#variable/#wlen/#u16/#word other than #u16/#word "
-                "in envelopes (4) and #u8/#byte in Other Tables (6) is only partially supported!");
+            line->Warning(
+                xl(idu8) + "/" + xl(idVariable) + "/" + xl(idu16) + " other than " +
+                xl(idu16) + "in envelopes (4) and " +
+                xl(idu8) + " in Other Tables (6) is only partially supported!");
         }
         if(line->toks.size() < 2){
             return line->Error("Missing tokens after " + name + "!");
         }
         if(line->toks[1] == ","){
-            return line->Error("There is no comma between a hash command and its "
-                "first parameter, whereas there is between a normal command and "
-                "its first parameter!");
+            return line->Error(noCommaError);
         }
         ret = ValueTree("cmdlist");
         int t = 1;
         while(true){
-            String datasrc = (name == "#variable" || name == "#wlen") ? "variable" : "fixed";
-            int datalen = (name == "#u16" || name == "#word") ? 2 : 1;
+            String datasrc = (name == xl(idVariable)) ? "variable" : "fixed";
+            int datalen = (name == xl(idu16)) ? 2 : 1;
             int value = parseNormalParam(line, line->toks[t], datasrc, datalen, true);
             if(importresult >= 2) return ValueTree();
             ret.appendChild(makeBasicDataCommand(-1, value, datasrc, datalen), nullptr);
@@ -3133,7 +3186,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             }
         }
         return ret;
-    }else if(name == "#align2" || name == "#evenw" || name == "#align16" || name == "evenl"){
+    }else if(name == xl(idAlign2) || name == xl(idAlign16)){
         //#evenw: align to even word (2 bytes).
         //#evenl: Previously thought it was "align to even long", i.e. 4 bytes,
         //but based on use in Hyrule Field master sequence, suspect it's "align
@@ -3141,9 +3194,9 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         //Of course it's possible bicon got more hash commands between SF64 and
         //OoT.
         ret = ValueTree("align");
-        ret.setProperty(idValue, (name == "#align16" || name == "#evenl") ? 16 : 2, nullptr);
+        ret.setProperty(idValue, (name == xl(idAlign16)) ? 16 : 2, nullptr);
         return ret;
-    }else if(name == "#lprinton" || name == "#lprintoff"){
+    }else if(name == xl(idLPrintOn) || name == xl(idLPrintOff)){
         //Function unknown, presumably printing lines as they're parsed or
         //some information from them? There's a commented out #lprinton at 
         //beginning of SFX seq
@@ -3151,25 +3204,34 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             return line->Error("Spurious tokens after " + name + "!");
         }
         ret = ValueTree("lprint");
-        ret.setProperty(idValue, name == "#lprinton", nullptr);
+        ret.setProperty(idValue, name == xl(idLPrintOn), nullptr);
         return ret;
-    }else if(name == "#bug"){
+    }else if(name == xl(idBug)){
         //This is a bug in the original sequence. SEQ64 should parse this section
         //ignoring any errors as much as possible.
+        TODO; //No longer applies to the section, but the next command.
         if(line->toks.size() > 1){
-            return line->Error("Spurious tokens after #bug (ironically)!");
+            return line->Error("Spurious tokens after " + name + " (ironically)!");
         }
         ret = ValueTree("bug");
         return ret;
+    }else if(!isCanon && communitySTypeNames.contains(name)){
+        if(line->toks.size() != 2){
+            return line->Error("Community labels must look like .stypename labelname!");
+        }
+        if(!isValidLabel(line->toks[1])){
+            return line->Error("Token " + line->toks[1] + " is supposed to be a label, but it "
+                "contains invalid characters!");
+        }
+        return ValueTree("label");
     }
     //All other types of commands and labels
     name = name.toLowerCase();
     String no_w_name = name.endsWithChar('w') ? name.dropLastCharacters(1) : name;
-    bool canon = false;
     bool wideDelay = false;
     int noteValue = -1000;
     //Canon note commands
-    if(no_w_name.length() == 5 && name[4] >= '0' && name[4] <= '2' && name[3] == 'b'
+    if(isCanon && no_w_name.length() == 5 && name[4] >= '0' && name[4] <= '2' && name[3] == 'b'
             && parseCanonNoteName(name.substring(0, 3), noteValue)){
         if(stype != 2){
             if(!wrongSTypeErrors) return ValueTree("wrongstype");
@@ -3178,7 +3240,6 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         if(noteValue < 0 || noteValue > 0x3F){
             return line->Error("Note command maps to invalid note value " + String(noteValue) + "!");
         }
-        canon = true;
         if(name.endsWithChar('w')) wideDelay = true;
         //Find appropriate note command
         for(int cmd=0; cmd<abi.getNumChildren(); ++cmd){
@@ -3199,42 +3260,53 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
     if(!ret.isValid()){
         //Normal commands
         for(int cmd=0; cmd<abi.getNumChildren(); ++cmd){
+            //Need to check stype after listing possible commands, see comment below.
             ValueTree command = abi.getChild(cmd);
-            String nname = command.getProperty(idName,  "");
-            String cname = command.getProperty(idCName, "");
-            String oname = command.getProperty(idOName, "");
-            nname = nname.toLowerCase();
-            cname = cname.toLowerCase();
-            oname = oname.toLowerCase();
-            bool hasVariable = command.getChildWithProperty(idDataSrc, "variable").isValid();
-            if(nname == name){
-                (void)0; //just add to possible cmds below
-            }else if(cname == name || oname == name){
-                canon = true;
-            }else if(hasVariable && (cname == no_w_name || oname == no_w_name)){
-                canon = true;
-                wideDelay = true;
+            if(isCanon){
+                String cname = command.getProperty(idCName, "");
+                String oname = command.getProperty(idOName, "");
+                cname = cname.toLowerCase();
+                oname = oname.toLowerCase();
+                bool hasVariable = command.getChildWithProperty(idDataSrc, "variable").isValid();
+                if(cname == name || oname == name){
+                    (void)0; //just add to possible cmds below
+                }else if(hasVariable && (cname == no_w_name || oname == no_w_name)){
+                    wideDelay = true;
+                }else{
+                    continue;
+                }
             }else{
-                continue;
+                String nname = command.getProperty(idName,  "");
+                nname = nname.toLowerCase();
+                if(nname == name){
+                    (void)0; //just add to possible cmds below
+                }else{
+                    continue;
+                }
             }
             possibleCmds.appendChild(command.createCopy(), nullptr);
         }
         if(possibleCmds.getNumChildren() == 0){
-            //Maybe it's a label
-            if(line->toks.size() > 2 || (line->toks.size() == 2 && line->toks[1] != ":")){
-                return line->Error("Token " + line->toks[0] + " not recognized as a command, "
-                    "but it has tokens after it, so it can't be a label, syntax error!");
+            if(!isCanon){
+                //Labels were already handled
+                return line->Error("Token " + line->toks[0] + " not recognized as a command!");
+            }else{
+                //Maybe it's a label
+                if(line->toks.size() > 2 || (line->toks.size() == 2 && line->toks[1] != ":")){
+                    return line->Error("Token " + line->toks[0] + " not recognized as a command, "
+                        "but it has tokens after it, so it can't be a label, syntax error!");
+                }
+                if(!isValidLabel(line->toks[0])){
+                    return line->Error("Token " + line->toks[0] + " must be a label, but it "
+                        "contains invalid characters!");
+                }
+                return ValueTree("label");
             }
-            if(!isValidLabel(line->toks[0])){
-                return line->Error("Token " + line->toks[0] + " must be a label, but it "
-                    "contains invalid characters!");
-            }
-            return ValueTree("label");
         }
     }
     if(stype < 0 || stype > 2){
         if(!wrongSTypeErrors) return ValueTree("wrongstype");
-        return line->Error("Non-hash commands not allowed in stype " + String(stype) + "!");
+        return line->Error("Non-meta commands not allowed in stype " + String(stype) + "!");
     }
     if(!ret.isValid()){
         //Need to check stype after listing possible commands, because we need to
@@ -3255,10 +3327,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             return line->Error("Command not allowed in current stype " + String(stype) + "!");
         }
         if(possibleCmds.getNumChildren() >= 2){
-            return line->Error("This could be multiple different commands, check the "
-                "ABI definition! Note that there is no mus dialect setting for import, "
-                "so if e.g. the community name of command A is the same as the canon "
-                "name for command B, in the same stype, this would be ambiguous.");
+            return line->Error("This could be multiple different commands, check the ABI definition!");
         }
         ret = possibleCmds.getChild(0);
         possibleCmds.removeChild(0, nullptr); //ret will get added to structure later, can't have two parents
@@ -3278,6 +3347,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         }
         if(meaning == "Note" && noteValue != -1000){
             //Canon note value encoded in command token, no separate parameter
+            jasert(isCanon);
             value = noteValue;
             param.setProperty(idValue, noteValue, nullptr);
         }else{
@@ -3286,10 +3356,13 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
                     + param.getProperty(idName).toString() + ", got nothing!");
             }
             if(line->toks[t] != ","){
-                if(t > 1){ //Comma immediately after command optional
+                if(t > 1 || (isCanon && t == 1)){
                     return line->Error("Expected comma, not " + line->toks[t] + "!");
                 }
             }else{
+                if(!isCanon){
+                    return line->Error("Comma not permitted after command!");
+                }
                 ++t;
             }
             if(t >= line->toks.size()){
@@ -3301,7 +3374,11 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             if(meaning == "Absolute Address" || meaning == "Relative Address"){
                 if(s.containsAnyOf("()+")){
                     String num;
-                    if(s.containsAnyOf("()")){
+                    bool hasParen = s.containsAnyOf("()");
+                    bool hasPlus = s.contains("+");
+                    if((!isCanon && hasParen) || (isCanon && hasPlus)){
+                        return line->Error("Invalid syntax in Ptr Self parameter!");
+                    }else if(hasParen){
                         if(s.getLastCharacter() != ')'){
                             return line->Error("Invalid syntax in Ptr Self parameter!");
                         }
@@ -3378,7 +3455,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
         stype = 3;
     }else if(action == "Ptr Envelope"){
         stype = 4;
-    }else if(action == "Ptr Message"){
+    }else if(action == "Ptr String"){
         stype = 5;
     }else if(action == "Ptr Other Table" || action == "Ptr Self" || action == "Maybe Ptr"){
         stype = 6;
@@ -3435,15 +3512,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
 }
 
 ValueTree SeqFile::createBlankSectionVT(int stype){
-    ValueTree ret(stype == 0 ? "seqhdr" 
-                : stype == 1 ? "chanhdr" 
-                : stype == 2 ? "notelayer"
-                : stype == 3 ? "dyntable"
-                : stype == 4 ? "envelope"
-                : stype == 5 ? "message"
-                : stype == 6 ? "table"
-                : stype == 7 ? "align"
-                : "unknown");
+    ValueTree ret(stype >= 0 && stype <= 9 ? sTypeNames[stype] : "unknown");
     ret.setProperty(idSType, stype, nullptr);
     return ret;
 }
@@ -3452,15 +3521,15 @@ ValueTree SeqFile::createBlankSectionVT(int stype){
 /////////////////////////////////// importMus //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-
-int SeqFile::importMus(File musfile){
+int SeqFile::importMus(File musfile, bool canon){
+    isCanon = canon;
     seqname = musfile.getFileNameWithoutExtension();
     structure = ValueTree("structure");
     Random::getSystemRandom().setSeedRandomly();
     importresult = 0;
     //Load original input file
     OwnedArray<MusLine> lines;
-    MusLine initIncludeLine(this, "#include \"" + musfile.getFullPathName() + "\"", 
+    MusLine initIncludeLine(this, xl(idInclude) + " \"" + musfile.getFullPathName() + "\"", 
         musfile.getFullPathName(), 0);
     loadMusFileLines(lines, musfile.getFullPathName(), 0, &initIncludeLine);
     //Handle #include and #define.
@@ -3468,33 +3537,35 @@ int SeqFile::importMus(File musfile){
     int ln;
     for(ln=0; ln<lines.size(); ++ln){
         MusLine *line = lines[ln];
-        if(line->l.startsWith("#include ")){
+        if(line->l.startsWith(xl(idInclude) + " ")){
             String path = line->l.substring(9).trim().unquoted();
             loadMusFileLines(lines, path, ln, line);
             if(importresult >= 2) return 2;
-        }else if(line->l.startsWith("#define ")){
+        }else if(line->l.startsWith(xl(idDefine) + " ")){
             //#define TOKEN value, used widely in SFX seqs. File defining SFX
             //names-to-numbers mapping can be shared by both mus and C code.
             if(line->l.containsAnyOf("()")){
-                line->Error("This is not the C preprocessor, you can only do \"#define key value\", not \"#define macro(blah) something_with_blah\"!");
+                line->Error("This is not the C preprocessor, you can only do \""
+                    + xl(idDefine) + " key value\", not \""
+                    + xl(idDefine) + " macro(blah) something_with_blah\"!");
                 return 2;
             }
             if(line->toks.size() != 3){
-                line->Error("Expected key and value (2 other tokens) on #define!");
+                line->Error("Expected key and value (2 other tokens) on " + xl(idDefine) + "!");
                 return 2;
             }
             String key = line->toks[1];
             String value = line->toks[2];
             if(!isValidDefineKey(key)){
-                line->Error("#define key \"" + key + "\" contains invalid characters!");
+                line->Error(xl(idDefine) + " key \"" + key + "\" contains invalid characters!");
                 return 2;
             }
             if(!isValidDefineValue(value)){
-                line->Error("#define value \"" + value + "\" contains invalid characters!");
+                line->Error(xl(idDefine) + " value \"" + value + "\" contains invalid characters!");
                 return 2;
             }
-            if(defs.containsKey(key)){
-                line->Error("Duplicate definition of key \"" + key + "\", now as " 
+            if(defs.containsKey(key) && defs[key] != value){
+                line->Error("Inconsistent duplicate definition of key \"" + key + "\", now as " 
                     + value + ", previously as " + defs[key] + "!");
                 return 2;
             }
@@ -3508,19 +3579,21 @@ int SeqFile::importMus(File musfile){
         --ln;
     }
     dbgmsg(String(ln) + " lines in " + musfile.getFileName()
-        + " and its included files, besides empty/comments/#include/#define");
-    //Replace @ labels
-    dbgmsg("Replacing @ labels...");
-    String localParentLabel = "";
-    for(ln=0; ln<lines.size(); ++ln){
-        ValueTree command = parseMusCommand(lines[ln], 0, -1, false);
-        if(importresult >= 2 || !command.isValid()) return 2;
-        if(command.getType().toString() == "label" && !lines[ln]->l.containsChar('@')){
-            localParentLabel = lines[ln]->toks[0];
-        }
-        if(lines[ln]->l.containsChar('@')){
-            lines[ln]->l = lines[ln]->l.replace("@", localParentLabel);
-            lines[ln]->Tokenize();
+        + " and its included files, besides empty/comments/" + xl(idInclude) + "/" + xl(idDefine));
+    if(isCanon){
+        //Replace @ labels
+        dbgmsg("Replacing @ labels...");
+        String localParentLabel = "";
+        for(ln=0; ln<lines.size(); ++ln){
+            ValueTree command = parseMusCommand(lines[ln], 0, -1, false);
+            if(importresult >= 2 || !command.isValid()) return 2;
+            if(command.getType().toString() == "label" && !lines[ln]->l.containsChar('@')){
+                localParentLabel = lines[ln]->toks[0];
+            }
+            if(lines[ln]->l.containsChar('@')){
+                lines[ln]->l = lines[ln]->l.replace("@", localParentLabel);
+                lines[ln]->Tokenize();
+            }
         }
     }
     //Init first section
@@ -3615,10 +3688,22 @@ int SeqFile::importMus(File musfile){
             return 2;
         }else if(type == "label"){
             //Label
-            String lbl = line->toks[0];
+            String lbl = line->toks[isCanon ? 0 : 1];
             if(alllabels.contains(lbl)){
                 line->Error("Redefinition of label " + lbl + "!");
                 return 2;
+            }
+            if(!isCanon){
+                int lblstype = communitySTypeNames.indexOf(line->toks[0]);
+                if(lblstype < 0){
+                    line->Error("Internal error, unknown stype " + line->toks[0] + "!");
+                    return 2;
+                }
+                if(lblstype != stype){
+                    line->Error("Ran into future section of different stype " +
+                        String(lblstype) + ", cur stype " + String(stype) + "!");
+                    return 2;
+                }
             }
             alllabels.add(lbl);
             if(!curLabel.isEmpty()){
@@ -3643,6 +3728,7 @@ int SeqFile::importMus(File musfile){
         }else if(type == "lprint"){
             lprint = command.getProperty(idValue);
         }else if(type == "bug"){
+            TODO;
             line->Info("Setting current section to buggy mode (ignoring some types of errors)");
             section.setProperty(idQuestionableSection, true, nullptr);
         }else if(type == "align"){
@@ -3662,16 +3748,16 @@ int SeqFile::importMus(File musfile){
                 section.appendChild(cmd, nullptr);
             }
             curLabel = "";
-        }else if(type == "message"){
+        }else if(type == "string"){
             if(section.getNumChildren() > 0){
-                line->Error("Message must appear by itself in a section!");
+                line->Error("String must appear by itself in a section!");
                 return 2;
             }
             if(section.getProperty(idLabelName, "").toString().isEmpty()){
-                line->Error("Message must be preceded by message label!");
+                line->Error("String must be preceded by label!");
                 return 2;
             }
-            section.setProperty(idMessage, command.getProperty(idMessage), nullptr);
+            section.setProperty(idString, command.getProperty(idString), nullptr);
             for(int i=0; i<command.getNumChildren(); ++i){
                 section.appendChild(command.getChild(i).createCopy(), nullptr);
             }
@@ -3705,13 +3791,22 @@ int SeqFile::importMus(File musfile){
             for(fs=futuresecs.size()-1; fs > 0; --fs){ //stop at 0 if no other choices
                 if(futuresecs[fs].stype != 3 && futuresecs[fs].stype != 6) break;
             }
+            if(futuresecs[fs].stype > 9 || futuresecs[fs].stype < 0){
+                dbgmsg("Internal error, future section stype " + String(futuresecs[fs].stype) + "!");
+                return 2;
+            }
             //Find the start of the future section.
             for(ln=0; ln<lines.size(); ++ln){
-                if(lines[ln]->l.replace(":", "").trim() == futuresecs[fs].label) break;
+                if((isCanon && 
+                    lines[ln]->l.replace(":", "").trim() == futuresecs[fs].label)
+                    || (!isCanon && 
+                        lines[ln]->toks.size() == 2 && 
+                        lines[ln]->toks[0] == communitySTypeNames[futuresecs[fs].stype] &&
+                        lines[ln]->toks[1] == futuresecs[fs].label)) break;
             }
             if(ln == lines.size()){
                 dbgmsg("Could not find pointed-to section with label " 
-                    + futuresecs[fs].label + " stype " + String(futuresecs[fs].stype) + "!");
+                    + futuresecs[fs].label + " and stype " + String(futuresecs[fs].stype) + "!");
                 return 2;
             }
             curLabel = "";
@@ -3754,7 +3849,7 @@ int SeqFile::importMus(File musfile){
             for(ln=0; ln<lines.size(); ++ln){
                 if(lines[ln]->used) continue;
                 //Check for special commands.
-                if(lines[ln]->l.startsWith("#align") || lines[ln]->l.startsWith("#even")){
+                if(lines[ln]->l.startsWith(xl(idAlign2) + " ") || lines[ln]->l.startsWith(xl(idAlign16) + " ")){
                     curLabel = "";
                     section = structure.getChild(0);
                     section.setProperty(idQuestionableSection, true, nullptr);
@@ -3800,6 +3895,17 @@ int SeqFile::importMus(File musfile){
                         if(type == "wrongstype"){
                             okay = false;
                             break;
+                        }
+                        if(type == "label" && !isCanon){
+                            int lblstype = communitySTypeNames.indexOf(lines[tmpln]->toks[0]);
+                            if(lblstype < 0){
+                                line->Error("Internal error, unknown stype " + lines[tmpln]->toks[0] + "!");
+                                return 2;
+                            }
+                            if(lblstype != stype){
+                                okay = false;
+                                break;
+                            }
                         }
                         String action = command.getProperty(idAction, "");
                         if(action == "End of Data" || action == "Jump"){
@@ -4018,7 +4124,7 @@ void SeqFile::nameSections(int dialect){
             }else if(stype == 2){ name = "layer";
             }else if(stype == 3){ name = "table";
             }else if(stype == 4){ name = "envelope";
-            }else if(stype == 5){ name = "message";
+            }else if(stype == 5){ name = "string";
             }else if(stype == 6){ name = "ldstbl";
             }else{
                 name = "error";
@@ -4047,7 +4153,7 @@ void SeqFile::nameSections(int dialect){
                 if(dialect >= 2){
                     name = "_message_" + String(sec);
                 }else{
-                    name += "_msg" + String(sec);
+                    name += "_str" + String(sec);
                 }
             }else if(stype == 6){
                 if(dialect >= 2){
@@ -4296,6 +4402,7 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
                     name += (action == "Note") ? "W" : "w";
                 }else{
                     if(value < 0x80 && param.hasProperty(idDataForce2)){
+                        TODO;
                         comment += " ; FORCE LEN 2";
                     }
                 }
@@ -4339,7 +4446,10 @@ int SeqFile::findDynTableIndex(int sec){
 /////////////////////////////////// exportMus //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-int SeqFile::exportMus(File musfile, int dialect){
+int SeqFile::exportMus(File musfile, int dialect, bool sfxstyle){
+    isCanon = dialect > 0;
+    oldCanon = dialect == 2;
+    isSfx = sfxstyle;
     if(!musfile.hasWriteAccess()){
         dbgmsg("No write access to " + musfile.getFullPathName() + "!");
         return 2;
@@ -4383,7 +4493,7 @@ int SeqFile::exportMus(File musfile, int dialect){
     if(dialect == 2 || dialect == 4){
         out += ";****************************************\n";
         out += ";\tmusic data (format : mus)\n";
-        out += ";\tconverted by SEQ64 Ver 2.0, https://github.com/sauraen/seq64\n";
+        out += ";\tconverted by SEQ64 Ver 2.2, https://github.com/sauraen/seq64\n";
         out += ";\t"; out += asctime(curtime);
         out += ";****************************************\n\n\n";
     }else if(dialect == 3 || dialect == 5){
@@ -4396,19 +4506,14 @@ int SeqFile::exportMus(File musfile, int dialect){
         out += ";**********************************************\n\n";
     }else{
         out += "; Nintendo 64 Music Macro Language (Audioseq) (.mus) sequence: " + seqname + "\n";
-        out += "; Converted by SEQ64 V2.0 [https://github.com/sauraen/seq64]\n\n";
+        out += "; Converted by SEQ64 V2.2 [https://github.com/sauraen/seq64]\n\n";
     }
     int tsecnum = -1;
     int sectiongroup = -1;
     for(int sec=0; sec<structure.getNumChildren(); ++sec){
         ValueTree section = structure.getChild(sec);
         if(section.getType().toString() == "align"){
-            if((int)section.getProperty(idValue) == 16){
-                out += (dialect >= 2) ? "#evenl" : "#align16";
-            }else{
-                out += (dialect >= 2) ? "#evenw" : "#align2";
-            }
-            out += "\n\n";
+            out += xl((int)section.getProperty(idValue) == 16 ? idAlign16 : idAlign2) + "\n\n";
             continue;
         }
         int stype = section.getProperty(idSType);
@@ -4485,7 +4590,7 @@ int SeqFile::exportMus(File musfile, int dialect){
                     out += "\n";
                     lblctr = 0;
                 }
-                out += !(lblctr & 7) ? (dialect >= 2 ? "#label   " : "#address ") : ", ";
+                out += !(lblctr & 7) ? xlspc(idEntry) : ", ";
                 int s = command.getProperty(idTargetSection, -1);
                 if(s < 0 || s >= structure.getNumChildren()){
                     dbgmsg("Invalid idTargetSection " + String(s) + " in dyntable!");
@@ -4528,14 +4633,14 @@ int SeqFile::exportMus(File musfile, int dialect){
                     dbgmsg("Invalid envelope point!\n");
                     return 2;
                 }
-                out += (dialect >= 2 ? "#word\t" : "#u16 ") 
+                out += xlspc(idu16)
                     + p1.getProperty(idValue, -1).toString() + "," 
                     + p2.getProperty(idValue, 0).toString() + "\n";
             }
         }else if(stype == 5){
-            //message
-            out += (dialect >= 2 ? "#msg \"" : "#string \"") 
-                + section.getProperty(idMessage, "").toString() + "\"\n";
+            //String
+            out += xl(idString) + " \""
+                + section.getProperty(idString, "").toString() + "\"\n";
         }else if(stype == 6){
             //extable
             int lblctr = 0;
@@ -4547,7 +4652,7 @@ int SeqFile::exportMus(File musfile, int dialect){
                     out += "\n";
                     lblctr = 0;
                 }
-                out += !(lblctr & 15) ? (dialect >= 2 ? "#byte    " : "#u8 ") : ",";
+                out += !(lblctr & 15) ? xlspc(idu8) : ",";
                 out += dialect >= 2 ? "$" : "0x";
                 ValueTree param = command.getChildWithProperty(idMeaning, "Data");
                 if(!param.isValid()){
@@ -4814,17 +4919,17 @@ ValueTree SeqFile::makeBasicDataCommand(uint32_t address, int value,
     return command;
 }
 
-ValueTree SeqFile::getMessageCommand(const Array<uint8_t> &data, uint32_t address, ValueTree section){
+ValueTree SeqFile::getStringCommand(const Array<uint8_t> &data, uint32_t address, ValueTree section){
     uint8_t c = data[address];
     ValueTree command = makeBasicDataCommand(address, c, "fixed", 1);
     if(c == 0){
-        if(!section.hasProperty(idMessage)){
-            dbgmsg("Warning, empty message at " + hex(address,16) + "!");
-            section.setProperty(idMessage, "", nullptr);
+        if(!section.hasProperty(idString)){
+            dbgmsg("Warning, empty string at " + hex(address,16) + "!");
+            section.setProperty(idString, "", nullptr);
         }
         command.setProperty(idSecDone, true, nullptr);
     }else{
-        section.setProperty(idMessage, section.getProperty(idMessage, "").toString() 
+        section.setProperty(idString, section.getProperty(idString, "").toString() 
             + String::charToString(c), nullptr);
     }
     return command;
@@ -5137,7 +5242,7 @@ int SeqFile::actionTargetSType(String action, int stype, uint32_t a){
         return 2;
     }else if(action == "Set Dyntable" || action == "Seq Hdr Call Table"){ return 3;
     }else if(action == "Ptr Envelope"){    return 4;
-    }else if(action == "Ptr Message"){     return 5;
+    }else if(action == "Ptr String"){     return 5;
     }else if(action == "Ptr Other Table"){ return 6;
     }else if(action == "Ptr Self"){        return -1;
     }else if(action == "Maybe Ptr"){       return 6;
@@ -5431,7 +5536,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
         }else if(stype == 4){
             command = getEnvelopeCommand(data, a);
         }else if(stype == 5){
-            command = getMessageCommand(data, a, section);
+            command = getStringCommand(data, a, section);
         }else if(stype == 6){
             command = getOtherTableCommand(data, a);
         }else{
@@ -5496,7 +5601,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                 || action == "Ptr Seq Header" || action == "Ptr Channel Header"
                 || action == "Ptr Note Layer" 
                 || action == "Seq Hdr Call Table" || action == "Set Dyntable"
-                || action == "Ptr Envelope" || action == "Ptr Message"
+                || action == "Ptr Envelope" || action == "Ptr String"
                 || action == "Ptr Other Table" || action == "Ptr Self"
                 || action == "Maybe Ptr"){
             //Set up pointer and stype
@@ -5624,11 +5729,11 @@ void SeqFile::unusedToTableOrMsg(const Array<uint8_t> &data, Array<uint8_t> &dat
     dbgmsg("Warning: bytes " + hex(unusedstart,16) + ":" + hex(unusedend-1,16) + 
         (zeroes ? " (all zero)" : " (nonzeros)") 
         + " were not read as part of any command, converting to "
-        + (ismsg ? "message" : "Other Table"));
+        + (ismsg ? "string" : "Other Table"));
     importresult |= 1;
-    ValueTree section = ValueTree(ismsg ? "message" : "table");
+    ValueTree section = ValueTree(ismsg ? "string" : "table");
     if(ismsg){
-        section.setProperty(idMessage, 
+        section.setProperty(idString, 
             String((const char*)&(data.data())[unusedstart]), nullptr);
     }
     section.setProperty(idSType, ismsg ? 5 : 6, nullptr);
@@ -5813,7 +5918,7 @@ void SeqFile::writeCommand(Array<uint8_t> &data, uint32_t address, ValueTree com
     //Write command byte
     int d = (int)command.getProperty(idCmd);
     if(d >= 0){
-        //If the command has a command byte (dyntable, message, etc. don't)
+        //If the command has a command byte (dyntable, string, etc. don't)
         param = command.getChildWithProperty(idDataSrc, "offset");
         if(param.isValid()){
             d += (int)param.getProperty(idValue);

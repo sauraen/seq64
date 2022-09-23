@@ -41,9 +41,10 @@ static void displayHelpText(){
     "abi, game      String          Specifies ABI definition. An ABI XML file is\n"
     "                               searched for that starts with or contains\n"
     "                               this string. E.g. \"1\", \"zelda\".\n"
-    "dialect        String          Dialect for mus export. Must contain\n"
-    "                               \"community\", \"canon\", or \"old\". Also\n"
-    "                               must contain \"music\" or \"sfx\".\n"
+    "dialect        String          Dialect for mus import or export. Must equal\n"
+    "                               \"community\", \"canon\", or \"old\""
+    "style          String          Style for mus export. Must equal \"music\""
+    "                               or \"sfx\".\n"
     "pref           bool (true)     (MIDI import) Read .pref file next to .mid\n"
     "smartloop      bool (true)     (MIDI import) Loop body of music seq after intro\n"
     "reladdr        bool (false)    (MIDI import) Use only rel addr commands\n"
@@ -66,7 +67,7 @@ static void displayHelpText(){
     "The operation performed (e.g. mid to com) is determined by the file\n"
     "extensions of the input and output files.\n"
     "MIDI: .mid, .midi, .rmi\n"
-    "Music Macro Language assembly: .mus, .mml, .asm, .s\n"
+    "Music Macro Language assembly: .mus, .mml, .seq, .asm, .s\n"
     "Music Macro Language binary: .com, .aseq, .m64 (grudgingly), .bin, .dat\n"
     "\n"
     "The return code from seq64 is 0 for OK or warnings, 1 for errors,\n"
@@ -85,6 +86,7 @@ static bool isMidiFile(String filename){
 static bool isMusFile(String filename){
     return filename.endsWithIgnoreCase(".mus") 
         || filename.endsWithIgnoreCase(".mml") 
+        || filename.endsWithIgnoreCase(".seq") 
         || filename.endsWithIgnoreCase(".asm") 
         || filename.endsWithIgnoreCase(".s");
 }
@@ -106,6 +108,7 @@ static int getOp(String filename){
 int seq64_cli(const StringArray &args){
     String abistr, instr, outstr;
     int dialect = -1;
+    int style = -1;
     
     ValueTree midiopts("midiopts");
     midiopts.setProperty("pref", true, nullptr);
@@ -166,22 +169,23 @@ int seq64_cli(const StringArray &args){
             }
             abistr = value;
         }else if(key == "dialect"){
-            if(value.containsIgnoreCase("community")){
+            if(value == "community"){
                 dialect = 0;
-            }else if(value.containsIgnoreCase("canon")){
+            }else if(value == "canon"){
+                dialect = 1;
+            }else if(value == "old"){
                 dialect = 2;
-            }else if(value.containsIgnoreCase("old")){
-                dialect = 4;
             }else{
-                std::cout << "Invalid dialect, must contain \"community\", \"canon\", or \"old\"!\n";
+                std::cout << "Invalid dialect, must be \"community\", \"canon\", or \"old\"!\n";
                 return -1;
             }
-            if(value.containsIgnoreCase("music")){
-                dialect |= 0;
-            }else if(value.containsIgnoreCase("sfx")){
-                dialect |= 1;
+        }else if(key == "style"){
+            if(value == "music"){
+                style = 0;
+            }else if(value == "sfx"){
+                style = 1;
             }else{
-                std::cout << "Invalid dialect, must contain \"music\" or \"sfx\"!\n";
+                std::cout << "Invalid style, must be \"music\" or \"sfx\"!\n";
                 return -1;
             }
         }else{
@@ -254,8 +258,12 @@ int seq64_cli(const StringArray &args){
     if(inop == outop){
         std::cout << "Requested conversion between an input and output of the same format, valid but useless!\n";
     }
-    if(outop == 1 && dialect < 0){
-        std::cout << "Requested mus output, but dialect not specified!\n";
+    if((inop == 1 || outop == 1) && dialect < 0){
+        std::cout << "Requested mus input or output, but dialect not specified!\n";
+        return -1;
+    }
+    if(outop == 1 && style < 0){
+        std::cout << "Requested mus output, but style not specified!\n";
         return -1;
     }
     
@@ -291,7 +299,7 @@ int seq64_cli(const StringArray &args){
     if(inop == 0){
         ret = seq.importMIDI(infile, midiopts);
     }else if(inop == 1){
-        ret = seq.importMus(infile);
+        ret = seq.importMus(infile, dialect > 0);
     }else{
         ret = seq.importCom(infile);
     }
@@ -299,7 +307,7 @@ int seq64_cli(const StringArray &args){
     if(outop == 0){
         ret = seq.exportMIDI(outfile, midiopts);
     }else if(outop == 1){
-        ret = seq.exportMus(outfile, dialect);
+        ret = seq.exportMus(outfile, dialect, style > 0);
     }else if(outop == 2){
         ret = seq.exportCom(outfile);
     }

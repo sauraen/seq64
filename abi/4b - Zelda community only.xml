@@ -512,7 +512,7 @@
            validinseq="1">
     <parameter name="Semitones" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="239" name="print" action="Ptr Message" validinseq="1" comments="No actual operation.  Might be used to show specific log values in the audio debugger.">
+  <command cmd="239" name="print" action="Ptr String" validinseq="1" comments="No actual operation.  Might be used to show specific log values in the audio debugger.">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
     <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
   </command>

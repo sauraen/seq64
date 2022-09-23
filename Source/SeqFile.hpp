@@ -41,8 +41,8 @@ public:
     //Results are 0 okay, 1 warnings, 2+ errors.
     int importMIDI(File midifile, ValueTree midiopts);
     int exportMIDI(File midifile, ValueTree midiopts);
-    int importMus(File musfile);
-    int exportMus(File musfile, int dialect);
+    int importMus(File musfile, bool canon);
+    int exportMus(File musfile, int dialect, bool sfxstyle);
     int importCom(File comfile);
     int exportCom(File comfile);
     
@@ -58,6 +58,8 @@ private:
     StringArray tsecnames;
     bool tsecnames_generated;
     int importresult;
+    
+    bool isCanon, oldCanon, isSfx;
     
     String debug_messages;
     CriticalSection debug_mutex;
@@ -144,7 +146,12 @@ private:
         bool questionable;
     };
     StringPairArray altnames;
+    
+    static const StringArray sTypeNames;
+    static const StringArray communitySTypeNames;
 
+    String xl(Identifier base); //"Translate" base name to community or canon
+    String xlspc(Identifier base); //Translate with canon unique spaces after
     void loadMusFileLines(OwnedArray<MusLine> &lines, String path, int insertIdx,
         MusLine *includeLine);
     bool parseCanonNoteName(String s, int &noteValue);
@@ -155,8 +162,8 @@ private:
     bool getMusHex(String s, int &value);
     bool getMusInt(String s, int &value);
     int parseNormalParam(const MusLine *line, String s, String datasrc, 
-        int datalen, bool allowNoteName = false, bool canon = false, 
-        bool wideDelay = false, bool *dataforce2 = nullptr);
+        int datalen, bool allowNoteName = false,
+        bool twoByteDelay = false, bool *dataforce2 = nullptr);
     ValueTree parseMusCommand(const MusLine *line, int stype, int dtstype,
         bool wrongSTypeErrors);
     void checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
@@ -195,7 +202,7 @@ private:
     ValueTree initCommand(uint32_t address);
     ValueTree getDynTableCommand(const Array<uint8_t> &data, uint32_t address, ValueTree section);
     ValueTree getEnvelopeCommand(const Array<uint8_t> &data, uint32_t address);
-    ValueTree getMessageCommand(const Array<uint8_t> &data, uint32_t address, ValueTree section);
+    ValueTree getStringCommand(const Array<uint8_t> &data, uint32_t address, ValueTree section);
     ValueTree getOtherTableCommand(const Array<uint8_t> &data, uint32_t address);
     
     //<0: error, 1: section escape, 2: restart_parsing
@@ -281,5 +288,19 @@ private:
     static Identifier idMessage;
     static Identifier idRecurVisited;
     static Identifier idQuestionableSection;
+    
+    static Identifier idInclude;
+    static Identifier idDefine;
+    static Identifier idEntry;
+    static Identifier idString;
+    static Identifier idPad;
+    static Identifier idu8;
+    static Identifier idVariable;
+    static Identifier idu16;
+    static Identifier idAlign2;
+    static Identifier idAlign16;
+    static Identifier idLPrintOn;
+    static Identifier idLPrintOff;
+    static Identifier idBug;
     
 };

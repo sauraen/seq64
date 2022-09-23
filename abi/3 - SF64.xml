@@ -75,8 +75,8 @@
            comments="Canon command comment: &quot;4bit Packed Data (status+phaseside)&quot;&#10;Canon other info: 0 = &quot;OVR&quot; = &quot;NON&quot;, 1=&quot;L&quot;, 2=&quot;R&quot;, 4=&quot;DEF&quot;, 8=&quot;OR&quot;, 12=&quot;XOR&quot;">
     <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="207" name="lprint" action="Ptr Message" cname="dprintn"
-           validintrk="1" comments="Print debug message">
+  <command cmd="207" name="lprint" action="Ptr String" cname="dprintn"
+           validintrk="1" comments="Print debug string">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
     <parameter name="Unk 0 or 3" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
@@ -429,7 +429,7 @@
            cname="transchg">
     <parameter datasrc="fixed" datalen="1" name="Semitones" meaning="None"/>
   </command>
-  <command cmd="239" name="print" action="Ptr Message" cname="dprint" comments="Print debug message"
+  <command cmd="239" name="print" action="Ptr String" cname="dprint" comments="Print debug string"
            validinseq="1" validinchn="1">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
     <parameter name="Unk 0 or 3" meaning="None" datasrc="fixed" datalen="1"/>

@@ -520,7 +520,7 @@
            validinseq="1" cname="transchg">
     <parameter name="Semitones" meaning="None" datasrc="fixed" datalen="1"/>
   </command>
-  <command cmd="239" name="print" action="Ptr Message" cname="dprint" validinseq="1"
+  <command cmd="239" name="print" action="Ptr String" cname="dprint" validinseq="1"
            comments="No actual operation.  Might be used to show specific log values in the audio debugger.">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
     <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
