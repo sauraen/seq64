@@ -139,9 +139,9 @@
            oname="tblset">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="195" name="shorton" action="No Action" comments="Set notes for this channel to use &#8220;short notes&#8221; format."
+  <command cmd="195" name="shorton" action="Set Short Notes" comments="Set notes for this channel to use &#8220;short notes&#8221; format."
            validinchn="1" oname="Amode"/>
-  <command cmd="196" name="shortoff" action="Enable Long Notes" validinchn="1"
+  <command cmd="196" name="shortoff" action="Set Long Notes" validinchn="1"
            comments="Set notes for this channel to use &#8220;large notes&#8221; format. SM64 does this for all channels."
            oname="Bmode"/>
   <command cmd="197" name="dynsetdyntable" action="Dyntable from Dyntable"

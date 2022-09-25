@@ -20,6 +20,21 @@
     <parameter datasrc="fixed" datalen="1" name="Velocity" meaning="Velocity"/>
     <parameter datasrc="fixed" datalen="1" name="Gate" meaning="Gate Time"/>
   </command>
+  <command cmd="0" name="snoted" action="Short Note" cmdend="63" validintrk="1"
+           comments="Short note, with delay explicitly specified.">
+    <parameter name="Note" meaning="Note" datasrc="offset"/>
+    <parameter name="Delay" meaning="Delay" datasrc="variable"/>
+  </command>
+  <command cmd="64" name="snotedef" action="Short Note" cmdend="127" validintrk="1"
+           comments="Short note, with default delay (set by shortdelay).">
+    <parameter name="Note" meaning="Note" datasrc="offset"/>
+    <parameter name="ModeDefault" meaning="Mode" datasrc="constant" datalen="0"/>
+  </command>
+  <command cmd="128" name="snotelast" action="Short Note" cmdend="191" validintrk="1"
+           comments="Short note, with a delay equal to the last delay set by a snoted command. Using snotedef does not change the last delay.">
+    <parameter name="Note" meaning="Note" datasrc="offset"/>
+    <parameter name="ModeLast" meaning="Mode" datasrc="constant" datalen="1"/>
+  </command>
   <command cmd="192" name="ldelay" action="Delay" validintrk="1" comments="Delay for N ticks"
            cname="XXX">
     <parameter datasrc="variable" name="Delay" meaning="Delay"/>
@@ -157,9 +172,9 @@
            oname="tblset">
     <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
   </command>
-  <command cmd="195" name="shorton" action="No Action" comments="Set notes for this channel to use &#8220;short notes&#8221; format."
+  <command cmd="195" name="shorton" action="Set Short Notes" comments="Set notes for this channel to use &#8220;short notes&#8221; format."
            validinchn="1" oname="Amode"/>
-  <command cmd="196" name="shortoff" action="Enable Long Notes" validinchn="1"
+  <command cmd="196" name="shortoff" action="Set Long Notes" validinchn="1"
            comments="Set notes for this channel to use &#8220;large notes&#8221; format. SM64 does this for all channels."
            oname="Bmode"/>
   <command cmd="197" name="dynsetdyntable" action="Dyntable from Dyntable"

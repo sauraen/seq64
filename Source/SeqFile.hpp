@@ -138,10 +138,37 @@ private:
             return ValueTree(); //optional to use in parseMusCommand
         }
     };
+    
+    enum ShortMode {
+        SM_unspecified,
+        SM_long,
+        SM_short,
+        SM_conflict
+    };
+    String GetShortModeLetter(ShortMode sm){
+        switch(sm){
+        case SM_unspecified: return "U";
+        case SM_long:        return "L";
+        case SM_short:       return "S";
+        case SM_conflict:    return "C";
+        default:             return "?";
+        }
+    }
+    String GetShortModeDesc(ShortMode sm){
+        switch(sm){
+        case SM_unspecified: return "unspecified short/long notes";
+        case SM_long:        return "long notes";
+        case SM_short:       return "short notes";
+        case SM_conflict:    return "conflicting short/long notes";
+        default:             return "Error";
+        }
+    }
+    
     struct FutureSection {
         String label;
         int stype;
         bool questionable;
+        ShortMode shortmode;
     };
     StringPairArray altnames;
 
@@ -158,20 +185,27 @@ private:
         int datalen, bool allowNoteName = false, bool canon = false, 
         bool wideDelay = false, bool *dataforce2 = nullptr);
     ValueTree parseMusCommand(const MusLine *line, int stype, int dtstype,
-        bool wrongSTypeErrors);
+        ShortMode shortmode, bool wrongSTypeErrors);
     void checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
-        ValueTree section, ValueTree command);
+        ValueTree section, ValueTree command, ShortMode shortmode);
     
     //For importMus and importCom
+    
+    struct DynTableSettings {
+        int stype;
+        ShortMode shortmode;
+    };
+    
     ValueTree createBlankSectionVT(int stype);
+    void handleShortNoteChanges(ValueTree command, int stype, ShortMode &shortmode);
     ValueTree makeDynTableCommand(uint32_t address, var target, int dtstype, 
             int dtdynstype);
     ValueTree makeEnvelopeCommand(uint32_t address, int16_t rate, uint16_t level);
     ValueTree makeBasicDataCommand(uint32_t address, int value, 
             String datasrc, int datalen);
     void clearRecurVisited();
-    bool findDynTableType(int dtsec, const StringArray &refs);
-    int findNextDynTableType(int s, int c);
+    bool findDynTableSettings(int dtsec, const StringArray &refs);
+    DynTableSettings findNextDynTableSettings(int s, int c);
     bool getSectionAndCmd(ValueTree command, int &s, int &c);
     
     //For exportMus
@@ -190,8 +224,8 @@ private:
     int findDynTableIndex(int sec);
     
     //For importCom
-    ValueTree getDescription(uint8_t firstbyte, int stype); //Stype: 0 seq hdr, 1 chn hdr, 2 track data
-    ValueTree getCommand(const Array<uint8_t> &data, uint32_t address, int stype);
+    ValueTree getDescription(uint8_t firstbyte, int stype, ShortMode shortmode);
+    ValueTree getCommand(const Array<uint8_t> &data, uint32_t address, int stype, ShortMode shortmode);
     ValueTree initCommand(uint32_t address);
     ValueTree getDynTableCommand(const Array<uint8_t> &data, uint32_t address, ValueTree section);
     ValueTree getEnvelopeCommand(const Array<uint8_t> &data, uint32_t address);
@@ -259,6 +293,7 @@ private:
     static Identifier idValidInTrk;
     static Identifier idChannel;
     static Identifier idLayer;
+    static Identifier idShortMode;
     static Identifier idTSection;
     static Identifier idSection;
     static Identifier idSectionName;
