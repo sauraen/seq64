@@ -175,7 +175,7 @@
   <command cmd="195" name="shorton" action="Set Short Notes" comments="Set notes for this channel to use &#8220;short notes&#8221; format."
            validinchn="1" oname="Amode"/>
   <command cmd="196" name="shortoff" action="Set Long Notes" validinchn="1"
-           comments="Set notes for this channel to use &#8220;large notes&#8221; format. SM64 does this for all channels."
+           comments="Set notes for this channel to use &#8220;long notes&#8221; format. SF64 does this for all channels."
            oname="Bmode"/>
   <command cmd="197" name="dynsetdyntable" action="Dyntable from Dyntable"
            validinchn="1" comments="If Q != -1, set dyntable to point to position dyntable[Q] in the sequence data."
