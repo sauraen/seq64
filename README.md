@@ -17,7 +17,7 @@ Click [the Wiki tab](https://github.com/sauraen/seq64/wiki) for articles on SEQ6
 
 ## .com? .mus? What is all this? Where do I load a ROM?
 
-You don't load a ROM in SEQ64 V2. `.com`, `.aseq`, and `.m64` are all the same thing (Music Macro Language binary). `.mus` is the text-based assembly language version of this same data. The rest of this README explains in more detail. If you are using an old-school toolchain which doesn't split the ROM into its constituent files, but where you just edit the whole ROM in one tool after another, use SEQ64 V1.
+You don't load a ROM in SEQ64 V2. `.com`, `.aseq`, and `.m64` are all the same thing (Music Macro Language binary). `.mus` is the text-based assembly language version of this same data. The rest of this README explains in more detail. If you are using an old-school toolchain which doesn't split the ROM into its constituent files, but where you just edit the whole ROM in one tool after another, use SEQ64 V1.5.
 
 ## Background
 
@@ -27,9 +27,13 @@ Music Macro Language exists in two forms: a text-based assembly language in file
 
 ## SEQ64 V2
 
-SEQ64 V2 converts among any of these three formats: MIDI (`.mid`), Music Macro Language assembly (`.mus`), and Music Macro Language binary (`.com`/`.aseq`). This means that existing sequences can be exported and edited--either to MIDI for music or to assembly for sound effects and technical sequences--and then re-imported into the game. Crucially, SEQ64 aims to--and succeeds in several key cases--match the game data byte-for-byte when converted from binary to assembly or MIDI and back again. This is no easy task: for example, the sound effects sequence from Ocarina of Time is over 17,000 lines long, and contains bugs (in the actual in-game version) which make the sequence technically invalid. Nevertheless, workarounds were put in place, and SEQ64 matches on `.com` -> `.mus` -> `.com` for the sound effects sequences in Super Mario 64, Star Fox 64, and Ocarina of Time.
+SEQ64 V2 converts among any of these three formats: MIDI (`.mid`), Music Macro Language assembly (`.mus`), and Music Macro Language binary (`.com`/`.aseq`). This means that existing sequences can be exported and edited--either to MIDI for music or to assembly for sound effects and technical sequences--and then re-imported into the game. Crucially, SEQ64 aims to--and succeeds in several key cases--match the game data byte-for-byte when converted from binary to assembly or MIDI and back again. This is no easy task: for example, the sound effects sequence from Ocarina of Time is over 17,000 lines long, and contains bugs (in the actual in-game version) which make the sequence technically invalid. Nevertheless, workarounds were put in place, and SEQ64 matches on `.com` -> `.mus` -> `.com` for the sound effects sequences in:
+- Super Mario 64
+- Star Fox 64
+- Mario Kart 64 (use Star Fox 64 ABI)
+- Ocarina of Time
 
-SEQ64 V2 does NOT currently include any bank editing or MIDI instrument number conversion to General MIDI. If you need these features, please use SEQ64 V1. Future work is (at least theoretically) planned on SEQ64 to provide comprehensive sample/bank library management--we'll see if this ever ends up happening.
+SEQ64 V2 does NOT currently include any bank editing or MIDI instrument number conversion to General MIDI. If you need these features, please use SEQ64 V1.5. Future work is (at least theoretically) planned on SEQ64 to provide comprehensive sample/bank library management--we'll see if this ever ends up happening.
 
 ## SEQ64 V1
 
@@ -47,10 +51,10 @@ The following ABI files are currently provided, and are known to be functionally
 - Super Mario 64
 - Super Mario 64 EU
 - Star Fox 64
+- Mario Kart 64 (use Star Fox 64 ABI)
 - Ocarina of Time (created/tested on V1.0, will work on all versions)
 
 The following other games definitely use Music Macro Language. For music sequences, the ABI file listed in parentheses will probably be close enough to work. (This is untested, if this is wrong or you have more info, please contact me)
-- Mario Kart 64 (SM64)
 - Wave Race 64 (SM64)
 - F-Zero X (SF64)
 - Yoshi's Story (OoT)
