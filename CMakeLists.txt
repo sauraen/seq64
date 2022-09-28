@@ -23,7 +23,8 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
 set(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} CACHE STRING "" FORCE)
 
-project(SEQ64 VERSION 2.1.4)
+# Don't forget to also change the version in JuceHeaderConsole.hpp
+project(SEQ64 VERSION 2.2.0)
 
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/juce/CMakeLists.txt")
     message(FATAL_ERROR "You forgot to get the Git submodules, please run git submodule update --init")

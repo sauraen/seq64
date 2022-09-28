@@ -51,6 +51,7 @@ Identifier SeqFile::idValidInChn("validinchn");
 Identifier SeqFile::idValidInTrk("validintrk");
 Identifier SeqFile::idChannel("channel");
 Identifier SeqFile::idLayer("layer");
+Identifier SeqFile::idShortMode("shortmode");
 Identifier SeqFile::idTSection("tsection");
 Identifier SeqFile::idSection("section");
 Identifier SeqFile::idSectionName("sectionname");
@@ -133,6 +134,7 @@ String SeqFile::getInternalString(){
     String ret;
     for(int i=0; i<structure.getNumChildren(); ++i){
         ValueTree section = structure.getChild(i);
+        int stype = section.getProperty(idSType);
         if(section.hasProperty(idLabelName)){
             ret += "[" + section.getProperty(idLabelName).toString() + "] ";
         }
@@ -144,6 +146,8 @@ String SeqFile::getInternalString(){
         if((int)section.getProperty(idLayer, -1) >= 0){
             ret += ", layer " + section.getProperty(idLayer, -1).toString();
         }
+        ret += " [" + GetShortModeLetter(
+            (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified)) + "]";
         ret += "\n";
         if(section.hasProperty(idString)){
             ret += "  String: " + section.getProperty(idString).toString() + "\n";
@@ -170,6 +174,8 @@ String SeqFile::getInternalString(){
                 if(paramdesc == "None") paramdesc = parammeaning;
                 cmddesc += ", " + paramdesc + " " + hexauto((int)param.getProperty(idValue, 0x1337));
             }
+            if(stype == 1) cmddesc = "[" + GetShortModeLetter(
+                (ShortMode)(int)cmd.getProperty(idShortMode, SM_unspecified)) + "] " + cmddesc;
             if(cmd.hasProperty(idLabelName)) cmddesc = "[" + cmd.getProperty(idLabelName).toString() + "] " + cmddesc;
             //if(cmd.hasProperty(idHash)) cmddesc = cmd.getProperty(idHash).toString() + " " + cmddesc;
             if(cmd.hasProperty(idAddress)) cmddesc = hex((int)cmd.getProperty(idAddress),16) + " " + cmddesc;
@@ -533,7 +539,7 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCC
         param2 = command2.getChildWithProperty(idMeaning, "Value");
         if(!param1.isValid() || !param2.isValid()) return false;
         return ((int)param1.getProperty(idValue, -1234) == (int)param2.getProperty(idValue, -8971));
-    }else if(action == "Enable Long Notes"){
+    }else if(action == "Set Short Notes" || action == "Set Long Notes"){
         return true;
     }else{
         return false;
@@ -926,6 +932,8 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     !metatext.startsWithIgnoreCase("loop")) continue;
             }else if(metatype == 0x01){
                 if(!metatext.startsWithIgnoreCase("block:")) continue;
+            }else{
+                continue;
             }
         }else if((bool)midiopts.getProperty("flstudio") && msg.isController() 
                 && msg.getControllerNumber() == 115){
@@ -953,6 +961,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
         }else if(metatext.startsWithIgnoreCase("block:")){
             metatext = metatext.substring(6);
         }
+        metatext = metatext.retainCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_");
         tsecnames.set(tsectimes.size()-1, metatext);
     }
     if(tsectimes.size() != tsecnames.size()){
@@ -1351,9 +1360,9 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                 break;
             }
             cmd = 0;
-            //Enable Long Notes, previously known as Chn Reset (C4)
+            //Set Long Notes, previously known as Chn Reset (C4)
             if(sectimeidx == 0){
-                want = wantAction("Enable Long Notes", 1);
+                want = wantAction("Set Long Notes", 1);
                 section.addChild(createCommand(want), cmd, nullptr);
                 cmd++;
             }
@@ -2329,8 +2338,11 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                     + " in stype " + String(stype));
         }else if(action == "No Action" || action == "Mute Behavior" || action == "Mute Scale"
                 || action == "Channel Enable" || action == "Channel Disable"
-                || action == "Enable Long Notes"){
+                || action == "Set Long Notes"){
             //silently ignore
+        }else if(action == "Set Short Notes"){
+            dbgmsg("MIDI export of short notes format not currently supported!");
+            return 2;
         }else if(action == "Jump" || action == "Branch" || action == "Seq Hdr Call Table"
                 || action == "Set Dyntable"
                 || action == "Channel from Dyntable" || action == "Layer from Dyntable"
@@ -3051,7 +3063,7 @@ int SeqFile::parseNormalParam(const MusLine *line, String s, String datasrc,
 }
 
 ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype, 
-        bool wrongSTypeErrors){
+        ShortMode shortmode, bool wrongSTypeErrors){
     ValueTree ret;
     String noCommaError = "There is no comma between a hash command and its "
         "first parameter" + String(isCanon ? 
@@ -3332,6 +3344,13 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         ret = possibleCmds.getChild(0);
         possibleCmds.removeChild(0, nullptr); //ret will get added to structure later, can't have two parents
     }
+    String action = ret.getProperty(idAction).toString();
+    if(wrongSTypeErrors && (action == "Note" || action == "Short Note") && (
+        shortmode == SM_conflict || shortmode == SM_unspecified ||
+            (action == "Note" && shortmode == SM_short) ||
+            (action == "Short Note" && shortmode == SM_long))){
+        line->Warning(action + " in section with " + GetShortModeDesc(shortmode));
+    }
     //Parse parameters
     int t = 1;
     for(int p=0; p<ret.getNumChildren(); ++p){
@@ -3347,7 +3366,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
         }
         if(meaning == "Note" && noteValue != -1000){
             //Canon note value encoded in command token, no separate parameter
-            jasert(isCanon);
+            if(!isCanon) return line->Error("Internal error with canon notes!");
             value = noteValue;
             param.setProperty(idValue, noteValue, nullptr);
         }else{
@@ -3393,7 +3412,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
                     if(importresult >= 2) return ValueTree();
                     ret.setProperty(idTargetCmdByte, value, nullptr);
                 }
-                if(ret.getProperty(idAction).toString() == "Maybe Ptr" && (getMusHex(s, value) || getMusInt(s, value))){
+                if(action == "Maybe Ptr" && (getMusHex(s, value) || getMusInt(s, value))){
                     line->Info("Maybe Ptr is a regular parameter, not a pointer");
                     param.setProperty(idValue, value, nullptr);
                 }else if(!isValidLabel(s)){
@@ -3438,7 +3457,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
 }
 
 void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &fs, 
-        ValueTree section, ValueTree command){
+        ValueTree section, ValueTree command, ShortMode shortmode){
     if(!command.hasProperty(idTargetSection)) return;
     String tgt = command.getProperty(idTargetSection);
     String action = command.getProperty(idAction);
@@ -3463,7 +3482,8 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
         line->Error("Unknown future section stype!");
         return;
     }
-    for(int sec=0; sec<structure.getNumChildren(); ++sec){
+    ValueTree targetsection;
+    for(int sec=0; sec<structure.getNumChildren() && !targetsection.isValid(); ++sec){
         ValueTree tmpsec2 = structure.getChild(sec);
         if(tmpsec2.getProperty(idLabelName, "").toString() == tgt){
             if(stype == 6) return;
@@ -3471,8 +3491,10 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
                 line->Error("Conflicting stype for target label " + tgt 
                     + ", section already parsed as " + tmpsec2.getProperty(idSType).toString()
                     + ", now referenced as " + String(stype) + "!");
+                return;
             }
-            return;
+            targetsection = tmpsec2;
+            break;
         }
         for(int cmd=0; cmd<tmpsec2.getNumChildren(); ++cmd){
             ValueTree command = tmpsec2.getChild(cmd);
@@ -3482,10 +3504,22 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
                     line->Error("Conflicting stype for target label " + tgt 
                         + ", found within section already parsed as " + tmpsec2.getProperty(idSType).toString()
                         + ", now referenced as " + String(stype) + "!");
+                    return;
                 }
-                return;
+                targetsection = tmpsec2;
+                break;
             }
         }
+    }
+    if(targetsection.isValid()){
+        ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, SM_unspecified);
+        if(tgtshortmode == SM_unspecified){
+            targetsection.setProperty(idShortMode, shortmode, nullptr);
+        }else if(tgtshortmode != shortmode){
+            line->Info("Section " + tgt + " short mode is conflicting");
+            targetsection.setProperty(idShortMode, SM_conflict, nullptr);
+        }
+        return;
     }
     for(int i=0; i<fs.size(); ++i){
         if(fs[i].label == tgt){
@@ -3499,8 +3533,14 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
                 line->Error("Conflicting stype for target label " + tgt 
                     + ", previously referenced as " + String(fs[i].stype)
                     + ", now referenced as " + String(stype) + "!");
+                return;
             }
-            return;
+            if(fs[i].shortmode == SM_unspecified){
+                fs.getReference(i).shortmode = shortmode;
+            }else if(fs[i].shortmode != shortmode){
+                line->Info("Section " + tgt + " short mode is conflicting");
+                fs.getReference(i).shortmode = SM_conflict;
+            }
         }
     }
     //dbgmsg("Added future section " + tgt + " stype " + String(stype));
@@ -3508,6 +3548,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
     f.label = tgt;
     f.stype = stype;
     f.questionable = section.hasProperty(idQuestionableSection);
+    f.shortmode = shortmode;
     fs.add(f);
 }
 
@@ -3515,6 +3556,20 @@ ValueTree SeqFile::createBlankSectionVT(int stype){
     ValueTree ret(stype >= 0 && stype <= 9 ? sTypeNames[stype] : "unknown");
     ret.setProperty(idSType, stype, nullptr);
     return ret;
+}
+
+void SeqFile::handleShortNoteChanges(ValueTree command, int stype, ShortMode &shortmode){
+    String action = command.getProperty(idAction, "Unknown").toString();
+    if(action == "Set Short Notes" || action == "Set Long Notes"){
+        if(stype != 1){
+            dbgmsg("Set Short/Long Notes cmd not in channel header!");
+            importresult |= 2;
+        }
+        shortmode = action == "Set Short Notes" ? SM_short : SM_long;
+    }
+    if(stype == 1){
+        command.setProperty(idShortMode, (int)shortmode, nullptr);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3585,7 +3640,7 @@ int SeqFile::importMus(File musfile, bool canon){
         dbgmsg("Replacing @ labels...");
         String localParentLabel = "";
         for(ln=0; ln<lines.size(); ++ln){
-            ValueTree command = parseMusCommand(lines[ln], 0, -1, false);
+            ValueTree command = parseMusCommand(lines[ln], 0, -1, SM_unspecified, false);
             if(importresult >= 2 || !command.isValid()) return 2;
             if(command.getType().toString() == "label" && !lines[ln]->l.containsChar('@')){
                 localParentLabel = lines[ln]->toks[0];
@@ -3609,6 +3664,7 @@ int SeqFile::importMus(File musfile, bool canon){
     altnames.clear();
     String curLabel = "";
     bool lprint = false;
+    ShortMode shortmode = SM_unspecified;
     while(true){
         MusLine *line;
         ValueTree command;
@@ -3667,7 +3723,7 @@ int SeqFile::importMus(File musfile, bool canon){
                 //Actual function of #lprinton/#lprintoff unknown, this is a guess.
                 line->Print();
             }
-            command = parseMusCommand(line, stype, dtstype, true);
+            command = parseMusCommand(line, stype, dtstype, shortmode, true);
             if(importresult >= 2 || !command.isValid()) return 2;
             type = command.getType().toString();
         }
@@ -3744,7 +3800,9 @@ int SeqFile::importMus(File musfile, bool canon){
                     cmd.setProperty(idLabelName, curLabel, nullptr);
                     curLabel = "";
                 }
-                checkAddFutureSection(line, futuresecs, section, cmd);
+                checkAddFutureSection(line, futuresecs, section, cmd, shortmode);
+                handleShortNoteChanges(cmd, stype, shortmode);
+                if(importresult >= 2) return 2;
                 section.appendChild(cmd, nullptr);
             }
             curLabel = "";
@@ -3770,7 +3828,8 @@ int SeqFile::importMus(File musfile, bool canon){
             }
             command.setProperty(idAddress, ln, nullptr);
             section.appendChild(command, nullptr);
-            checkAddFutureSection(line, futuresecs, section, command);
+            checkAddFutureSection(line, futuresecs, section, command, shortmode);
+            handleShortNoteChanges(command, stype, shortmode);
             if(importresult >= 2) return 2;
             String action = command.getProperty(idAction);
             if(action == "End of Data" || action == "Jump"){
@@ -3813,6 +3872,8 @@ int SeqFile::importMus(File musfile, bool canon){
             stype = futuresecs[fs].stype;
             section = createBlankSectionVT(stype);
             section.setProperty(idAddress, ln, nullptr);
+            section.setProperty(idShortMode, futuresecs[fs].shortmode, nullptr);
+            shortmode = futuresecs[fs].shortmode;
             if(futuresecs[fs].questionable){
                 section.setProperty(idQuestionableSection, true, nullptr);
             }
@@ -3830,7 +3891,7 @@ int SeqFile::importMus(File musfile, bool canon){
                         }
                     }
                 }
-                if(!findDynTableType(structure.getNumChildren()-1, refs)) return 2;
+                if(!findDynTableSettings(structure.getNumChildren()-1, refs)) return 2;
                 dtstype = section.getProperty(idDynTableSType, -1);
                 if(dtstype == 3){
                     dbgmsg("Double-dynamic commands not yet fully supported!");
@@ -3850,12 +3911,14 @@ int SeqFile::importMus(File musfile, bool canon){
                 if(lines[ln]->used) continue;
                 //Check for special commands.
                 if(lines[ln]->l.startsWith(xl(idAlign2) + " ") || lines[ln]->l.startsWith(xl(idAlign16) + " ")){
+                    //TODO: I don't know what the point of this is.
                     curLabel = "";
                     section = structure.getChild(0);
                     section.setProperty(idQuestionableSection, true, nullptr);
                     stype = 0;
                     dtstype = -1;
                     dtdynstype = -1;
+                    shortmode = SM_unspecified;
                     continueParsing = true;
                     break;
                 }
@@ -3874,6 +3937,12 @@ int SeqFile::importMus(File musfile, bool canon){
                     section.setProperty(idQuestionableSection, true, nullptr);
                     curLabel = "";
                     stype = section.getProperty(idSType);
+                    ValueTree lastchild = section.getChild(section.getNumChildren()-1);
+                    if(lastchild.hasProperty(idShortMode)){
+                        shortmode = (ShortMode)(int)lastchild.getProperty(idShortMode);
+                    }else{
+                        shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
+                    }
                     dtstype = -1; //Jumps can't exist in dyntables
                     dtdynstype = -1;
                     continueParsing = true;
@@ -3886,7 +3955,7 @@ int SeqFile::importMus(File musfile, bool canon){
                 for(stype=0; stype<=6; ++stype){
                     bool okay = true;
                     for(int tmpln=ln; tmpln<lines.size() && !lines[tmpln]->used; ++tmpln){
-                        command = parseMusCommand(lines[tmpln], stype, 1, false);
+                        command = parseMusCommand(lines[tmpln], stype, 1, SM_unspecified, false);
                         if(importresult >= 2 || !command.isValid()){
                             dbgmsg("Syntax error--not wrong stype--encountered during speculative parsing!");
                             return 2;
@@ -3933,6 +4002,8 @@ int SeqFile::importMus(File musfile, bool canon){
                     section = createBlankSectionVT(stype);
                     section.setProperty(idAddress, ln, nullptr);
                     section.setProperty(idQuestionableSection, true, nullptr);
+                    section.setProperty(idShortMode, SM_unspecified, nullptr);
+                    shortmode = SM_unspecified;
                     structure.appendChild(section, nullptr);
                     continueParsing = true;
                     break;
@@ -4059,7 +4130,7 @@ String SeqFile::getSecNamePrefix(int dialect, ValueTree section){
     }
     if(tsecnum >= tsecnames.size()){
         dbgmsg("Invalid tsecnum " + String(tsecnum) + "!");
-        importresult = 2;
+        importresult |= 2;
         return "Error";
     }
     String name = tsecnames[tsecnum];
@@ -4126,6 +4197,7 @@ void SeqFile::nameSections(int dialect){
             }else if(stype == 4){ name = "envelope";
             }else if(stype == 5){ name = "string";
             }else if(stype == 6){ name = "ldstbl";
+            }else if(stype == 7){ name = "align";
             }else{
                 name = "error";
                 dbgmsg("Invalid stype " + String(stype) + "!");
@@ -4254,9 +4326,8 @@ int SeqFile::countTicks(ValueTree sec, int starthash, int *lastdelay){
                 ValueTree subsec = structure.getChild((int)command.getProperty(idTargetSection));
                 int sh = command.getProperty(idTargetHash, 0);
                 int t = countTicks(subsec, sh, &ld);
-                if(ld < 0) { error = true; break; }
                 ticks += t;
-                lastnotedelay = ld;
+                if(ld >= 0) lastnotedelay = ld;
             }
         }
         if(error) break;
@@ -4266,6 +4337,7 @@ int SeqFile::countTicks(ValueTree sec, int starthash, int *lastdelay){
         return ticks;
     }while(false);
     if(lastdelay != nullptr) *lastdelay = -1;
+    dbgmsg("Warning, tick counts will be incorrect");
     importresult |= 1;
     return 0;
 }
@@ -4488,12 +4560,12 @@ int SeqFile::exportMus(File musfile, int dialect, bool sfxstyle){
     nameTargetCommands(dialect);
     //Write data
     String out;
-    time_t t = time(nullptr); 
+    time_t t = time(nullptr);
     struct tm *curtime = localtime(&t);
     if(dialect == 2 || dialect == 4){
         out += ";****************************************\n";
         out += ";\tmusic data (format : mus)\n";
-        out += ";\tconverted by SEQ64 Ver 2.2, https://github.com/sauraen/seq64\n";
+        out += ";\tconverted by SEQ64 Ver " + String(ProjectInfo::versionString) + ", https://github.com/sauraen/seq64\n";
         out += ";\t"; out += asctime(curtime);
         out += ";****************************************\n\n\n";
     }else if(dialect == 3 || dialect == 5){
@@ -4506,7 +4578,7 @@ int SeqFile::exportMus(File musfile, int dialect, bool sfxstyle){
         out += ";**********************************************\n\n";
     }else{
         out += "; Nintendo 64 Music Macro Language (Audioseq) (.mus) sequence: " + seqname + "\n";
-        out += "; Converted by SEQ64 V2.2 [https://github.com/sauraen/seq64]\n\n";
+        out += "; Converted by SEQ64 V" + String(ProjectInfo::versionString) + " [https://github.com/sauraen/seq64]\n\n";
     }
     int tsecnum = -1;
     int sectiongroup = -1;
@@ -4577,6 +4649,14 @@ int SeqFile::exportMus(File musfile, int dialect, bool sfxstyle){
         }
         //Section label
         if(sec != 0 || dialect < 2){
+            ShortMode shortmode = (ShortMode)(int)section.getProperty(idShortMode, (int)SM_unspecified);
+            if(dialect < 2 && shortmode != SM_unspecified && (dialect == 1 || shortmode != SM_long)){
+                out += "; ";
+                if(stype == 1){
+                    out += "At call time, ";
+                }
+                out += GetShortModeDesc(shortmode) + "\n";
+            }
             out += section.getProperty(idLabelName).toString() + ":\n";
         }
         if(stype == 3){
@@ -4698,7 +4778,7 @@ int SeqFile::exportMus(File musfile, int dialect, bool sfxstyle){
 ////////////////////////////////////////////////////////////////////////////////
 
 //Loads the node from the ABI describing the command.
-ValueTree SeqFile::getDescription(uint8_t firstbyte, int stype){
+ValueTree SeqFile::getDescription(uint8_t firstbyte, int stype, ShortMode shortmode){
     ValueTree test;
     for(int i=0; i<abi.getNumChildren(); i++){
         test = abi.getChild(i);
@@ -4706,6 +4786,17 @@ ValueTree SeqFile::getDescription(uint8_t firstbyte, int stype){
         if(test.hasProperty(idCmdEnd)){
             if(firstbyte >= (int)test.getProperty(idCmd)
                     && firstbyte <= (int)test.getProperty(idCmdEnd)){
+                String action = test.getProperty(idAction);
+                if(action == "Note" || action == "Short Note"){
+                    if(shortmode == SM_conflict){
+                        dbgmsg("Note command in note layer with conflicting short mode!");
+                        importresult |= 2;
+                        return ValueTree();
+                    }
+                    //Treat unspecified as long notes by default
+                    if(action == "Note" && shortmode == SM_short) continue;
+                    if(action == "Short Note" && shortmode != SM_short) continue;
+                }
                 return test;
             }
         }else{
@@ -4718,7 +4809,7 @@ ValueTree SeqFile::getDescription(uint8_t firstbyte, int stype){
     return test;
 }
 
-ValueTree SeqFile::getCommand(const Array<uint8_t> &data, uint32_t address, int stype){
+ValueTree SeqFile::getCommand(const Array<uint8_t> &data, uint32_t address, int stype, ShortMode shortmode){
     ValueTree ret("command");
     ValueTree param, desc;
     String action, meaning, datasrc;
@@ -4729,7 +4820,7 @@ ValueTree SeqFile::getCommand(const Array<uint8_t> &data, uint32_t address, int 
     len = 1;
     c = data[address];
     a++;
-    desc = getDescription(c, stype);
+    desc = getDescription(c, stype, shortmode);
     if(!desc.isValid()){
         //Command not found
         ret.setProperty(idCmd, (int)c, nullptr);
@@ -5262,15 +5353,18 @@ void SeqFile::clearRecurVisited(){
     }
 }
 
-bool SeqFile::findDynTableType(int dtsec, const StringArray &refs){
+bool SeqFile::findDynTableSettings(int dtsec, const StringArray &refs){
     //Traverse the sequence, following structural commands, to find what is
-    //the type this dyntable is used as after each place it's defined.
+    //the type this dyntable is used as, and the short mode of the channel,
+    //after each place it's defined.
     ValueTree section = structure.getChild(dtsec);
     if(refs.size() == 0){
         dbgmsg("Internal error, no references to dyntable!");
         return false;
     }
-    int dtstype = -1;
+    DynTableSettings finalresult;
+    finalresult.stype = -1;
+    finalresult.shortmode = SM_unspecified;
     for(int r=0; r<refs.size(); ++r){
         int hash = refs[r].getIntValue();
         //Find this command
@@ -5280,64 +5374,82 @@ bool SeqFile::findDynTableType(int dtsec, const StringArray &refs){
             for(int c=0; c<tmpsec.getNumChildren(); ++c){
                 ValueTree command = tmpsec.getChild(c);
                 if((int)command.getProperty(idHash) != hash) continue;
-                int res = findNextDynTableType(s, c);
-                if(res == -1){
+                DynTableSettings res = findNextDynTableSettings(s, c);
+                if(res.stype == -1){
                     dbgmsg("No dyntable use after definition in sec " + String(s)
                         + " cmd " + String(c) + "!");
                     importresult |= 1;
-                }else if(res < 0){ //other error
+                }else if(res.stype < 0){ //other error
                     clearRecurVisited();
                     return false;
-                }else if(dtstype < 0){
-                    dtstype = res;
-                    dbgmsg("dyntable sec " + String(dtsec) + " found stype " + String(dtstype));
-                }else if(dtstype == res){
-                    dbgmsg("and another use also stype " + String(dtstype));
+                }else if(finalresult.stype < 0){
+                    finalresult.stype = res.stype;
+                    dbgmsg("dyntable sec " + String(dtsec) + " found stype " + String(finalresult.stype));
+                }else if(finalresult.stype == res.stype){
+                    dbgmsg("and another use also stype " + String(finalresult.stype));
                 }else{
                     dbgmsg("dyntable sec " + String(dtsec) + ": previously found stype " 
-                        + String(dtstype) + ", just found another stype " + String(res)
+                        + String(finalresult.stype) + ", just found another stype " + String(res.stype)
                         + " after ref at sec " + String(s) + " cmd " + String(c) + ", aborting!");
                     clearRecurVisited();
                     return false;
+                }
+                if(finalresult.shortmode == SM_unspecified){
+                    finalresult.shortmode = res.shortmode;
+                }else if(res.shortmode != SM_unspecified && res.shortmode != finalresult.shortmode){
+                    finalresult.shortmode = SM_conflict;
                 }
             }
         }
         clearRecurVisited();
     }
-    if(dtstype < 0){
+    if(finalresult.stype < 0){
         dbgmsg("dyntable sec " + String(dtsec) + ": could not find any uses of this table, so unknown stype! Can't continue!");
         return false;
     }
-    section.setProperty(idDynTableSType, dtstype, nullptr);
+    section.setProperty(idDynTableSType, finalresult.stype, nullptr);
+    section.setProperty(idShortMode, finalresult.shortmode, nullptr);
+    dbgmsg("Set dyntable section " + String(dtsec) + " to stype " + String(finalresult.stype)
+        + " shortmode " + GetShortModeLetter(finalresult.shortmode));
     return true;
 }
 
-int SeqFile::findNextDynTableType(int s, int c){
+SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(int s, int c){
     //dbgmsg("Looking for next dyntable use after sec " + String(s) + " cmd " + String(c));
     ValueTree section = structure.getChild(s);
+    DynTableSettings ret;
+    ret.stype = -12345;
+    ret.shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
     while(true){
-        if(c >= section.getNumChildren()) return -1;
+        if(c >= section.getNumChildren()){ ret.stype = -1; return ret; }
         ValueTree command = section.getChild(c);
-        if(command.hasProperty(idRecurVisited)) return -1;
+        if(command.hasProperty(idRecurVisited)){ ret.stype = -1; return ret; }
         command.setProperty(idRecurVisited, true, nullptr);
         String action = command.getProperty(idAction);
         if(action == "End of Data"){
-            return -1;
-        }else if(action == "Seq Hdr Call Table"){
+            ret.stype = -1;
+            return ret;
+        }
+        if(action == "Seq Hdr Call Table"){
             //Technically this isn't a dyntable as it doesn't set the dyntable
             //pointer, but seq hdr doesn't have its own dyntable pointer anyway,
             //so we can treat this as a command which both sets and then
             //immediately uses the dyntable
-            return 0;
+            ret.stype = 0;
         }else if(action == "Channel from Dyntable"){
-            return 1;
+            ret.stype = 1;
         }else if(action == "Layer from Dyntable"){
-            return 2;
+            ret.stype = 2;
         }else if(action == "Dyntable from Dyntable"){
-            return 3;
+            ret.stype = 3;
         }else if(action == "Data from Dyntable"){
-            return 6;
-        }else if(action == "Set Dyntable" || action == "Dyntable from Data"){
+            ret.stype = 6;
+        }
+        if(ret.stype >= 0){
+            ret.shortmode = (ShortMode)(int)command.getProperty(idShortMode, SM_unspecified);
+            return ret;
+        }
+        if(action == "Set Dyntable" || action == "Dyntable from Data"){
             //Dyntable pointer is now overwritten with something else. However,
             //most likely this is just multiple commands setting up the
             //dyntable, before one command actually uses it.
@@ -5348,34 +5460,44 @@ int SeqFile::findNextDynTableType(int s, int c){
             //for Seq Hdr Call Table purposes, this will be triggered every time.
             ++c;
         }else if(action == "Jump"){
-            if(!getSectionAndCmd(command, s, c)) return -2;
+            if(!getSectionAndCmd(command, s, c)){ ret.stype = -2; return ret; }
             section = structure.getChild(s);
         }else if(action == "Call"){
-            int s2, c2, dtstype;
-            if(!getSectionAndCmd(command, s2, c2)) return -2;
-            dtstype = findNextDynTableType(s2, c2);
-            if(dtstype != -1) return dtstype; //either error -2 or found >= 0
+            int s2, c2;
+            if(!getSectionAndCmd(command, s2, c2)){ ret.stype = -2; return ret; }
+            DynTableSettings callresult = findNextDynTableSettings(s2, c2);
+            if(callresult.stype != -1) return callresult; //either error -2 or found >= 0
             ++c; //Was not found in call, move on to next command
         }else if(action == "Branch"){
             //Try both paths, compare results
-            int s2, c2, dtstype2, dtstype;
-            if(!getSectionAndCmd(command, s2, c2)) return -2;
-            dtstype2 = findNextDynTableType(s2, c2);
-            if(dtstype2 <= -2) return -2;
-            dtstype = findNextDynTableType(s, c+1);
-            if(dtstype <= -2) return -2;
-            if(dtstype < 0) return dtstype2; //whether -1 or found
-            if(dtstype2 < 0) return dtstype; //whether -1 or found
-            if(dtstype == dtstype2) return dtstype; //same
-            dbgmsg("findNextDynTableType branch paths different stype results from sec "
-                + String(s) + " cmd " + String(c) + ": taking branch gives " + String(dtstype2)
-                + " while not taking branch gives " + String(dtstype) + "!");
-            return -2;
+            int s2, c2;
+            if(!getSectionAndCmd(command, s2, c2)){ ret.stype = -2; return ret; }
+            DynTableSettings branchres = findNextDynTableSettings(s2, c2);
+            if(branchres.stype <= -2){ ret.stype = -2; return ret; }
+            DynTableSettings continres = findNextDynTableSettings(s, c+1);
+            if(continres.stype <= -2){ ret.stype = -2; return ret; }
+            if(branchres.stype < 0) return continres; //whether -1 or found
+            if(continres.stype < 0) return branchres; //whether -1 or found
+            if(branchres.stype != continres.stype){
+                dbgmsg("findNextDynTableSettings branch paths different stype results from sec "
+                    + String(s) + " cmd " + String(c) + ": taking branch gives " + String(branchres.stype)
+                    + " while not taking branch gives " + String(continres.stype) + "!");
+                ret.stype = -2;
+                return ret;
+            }
+            //stypes equal, check short modes
+            if(branchres.shortmode == SM_unspecified) return continres;
+            if(continres.shortmode == SM_unspecified) return branchres;
+            if(continres.shortmode == branchres.shortmode) return continres;
+            continres.shortmode = SM_conflict;
+            return continres;
         }else{
             ++c;
         }
     }
-    return -1; //This is unreachable code
+    //This is unreachable code
+    ret.stype = -1;
+    return ret;
 }
 
 bool SeqFile::getSectionAndCmd(ValueTree command, int &s, int &c){
@@ -5498,7 +5620,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
         if(!section.hasProperty(idDynTableSType)){
             StringArray refs = StringArray::fromTokens(
                 section.getProperty(idSrcCmdRef).toString(), ",", "");
-            if(!findDynTableType(s, refs)) return 2;
+            if(!findDynTableSettings(s, refs)) return 2;
         }
         if((int)section.getProperty(idDynTableSType) == 3 && !section.hasProperty(idDynTableDynSType)){
             dbgmsg("dynsetdyntable section missing idDynTableDynSType, "
@@ -5506,6 +5628,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             return 2;
         }
     }
+    ShortMode shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
     //Parse commands.
     bool secdone = false;
     while(!secdone){
@@ -5530,7 +5653,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
         ValueTree command;
         if(stype >= 0 && stype <= 2){
             //Normal command types: sequence header, channel header, note layer
-            command = getCommand(data, a, stype);
+            command = getCommand(data, a, stype, shortmode);
         }else if(stype == 3){
             command = getDynTableCommand(data, a, section);
         }else if(stype == 4){
@@ -5653,16 +5776,28 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                     return 2;
                 }
             }
+            ValueTree targetsection = structure.getChild(command.getProperty(idTargetSection));
             //Special post handling for certain pointers
             if(action == "Jump"){
                 //Unconditional jump ends the section
                 secdone = true;
             }else if(action == "Seq Hdr Call Table" || action == "Set Dyntable"){
-                ValueTree tmpsec = structure.getChild(command.getProperty(idTargetSection));
-                tmpsec.setProperty(idSrcCmdRef, tmpsec.getProperty(idSrcCmdRef, "").toString() 
+                targetsection.setProperty(idSrcCmdRef,
+                    targetsection.getProperty(idSrcCmdRef, "").toString() 
                     + "," + command.getProperty(idHash).toString(), nullptr);
+            }else if(stype != 0 && (action == "Jump" || action == "Branch" || action == "Call"
+                    || action == "Ptr Channel Header" || action == "Ptr Note Layer")){
+                ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, SM_unspecified);
+                if(tgtshortmode == SM_unspecified){
+                    targetsection.setProperty(idShortMode, shortmode, nullptr);
+                }else if(tgtshortmode != shortmode){
+                    dbgmsg("At section " + String(s) + " addr " + hex(a) + ": section "
+                        + command.getProperty(idTargetSection).toString() + " short mode is conflicting");
+                    targetsection.setProperty(idShortMode, SM_conflict, nullptr);
+                }
             }
         }
+        handleShortNoteChanges(command, stype, shortmode);
     }
     //End of section
     section.setProperty(idAddressEnd, (int)a, nullptr);
@@ -5786,22 +5921,23 @@ int SeqFile::importCom(File comfile){
     structure.appendChild(section, nullptr);
     //
     //Passes:
-    //0: normal sections
-    //1: dyntables. After any dyntable, resets to beginning.
-    //2: known tables.
-    //3: unused data. Can continue into 0.
+    //0: seq and channel headers
+    //1: note layers, envelopes, strings
+    //2: dyntables. After any dyntable, resets to beginning.
+    //3: known tables.
+    //4: unused data. Can continue into 0.
     int s = -1, pass = 0;
     while(true){
         ++s;
         if(s == structure.getNumChildren()){
             s = 0;
             ++pass;
-            if(pass >= 4){
+            if(pass >= 5){
                 dbgmsg("Internal error with com parsing passes!");
                 return 2;
             }
         }
-        if(pass == 3){
+        if(pass == 4){
             //Unused data.
             s = -1; //Not in any particular section right now.
             int unusedstart, unusedend;
@@ -5842,21 +5978,22 @@ int SeqFile::importCom(File comfile){
         section = structure.getChild(s);
         if(section.hasProperty(idAddressEnd)) continue; //already parsed
         int stype = section.getProperty(idSType);
-        if(pass <= 1){
-            //Normal sections (0) and dyntables (1).
+        if(pass <= 2){
+            //Seq/chn (0), ly/etc (1), and dyntables (2).
             if(stype < 0 || stype == 6) continue; //Tables
-            if(pass == 0 && stype == 3) continue; //Normal sections before dyntables
+            if(pass == 0 && stype != 0 && stype != 1) continue; //Seq/chn before others
+            if(pass != 2 && stype == 3) continue; //Other sections before dyntables
             int res = parseComSection(s, data, datause, false);
             if(res == 2){
                 dbgmsg("Main parseComSection failed");
                 return 2;
             }
-            if(res == 1 || pass == 1){ //restart
+            if(res == 1 || pass == 2){ //restart
                 s = -1;
                 pass = 0;
             }
         }else{
-            //Known data tables (2).
+            //Known data tables (3).
             if(!(stype < 0 || stype == 6)){
                 dbgmsg("Internal error, expected known data table, got " + String(stype) + "!");
                 return 2;

@@ -9,6 +9,6 @@ namespace ProjectInfo
 {
     const char* const  projectName    = "SEQ64";
     const char* const  companyName    = "Sauraen";
-    const char* const  versionString  = "2.1.2";
-    const int          versionNumber  =  0x20102;
+    const char* const  versionString  = "2.2.0";
+    const int          versionNumber  =  0x20200;
 }

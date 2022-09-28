@@ -31,7 +31,7 @@ class seq64Application : public JUCEApplication
 public:
     seq64Application() {}
 
-    const String getApplicationName() override       { return "SEQ64 V2.1.4"; }
+    const String getApplicationName() override       { return "SEQ64 V" + String(ProjectInfo::versionString); }
     const String getApplicationVersion() override    { return ProjectInfo::versionString; }
     bool moreThanOneInstanceAllowed() override       { return true; }
 

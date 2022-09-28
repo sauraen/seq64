@@ -265,11 +265,13 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     cbxAction->addItem (TRANS("Channel Disable"), 28);
     cbxAction->addItem (TRANS("Master Volume"), 29);
     cbxAction->addItem (TRANS("Tempo"), 30);
-    cbxAction->addItem (TRANS("Enable Long Notes"), 31);
-    cbxAction->addItem (TRANS("CC or CC Group"), 32);
-    cbxAction->addItem (TRANS("Chn Transpose"), 33);
-    cbxAction->addItem (TRANS("Layer Transpose"), 34);
-    cbxAction->addItem (TRANS("Note"), 35);
+    cbxAction->addItem (TRANS("Set Short Notes"), 31);
+    cbxAction->addItem (TRANS("Set Long Notes"), 32);
+    cbxAction->addItem (TRANS("CC or CC Group"), 33);
+    cbxAction->addItem (TRANS("Chn Transpose"), 34);
+    cbxAction->addItem (TRANS("Layer Transpose"), 35);
+    cbxAction->addItem (TRANS("Note"), 36);
+    cbxAction->addItem (TRANS("Short Note"), 37);
     cbxAction->addListener (this);
 
     cbxAction->setBounds (232, 416, 240, 24);
@@ -1157,7 +1159,8 @@ void SeqABIEditor::fillMeaningsBox(String action){
     bool add_addrs = false;
     if(action == "No Action" || action == "End of Data" || action == "Delay"
             || action == "Loop Break" || action == "Loop End"
-            || action == "Enable Long Notes" || action == "Dyntable from Dyntable"
+            || action == "Set Short Notes" || action == "Set Long Notes"
+            || action == "Dyntable from Dyntable"
             || action == "Data from Dyntable" || action == "Dyntable from Data"){
         (void)0; //None
     }else if(action == "Mute Behavior" || action == "Mute Scale"
@@ -1186,10 +1189,12 @@ void SeqABIEditor::fillMeaningsBox(String action){
     }else if(action == "CC or CC Group"){
         cbxMeaning->addItem("CC", cbxMeaning->getNumItems()+1);
     }else if(action == "Note"){
-        cbxMeaning->addItem("Note Layer", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Note", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Velocity", cbxMeaning->getNumItems()+1);
         cbxMeaning->addItem("Gate Time", cbxMeaning->getNumItems()+1);
+    }else if(action == "Short Note"){
+        cbxMeaning->addItem("Note", cbxMeaning->getNumItems()+1);
+        cbxMeaning->addItem("Mode", cbxMeaning->getNumItems()+1);
     }else{
         cbxMeaning->clear(dontSendNotification);
         cbxMeaning->addItem("ERROR fillMeaningsBox", cbxMeaning->getNumItems()+1);
@@ -1311,7 +1316,7 @@ BEGIN_JUCER_METADATA
               caret="1" popupmenu="1"/>
   <COMBOBOX name="cbxAction" id="e2a97de7a0a41ac7" memberName="cbxAction"
             virtualName="" explicitFocusOrder="0" pos="232 416 240 24" editable="0"
-            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump&#10;Branch&#10;Call&#10;Loop Start&#10;Loop Break&#10;Loop End&#10;Ptr Seq Header&#10;Ptr Channel Header&#10;Ptr Note Layer&#10;Seq Hdr Call Table&#10;Set Dyntable&#10;Channel from Dyntable&#10;Layer from Dyntable&#10;Dyntable from Dyntable&#10;Data from Dyntable&#10;Dyntable from Data&#10;Ptr Envelope&#10;Ptr Message&#10;Ptr Other Table&#10;Ptr Self&#10;Maybe Ptr&#10;Mute Behavior&#10;Mute Scale&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Enable Long Notes&#10;CC or CC Group&#10;Chn Transpose&#10;Layer Transpose&#10;Note"
+            layout="33" items="No Action&#10;End of Data&#10;Delay&#10;Jump&#10;Branch&#10;Call&#10;Loop Start&#10;Loop Break&#10;Loop End&#10;Ptr Seq Header&#10;Ptr Channel Header&#10;Ptr Note Layer&#10;Seq Hdr Call Table&#10;Set Dyntable&#10;Channel from Dyntable&#10;Layer from Dyntable&#10;Dyntable from Dyntable&#10;Data from Dyntable&#10;Dyntable from Data&#10;Ptr Envelope&#10;Ptr Message&#10;Ptr Other Table&#10;Ptr Self&#10;Maybe Ptr&#10;Mute Behavior&#10;Mute Scale&#10;Channel Enable&#10;Channel Disable&#10;Master Volume&#10;Tempo&#10;Set Short Notes&#10;Set Long Notes&#10;CC or CC Group&#10;Chn Transpose&#10;Layer Transpose&#10;Note&#10;Short Note"
             textWhenNonSelected="" textWhenNoItems="(no choices)"/>
   <TOGGLEBUTTON name="chkValidInSeq" id="e629b15d1c633dc3" memberName="chkValidInSeq"
                 virtualName="" explicitFocusOrder="0" pos="272 328 200 24" buttonText="Seq Header / Group Track"
