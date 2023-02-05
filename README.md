@@ -7,7 +7,7 @@ Click [the Releases tab](https://github.com/sauraen/seq64/releases) to download 
 ## Impressum
 
 seq64 - Sequenced music editor for first-party N64 games.\
-Created by and Copyright (C) 2014-2021 Sauraen, sauraen@gmail.com\
+Created by and Copyright (C) 2014-2023 Sauraen, sauraen@gmail.com\
 Licensed under the GNU General Public License version 3 - see LICENSE.txt\
 Made with the Juce 6 C++ framework under the GPL3 license
 
@@ -33,7 +33,7 @@ SEQ64 V2 converts among any of these three formats: MIDI (`.mid`), Music Macro L
 - Mario Kart 64 (use Star Fox 64 ABI)
 - Ocarina of Time
 
-SEQ64 V2 does NOT currently include any bank editing or MIDI instrument number conversion to General MIDI. If you need these features, please use SEQ64 V1.5. Future work is (at least theoretically) planned on SEQ64 to provide comprehensive sample/bank library management--we'll see if this ever ends up happening.
+SEQ64 V2 does NOT currently include any bank editing or MIDI instrument number conversion to General MIDI (SEQ64 V1.5 included these features). In a modern, decomp-based romhack environment, use [AudiobankToC](https://github.com/sauraen/AudiobankToC) for bank editing.
 
 ## SEQ64 V1
 
@@ -58,7 +58,7 @@ The following other games definitely use Music Macro Language. For music sequenc
 - Wave Race 64 (SM64)
 - F-Zero X (SF64)
 - Yoshi's Story (OoT)
-- Majora's Mask (OoT)
+- Majora's Mask (OoT ABI works for music, but there are a couple additional commands used in SFX)
 
 These games have been reported to use Music Macro Language, but I have not worked with them myself.
 - 1080 Snowboarding

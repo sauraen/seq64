@@ -2,7 +2,7 @@
 # CMake build configuration
 # 
 # From seq64 - Sequenced music editor for first-party N64 games
-# Copyright (C) 2014-2021 Sauraen
+# Copyright (C) 2014-2023 Sauraen
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,14 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 3.12)
-
+cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
 set(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} CACHE STRING "" FORCE)
 
-# Don't forget to also change the version in JuceHeaderConsole.hpp
-project(SEQ64 VERSION 2.2.0)
+project(SEQ64 VERSION 2.2.1)
 
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/juce/CMakeLists.txt")
     message(FATAL_ERROR "You forgot to get the Git submodules, please run git submodule update --init")
@@ -69,6 +67,18 @@ else()
     set(SEQ64_COMPILE_OPTIONS "-Wall" "-Wextra" "-Wno-sign-compare" "-Wno-sign-conversion" "-O3")
 endif()
 
+set(NAME_STR "SEQ64 V${PROJECT_VERSION}")
+set(VER_STR "${PROJECT_VERSION}")
+math(EXPR VER_HEX "${PROJECT_VERSION_MAJOR}*0x10000+${PROJECT_VERSION_MINOR}*0x100+${PROJECT_VERSION_PATCH}" OUTPUT_FORMAT HEXADECIMAL)
+set(SEQ64_DEFINITIONS
+    JUCE_STANDALONE_APPLICATION=1
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_APPLICATION_NAME_STRING="${NAME_STR}"
+    JUCE_APPLICATION_VERSION_STRING="${VER_STR}"
+    JUCE_APPLICATION_VERSION_HEX=${VER_HEX}
+)
+
 # Console version
 
 add_executable(seq64_console
@@ -86,11 +96,9 @@ target_include_directories(seq64_console PRIVATE
     "Source"
     "juce/modules"
 )
-target_compile_definitions(seq64_console PRIVATE 
+target_compile_definitions(seq64_console PRIVATE
+    ${SEQ64_DEFINITIONS}
     JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1
-    JUCE_STANDALONE_APPLICATION=1
-    JUCE_WEB_BROWSER=0 
-    JUCE_USE_CURL=0 
     SEQ64_CONSOLE_ONLY=1
 )
 target_compile_options(seq64_console PRIVATE ${SEQ64_COMPILE_OPTIONS})
@@ -111,13 +119,9 @@ if(SEQ64_BUILD_GUI)
     if(APPLE)
         set_target_properties(seq64_gui PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED TRUE CXX_EXTENSIONS FALSE)
     endif()
-    target_compile_definitions(seq64_gui PRIVATE 
-        JUCE_STANDALONE_APPLICATION=1
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
+    target_compile_definitions(seq64_gui PRIVATE
+        ${SEQ64_DEFINITIONS}
         JUCE_DISPLAY_SPLASH_SCREEN=0
-        JUCE_APPLICATION_NAME_STRING="SEQ64 V2.1.4"
-        JUCE_APPLICATION_VERSION_STRING="V2.1.4"
     )
     target_link_libraries(seq64_gui PRIVATE
         juce::juce_core

@@ -5,7 +5,7 @@
  * Utility functions used in all Sauraen projects
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2020 Sauraen
+ * Copyright (C) 2014-2023 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

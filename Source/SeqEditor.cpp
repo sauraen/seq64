@@ -26,7 +26,7 @@
  * format sequence file
  *
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2020 Sauraen
+ * Copyright (C) 2014-2023 Sauraen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -853,7 +853,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!abi.isValid()) return;
         if(!checkSeqPresence(false)) return;
         File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("romfolder");
-        FileChooser box("Load .com/.aseq", f, "*.com;*.aseq;*.m64;*.bin;*.seq", true);
+        FileChooser box("Load .com/.aseq", f, "*.com;*.aseq;*.seq;*.m64;*.bin;*.seq", true);
         if(!box.browseForFileToOpen()) return;
         f = box.getResult();
         seq.reset(new SeqFile(abi));
@@ -865,7 +865,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_btnExportCom] -- add your button handler code here..
         if(!checkSeqPresence(true)) return;
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
-        FileChooser box("Save .com/.aseq", savelocation, "*.com;*.aseq;*.m64;*.bin;*.seq", true);
+        FileChooser box("Save .com/.aseq", savelocation, "*.com;*.aseq;*.seq;*.m64;*.bin;*.seq", true);
         if(!box.browseForFileToSave(true)) return;
         savelocation = box.getResult();
         startSeqOperation(".com/.aseq export", &SeqFile::exportCom, savelocation);

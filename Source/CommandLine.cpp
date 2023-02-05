@@ -5,7 +5,7 @@
  * SEQ64 Command-Line Interface
  * 
  * From seq64 - Sequenced music editor for first-party N64 games
- * Copyright (C) 2014-2021 Sauraen
+ * Copyright (C) 2014-2023 Sauraen
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 static void displayHelpText(){
     std::cout <<
     "seq64 - Sequenced music editor for first-party N64 games\n"
-    "Copyright (C) 2014-2021 Sauraen, sauraen" "\x40" "gm\x61il" "\x2E" "com\n"
+    "Copyright (C) 2014-2023 Sauraen, sauraen" "\x40" "gm\x61il" "\x2E" "com\n"
     "Licensed under the GPL v3, see gnu.org/licenses\n"
     "\n"
     "Arguments look like key=value or -key=value or --key=value.\n"
@@ -67,7 +67,7 @@ static void displayHelpText(){
     "extensions of the input and output files.\n"
     "MIDI: .mid, .midi, .rmi\n"
     "Music Macro Language assembly: .mus, .mml, .asm, .s\n"
-    "Music Macro Language binary: .com, .aseq, .m64 (grudgingly), .bin, .dat\n"
+    "Music Macro Language binary: .com, .aseq, .seq, .m64 (grudgingly), .bin, .dat\n"
     "\n"
     "The return code from seq64 is 0 for OK or warnings, 1 for errors,\n"
     "and -1 for invalid arguments or other problems before processing starts.\n"
@@ -91,6 +91,7 @@ static bool isMusFile(String filename){
 static bool isComFile(String filename){
     return filename.endsWithIgnoreCase(".com") 
         || filename.endsWithIgnoreCase(".aseq") 
+        || filename.endsWithIgnoreCase(".seq") 
         || filename.endsWithIgnoreCase(".m64") 
         || filename.endsWithIgnoreCase(".bin")
         || filename.endsWithIgnoreCase(".dat");
@@ -99,7 +100,7 @@ static int getOp(String filename){
     if(isMidiFile(filename)) return 0;
     if(isMusFile(filename)) return 1;
     if(isComFile(filename)) return 2;
-    std::cout << "Could not detect the type (mid/mus/com) of " << filename << "!";
+    std::cout << "Could not detect whether " << filename << " is MIDI, sequence text, or sequence binary based on its file extension!";
     return -1;
 }
 
@@ -229,7 +230,7 @@ int seq64_cli(const StringArray &args){
     
     //I/O file handling
     if(instr.isEmpty()){
-        std::cout << "Error, no input file specified!\n";
+        std::cout << "Error, no input file specified! (Try ./seq64_console --help)\n";
         return -1;
     }
     if(outstr.isEmpty()){
