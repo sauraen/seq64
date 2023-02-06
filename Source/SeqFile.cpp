@@ -166,12 +166,12 @@ StringArray SeqFile::getAvailABIs(){
 ValueTree SeqFile::loadABI(String name){
     File abifile = findFile("abi/" + name + ".xml");
     if(!abifile.existsAsFile()){
-        std::cout << "Could not find file " + abifile.getFullPathName() + "!";
+        std::cout << "Could not find file " + abifile.getFullPathName() + "!\n";
         return ValueTree();
     }
     std::unique_ptr<XmlElement> xml = parseXML(abifile);
     if(!xml){
-        std::cout << "Error parsing XML of " + abifile.getFullPathName() + "!";
+        std::cout << "Error parsing XML of " + abifile.getFullPathName() + "!\n";
         return ValueTree();
     }
     return ValueTree::fromXml(*xml);
@@ -179,17 +179,17 @@ ValueTree SeqFile::loadABI(String name){
 bool SeqFile::saveABI(String name, ValueTree abi_){
     File abifile = findFile("abi/" + name + ".xml");
     if(!abifile.existsAsFile()){
-        std::cout << "Could not find file " + abifile.getFullPathName() + "!";
+        std::cout << "Could not find file " + abifile.getFullPathName() + "!\n";
         return false;
     }
     std::unique_ptr<XmlElement> xml = abi_.createXml();
     if(!xml){
-        std::cout << "Error creating XML for currently loaded ABI!";
+        std::cout << "Error creating XML for currently loaded ABI!\n";
         return false;
     }
     FileOutputStream fos(abifile);
     if(fos.failedToOpen()){
-        std::cout << "Couldn't open file " + abifile.getFullPathName() + " for writing!";
+        std::cout << "Couldn't open file " + abifile.getFullPathName() + " for writing!\n";
         return false;
     }
     fos.setPosition(0);

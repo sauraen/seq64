@@ -31,7 +31,11 @@ void TextListBox::Listener::rowDoubleClicked(TextListBox* parent, int row) {
 }
 
 TextListBox::TextListBox(Listener *l, String headerCaption) 
-        : ListBox("TextListBox", this), listener(l), font(15.0f), selectonadd(true) {
+        : ListBoxModel(), // this must be constructed as a model before passing
+          ListBox("TextListBox", this), // itself to ListBox constructor
+          listener(l),
+          font(15.0f),
+          selectonadd(true) {
     setMultipleSelectionEnabled(false);
     setClickingTogglesRowSelection(false);
     setRowSelectedOnMouseDown(true);

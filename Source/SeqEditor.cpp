@@ -790,7 +790,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //TODO default files
         File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("midiimportfolder");
         FileChooser box("Select a MIDI to load...", f, "*.mid;*.midi;*.rmi", true);
-        if(!box.browseForFileToOpen()) return;
+        File oldwd = File::getCurrentWorkingDirectory();
+        bool hitokay = box.browseForFileToOpen();
+        oldwd.setAsCurrentWorkingDirectory();
+        if(!hitokay) return;
         f = box.getResult();
         if(!f.existsAsFile()){
             std::cout << "File " << f.getFullPathName() << " does not exist!";
@@ -814,7 +817,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
 
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("midifolder");
         FileChooser box("Save MIDI", savelocation, "*.mid", true);
-        if(!box.browseForFileToSave(true)) return;
+        File oldwd = File::getCurrentWorkingDirectory();
+        bool hitokay = box.browseForFileToSave(true);
+        oldwd.setAsCurrentWorkingDirectory();
+        if(!hitokay) return;
         savelocation = box.getResult();
         startSeqOperation("MIDI export", &SeqFile::exportMIDI, savelocation, midiopts);
         //[/UserButtonCode_btnExportMIDI]
@@ -827,7 +833,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!checkSeqPresence(false)) return;
         File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("romfolder");
         FileChooser box("Load .mus", f, "*.mus", true);
-        if(!box.browseForFileToOpen()) return;
+        File oldwd = File::getCurrentWorkingDirectory();
+        bool hitokay = box.browseForFileToOpen();
+        oldwd.setAsCurrentWorkingDirectory();
+        if(!hitokay) return;
         f = box.getResult();
         seq.reset(new SeqFile(abi));
         startSeqOperation(".mus import", &SeqFile::importMus, f);
@@ -839,7 +848,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!checkSeqPresence(true)) return;
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
         FileChooser box("Save .mus", savelocation, "*.mus", true);
-        if(!box.browseForFileToSave(true)) return;
+        File oldwd = File::getCurrentWorkingDirectory();
+        bool hitokay = box.browseForFileToSave(true);
+        oldwd.setAsCurrentWorkingDirectory();
+        if(!hitokay) return;
         savelocation = box.getResult();
         int dialect = optMusCommunity->getToggleState() ? 0 : optMusCanon->getToggleState() ? 2 : 4;
         dialect |= optStyleSFX->getToggleState() ? 1 : 0;
@@ -854,7 +866,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!checkSeqPresence(false)) return;
         File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("romfolder");
         FileChooser box("Load .com/.aseq", f, "*.com;*.aseq;*.seq;*.m64;*.bin;*.seq", true);
-        if(!box.browseForFileToOpen()) return;
+        File oldwd = File::getCurrentWorkingDirectory();
+        bool hitokay = box.browseForFileToOpen();
+        oldwd.setAsCurrentWorkingDirectory();
+        if(!hitokay) return;
         f = box.getResult();
         seq.reset(new SeqFile(abi));
         startSeqOperation(".com/.aseq import", &SeqFile::importCom, f);
@@ -866,7 +881,10 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!checkSeqPresence(true)) return;
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
         FileChooser box("Save .com/.aseq", savelocation, "*.com;*.aseq;*.seq;*.m64;*.bin;*.seq", true);
-        if(!box.browseForFileToSave(true)) return;
+        File oldwd = File::getCurrentWorkingDirectory();
+        bool hitokay = box.browseForFileToSave(true);
+        oldwd.setAsCurrentWorkingDirectory();
+        if(!hitokay) return;
         savelocation = box.getResult();
         startSeqOperation(".com/.aseq export", &SeqFile::exportCom, savelocation);
         //[/UserButtonCode_btnExportCom]
@@ -957,7 +975,9 @@ void SeqEditor::timerCallback(){
 }
 
 ValueTree SeqEditor::getABI(){
-    ValueTree abi = SeqFile::loadABI(lstABI->get(lstABI->getLastRowSelected()));
+    int row = lstABI->getLastRowSelected();
+    String abistr = lstABI->get(row);
+    ValueTree abi = SeqFile::loadABI(abistr);
     if(!abi.isValid()){
         NativeMessageBox::showMessageBox(AlertWindow::WarningIcon, "seq64",
             "Invalid ABI selected!");

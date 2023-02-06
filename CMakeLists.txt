@@ -64,7 +64,7 @@ list(TRANSFORM SEQ64_GUI_ONLY_SOURCES PREPEND "Source/")
 if(WIN32)
     set(SEQ64_COMPILE_OPTIONS "/W2" "/O2")
 else()
-    set(SEQ64_COMPILE_OPTIONS "-Wall" "-Wextra" "-Wno-sign-compare" "-Wno-sign-conversion" "-O3")
+    set(SEQ64_COMPILE_OPTIONS "-Wall" "-Wextra" "-Wno-sign-compare" "-Wno-sign-conversion" "-O2")
 endif()
 
 set(NAME_STR "SEQ64 V${PROJECT_VERSION}")
@@ -79,6 +79,10 @@ set(SEQ64_DEFINITIONS
     JUCE_APPLICATION_VERSION_HEX=${VER_HEX}
 )
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_EXTENSIONS FALSE)
+
 # Console version
 
 add_executable(seq64_console
@@ -89,9 +93,6 @@ add_executable(seq64_console
     "juce/modules/juce_audio_basics/juce_audio_basics.cpp"
     "juce/modules/juce_data_structures/juce_data_structures.cpp"
 )
-if(APPLE)
-    set_target_properties(seq64_console PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED TRUE CXX_EXTENSIONS FALSE)
-endif()
 target_include_directories(seq64_console PRIVATE
     "Source"
     "juce/modules"
@@ -116,12 +117,10 @@ if(SEQ64_BUILD_GUI)
     juce_add_gui_app(seq64_gui PRODUCT_NAME "seq64_gui" COMPANY_NAME "Sauraen")
     juce_generate_juce_header(seq64_gui)
     target_sources(seq64_gui PRIVATE ${SEQ64_SHARED_SOURCES} ${SEQ64_GUI_ONLY_SOURCES})
-    if(APPLE)
-        set_target_properties(seq64_gui PROPERTIES CXX_STANDARD 14 CXX_STANDARD_REQUIRED TRUE CXX_EXTENSIONS FALSE)
-    endif()
     target_compile_definitions(seq64_gui PRIVATE
         ${SEQ64_DEFINITIONS}
         JUCE_DISPLAY_SPLASH_SCREEN=0
+        JUCE_MODAL_LOOPS_PERMITTED=1
     )
     target_link_libraries(seq64_gui PRIVATE
         juce::juce_core

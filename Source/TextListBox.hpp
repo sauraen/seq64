@@ -27,7 +27,7 @@
 
 #include "Common.hpp"
 
-class TextListBox : public ListBox, ListBoxModel
+class TextListBox : public ListBoxModel, public ListBox
 {
 public:
     class Listener{
