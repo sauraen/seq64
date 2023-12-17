@@ -233,7 +233,8 @@
   </command>
   <command cmd="217" name="release" action="CC or CC Group" validinchn="1"
            comments="Set envelope release rate." oname="release">
-    <parameter name="Release" meaning="CC" datasrc="fixed" datalen="1" cc="72"/>
+    <parameter name="Release" meaning="CC" datasrc="fixed" datalen="1" cc="72"
+               x2="1"/>
   </command>
   <command cmd="218" name="cenvelope" action="Ptr Envelope" validinchn="1"
            comments="Load channel envelope from sequence data." oname="envelope">

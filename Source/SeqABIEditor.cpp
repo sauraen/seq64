@@ -7,7 +7,7 @@
   the "//[xyz]" and "//[/xyz]" sections will be retained when the file is loaded
   and re-saved.
 
-  Created with Projucer version: 6.0.1
+  Created with Projucer version: 6.0.7
 
   ------------------------------------------------------------------------------
 
@@ -62,7 +62,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
                                      TRANS("Audioseq / Nintendo 64 Music Macro Language\n"
                                      "ABI definition file: /foo/bar.xml")));
     addAndMakeVisible (lblTitle.get());
-    lblTitle->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblTitle->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblTitle->setJustificationType (juce::Justification::centredLeft);
     lblTitle->setEditable (false, false, false);
     lblTitle->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -111,7 +111,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblCmdNameCmm.reset (new juce::Label ("lblCmdNameCmm",
                                           TRANS("Community:")));
     addAndMakeVisible (lblCmdNameCmm.get());
-    lblCmdNameCmm->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblCmdNameCmm->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblCmdNameCmm->setJustificationType (juce::Justification::centredLeft);
     lblCmdNameCmm->setEditable (false, false, false);
     lblCmdNameCmm->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -128,7 +128,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblCmdNameCanon.reset (new juce::Label ("lblCmdNameCanon",
                                             TRANS("Canon:")));
     addAndMakeVisible (lblCmdNameCanon.get());
-    lblCmdNameCanon->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblCmdNameCanon->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblCmdNameCanon->setJustificationType (juce::Justification::centredLeft);
     lblCmdNameCanon->setEditable (false, false, false);
     lblCmdNameCanon->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -139,7 +139,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblCmdNameOld.reset (new juce::Label ("lblCmdNameOld",
                                           TRANS("Canon (Old):")));
     addAndMakeVisible (lblCmdNameOld.get());
-    lblCmdNameOld->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblCmdNameOld->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblCmdNameOld->setJustificationType (juce::Justification::centredLeft);
     lblCmdNameOld->setEditable (false, false, false);
     lblCmdNameOld->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -186,7 +186,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblCmd.reset (new juce::Label ("lblCmd",
                                    TRANS("Cmd:")));
     addAndMakeVisible (lblCmd.get());
-    lblCmd->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblCmd->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblCmd->setJustificationType (juce::Justification::centredLeft);
     lblCmd->setEditable (false, false, false);
     lblCmd->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -209,7 +209,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblTo.reset (new juce::Label ("lblTo",
                                   TRANS("to")));
     addAndMakeVisible (lblTo.get());
-    lblTo->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblTo->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblTo->setJustificationType (juce::Justification::centredLeft);
     lblTo->setEditable (false, false, false);
     lblTo->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -300,7 +300,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblAction.reset (new juce::Label ("lblAction",
                                       TRANS("Action:")));
     addAndMakeVisible (lblAction.get());
-    lblAction->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblAction->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblAction->setJustificationType (juce::Justification::centredLeft);
     lblAction->setEditable (false, false, false);
     lblAction->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -323,7 +323,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblComments.reset (new juce::Label ("lblComments",
                                         TRANS("Comments:")));
     addAndMakeVisible (lblComments.get());
-    lblComments->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblComments->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblComments->setJustificationType (juce::Justification::centredLeft);
     lblComments->setEditable (false, false, false);
     lblComments->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -334,7 +334,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblParams.reset (new juce::Label ("lblParams",
                                       TRANS("Params:")));
     addAndMakeVisible (lblParams.get());
-    lblParams->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblParams->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblParams->setJustificationType (juce::Justification::centredLeft);
     lblParams->setEditable (false, false, false);
     lblParams->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -351,7 +351,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblParamName.reset (new juce::Label ("lblParamName",
                                          TRANS("Name:")));
     addAndMakeVisible (lblParamName.get());
-    lblParamName->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblParamName->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblParamName->setJustificationType (juce::Justification::centredLeft);
     lblParamName->setEditable (false, false, false);
     lblParamName->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -362,7 +362,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblParamMeaning.reset (new juce::Label ("lblParamMeaning",
                                             TRANS("Meaning:")));
     addAndMakeVisible (lblParamMeaning.get());
-    lblParamMeaning->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblParamMeaning->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblParamMeaning->setJustificationType (juce::Justification::centredLeft);
     lblParamMeaning->setEditable (false, false, false);
     lblParamMeaning->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -459,13 +459,13 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblDataLen.reset (new juce::Label ("lblDataLen",
                                        TRANS("(none)")));
     addAndMakeVisible (lblDataLen.get());
-    lblDataLen->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblDataLen->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblDataLen->setJustificationType (juce::Justification::centredLeft);
     lblDataLen->setEditable (false, false, false);
     lblDataLen->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblDataLen->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblDataLen->setBounds (360, 588, 64, 24);
+    lblDataLen->setBounds (360, 576, 64, 24);
 
     txtDataLen.reset (new juce::TextEditor ("txtDataLen"));
     addAndMakeVisible (txtDataLen.get());
@@ -477,7 +477,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     txtDataLen->setPopupMenuEnabled (true);
     txtDataLen->setText (juce::String());
 
-    txtDataLen->setBounds (424, 588, 32, 24);
+    txtDataLen->setBounds (424, 576, 32, 24);
 
     btnSave.reset (new juce::TextButton ("btnSave"));
     addAndMakeVisible (btnSave.get());
@@ -501,7 +501,7 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     lblCC.reset (new juce::Label ("lblCC",
                                   TRANS("CC:")));
     addAndMakeVisible (lblCC.get());
-    lblCC->setFont (juce::Font (15.00f, juce::Font::plain));
+    lblCC->setFont (juce::Font (15.00f, juce::Font::plain).withTypefaceStyle ("Regular"));
     lblCC->setJustificationType (juce::Justification::centredLeft);
     lblCC->setEditable (false, false, false);
     lblCC->setColour (juce::TextEditor::textColourId, juce::Colours::black);
@@ -516,6 +516,14 @@ SeqABIEditor::SeqABIEditor (String abi_name)
     btnCCHelp->addListener (this);
 
     btnCCHelp->setBounds (448, 552, 22, 24);
+
+    chkx2.reset (new juce::ToggleButton ("chkx2"));
+    addAndMakeVisible (chkx2.get());
+    chkx2->setTooltip (TRANS("CC value is multiplied by 2 to get MML value, because MIDI is 0-127 whereas MML is 0-255."));
+    chkx2->setButtonText (TRANS("x2"));
+    chkx2->addListener (this);
+
+    chkx2->setBounds (400, 600, 72, 24);
 
 
     //[UserPreSize]
@@ -631,6 +639,7 @@ SeqABIEditor::~SeqABIEditor()
     txtCC = nullptr;
     lblCC = nullptr;
     btnCCHelp = nullptr;
+    chkx2 = nullptr;
 
 
     //[Destructor]. You can add your own custom destruction code here..
@@ -932,6 +941,14 @@ void SeqABIEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         );
         //[/UserButtonCode_btnCCHelp]
     }
+    else if (buttonThatWasClicked == chkx2.get())
+    {
+        //[UserButtonCode_chkx2] -- add your button handler code here..
+        if(!selparam.isValid()) return;
+        selparam.setProperty("x2", chkx2->getToggleState(), nullptr);
+        needssaving = true;
+        //[/UserButtonCode_chkx2]
+    }
 
     //[UserbuttonClicked_Post]
     //[/UserbuttonClicked_Post]
@@ -1131,6 +1148,7 @@ void SeqABIEditor::fillParamInfo(){
         lblDataLen->setText("(none)", dontSendNotification);
         txtDataLen->setText("", false);
         txtCC->setText("", false);
+        chkx2->setToggleState(false, dontSendNotification);
         return;
     }
     txtParamName->setText(selparam.getProperty("name", ""), false);
@@ -1150,6 +1168,7 @@ void SeqABIEditor::fillParamInfo(){
     txtDataLen->setText(datasrc == "offset" || datasrc == "variable" ? ""
         : selparam.getProperty("datalen", "").toString(), false);
     txtDataLen->setEnabled(datasrc == "fixed" || datasrc == "constant");
+    chkx2->setToggleState((bool)selparam.getProperty("x2", false), dontSendNotification);
 }
 
 void SeqABIEditor::fillMeaningsBox(String action){
@@ -1390,12 +1409,12 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="96 608 48 24" buttonText="Dn"
               connectedEdges="5" needsCallback="1" radioGroupId="0"/>
   <LABEL name="lblDataLen" id="1e1a075250c48074" memberName="lblDataLen"
-         virtualName="" explicitFocusOrder="0" pos="360 588 64 24" edTextCol="ff000000"
+         virtualName="" explicitFocusOrder="0" pos="360 576 64 24" edTextCol="ff000000"
          edBkgCol="0" labelText="(none)" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <TEXTEDITOR name="txtDataLen" id="7975a2934104f024" memberName="txtDataLen"
-              virtualName="" explicitFocusOrder="0" pos="424 588 32 24" initialText=""
+              virtualName="" explicitFocusOrder="0" pos="424 576 32 24" initialText=""
               multiline="0" retKeyStartsLine="0" readonly="0" scrollbars="1"
               caret="1" popupmenu="1"/>
   <TEXTBUTTON name="btnSave" id="f1826d8815459bef" memberName="btnSave" virtualName=""
@@ -1412,6 +1431,10 @@ BEGIN_JUCER_METADATA
   <TEXTBUTTON name="btnCCHelp" id="d5818054c15cd3a3" memberName="btnCCHelp"
               virtualName="" explicitFocusOrder="0" pos="448 552 22 24" buttonText="?"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
+  <TOGGLEBUTTON name="chkx2" id="a5451667905d26f3" memberName="chkx2" virtualName=""
+                explicitFocusOrder="0" pos="400 600 72 24" tooltip="CC value is multiplied by 2 to get MML value, because MIDI is 0-127 whereas MML is 0-255."
+                buttonText="x2" connectedEdges="0" needsCallback="1" radioGroupId="0"
+                state="0"/>
 </JUCER_COMPONENT>
 
 END_JUCER_METADATA

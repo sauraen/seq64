@@ -291,6 +291,7 @@ private:
     static Identifier idValidInSeq;
     static Identifier idValidInChn;
     static Identifier idValidInTrk;
+    static Identifier idx2;
     static Identifier idChannel;
     static Identifier idLayer;
     static Identifier idShortMode;

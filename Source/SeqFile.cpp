@@ -49,6 +49,7 @@ Identifier SeqFile::idSType("stype");
 Identifier SeqFile::idValidInSeq("validinseq");
 Identifier SeqFile::idValidInChn("validinchn");
 Identifier SeqFile::idValidInTrk("validintrk");
+Identifier SeqFile::idx2("x2");
 Identifier SeqFile::idChannel("channel");
 Identifier SeqFile::idLayer("layer");
 Identifier SeqFile::idShortMode("shortmode");
@@ -174,6 +175,7 @@ ValueTree SeqFile::loadABI(String name){
         std::cout << "Error parsing XML of " + abifile.getFullPathName() + "!\n";
         return ValueTree();
     }
+    std::cout << "Loading ABI " + abifile.getFullPathName() + "\n";
     return ValueTree::fromXml(*xml);
 }
 bool SeqFile::saveABI(String name, ValueTree abi_){
@@ -398,11 +400,10 @@ ValueTree SeqFile::createCommand(ValueTree want, bool warnIfImpossible){
     for(int j=0; j<test.getNumChildren(); j++){
         param2 = test.getChild(j);
         param = want.getChildWithProperty(idMeaning, param2.getProperty(idMeaning));
-        if(param.isValid()){
-            param2.setProperty(idValue, param.getProperty(idValue), nullptr);
-        }else{
-            param2.setProperty(idValue, 0, nullptr);
-        }
+        int value = 0;
+        if(param.isValid()) value = (int)param.getProperty(idValue);
+        if((bool)param2.getProperty(idx2, false)) value *= 2;
+        param2.setProperty(idValue, value, nullptr);
     }
     //Hash
     test.setProperty(idHash, Random::getSystemRandom().nextInt(), nullptr);
@@ -1436,6 +1437,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                         ccstates[paramcc]->lastvalue = value2;
                         ccstates[paramcc]->lasttime = timestamp;
                         ccstates[paramcc]->lastcmd = cccmd;
+                        if((bool)tmpparam.getProperty(idx2, false)) value2 *= 2;
                         tmpparam.setProperty(idValue, value2, nullptr);
                         trk->deleteEvent(i, false);
                         if(i == m) --m;
@@ -1589,11 +1591,12 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                             transpose += 12 * (((note - 0x40) / 12) + 1);
                         }
                         note = msg.getNoteNumber() - transpose - midi_basenote;
+                        int transpose_unsigned = transpose < 0 ? (0x100 + transpose) : transpose;
                         if(transposecmd.isValid()){
-                            transposecmd.getChildWithProperty(idMeaning, "Value").setProperty(idValue, transpose, nullptr);
+                            transposecmd.getChildWithProperty(idMeaning, "Value").setProperty(idValue, transpose_unsigned, nullptr);
                         }else{
                             want2 = wantAction("Layer Transpose", 2);
-                            wantProperty(want2, "Value", transpose);
+                            wantProperty(want2, "Value", transpose_unsigned);
                             section.addChild(createCommand(want2), cmd, nullptr);
                             cmd++;
                         }
@@ -1601,7 +1604,10 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                     wantProperty(want, "Note", note);
                     //Delay
                     delay = timestamp3 - timestamp;
-                    if(delay >= 48*2 && ((timestamp2 - timestamp) * 0x100 / delay) < 0x08){
+                    //Want to make sure there is sufficient resolution to encode the note off
+                    //time of any note using gate time.
+                    const int minDelayResolution = 8; //Sixteenth note triplet; 48 ppqn
+                    if(delay >= minDelayResolution * 0x100){ //10 2/3 measures at 4/4
                         //Full note and then timestamp
                         wantProperty(want, "Delay", timestamp2 - timestamp);
                         wantProperty(want, "Gate Time", 0);
@@ -2528,6 +2534,7 @@ int SeqFile::exportMIDI(File midifile, ValueTree midiopts){
                     continue;
                 }
                 int value = param.getProperty(idValue);
+                if((bool)param.getProperty(idx2, false)) value /= 2;
                 if(cc != 128 && (value < 0 || value > 0x7F)){
                     dbgmsg("CC " + String(cc) + " event with invalid value = " + String(value) + "!");
                     importresult |= 1;
