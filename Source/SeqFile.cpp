@@ -489,7 +489,9 @@ bool SeqFile::isCloseEnough(ValueTree command1, ValueTree command2, bool allowCC
             param1 = command1.getChild(i);
             if(param1.getProperty(idMeaning).toString() != "CC") continue;
             param2 = command2.getChild(i);
-            if((int)param1.getProperty(idCC, -1) != (int)param2.getProperty(idCC, -2)) return false;
+            int cc = (int)param1.getProperty(idCC, -1);
+            if(cc != (int)param2.getProperty(idCC, -2)) return false;
+            if(cc == 0 || cc == 32 || cc == 129) delta = 0; //Bank/prog must match exactly
             if(abs((int)param1.getProperty(idValue, -1234) 
                 - (int)param2.getProperty(idValue, -8971)) > delta) return false;
         }
