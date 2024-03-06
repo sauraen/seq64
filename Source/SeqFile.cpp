@@ -3445,10 +3445,13 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
     }
     if(targetsection.isValid()){
         ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, SM_unspecified);
-        if(tgtshortmode == SM_unspecified){
+        if(shortmode == SM_unspecified){
+            (void)0; // do nothing
+        }else if(tgtshortmode == SM_unspecified){
             targetsection.setProperty(idShortMode, shortmode, nullptr);
         }else if(tgtshortmode != shortmode){
-            line->Info("Section " + tgt + " short mode is conflicting");
+            line->Info("Real section " + tgt + " short mode is conflicting, previously "
+                + GetShortModeLetter(tgtshortmode) + ", now " + GetShortModeLetter(shortmode));
             targetsection.setProperty(idShortMode, SM_conflict, nullptr);
         }
         return;
@@ -3467,15 +3470,19 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
                     + ", now referenced as " + String(stype) + "!");
                 return;
             }
-            if(fs[i].shortmode == SM_unspecified){
+            if(shortmode == SM_unspecified){
+                (void)0; // do nothing
+            }else if(fs[i].shortmode == SM_unspecified){
                 fs.getReference(i).shortmode = shortmode;
             }else if(fs[i].shortmode != shortmode){
-                line->Info("Section " + tgt + " short mode is conflicting");
+                line->Info("Future section " + tgt + " short mode is conflicting, previously "
+                    + GetShortModeLetter(fs[i].shortmode) + ", now " + GetShortModeLetter(shortmode));
                 fs.getReference(i).shortmode = SM_conflict;
             }
         }
     }
-    //dbgmsg("Added future section " + tgt + " stype " + String(stype));
+    // dbgmsg("Added future section " + tgt + " stype " + String(stype) + " shortmode "
+    //     + GetShortModeLetter(shortmode));
     FutureSection f;
     f.label = tgt;
     f.stype = stype;
@@ -5298,9 +5305,11 @@ bool SeqFile::findDynTableSettings(int dtsec, const StringArray &refs){
                     clearRecurVisited();
                     return false;
                 }
-                if(finalresult.shortmode == SM_unspecified){
+                if(res.shortmode == SM_unspecified){
+                    (void)0; // do nothing
+                }else if(finalresult.shortmode == SM_unspecified){
                     finalresult.shortmode = res.shortmode;
-                }else if(res.shortmode != SM_unspecified && res.shortmode != finalresult.shortmode){
+                }else if(res.shortmode != finalresult.shortmode){
                     finalresult.shortmode = SM_conflict;
                 }
             }
@@ -5692,11 +5701,14 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             }else if(stype != 0 && (action == "Jump" || action == "Branch" || action == "Call"
                     || action == "Ptr Channel Header" || action == "Ptr Note Layer")){
                 ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, SM_unspecified);
-                if(tgtshortmode == SM_unspecified){
+                if(shortmode == SM_unspecified){
+                    (void)0; // do nothing
+                }else if(tgtshortmode == SM_unspecified){
                     targetsection.setProperty(idShortMode, shortmode, nullptr);
                 }else if(tgtshortmode != shortmode){
                     dbgmsg("At section " + String(s) + " addr " + hex(a) + ": section "
-                        + command.getProperty(idTargetSection).toString() + " short mode is conflicting");
+                        + command.getProperty(idTargetSection).toString() + " short mode is conflicting, previously "
+                            + GetShortModeLetter(tgtshortmode) + ", now " + GetShortModeLetter(shortmode));
                     targetsection.setProperty(idShortMode, SM_conflict, nullptr);
                 }
             }
