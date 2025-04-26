@@ -1412,7 +1412,7 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
                         //lastcmd will be invalid if this is an action we aren't tracking
                         ValueTree tmpcmd = ccstates[cc]->lastcmd.getChildWithProperty(idCC, cc);
                         if(tmpcmd.isValid()){
-                            tmpcmd.setProperty("Value", value, nullptr);
+                            tmpcmd.setProperty(idValue, value, nullptr);
                         }else{
                             dbgmsg("Internal consistency error in CC quantization!");
                             return 2;
