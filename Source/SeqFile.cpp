@@ -3391,6 +3391,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
         ValueTree section, ValueTree command, ShortMode shortmode){
     if(!command.hasProperty(idTargetSection)) return;
     String tgt = command.getProperty(idTargetSection);
+    if(altnames.containsKey(tgt)) tgt = altnames[tgt];
     String action = command.getProperty(idAction);
     int stype = -1;
     if(action == "Jump" || action == "Branch" || action == "Call"){
@@ -4159,7 +4160,10 @@ void SeqFile::nameTargetCommands(int dialect){
         for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
             ValueTree command = section.getChild(cmd);
             if(command.hasProperty(idLabelName) && !command.hasProperty(idLabelNameAuto)){
-                registerExistingLabelName(command);
+                if(!(cmd == 0 && command.getProperty(idLabelName).toString() ==
+                    section.getProperty(idLabelName, "#;: ").toString())){
+                    registerExistingLabelName(command);
+                }    
                 continue;
             }
             if(command.hasProperty(idTSection)){
@@ -4241,7 +4245,7 @@ int SeqFile::countTicks(ValueTree sec, int starthash, int *lastdelay){
     return 0;
 }
 
-String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command, 
+String SeqFile::getCommandMusLine(int sec, int cmd, ValueTree section, ValueTree command, 
         int dialect, int stype, int secticks){
     if(stype < 0 || stype >= 3){
         dbgmsg("Requested command to mus line for invalid stype " + String(stype) + "!");
@@ -4249,7 +4253,9 @@ String SeqFile::getCommandMusLine(int sec, ValueTree section, ValueTree command,
         return "ERROR!\n";
     }
     String ret;
-    if(command.hasProperty(idLabelName)){
+    if(command.hasProperty(idLabelName) && 
+            !(cmd == 0 && command.getProperty(idLabelName).toString() 
+            == section.getProperty(idLabelName).toString())){
         ret += command.getProperty(idLabelName).toString();
         if(dialect < 2) ret += ":";
         ret += "\n";
@@ -4656,7 +4662,7 @@ int SeqFile::exportMus(File musfile, int dialect){
             //Seq header, channel, or layer command
             int secticks = countTicks(section, 0, nullptr);
             for(int cmd=0; cmd<section.getNumChildren(); ++cmd){
-                out += getCommandMusLine(sec, section, section.getChild(cmd), 
+                out += getCommandMusLine(sec, cmd, section, section.getChild(cmd), 
                     dialect, stype, secticks);
             }
         }
@@ -5026,8 +5032,8 @@ bool SeqFile::removeSection(int remove, int &replace, int hash, int cmdbyte){
     return true;
 }
 
-int SeqFile::checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t &parse_addr, 
-        ValueTree parse_cmd){
+int SeqFile::checkRanIntoOtherSection(ValueTree parse_section, int parse_stype,
+        int &parse_s, uint32_t &parse_addr, ValueTree parse_cmd){
     int ret = 0;
     for(int i=0; i<structure.getNumChildren(); ++i){
         if(i == parse_s) continue;
@@ -5063,7 +5069,10 @@ int SeqFile::checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t &p
         //Not yet parsed section--target placeholder for some command
         if(parse_addr > sec_addr) continue;
         //Some part of the command is what the target address is referring to
-        if((parse_addr == sec_addr && parse_stype == sec_stype) || sec_stype < 0){
+        if((parse_addr == sec_addr && parse_stype == sec_stype && (parse_stype != 3 || (
+                (int)parse_section.getProperty(idDynTableSType, -2) == 
+                (int)tmpsec.getProperty(idDynTableSType, -3)
+                ))) || sec_stype < 0){
             if(sec_stype < 0){
                 //Section is target of self-modifying code or introspection
                 dbgmsg("@" + hex(parse_addr,16) + ": Found target command for Ptr Self");
@@ -5183,6 +5192,10 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
             channel = parse_section.getProperty(idChannel, -1);
         }
         if(channel < 0 || channel >= 16){
+            dbgmsg("Can't determine channel for new section from " + src_action 
+                + " @" + hex((int)parse_cmd.getProperty(idAddress),16));
+            channel = -1;
+            /*
             dbgmsg("Error determining channel for new section from " + src_action 
                 + " @" + hex((int)parse_cmd.getProperty(idAddress),16) + "!");
             dbgmsg("src_action " + src_action + " has Channel param " + 
@@ -5192,6 +5205,7 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
                 dbgmsg("value " + param.getProperty(idValue, -1234).toString());
             }
             return -1;
+            */
         }
         newsec.setProperty(idChannel, channel, nullptr);
     }else if(tgt_stype == 2){
@@ -5649,7 +5663,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             return 2;
         }
         //Check if we ran into another section at this command
-        int ranIntoResult = checkRanIntoOtherSection(stype, s, a, command);
+        int ranIntoResult = checkRanIntoOtherSection(section, stype, s, a, command);
         if(ranIntoResult < 0){
             if(forceContinue){
                 if(a == forceContinueA){
@@ -5750,9 +5764,10 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                 //Unconditional jump ends the section
                 secdone = true;
             }else if(action == "Seq Hdr Call Table" || action == "Set Dyntable"){
-                targetsection.setProperty(idSrcCmdRef,
-                    targetsection.getProperty(idSrcCmdRef, "").toString() 
-                    + "," + command.getProperty(idHash).toString(), nullptr);
+                String str = targetsection.getProperty(idSrcCmdRef, "").toString();
+                if(str != "") str += ",";
+                str += command.getProperty(idHash).toString();
+                targetsection.setProperty(idSrcCmdRef, str, nullptr);
             }else if(stype != 0 && (action == "Jump" || action == "Branch" || action == "Call"
                     || action == "Ptr Channel Header" || action == "Ptr Note Layer")){
                 ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, SM_unspecified);

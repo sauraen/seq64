@@ -230,7 +230,7 @@ private:
     void nameSections(int dialect);
     void nameTargetCommands(int dialect);
     int countTicks(ValueTree sec, int starthash, int *lastdelay);
-    String getCommandMusLine(int sec, ValueTree section, ValueTree command, 
+    String getCommandMusLine(int sec, int cmd, ValueTree section, ValueTree command, 
         int dialect, int stype, int secticks);
     int findDynTableIndex(int sec);
     
@@ -244,8 +244,8 @@ private:
     ValueTree getOtherTableCommand(const Array<uint8_t> &data, uint32_t address);
     
     //<0: error, 1: section escape, 2: restart_parsing
-    int checkRanIntoOtherSection(int parse_stype, int &parse_s, uint32_t &parse_addr, 
-        ValueTree parse_cmd);
+    int checkRanIntoOtherSection(ValueTree parse_section, int parse_stype,
+        int &parse_s, uint32_t &parse_addr, ValueTree parse_cmd);
     //<0: error, 0: not found, 1: found
     int findTargetCommand(String action, uint32_t parse_addr, int tgt_addr, int tgt_stype, ValueTree parse_cmd);
     //<0: error, 0: okay
