@@ -192,20 +192,31 @@ private:
     //For importMus and importCom
     
     struct DynTableSettings {
-        int stype;
+        //This is the type of the data at the pointers contained within this
+        //dyntable. In other words, this does not include the stype of this
+        //dyntable itself; it's eventually the property idDynTableSType.
+        //For a straightforward dyntable to channel data, dtstype == 1.
+        //Multiple-dynamic dyntable types are represented with powers of 10.
+        //For example: dtstype 1 = each entry is the address of channel data,
+        //dtstype 31 = each entry is the address of a dyntable whose entries
+        //are addresses of channel data (one use of dynsetdyntable),
+        //dtstype 331 = two uses of dynsetdyntable, etc.
+        int dtstype;
         ShortMode shortmode;
     };
     
     ValueTree createBlankSectionVT(int stype);
     void handleShortNoteChanges(ValueTree command, int stype, ShortMode &shortmode);
-    ValueTree makeDynTableCommand(uint32_t address, var target, int dtstype, 
-            int dtdynstype);
+    ValueTree makeDynTableCommand(uint32_t address, var target, int dtstype);
     ValueTree makeEnvelopeCommand(uint32_t address, int16_t rate, uint16_t level);
     ValueTree makeBasicDataCommand(uint32_t address, int value, 
             String datasrc, int datalen);
     void clearRecurVisited();
+    bool findCommandByHash(int hash, int &s, int &c);
+    DynTableSettings mergeDynTableResults(DynTableSettings a, DynTableSettings b);
     bool findDynTableSettings(int dtsec, const StringArray &refs);
-    DynTableSettings findNextDynTableSettings(int s, int c);
+    DynTableSettings findNextDynTableSettings(
+        DynTableSettings ret, int s, int c, bool afterjump);
     bool getSectionAndCmd(ValueTree command, int &s, int &c);
     
     //For exportMus
@@ -312,7 +323,6 @@ private:
     static Identifier idTargetSType;
     static Identifier idWillDrop;
     static Identifier idDynTableSType;
-    static Identifier idDynTableDynSType;
     //static Identifier idCurDynTableSec;
     static Identifier idMessage;
     static Identifier idRecurVisited;

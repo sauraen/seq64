@@ -69,7 +69,6 @@ Identifier SeqFile::idTargetHash("targethash");
 Identifier SeqFile::idTargetCmdByte("targetcmdbyte");
 Identifier SeqFile::idWillDrop("willdrop");
 Identifier SeqFile::idDynTableSType("dyntablestype");
-Identifier SeqFile::idDynTableDynSType("dyntabledynstype");
 //Identifier SeqFile::idCurDynTableSec("curdyntablesec");
 Identifier SeqFile::idMessage("message");
 Identifier SeqFile::idRecurVisited("recurvisited");
@@ -3047,7 +3046,7 @@ ValueTree SeqFile::parseMusCommand(const MusLine *line, int stype, int dtstype,
             if(!isValidLabel(line->toks[t])){
                 return line->Error("Invalid character(s) in label " + line->toks[t] + "!");
             }
-            ValueTree command = makeDynTableCommand(-1, line->toks[t], dtstype, -1);
+            ValueTree command = makeDynTableCommand(-1, line->toks[t], dtstype);
             if(!command.isValid()){
                 return line->Error("Internal error with dyntable setup!");
             }
@@ -3596,7 +3595,7 @@ int SeqFile::importMus(File musfile){
     }
     //Init first section
     ln = 0;
-    int stype = 0, dtstype = -1, dtdynstype = -1;
+    int stype = 0;
     ValueTree section = createBlankSectionVT(0);
     section.setProperty(idAddress, ln, nullptr);
     structure.appendChild(section, nullptr);
@@ -3666,7 +3665,8 @@ int SeqFile::importMus(File musfile){
                 //Actual function of #lprinton/#lprintoff unknown, this is a guess.
                 line->Print();
             }
-            command = parseMusCommand(line, stype, dtstype, shortmode, true);
+            command = parseMusCommand(line, stype,
+                section.getProperty(idDynTableSType, -1), shortmode, true);
             if(importresult >= 2 || !command.isValid()) return 2;
             type = command.getType().toString();
         }
@@ -3800,7 +3800,7 @@ int SeqFile::importMus(File musfile){
             }
             structure.appendChild(section, nullptr);
             dbgmsg("Parsing section " + futuresecs[fs].label + " stype " + String(stype));
-            if(stype == 3){
+            if(stype == 3 && !section.hasProperty(idDynTableSType)){
                 StringArray refs;
                 //Find all commands which refer to this dyntable
                 for(int s=0; s<structure.getNumChildren(); ++s){
@@ -3813,15 +3813,6 @@ int SeqFile::importMus(File musfile){
                     }
                 }
                 if(!findDynTableSettings(structure.getNumChildren()-1, refs)) return 2;
-                dtstype = section.getProperty(idDynTableSType, -1);
-                if(dtstype == 3){
-                    dbgmsg("Double-dynamic commands not yet fully supported!");
-                    return 2;
-                }else if(dtstype != 0 && dtstype != 1 && dtstype != 2 && dtstype != 6){
-                    dbgmsg("Internal error in dyntable setup!");
-                    return 2;
-                }
-                dtdynstype = -1;
             }
             futuresecs.remove(fs);
         }else if(endSection){
@@ -3837,8 +3828,6 @@ int SeqFile::importMus(File musfile){
                     section = structure.getChild(0);
                     section.setProperty(idQuestionableSection, true, nullptr);
                     stype = 0;
-                    dtstype = -1;
-                    dtdynstype = -1;
                     shortmode = SM_unspecified;
                     continueParsing = true;
                     break;
@@ -3864,8 +3853,6 @@ int SeqFile::importMus(File musfile){
                     }else{
                         shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
                     }
-                    dtstype = -1; //Jumps can't exist in dyntables
-                    dtdynstype = -1;
                     continueParsing = true;
                     break;
                 }
@@ -3907,9 +3894,11 @@ int SeqFile::importMus(File musfile){
                     stype = validSTypes[0];
                     lines[ln]->Info("Speculative parsing deduced stype " + String(stype));
                     curLabel = "";
-                    dtstype = (stype == 3) ? 1 : -1; //Hopefully no unused dyntable, but if so probably channel
-                    dtdynstype = -1;
                     section = createBlankSectionVT(stype);
+                    if(stype == 3){
+                        //Hopefully no unused dyntable, but if so probably channel
+                        section.setProperty(idDynTableSType, 1, nullptr);
+                    }
                     section.setProperty(idAddress, ln, nullptr);
                     section.setProperty(idQuestionableSection, true, nullptr);
                     section.setProperty(idShortMode, SM_unspecified, nullptr);
@@ -4812,8 +4801,20 @@ ValueTree SeqFile::initCommand(uint32_t address){
     return command;
 }
 
-ValueTree SeqFile::makeDynTableCommand(uint32_t address, var target, int dtstype, 
-        int dtdynstype){
+/*
+// Pop upper digit of dtstype, it should be 3; keep rest. E.g. 331 -> 31
+int powerof10;
+for(powerof10 = 10; dtstype / powerof10 != 0; powerof10 *= 10);
+powerof10 /= 10;
+int upperdigit = dtstype / powerof10;
+if(upperdigit != 3){
+    dbgmsg("Invalid dtstype " + String(dtstype) + "!");
+    return ValueTree();
+}
+dtstype = dtstype % powerof10;
+*/
+
+ValueTree SeqFile::makeDynTableCommand(uint32_t address, var target, int dtstype){
     ValueTree command = initCommand(address);
     command.setProperty(idLength, 2, nullptr);
     ValueTree addrparam("parameter");
@@ -4844,12 +4845,22 @@ ValueTree SeqFile::makeDynTableCommand(uint32_t address, var target, int dtstype
         param.setProperty(idDataLen, 0, nullptr);
         command.appendChild(param, nullptr);
     }else if(dtstype == 3){
-        command.setProperty(idAction, "Set Dyntable", nullptr);
-        command.setProperty(idName, "[dyntable Ptr Dyn Table]", nullptr);
-        command.setProperty(idDynTableSType, dtdynstype, nullptr);
+        dbgmsg("Dyntable target is a dyntable of unspecified type!");
+        return ValueTree();
     }else if(dtstype == 6){
         command.setProperty(idAction, "Ptr Other Table", nullptr);
         command.setProperty(idName, "[dyntable Ptr Other Table]", nullptr);
+    }else if(dtstype >= 10){
+        int powerof10;
+        for(powerof10 = 10; dtstype / powerof10 != 0; powerof10 *= 10);
+        powerof10 /= 10;
+        if(dtstype / powerof10 != 3){
+            dbgmsg("Invalid dtstype " + String(dtstype) + "!");
+        }
+        dtstype %= powerof10;
+        command.setProperty(idAction, "Set Dyntable", nullptr);
+        command.setProperty(idName, "[dyntable Ptr Dyn Table]", nullptr);
+        command.setProperty(idDynTableSType, dtstype, nullptr);
     }else{
         dbgmsg("Invalid dyntable stype target " + String(dtstype) + "!");
         return ValueTree();
@@ -4867,8 +4878,7 @@ ValueTree SeqFile::getDynTableCommand(const Array<uint8_t> &data, uint32_t addre
         dbgmsg("Stopping dyntable @" + hex(address,16) + " because pointer outside seq " + hex(tgt_addr));
         return ValueTree("end");
     }
-    return makeDynTableCommand(address, (int)tgt_addr, 
-        section.getProperty(idDynTableSType), section.getProperty(idDynTableDynSType));
+    return makeDynTableCommand(address, (int)tgt_addr, section.getProperty(idDynTableSType));
 }
 
 ValueTree SeqFile::makeEnvelopeCommand(uint32_t address, int16_t rate, uint16_t level){
@@ -5101,7 +5111,7 @@ int SeqFile::findTargetCommand(String action, uint32_t parse_addr, int tgt_addr,
                     tmpsec.getProperty(idDynTableSType) != parse_cmd.getProperty(idDynTableSType)){
                     dbgmsg("dyntable @" + hex(parse_addr-2,16) + " pointer to " + hex(tgt_addr,16)
                         + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType).toString()
-                        + " vs. current double-dynamic stype " + parse_cmd.getProperty(idDynTableSType).toString() + "!");
+                        + " vs. current dynamic stype " + parse_cmd.getProperty(idDynTableSType).toString() + "!");
                     return -1;
                 }
             }
@@ -5137,7 +5147,7 @@ int SeqFile::findTargetCommand(String action, uint32_t parse_addr, int tgt_addr,
                     tmpsec.getProperty(idDynTableSType) != parse_cmd.getProperty(idDynTableSType)){
                 dbgmsg("dyntable @" + hex(parse_addr-2,16) + " pointer to " + hex(tgt_addr,16)
                     + " to wrong dynamic stype " + tmpsec.getProperty(idDynTableSType).toString()
-                    + " vs. current double-dynamic stype " + parse_cmd.getProperty(idDynTableSType).toString() + "!");
+                    + " vs. current dynamic stype " + parse_cmd.getProperty(idDynTableSType).toString() + "!");
                 return -1;
             }
             dbgmsg("Found target command: " + cmd.getProperty(idName).toString()
@@ -5206,7 +5216,7 @@ int SeqFile::createSection(String src_action, int tgt_addr, int tgt_stype, Value
         newsec.setProperty(idChannel, 0, nullptr); //Note layer parsing dyntable will check for this
         if(parse_cmd.hasProperty(idDynTableSType)){
             //Only if a dynamic table pointing to another dynamic table
-            dbgmsg("with known dyntablestype " + parse_cmd.getProperty(idDynTableSType).toString());
+            dbgmsg("with known dtstype " + parse_cmd.getProperty(idDynTableSType).toString());
             newsec.setProperty(idDynTableSType, parse_cmd.getProperty(idDynTableSType), nullptr);
         }
     }else if(tgt_stype == 6 || tgt_stype < 0){
@@ -5264,6 +5274,40 @@ void SeqFile::clearRecurVisited(){
     }
 }
 
+bool SeqFile::findCommandByHash(int hash, int &s, int &c){
+    for(s=0; s<structure.getNumChildren(); ++s){
+        ValueTree tmpsec = structure.getChild(s);
+        for(c=0; c<tmpsec.getNumChildren(); ++c){
+            ValueTree command = tmpsec.getChild(c);
+            if((int)command.getProperty(idHash) == hash){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+SeqFile::DynTableSettings SeqFile::mergeDynTableResults(DynTableSettings a, DynTableSettings b){
+    if(a.dtstype <= -2) return a;
+    if(b.dtstype <= -2) return b;
+    if(a.dtstype < 0) return b; //whether -1 or found
+    if(b.dtstype < 0) return a; //whether -1 or found
+    DynTableSettings ret;
+    if(a.dtstype != b.dtstype){
+        dbgmsg("Inconsistent dyntable traversal dtstype results: one path = " 
+            + String(a.dtstype) + " another path = " + String(b.dtstype) + "!");
+        ret.dtstype = -2;
+        return ret;
+    }
+    ret.dtstype = a.dtstype;
+    //stypes equal, check short modes
+    if(a.shortmode == SM_unspecified) return b;
+    if(b.shortmode == SM_unspecified) return a;
+    if(a.shortmode == b.shortmode) return a;
+    ret.shortmode = SM_conflict;
+    return ret;
+}
+
 bool SeqFile::findDynTableSettings(int dtsec, const StringArray &refs){
     //Traverse the sequence, following structural commands, to find what is
     //the type this dyntable is used as, and the short mode of the channel,
@@ -5273,96 +5317,101 @@ bool SeqFile::findDynTableSettings(int dtsec, const StringArray &refs){
         dbgmsg("Internal error, no references to dyntable!");
         return false;
     }
+    clearRecurVisited();
     DynTableSettings finalresult;
-    finalresult.stype = -1;
+    finalresult.dtstype = -1;
     finalresult.shortmode = SM_unspecified;
     for(int r=0; r<refs.size(); ++r){
         int hash = refs[r].getIntValue();
-        //Find this command
-        for(int s=0; s<structure.getNumChildren(); ++s){
-            if(s == dtsec) continue;
-            ValueTree tmpsec = structure.getChild(s);
-            for(int c=0; c<tmpsec.getNumChildren(); ++c){
-                ValueTree command = tmpsec.getChild(c);
-                if((int)command.getProperty(idHash) != hash) continue;
-                DynTableSettings res = findNextDynTableSettings(s, c);
-                if(res.stype == -1){
-                    dbgmsg("No dyntable use after definition in sec " + String(s)
-                        + " cmd " + String(c) + "!");
-                    importresult |= 1;
-                }else if(res.stype < 0){ //other error
-                    clearRecurVisited();
-                    return false;
-                }else if(finalresult.stype < 0){
-                    finalresult.stype = res.stype;
-                    dbgmsg("dyntable sec " + String(dtsec) + " found stype " + String(finalresult.stype));
-                }else if(finalresult.stype == res.stype){
-                    dbgmsg("and another use also stype " + String(finalresult.stype));
-                }else{
-                    dbgmsg("dyntable sec " + String(dtsec) + ": previously found stype " 
-                        + String(finalresult.stype) + ", just found another stype " + String(res.stype)
-                        + " after ref at sec " + String(s) + " cmd " + String(c) + ", aborting!");
-                    clearRecurVisited();
-                    return false;
-                }
-                if(res.shortmode == SM_unspecified){
-                    (void)0; // do nothing
-                }else if(finalresult.shortmode == SM_unspecified){
-                    finalresult.shortmode = res.shortmode;
-                }else if(res.shortmode != finalresult.shortmode){
-                    finalresult.shortmode = SM_conflict;
-                }
-            }
+        int s, c;
+        if(!findCommandByHash(hash, s, c)){
+            dbgmsg("Could not find command with hash " + String(hash) + "!");
+            return false;
         }
-        clearRecurVisited();
+        DynTableSettings res;
+        ValueTree sec2 = structure.getChild(s);
+        ValueTree cmd2 = sec2.getChild(c);
+        if(cmd2.hasProperty(idDynTableSType)){
+            res.dtstype = (int)cmd2.getProperty(idDynTableSType);
+            res.shortmode = (ShortMode)(int)sec2.getProperty(idShortMode);
+        }else{
+            res.dtstype = 0; //Here not meaning "seq hdr", but "no dyntables yet". Still return -1 if unknown.
+            res.shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
+            res = findNextDynTableSettings(res, s, c, false);
+            if(res.dtstype == -1){
+                dbgmsg("No dyntable use after definition in sec " + String(s)
+                    + " cmd " + String(c) + "!");
+                importresult |= 1;
+            }
+            clearRecurVisited();
+        }
+        finalresult = mergeDynTableResults(finalresult, res);
+        if(finalresult.dtstype <= -2) return false;
     }
-    if(finalresult.stype < 0){
+    if(finalresult.dtstype < 0){
         dbgmsg("dyntable sec " + String(dtsec) + ": could not find any uses of this table, so unknown stype! Can't continue!");
         return false;
     }
-    section.setProperty(idDynTableSType, finalresult.stype, nullptr);
+    section.setProperty(idDynTableSType, finalresult.dtstype, nullptr);
     section.setProperty(idShortMode, finalresult.shortmode, nullptr);
-    dbgmsg("Set dyntable section " + String(dtsec) + " to stype " + String(finalresult.stype)
+    dbgmsg("Set dyntable section " + String(dtsec) 
+        + " to dtstype " + String(finalresult.dtstype)
         + " shortmode " + GetShortModeLetter(finalresult.shortmode));
     return true;
 }
 
-SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(int s, int c){
+SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(
+    DynTableSettings ret, int s, int c, bool afterjump
+){
     //dbgmsg("Looking for next dyntable use after sec " + String(s) + " cmd " + String(c));
     ValueTree section = structure.getChild(s);
-    DynTableSettings ret;
-    ret.stype = -12345;
-    ret.shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
-    while(true){
-        if(c >= section.getNumChildren()){ ret.stype = -1; return ret; }
+    while(!afterjump){
+        if(c >= section.getNumChildren()) {
+            if((int)section.getProperty(idSType, 9999) <= 2){
+                // In a normal section, should have seen an End of Data command
+                dbgmsg("Ran off the end of section " + String(s) + " when analyzing dyntable use!");
+                ret.dtstype = -2;
+                return ret;
+            }else{
+                // In a dyntable
+                break;
+            }
+        }
         ValueTree command = section.getChild(c);
-        if(command.hasProperty(idRecurVisited)){ ret.stype = -1; return ret; }
-        command.setProperty(idRecurVisited, true, nullptr);
-        String action = command.getProperty(idAction);
-        if(action == "End of Data"){
-            ret.stype = -1;
+        if(command.hasProperty(idRecurVisited)){
+            dbgmsg("Reached already visited section " + String(s) + " command " + String(c));
+            ret.dtstype = -1;
             return ret;
         }
+        command.setProperty(idRecurVisited, true, nullptr);
+        String action = command.getProperty(idAction);
+        if(action == "End of Data") break;
+        
+        int finaldtstype = -1;
         if(action == "Seq Hdr Call Table"){
             //Technically this isn't a dyntable as it doesn't set the dyntable
             //pointer, but seq hdr doesn't have its own dyntable pointer anyway,
             //so we can treat this as a command which both sets and then
             //immediately uses the dyntable
-            ret.stype = 0;
+            finaldtstype = 0;
         }else if(action == "Channel from Dyntable"){
-            ret.stype = 1;
+            finaldtstype = 1;
         }else if(action == "Layer from Dyntable"){
-            ret.stype = 2;
-        }else if(action == "Dyntable from Dyntable"){
-            ret.stype = 3;
+            finaldtstype = 2;
         }else if(action == "Data from Dyntable"){
-            ret.stype = 6;
+            finaldtstype = 6;
         }
-        if(ret.stype >= 0){
+        if(finaldtstype >= 0){
+            ret.dtstype += finaldtstype;
             ret.shortmode = (ShortMode)(int)command.getProperty(idShortMode, SM_unspecified);
+            dbgmsg("Leaf got dyntable dtstype " + String(ret.dtstype));
             return ret;
         }
-        if(action == "Set Dyntable" || action == "Dyntable from Data"){
+        
+        if(action == "Dyntable from Dyntable"){
+            ret.dtstype += 3;
+            ret.dtstype *= 10;
+        }else if(action == "Set Dyntable" || action == "Dyntable from Data"){
             //Dyntable pointer is now overwritten with something else. However,
             //most likely this is just multiple commands setting up the
             //dyntable, before one command actually uses it.
@@ -5371,46 +5420,57 @@ SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(int s, int c){
             //     "go anywhere, but assuming it will be the same type");
             //Also since we're now starting with the set dyntable command itself
             //for Seq Hdr Call Table purposes, this will be triggered every time.
-            ++c;
-        }else if(action == "Jump"){
-            if(!getSectionAndCmd(command, s, c)){ ret.stype = -2; return ret; }
+        }
+        
+        if(action == "Jump"){
+            if(!getSectionAndCmd(command, s, c)){ ret.dtstype = -2; return ret; }
             section = structure.getChild(s);
+            continue; // don't increment c
         }else if(action == "Call"){
             int s2, c2;
-            if(!getSectionAndCmd(command, s2, c2)){ ret.stype = -2; return ret; }
-            DynTableSettings callresult = findNextDynTableSettings(s2, c2);
-            if(callresult.stype != -1) return callresult; //either error -2 or found >= 0
-            ++c; //Was not found in call, move on to next command
+            if(!getSectionAndCmd(command, s2, c2)){ ret.dtstype = -2; return ret; }
+            DynTableSettings callresult = findNextDynTableSettings(ret, s2, c2, false);
+            if(callresult.dtstype != -1) return callresult; //either error -2 or found >= 0
+            //Was not found in call, move on to next command
         }else if(action == "Branch"){
             //Try both paths, compare results
             int s2, c2;
-            if(!getSectionAndCmd(command, s2, c2)){ ret.stype = -2; return ret; }
-            DynTableSettings branchres = findNextDynTableSettings(s2, c2);
-            if(branchres.stype <= -2){ ret.stype = -2; return ret; }
-            DynTableSettings continres = findNextDynTableSettings(s, c+1);
-            if(continres.stype <= -2){ ret.stype = -2; return ret; }
-            if(branchres.stype < 0) return continres; //whether -1 or found
-            if(continres.stype < 0) return branchres; //whether -1 or found
-            if(branchres.stype != continres.stype){
-                dbgmsg("findNextDynTableSettings branch paths different stype results from sec "
-                    + String(s) + " cmd " + String(c) + ": taking branch gives " + String(branchres.stype)
-                    + " while not taking branch gives " + String(continres.stype) + "!");
-                ret.stype = -2;
-                return ret;
+            if(!getSectionAndCmd(command, s2, c2)){ ret.dtstype = -2; return ret; }
+            return mergeDynTableResults(
+                findNextDynTableSettings(ret, s2, c2, false),
+                findNextDynTableSettings(ret, s, c+1, false));
+        }
+        ++c;
+    }
+    //Returning from the current section. Find all places that could have called
+    //or branched to the current section and continue from there. Ptr Channel
+    //Header etc. is out because that's not a continuation of the same channel.
+    //For jumps, "return" to the sections which jumped to this, with a flag so
+    //we don't keep parsing those sections but recursively look at their parents.
+    dbgmsg("Dyntable type hunt reached end of section " + String(s) 
+        + ", trying places which call it");
+    //ret = base result continuing after call
+    DynTableSettings finalresult; finalresult.dtstype = -1;
+    for(int s2=0; s2<structure.getNumChildren(); ++s2){
+        ValueTree tmpsec = structure.getChild(s2);
+        for(int c2=0; c2<tmpsec.getNumChildren(); ++c2){
+            ValueTree command = tmpsec.getChild(c2);
+            if(command.hasProperty(idRecurVisited)) continue;
+            String action = command.getProperty(idAction);
+            if(action == "Call" || action == "Branch" || action == "Jump"){
+                int s3, c3;
+                if(!getSectionAndCmd(command, s3, c3)) { ret.dtstype = -2; return ret; }
+                if(s3 == s && c3 <= c){
+                    dbgmsg("Section " + String(s2) + " cmd " + String(c2) + " is "
+                        + action + " to section " + String(s) + ", continuing there");
+                    DynTableSettings newresult = findNextDynTableSettings(
+                        ret, s2, c2+1, action == "Branch");
+                    finalresult = mergeDynTableResults(finalresult, newresult);
+                }
             }
-            //stypes equal, check short modes
-            if(branchres.shortmode == SM_unspecified) return continres;
-            if(continres.shortmode == SM_unspecified) return branchres;
-            if(continres.shortmode == branchres.shortmode) return continres;
-            continres.shortmode = SM_conflict;
-            return continres;
-        }else{
-            ++c;
         }
     }
-    //This is unreachable code
-    ret.stype = -1;
-    return ret;
+    return finalresult;
 }
 
 bool SeqFile::getSectionAndCmd(ValueTree command, int &s, int &c){
@@ -5534,11 +5594,6 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             StringArray refs = StringArray::fromTokens(
                 section.getProperty(idSrcCmdRef).toString(), ",", "");
             if(!findDynTableSettings(s, refs)) return 2;
-        }
-        if((int)section.getProperty(idDynTableSType) == 3 && !section.hasProperty(idDynTableDynSType)){
-            dbgmsg("dynsetdyntable section missing idDynTableDynSType, "
-                "double-dynamic commands not yet fully supported! Aborting!");
-            return 2;
         }
     }
     ShortMode shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
