@@ -145,6 +145,7 @@ private:
         SM_short,
         SM_conflict
     };
+    ShortMode sm_default;
     String GetShortModeLetter(ShortMode sm){
         switch(sm){
         case SM_unspecified: return "U";
@@ -216,7 +217,7 @@ private:
     DynTableSettings mergeDynTableResults(DynTableSettings a, DynTableSettings b);
     bool findDynTableSettings(int dtsec, const StringArray &refs);
     DynTableSettings findNextDynTableSettings(
-        DynTableSettings ret, int s, int c, bool afterjump);
+        DynTableSettings ret, int s, int c, bool afterjump, bool fromcall);
     bool getSectionAndCmd(ValueTree command, int &s, int &c);
     
     //For exportMus

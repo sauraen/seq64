@@ -77,7 +77,14 @@ Identifier SeqFile::idQuestionableSection("questionablesection");
 const int SeqFile::max_layers = 4;
 
 SeqFile::SeqFile(ValueTree abi_) : abi(abi_), tsecnames_generated(false){
-    
+    sm_default = SM_long;
+    for(int i=0; i<abi.getNumChildren(); ++i){
+        String action = abi.getChild(i).getProperty(idAction);
+        if(action == "Short Note" || action == "Set Short Notes"){
+            sm_default = SM_unspecified;
+            break;
+        }
+    }
 }
 
 SeqFile::~SeqFile(){
@@ -108,7 +115,7 @@ String SeqFile::getInternalString(){
             ret += ", layer " + section.getProperty(idLayer, -1).toString();
         }
         ret += " [" + GetShortModeLetter(
-            (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified)) + "]";
+            (ShortMode)(int)section.getProperty(idShortMode, sm_default)) + "]";
         ret += "\n";
         if(section.hasProperty(idMessage)){
             ret += "  Message: " + section.getProperty(idMessage).toString() + "\n";
@@ -136,7 +143,7 @@ String SeqFile::getInternalString(){
                 cmddesc += ", " + paramdesc + " " + hexauto((int)param.getProperty(idValue, 0x1337));
             }
             if(stype == 1) cmddesc = "[" + GetShortModeLetter(
-                (ShortMode)(int)cmd.getProperty(idShortMode, SM_unspecified)) + "] " + cmddesc;
+                (ShortMode)(int)cmd.getProperty(idShortMode, sm_default)) + "] " + cmddesc;
             if(cmd.hasProperty(idLabelName)) cmddesc = "[" + cmd.getProperty(idLabelName).toString() + "] " + cmddesc;
             //if(cmd.hasProperty(idHash)) cmddesc = cmd.getProperty(idHash).toString() + " " + cmddesc;
             if(cmd.hasProperty(idAddress)) cmddesc = hex((int)cmd.getProperty(idAddress),16) + " " + cmddesc;
@@ -3444,7 +3451,7 @@ void SeqFile::checkAddFutureSection(const MusLine *line, Array<FutureSection> &f
         }
     }
     if(targetsection.isValid()){
-        ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, SM_unspecified);
+        ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, sm_default);
         if(shortmode == SM_unspecified){
             (void)0; // do nothing
         }else if(tgtshortmode == SM_unspecified){
@@ -3584,7 +3591,7 @@ int SeqFile::importMus(File musfile){
     dbgmsg("Replacing @ labels...");
     String localParentLabel = "";
     for(ln=0; ln<lines.size(); ++ln){
-        ValueTree command = parseMusCommand(lines[ln], 0, -1, SM_unspecified, false);
+        ValueTree command = parseMusCommand(lines[ln], 0, -1, sm_default, false);
         if(importresult >= 2 || !command.isValid()) return 2;
         if(command.getType().toString() == "label" && !lines[ln]->l.containsChar('@')){
             localParentLabel = lines[ln]->toks[0];
@@ -3607,7 +3614,7 @@ int SeqFile::importMus(File musfile){
     altnames.clear();
     String curLabel = "";
     bool lprint = false;
-    ShortMode shortmode = SM_unspecified;
+    ShortMode shortmode = sm_default;
     while(true){
         MusLine *line;
         ValueTree command;
@@ -3829,7 +3836,7 @@ int SeqFile::importMus(File musfile){
                     section = structure.getChild(0);
                     section.setProperty(idQuestionableSection, true, nullptr);
                     stype = 0;
-                    shortmode = SM_unspecified;
+                    shortmode = sm_default;
                     continueParsing = true;
                     break;
                 }
@@ -3852,7 +3859,7 @@ int SeqFile::importMus(File musfile){
                     if(lastchild.hasProperty(idShortMode)){
                         shortmode = (ShortMode)(int)lastchild.getProperty(idShortMode);
                     }else{
-                        shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
+                        shortmode = (ShortMode)(int)section.getProperty(idShortMode, sm_default);
                     }
                     continueParsing = true;
                     break;
@@ -3864,7 +3871,7 @@ int SeqFile::importMus(File musfile){
                 for(stype=0; stype<=6; ++stype){
                     bool okay = true;
                     for(int tmpln=ln; tmpln<lines.size() && !lines[tmpln]->used; ++tmpln){
-                        command = parseMusCommand(lines[tmpln], stype, 1, SM_unspecified, false);
+                        command = parseMusCommand(lines[tmpln], stype, 1, sm_default, false);
                         if(importresult >= 2 || !command.isValid()){
                             dbgmsg("Syntax error--not wrong stype--encountered during speculative parsing!");
                             return 2;
@@ -3902,8 +3909,8 @@ int SeqFile::importMus(File musfile){
                     }
                     section.setProperty(idAddress, ln, nullptr);
                     section.setProperty(idQuestionableSection, true, nullptr);
-                    section.setProperty(idShortMode, SM_unspecified, nullptr);
-                    shortmode = SM_unspecified;
+                    section.setProperty(idShortMode, sm_default, nullptr);
+                    shortmode = sm_default;
                     structure.appendChild(section, nullptr);
                     continueParsing = true;
                     break;
@@ -4555,7 +4562,7 @@ int SeqFile::exportMus(File musfile, int dialect){
         }
         //Section label
         if(sec != 0 || dialect < 2){
-            ShortMode shortmode = (ShortMode)(int)section.getProperty(idShortMode, (int)SM_unspecified);
+            ShortMode shortmode = (ShortMode)(int)section.getProperty(idShortMode, (int)sm_default);
             if(dialect < 2 && shortmode != SM_unspecified && (dialect == 1 || shortmode != SM_long)){
                 out += "; ";
                 if(stype == 1){
@@ -5334,7 +5341,7 @@ bool SeqFile::findDynTableSettings(int dtsec, const StringArray &refs){
     clearRecurVisited();
     DynTableSettings finalresult;
     finalresult.dtstype = -1;
-    finalresult.shortmode = SM_unspecified;
+    finalresult.shortmode = sm_default;
     for(int r=0; r<refs.size(); ++r){
         int hash = refs[r].getIntValue();
         int s, c;
@@ -5347,11 +5354,11 @@ bool SeqFile::findDynTableSettings(int dtsec, const StringArray &refs){
         ValueTree cmd2 = sec2.getChild(c);
         if(cmd2.hasProperty(idDynTableSType)){
             res.dtstype = (int)cmd2.getProperty(idDynTableSType);
-            res.shortmode = (ShortMode)(int)sec2.getProperty(idShortMode);
+            res.shortmode = (ShortMode)(int)sec2.getProperty(idShortMode, sm_default);
         }else{
             res.dtstype = 0; //Here not meaning "seq hdr", but "no dyntables yet". Still return -1 if unknown.
-            res.shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
-            res = findNextDynTableSettings(res, s, c, false);
+            res.shortmode = (ShortMode)(int)section.getProperty(idShortMode, sm_default);
+            res = findNextDynTableSettings(res, s, c, false, false);
             if(res.dtstype == -1){
                 dbgmsg("No dyntable use after definition in sec " + String(s)
                     + " cmd " + String(c) + "!");
@@ -5375,7 +5382,7 @@ bool SeqFile::findDynTableSettings(int dtsec, const StringArray &refs){
 }
 
 SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(
-    DynTableSettings ret, int s, int c, bool afterjump
+    DynTableSettings ret, int s, int c, bool afterjump, bool fromcall
 ){
     //dbgmsg("Looking for next dyntable use after sec " + String(s) + " cmd " + String(c));
     ValueTree section = structure.getChild(s);
@@ -5417,7 +5424,7 @@ SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(
         }
         if(finaldtstype >= 0){
             ret.dtstype += finaldtstype;
-            ret.shortmode = (ShortMode)(int)command.getProperty(idShortMode, SM_unspecified);
+            ret.shortmode = (ShortMode)(int)command.getProperty(idShortMode, sm_default);
             dbgmsg("Leaf got dyntable dtstype " + String(ret.dtstype));
             return ret;
         }
@@ -5443,7 +5450,7 @@ SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(
         }else if(action == "Call"){
             int s2, c2;
             if(!getSectionAndCmd(command, s2, c2)){ ret.dtstype = -2; return ret; }
-            DynTableSettings callresult = findNextDynTableSettings(ret, s2, c2, false);
+            DynTableSettings callresult = findNextDynTableSettings(ret, s2, c2, false, true);
             if(callresult.dtstype != -1) return callresult; //either error -2 or found >= 0
             //Was not found in call, move on to next command
         }else if(action == "Branch"){
@@ -5451,11 +5458,19 @@ SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(
             int s2, c2;
             if(!getSectionAndCmd(command, s2, c2)){ ret.dtstype = -2; return ret; }
             return mergeDynTableResults(
-                findNextDynTableSettings(ret, s2, c2, false),
-                findNextDynTableSettings(ret, s, c+1, false));
+                findNextDynTableSettings(ret, s2, c2, false, false),
+                findNextDynTableSettings(ret, s, c+1, false, false));
         }
         ++c;
     }
+    
+    DynTableSettings finalresult; finalresult.dtstype = -1;
+    if(fromcall){
+        //Don't do the search below because this is a called section and the parent
+        //will continue searching after.
+        return finalresult;
+    }
+    
     //Returning from the current section. Find all places that could have called
     //or branched to the current section and continue from there. Ptr Channel
     //Header etc. is out because that's not a continuation of the same channel.
@@ -5464,7 +5479,6 @@ SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(
     dbgmsg("Dyntable type hunt reached end of section " + String(s) 
         + ", trying places which call it");
     //ret = base result continuing after call
-    DynTableSettings finalresult; finalresult.dtstype = -1;
     for(int s2=0; s2<structure.getNumChildren(); ++s2){
         ValueTree tmpsec = structure.getChild(s2);
         for(int c2=0; c2<tmpsec.getNumChildren(); ++c2){
@@ -5478,7 +5492,7 @@ SeqFile::DynTableSettings SeqFile::findNextDynTableSettings(
                     dbgmsg("Section " + String(s2) + " cmd " + String(c2) + " is "
                         + action + " to section " + String(s) + ", continuing there");
                     DynTableSettings newresult = findNextDynTableSettings(
-                        ret, s2, c2+1, action == "Branch");
+                        ret, s2, c2+1, action == "Jump", false);
                     finalresult = mergeDynTableResults(finalresult, newresult);
                 }
             }
@@ -5610,7 +5624,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
             if(!findDynTableSettings(s, refs)) return 2;
         }
     }
-    ShortMode shortmode = (ShortMode)(int)section.getProperty(idShortMode, SM_unspecified);
+    ShortMode shortmode = (ShortMode)(int)section.getProperty(idShortMode, sm_default);
     //Parse commands.
     bool secdone = false;
     while(!secdone){
@@ -5770,7 +5784,7 @@ int SeqFile::parseComSection(int s, const Array<uint8_t> &data, Array<uint8_t> &
                 targetsection.setProperty(idSrcCmdRef, str, nullptr);
             }else if(stype != 0 && (action == "Jump" || action == "Branch" || action == "Call"
                     || action == "Ptr Channel Header" || action == "Ptr Note Layer")){
-                ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, SM_unspecified);
+                ShortMode tgtshortmode = (ShortMode)(int)targetsection.getProperty(idShortMode, sm_default);
                 if(shortmode == SM_unspecified){
                     (void)0; // do nothing
                 }else if(tgtshortmode == SM_unspecified){

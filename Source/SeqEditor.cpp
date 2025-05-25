@@ -59,7 +59,7 @@ SeqEditor::SeqEditor ()
     //[/Constructor_pre]
 
     grpMusDialect.reset (new juce::GroupComponent (juce::String(),
-                                                   TRANS(".mus dialect (for export)")));
+                                                   TRANS("assembly dialect (for export)")));
     addAndMakeVisible (grpMusDialect.get());
 
     grpMusDialect->setBounds (8, 553, 320, 71);
@@ -446,7 +446,7 @@ SeqEditor::SeqEditor ()
 
     btnImportMus.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnImportMus.get());
-    btnImportMus->setButtonText (TRANS("Import .mus"));
+    btnImportMus->setButtonText (TRANS("Import assembly"));
     btnImportMus->setConnectedEdges (juce::Button::ConnectedOnRight);
     btnImportMus->addListener (this);
 
@@ -454,7 +454,7 @@ SeqEditor::SeqEditor ()
 
     btnExportMus.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnExportMus.get());
-    btnExportMus->setButtonText (TRANS("Export .mus"));
+    btnExportMus->setButtonText (TRANS("Export assembly"));
     btnExportMus->setConnectedEdges (juce::Button::ConnectedOnLeft);
     btnExportMus->addListener (this);
 
@@ -462,7 +462,7 @@ SeqEditor::SeqEditor ()
 
     btnImportCom.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnImportCom.get());
-    btnImportCom->setButtonText (TRANS("Import .com/.aseq"));
+    btnImportCom->setButtonText (TRANS("Import binary"));
     btnImportCom->setConnectedEdges (juce::Button::ConnectedOnRight);
     btnImportCom->addListener (this);
 
@@ -470,7 +470,7 @@ SeqEditor::SeqEditor ()
 
     btnExportCom.reset (new juce::TextButton ("new button"));
     addAndMakeVisible (btnExportCom.get());
-    btnExportCom->setButtonText (TRANS("Export .com/.aseq"));
+    btnExportCom->setButtonText (TRANS("Export binary"));
     btnExportCom->setConnectedEdges (juce::Button::ConnectedOnLeft);
     btnExportCom->addListener (this);
 
@@ -557,7 +557,7 @@ SeqEditor::SeqEditor ()
     lblStyle->setColour (juce::TextEditor::textColourId, juce::Colours::black);
     lblStyle->setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
-    lblStyle->setBounds (16, 584, 56, 24);
+    lblStyle->setBounds (16, 592, 56, 24);
 
     optStyleMusic.reset (new juce::ToggleButton ("optStyleMusic"));
     addAndMakeVisible (optStyleMusic.get());
@@ -832,14 +832,14 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!abi.isValid()) return;
         if(!checkSeqPresence(false)) return;
         File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("romfolder");
-        FileChooser box("Load .mus", f, "*.mus", true);
+        FileChooser box("Load assembly", f, "*.mus;*.s;*.mml", true);
         File oldwd = File::getCurrentWorkingDirectory();
         bool hitokay = box.browseForFileToOpen();
         oldwd.setAsCurrentWorkingDirectory();
         if(!hitokay) return;
         f = box.getResult();
         seq.reset(new SeqFile(abi));
-        startSeqOperation(".mus import", &SeqFile::importMus, f);
+        startSeqOperation("assembly import", &SeqFile::importMus, f);
         //[/UserButtonCode_btnImportMus]
     }
     else if (buttonThatWasClicked == btnExportMus.get())
@@ -847,7 +847,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_btnExportMus] -- add your button handler code here..
         if(!checkSeqPresence(true)) return;
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
-        FileChooser box("Save .mus", savelocation, "*.mus", true);
+        FileChooser box("Save assembly", savelocation, "*.mus;*.s;*.mml", true);
         File oldwd = File::getCurrentWorkingDirectory();
         bool hitokay = box.browseForFileToSave(true);
         oldwd.setAsCurrentWorkingDirectory();
@@ -855,7 +855,7 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         savelocation = box.getResult();
         int dialect = optMusCommunity->getToggleState() ? 0 : optMusCanon->getToggleState() ? 2 : 4;
         dialect |= optStyleSFX->getToggleState() ? 1 : 0;
-        startSeqOperation(".mus export", &SeqFile::exportMus, savelocation, dialect);
+        startSeqOperation("assembly export", &SeqFile::exportMus, savelocation, dialect);
         //[/UserButtonCode_btnExportMus]
     }
     else if (buttonThatWasClicked == btnImportCom.get())
@@ -865,14 +865,14 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         if(!abi.isValid()) return;
         if(!checkSeqPresence(false)) return;
         File f = File::getSpecialLocation(File::userHomeDirectory); //TODO SEQ64::readFolderProperty("romfolder");
-        FileChooser box("Load .com/.aseq", f, "*.com;*.aseq;*.seq;*.m64;*.bin;*.seq", true);
+        FileChooser box("Load binary", f, "*.com;*.aseq;*.m64;*.bin;*.seq", true);
         File oldwd = File::getCurrentWorkingDirectory();
         bool hitokay = box.browseForFileToOpen();
         oldwd.setAsCurrentWorkingDirectory();
         if(!hitokay) return;
         f = box.getResult();
         seq.reset(new SeqFile(abi));
-        startSeqOperation(".com/.aseq import", &SeqFile::importCom, f);
+        startSeqOperation("binary import", &SeqFile::importCom, f);
         //[/UserButtonCode_btnImportCom]
     }
     else if (buttonThatWasClicked == btnExportCom.get())
@@ -880,13 +880,13 @@ void SeqEditor::buttonClicked (juce::Button* buttonThatWasClicked)
         //[UserButtonCode_btnExportCom] -- add your button handler code here..
         if(!checkSeqPresence(true)) return;
         File savelocation = File::getSpecialLocation(File::userHomeDirectory); //SEQ64::readFolderProperty("comfolder");
-        FileChooser box("Save .com/.aseq", savelocation, "*.com;*.aseq;*.seq;*.m64;*.bin;*.seq", true);
+        FileChooser box("Save binary", savelocation, "*.com;*.aseq;*.m64;*.bin;*.seq", true);
         File oldwd = File::getCurrentWorkingDirectory();
         bool hitokay = box.browseForFileToSave(true);
         oldwd.setAsCurrentWorkingDirectory();
         if(!hitokay) return;
         savelocation = box.getResult();
-        startSeqOperation(".com/.aseq export", &SeqFile::exportCom, savelocation);
+        startSeqOperation("binary export", &SeqFile::exportCom, savelocation);
         //[/UserButtonCode_btnExportCom]
     }
     else if (buttonThatWasClicked == chkPref.get())
@@ -1032,7 +1032,7 @@ BEGIN_JUCER_METADATA
                  fixedSize="1" initialWidth="800" initialHeight="720">
   <BACKGROUND backgroundColour="ff323e44"/>
   <GROUPCOMPONENT name="" id="288b23c83f4e83ab" memberName="grpMusDialect" virtualName=""
-                  explicitFocusOrder="0" pos="8 553 320 71" title=".mus dialect (for export)"/>
+                  explicitFocusOrder="0" pos="8 553 320 71" title="assembly dialect (for export)"/>
   <TOGGLEBUTTON name="new toggle button" id="47cfaabd82293101" memberName="optMusCommunity"
                 virtualName="" explicitFocusOrder="0" pos="16 568 112 24" buttonText="Community"
                 connectedEdges="0" needsCallback="1" radioGroupId="1" state="1"/>
@@ -1182,16 +1182,16 @@ BEGIN_JUCER_METADATA
               virtualName="" explicitFocusOrder="0" pos="168 96 160 32" buttonText="Export MIDI"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="3bb24dc32903c5e7" memberName="btnImportMus"
-              virtualName="" explicitFocusOrder="0" pos="8 512 160 32" buttonText="Import .mus"
+              virtualName="" explicitFocusOrder="0" pos="8 512 160 32" buttonText="Import assembly"
               connectedEdges="2" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="8f9107dadce8a52a" memberName="btnExportMus"
-              virtualName="" explicitFocusOrder="0" pos="168 512 160 32" buttonText="Export .mus"
+              virtualName="" explicitFocusOrder="0" pos="168 512 160 32" buttonText="Export assembly"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="ce9eeb4274035fc6" memberName="btnImportCom"
-              virtualName="" explicitFocusOrder="0" pos="8 672 160 32" buttonText="Import .com/.aseq"
+              virtualName="" explicitFocusOrder="0" pos="8 672 160 32" buttonText="Import binary"
               connectedEdges="2" needsCallback="1" radioGroupId="0"/>
   <TEXTBUTTON name="new button" id="e373bb4f6fe0c973" memberName="btnExportCom"
-              virtualName="" explicitFocusOrder="0" pos="168 672 160 32" buttonText="Export .com/.aseq"
+              virtualName="" explicitFocusOrder="0" pos="168 672 160 32" buttonText="Export binary"
               connectedEdges="1" needsCallback="1" radioGroupId="0"/>
   <LABEL name="new label" id="f47463540eb17b52" memberName="lblMuteBhv"
          virtualName="" explicitFocusOrder="0" pos="192 152 88 24" edTextCol="ff000000"
@@ -1223,7 +1223,7 @@ BEGIN_JUCER_METADATA
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>
   <LABEL name="lblStyle" id="d5bfeaf6e09966ec" memberName="lblStyle" virtualName=""
-         explicitFocusOrder="0" pos="16 584 56 24" edTextCol="ff000000"
+         explicitFocusOrder="0" pos="16 592 56 24" edTextCol="ff000000"
          edBkgCol="0" labelText="Style:" editableSingleClick="0" editableDoubleClick="0"
          focusDiscardsChanges="0" fontname="Default font" fontsize="15.0"
          kerning="0.0" bold="0" italic="0" justification="33"/>

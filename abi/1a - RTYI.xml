@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<cmdlist>
+  <command cmd="0" name="notedvg" action="Note" cmdend="63" validintrk="1"
+           comments="Note with delay (duration), velocity, and gate length.">
+    <parameter datasrc="offset" name="Note" meaning="Note"/>
+    <parameter datasrc="variable" name="Delay" meaning="Delay"/>
+    <parameter datasrc="fixed" datalen="1" name="Velocity" meaning="Velocity"/>
+    <parameter datasrc="fixed" datalen="1" name="Gate" meaning="Gate Time"/>
+  </command>
+  <command cmd="64" name="notedv" action="Note" validintrk="1" cmdend="127"
+           comments="Note with delay and velocity; gate length is 0 (full).">
+    <parameter datasrc="offset" name="Note" meaning="Note"/>
+    <parameter datasrc="variable" name="Delay" meaning="Delay"/>
+    <parameter datasrc="fixed" datalen="1" name="Velocity" meaning="Velocity"/>
+  </command>
+  <command cmd="128" name="notevg" action="Note" validintrk="1" cmdend="191"
+           comments="Note with velocity and gate length; delay (duration) is the same as the last note.">
+    <parameter datasrc="offset" name="Note" meaning="Note"/>
+    <parameter datasrc="fixed" datalen="1" name="Velocity" meaning="Velocity"/>
+    <parameter datasrc="fixed" datalen="1" name="Gate" meaning="Gate Time"/>
+  </command>
+  <command cmd="192" name="ldelay" action="Delay" validintrk="1" comments="Delay for N ticks"
+           cname="XXX">
+    <parameter datasrc="variable" name="Delay" meaning="Delay"/>
+  </command>
+  <command cmd="194" name="ltp" action="Layer Transpose" validintrk="1"
+           comments="Set note track transposition in semitones." cname="ntrans">
+    <parameter datasrc="fixed" datalen="1" name="Value" meaning="Value"/>
+  </command>
+  <command cmd="196" name="legatoon" action="No Action" validintrk="1" comments="Turn on legato (continuousNotes, i.e. envelope doesn't restart when next note happens)."
+           cname="tieon"/>
+  <command cmd="197" name="legatooff" action="No Action" validintrk="1"
+           comments="Turn off legato (continuousNotes, i.e. envelope restarts like normal when next note happens)."
+           cname="tieoff"/>
+  <command cmd="198" name="linst" action="No Action" validintrk="1" comments="Set instrument/program. Similar to the channel command, except arguments 0x7f and above are not supported."
+           cname="nprg">
+    <parameter name="Instrument (0-0x7E)" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="199" name="portamento" action="No Action" comments="Enable portamento (aka glissando; continuously sliding pitch). X describes the mode of operation somehow using its 0x80 bit and a value 0-5 in its lower-order bits. (Probably 0x80 = set = fixed sweep rate, 0x80 = clear = fixed sweep time, or maybe vice versa.) Y describes the target pitch. Z gives the duration, and is a u8 if the 0x80 bit is set in X, otherwise a var. Note that parsing this data-dependent datatype is not supported by SEQ64!&#10;Canon parameter description info: 01-05 are &quot;SWEEP&quot;, 81-85 are &quot;ASWEEP&quot; with comment &quot;Set length next notetime&quot;. 1=&quot;AB1&quot;, 2=&quot;BA1&quot;, 3=&quot;ABL&quot;, 4=&quot;BAL&quot;, 5=&quot;NBL&quot; with comment &quot;Set basekey before key&quot;."
+           validintrk="1" cname="sweepfrom" oname="sweep">
+    <parameter name="Mode" meaning="None" datasrc="fixed" datalen="1"/>
+    <parameter name="Target Pitch" meaning="None" datasrc="fixed" datalen="1"/>
+    <parameter name="Time/Rate" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="200" name="portamentooff" action="No Action" comments="Disable portamento."
+           validintrk="1" cname="sweepend"/>
+  <command cmd="0" name="ioclear" action="No Action" cmdend="3" comments="Set IO[N] to 0xFF."
+           validinchn="1">
+    <parameter name="N" meaning="None" datasrc="offset"/>
+  </command>
+  <command cmd="16" name="startchan" action="Ptr Channel Header" cmdend="31"
+           validinchn="1" comments="Start channel N for the parent sequence, with channel script starting at address X."
+           cname="sopensub">
+    <parameter name="Channel" meaning="None" datasrc="offset"/>
+    <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
+  </command>
+  <command cmd="32" name="stopchan" action="No Action" cmdend="47" validinchn="1"
+           comments="Disable channel N for the parent sequence." cname="sclosesub"
+           oname="ctblopen">
+    <parameter name="Channel" meaning="None" datasrc="offset"/>
+  </command>
+  <command cmd="48" name="stcio" action="No Action" cmdend="63" comments="IOn[X] = Q, where IOn is the IO array for channel N."
+           validinchn="1" cname="sr_subportwrite" oname="dtblopen">
+    <parameter name="N (channel)" meaning="None" datasrc="offset"/>
+    <parameter name="X (IO address)" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="64" name="ldcio" action="No Action" cmdend="79" validinchn="1"
+           comments="Q = IOn[X], where IOn is the IO array for channel N."
+           cname="sr_subportread">
+    <parameter name="N (channel)" meaning="None" datasrc="offset"/>
+    <parameter name="X (IO address)" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="80" name="subio" action="No Action" cmdend="83" validinchn="1"
+           comments="Decrease Q by IO[N]." cname="sr_portsbc" oname="cmpmyb">
+    <parameter datasrc="offset" name="N" meaning="None"/>
+  </command>
+  <command cmd="112" name="stio" action="No Action" cmdend="115" validinchn="1"
+           comments="Set IO[N] to Q." cname="sr_portwrite" oname="cpymyb">
+    <parameter datasrc="offset" name="N" meaning="None"/>
+  </command>
+  <command cmd="128" name="ldio" action="No Action" cmdend="131" validinchn="1"
+           comments="Set Q to IO[N], where IO is an array of bytes that can be read/written by both the game and the channel script."
+           cname="sr_portread" oname="chkmyb">
+    <parameter datasrc="offset" name="N" meaning="None"/>
+  </command>
+  <command cmd="144" name="startlayer" action="Ptr Note Layer" cmdend="147"
+           validinchn="1" comments="Start note layer N, with script starting at address X."
+           oname="opennote">
+    <parameter datasrc="offset" name="Note Layer" meaning="Note Layer"/>
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="160" name="stoplayer" action="No Action" cmdend="163" validinchn="1"
+           comments="Stop note layer N." oname="closenote">
+    <parameter name="Note Layer" meaning="None" datasrc="offset"/>
+  </command>
+  <command cmd="176" name="dynstartlayer" action="Layer from Dyntable" cmdend="179"
+           validinchn="1" comments="If Q != -1, start layer N, with layer script given by dyntable[Q]."
+           cname="sr_tblnopen" oname="ctblopen">
+    <parameter name="Note Layer" meaning="Note Layer" datasrc="offset"/>
+  </command>
+  <command cmd="193" name="instr" action="CC or CC Group" validinchn="1"
+           comments="Set instrument (program?) within bank. 0x80-0x83 set raw waves (sawtooth, triangle, sine, square), 0x7f is drums, otherwise 0-indexed.&#10;Canon info: 80 saw, 01 triangle (&quot;delta&quot;), 02 sine, 03 square (&quot;pulse&quot;), 06 &quot;pulse0&quot;, 07 &quot;pulse1&quot;"
+           oname="prg">
+    <parameter datasrc="fixed" datalen="1" name="Instrument" meaning="CC" cc="129"/>
+  </command>
+  <command cmd="194" name="dyntable" action="Set Dyntable" validinchn="1"
+           comments="Set dyntable to point to a given u16 array from the sequence data."
+           oname="tblset">
+    <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
+  </command>
+  <command cmd="197" name="dynsetdyntable" action="Dyntable from Dyntable"
+           validinchn="1" comments="If Q != -1, set dyntable to point to position dyntable[Q] in the sequence data."
+           cname="sr_jptbl" oname="ctbljump"/>
+  <command cmd="198" name="bank" action="CC or CC Group" comments="Switch bank within instrument bank sets, to the X&#8217;th bank, 0-indexed, counting from the end."
+           validinchn="1" oname="bankchg">
+    <parameter name="Bank" meaning="CC" datasrc="fixed" datalen="1" cc="0"/>
+  </command>
+  <command cmd="199" name="sts" action="Ptr Self" validinchn="1" comments="Self-Modifying Code -- sequenceData[A] = Q"
+           cname="sr_store" oname="cselfwriteb">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+    <parameter name="Const size" meaning="Size" datasrc="constant" datalen="1"/>
+  </command>
+  <command cmd="200" name="sub" action="No Action" validinchn="1" comments="Q -= val"
+           cname="sr_sbc" oname="chkcmp">
+    <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="201" name="and" action="No Action" validinchn="1" cname="sr_and"
+           comments="Q &amp;= val" oname="chkbit">
+    <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="203" name="lds" action="Ptr Self" validinchn="1" comments="Introspection -- Q = sequenceData[A + Q]."
+           cname="sr_extbl" oname="cextable">
+    <parameter name="Address" meaning="Absolute Address" datasrc="fixed" datalen="2"/>
+  </command>
+  <command cmd="204" name="ldi" action="No Action" cname="sr_load" comments="Q = val"
+           validinchn="1" oname="cload">
+    <parameter name="Value" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="210" name="relsustain" action="CC or CC Group" oname="sreverb"
+           validinchn="1" comments="Adds a sustain phase to the envelope release. At key off, volume falls at the release rate to the sustain value. Then it holds at the sustain value for 128 ticks, and then it falls at the release rate to 0. Changes to the sustain value while the note is in the sustain phase are ignored, so this command cannot be used like MIDI sustain pedal (releasing the pedal does not stop the note).">
+    <parameter name="Value" meaning="CC" datasrc="fixed" datalen="1" cc="70"/>
+  </command>
+  <command cmd="211" name="pitchbend" action="CC or CC Group" validinchn="1"
+           comments="Pitch bend by &lt;= 1 octave in either direction (-127&#8230;127)."
+           oname="pitchbend">
+    <parameter datasrc="fixed" datalen="1" name="Bend" meaning="CC" cc="128"/>
+  </command>
+  <command cmd="212" name="reverb" action="CC or CC Group" validinchn="1"
+           comments="Set amount of reverb (dry/wet mix)." oname="fxmix">
+    <parameter datasrc="fixed" datalen="1" name="Wet" meaning="CC" cc="91"/>
+  </command>
+  <command cmd="215" name="vibfreq" action="CC or CC Group" validinchn="1"
+           comments="Set vibrato frequency / rate." oname="vibpitch">
+    <parameter name="Frequency" meaning="CC" datasrc="fixed" datalen="1" cc="76"/>
+  </command>
+  <command cmd="216" name="vibdepth" action="CC or CC Group" validinchn="1"
+           comments="Set vibrato depth." oname="vibdepth">
+    <parameter datasrc="fixed" datalen="1" name="Depth" meaning="CC" cc="77"/>
+  </command>
+  <command cmd="217" name="release" action="CC or CC Group" validinchn="1"
+           comments="Set envelope release rate." oname="release">
+    <parameter name="Release" meaning="CC" datasrc="fixed" datalen="1" cc="72"
+               x2="1"/>
+  </command>
+  <command cmd="218" name="cenvelope" action="Ptr Envelope" validinchn="1"
+           comments="Load channel envelope from sequence data." oname="envelope">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="219" name="ctp" action="Chn Transpose" comments="Channel transposition in semitones."
+           validinchn="1" oname="strans">
+    <parameter name="Transpose" meaning="Value" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="221" name="cpan" action="CC or CC Group" validinchn="1"
+           comments="Set the pan for this channel (0&#8230;128)" oname="span">
+    <parameter datasrc="fixed" datalen="1" name="Pan" meaning="CC" cc="10"/>
+  </command>
+  <command cmd="222" name="freqscale" action="No Action" validinchn="1"
+           comments="Pitch bend using a raw frequency multiplier X/2&#94;15."
+           oname="stune">
+    <parameter name="X" meaning="None" datasrc="fixed" datalen="2"/>
+  </command>
+  <command cmd="223" name="cvol" action="CC or CC Group" validinchn="1"
+           comments="Set channel volume scale factor (MIDI range 0-127, but accepts through 255 and will go louder). This corresponds to MIDI volume (CC 7)."
+           oname="svolume">
+    <parameter datasrc="fixed" datalen="1" name="Volume" meaning="CC" cc="7"/>
+  </command>
+  <command cmd="224" name="cexp" action="CC or CC Group" validinchn="1"
+           comments="In the Kaze GBI, is identical to cvol--not a second multiplicative volume factor, just overwrites the same one as cvol."
+           oname="evolume">
+    <parameter datasrc="fixed" datalen="1" name="Value" meaning="CC" cc="11"/>
+  </command>
+  <command cmd="225" name="vibfreqenv" action="CC or CC Group" validinchn="1"
+           comments="Set vibrato frequency for each note as a function that starts at X, goes up linearly to Y over a time span given by Z, then stays there."
+           oname="vibpitchmv">
+    <parameter name="Start" meaning="CC" datasrc="fixed" datalen="1" cc="78"/>
+    <parameter name="Target" meaning="CC" datasrc="fixed" datalen="1" cc="79"/>
+    <parameter name="Time" meaning="CC" datasrc="fixed" datalen="1" cc="80"/>
+  </command>
+  <command cmd="226" name="vibdepthenv" action="CC or CC Group" validinchn="1"
+           comments="Set vibrato depth for each note as a function that starts at X, goes up linearly to Y over a time span given by Z, then stays there."
+           oname="vibdepthmv">
+    <parameter name="Start" meaning="CC" datasrc="fixed" datalen="1" cc="81"/>
+    <parameter name="Target" meaning="CC" datasrc="fixed" datalen="1" cc="82"/>
+    <parameter name="Time" meaning="CC" datasrc="fixed" datalen="1" cc="83"/>
+  </command>
+  <command cmd="227" name="vibdelay" action="CC or CC Group" validinchn="1"
+           comments="Set delay until vibrato starts for each note." oname="vibdelay">
+    <parameter name="Delay" meaning="CC" datasrc="fixed" datalen="1" cc="75"/>
+  </command>
+  <command cmd="228" name="dyncall" action="Channel from Dyntable" validinchn="1"
+           comments="If Q != -1, make a function call to position dyntable[Q], where dyntable is a channel-specific u16 array which can set by dyntable/dynsetdyntable."
+           cname="sr_calltbl" oname="ctblcall"/>
+  <command cmd="144" name="startchan" action="Ptr Channel Header" cmdend="159"
+           validinseq="1" comments="Start channel N, with a given channel script."
+           cname="opensub">
+    <parameter datasrc="offset" name="Channel" meaning="Channel"/>
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="212" name="mute" action="No Action" comments="Set sequence to muted mode. Depending on what behavior has been set this will do different things; from lowering volume to not running scripts."
+           validinseq="1" cname="selfpause"/>
+  <command cmd="213" name="mutescale" action="Mute Scale" validinseq="1"
+           comments="Set volume multiplier for muted mode (0&#8230;127)."
+           cname="pausevolume">
+    <parameter datasrc="fixed" datalen="1" name="Volume Multiplier" meaning="Value"/>
+  </command>
+  <command cmd="214" name="disablechan" action="Channel Disable" validinseq="1"
+           comments="Uninitialize channels (bitmask)." cname="deallocsub">
+    <parameter datasrc="fixed" datalen="2" name="Channels" meaning="Bitfield"/>
+  </command>
+  <command cmd="215" name="initchan" action="Channel Enable" validinseq="1"
+           comments="Initialize channels (bitmask). This copies mute behavior and note allocation policy."
+           cname="allocsub">
+    <parameter datasrc="fixed" datalen="2" name="Channels" meaning="Bitfield"/>
+  </command>
+  <command cmd="218" name="sfade" action="No Action" comments="Fade volume over time.&#10;Canon info: 0=&quot;MOVE&quot;, 1=&quot;FADEIN&quot;, 2=&quot;FADEOUT&quot;. Guessing this is related to sequence metadata, not the fade command."
+           validinseq="1" cname="volumemode">
+    <parameter name="Target volume" meaning="None" datasrc="fixed" datalen="1"/>
+    <parameter name="Time" meaning="None" datasrc="fixed" datalen="2"/>
+  </command>
+  <command cmd="219" name="svol" action="Master Volume" validinseq="1" comments="Set volume scale (0&#8230;255 = none to twice normal).&#10;Actually normal is 0x58, not 0x80."
+           cname="volumechg">
+    <parameter datasrc="fixed" datalen="1" name="Volume" meaning="Value"/>
+  </command>
+  <command cmd="220" name="temporel" action="No Action" comments="Change tempo by some delta."
+           validinseq="1" cname="tempoofs">
+    <parameter name="Delta Tempo" meaning="None" datasrc="fixed" datalen="1"/>
+  </command>
+  <command cmd="221" name="tempo" action="Tempo" validinseq="1" comments="Set tempo in BPM."
+           cname="tempochg">
+    <parameter datasrc="fixed" datalen="1" name="Tempo" meaning="Value"/>
+  </command>
+  <command cmd="240" name="testlayers" action="No Action" validinchn="1"
+           comments="Sets Q to 1 if all this channel's layers are finished (not playing), else 0."/>
+  <command cmd="243" name="halt" action="No Action" comments="Infinite delay"
+           validinchn="1" oname="halt">
+    <parameter name="Infinity" meaning="Delay" datasrc="constant" datalen="999999999"/>
+  </command>
+  <command cmd="244" name="stopall" action="No Action" validinchn="1" comments="Stop playing all note layers of this channel."/>
+  <command cmd="245" name="bgez" action="Branch" validinchn="1" comments="Branch Absolute if Q&gt;=0"
+           cname="jumpp">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="246" name="break" action="Loop Break" comments="Decrease loop/function stack depth by 1. Combine with a jump to break out of a loop. Only supported in channels."
+           validinchn="1" cname="loopbreak"/>
+  <command cmd="247" name="loopend" action="Loop End" validinseq="1" validinchn="1"
+           validintrk="1" comments="Loop End" cname="loope"/>
+  <command cmd="248" name="loop" action="Loop Start" validinseq="1" validinchn="1"
+           validintrk="1" comments="Loop Start" cname="loops">
+    <parameter datasrc="fixed" datalen="1" name="Loop Count" meaning="Loop Count"/>
+  </command>
+  <command cmd="249" name="bltz" action="Branch" validinchn="1" comments="Branch Absolute if Q &lt; 0"
+           cname="jumpn">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="250" name="beqz" action="Branch" validinchn="1" comments="Branch Absolute if Q == 0"
+           cname="jump0">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="251" name="jump" action="Jump" validinseq="1" validinchn="1"
+           validintrk="1" comments="Branch Absolute Always" cname="jump">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="252" name="call" action="Call" validinseq="1" validinchn="1"
+           validintrk="1" comments="Call Absolute" cname="call">
+    <parameter datasrc="fixed" datalen="2" name="Address" meaning="Absolute Address"/>
+  </command>
+  <command cmd="253" name="delay" action="Delay" validinseq="1" validinchn="1"
+           cname="wait">
+    <parameter datasrc="variable" name="Delay" meaning="Delay"/>
+  </command>
+  <command cmd="254" name="yield" action="No Action" cname="return" comments="Return from parsing, to pick up from the next command on the next parse cycle."
+           validinseq="1" validinchn="1"/>
+  <command cmd="255" name="end" action="End of Data" validinseq="1" validinchn="1"
+           validintrk="1" cname="fin"/>
+</cmdlist>
