@@ -1126,14 +1126,20 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
     value = (int)midiopts.getProperty("mutebhv", 0x20);
     want = wantAction("Mute Behavior", 0);
     wantProperty(want, "Value", value);
-    section.addChild(createCommand(want), cmd, nullptr);
-    cmd++;
+    want = createCommand(want);
+    if(want.isValid()){
+        section.addChild(want, cmd, nullptr);
+        cmd++;
+    }
     //Mute Scale (previously Sequence Type) (D5 32)
     value = (int)midiopts.getProperty("mutescale", 0x32);
     want = wantAction("Mute Scale", 0);
     wantProperty(want, "Value", value);
-    section.addChild(createCommand(want), cmd, nullptr);
-    cmd++;
+    want = createCommand(want);
+    if(want.isValid()){
+        section.addChild(want, cmd, nullptr);
+        cmd++;
+    }
     //Channel Enable (D7 XXXX)
     want = wantAction("Channel Enable", 0);
     wantProperty(want, "Bitfield", chanBitfield);
@@ -1333,8 +1339,11 @@ int SeqFile::importMIDI(File midifile, ValueTree midiopts){
             //Set Long Notes, previously known as Chn Reset (C4)
             if(sectimeidx == 0){
                 want = wantAction("Set Long Notes", 1);
-                section.addChild(createCommand(want), cmd, nullptr);
-                cmd++;
+                want = createCommand(want);
+                if(want.isValid()){
+                    section.addChild(want, cmd, nullptr);
+                    cmd++;
+                }
             }
             //Create track headers
             for(layer=0; layer<max_layers; layer++){
